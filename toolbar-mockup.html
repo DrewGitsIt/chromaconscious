@@ -1,0 +1,455 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>themesmith — toolbar redesign mockup</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 28px;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    background: #101116;
+    color: #e6e7ea;
+  }
+  .sheet { display: flex; gap: 36px; align-items: flex-start; }
+  .col-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #6a6e7a;
+    margin: 0 0 10px;
+  }
+  .panel {
+    width: 320px;
+    flex-shrink: 0;
+    background: #17181c;
+    border: 1px solid #2a2c33;
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  /* shared control styling (mirrors playground.css) */
+  .panel h1 { font-size: 20px; margin: 0; }
+  .tagline { color: #9a9daa; font-size: 12px; margin: 2px 0 16px; }
+  .panel section { margin-bottom: 20px; }
+  .panel h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: #9a9daa; margin: 0 0 8px;
+  }
+  .inp, .sel, .btn {
+    background: #1f2127; border: 1px solid #33363f; color: #e6e7ea;
+    border-radius: 6px; padding: 6px 8px; font-size: 12px;
+  }
+  .btn { padding: 6px 10px; cursor: pointer; white-space: nowrap; }
+  .btn.active { background: #3b4252; border-color: #4c566a; }
+  .row { display: flex; gap: 6px; align-items: center; }
+  .row + .row { margin-top: 8px; }
+  .grow { flex: 1; min-width: 0; }
+  .icon-btn { padding: 6px; width: 28px; text-align: center; flex-shrink: 0; }
+  .muted { color: #9a9daa; }
+  .faint { color: #6a6e7a; }
+
+  .drop {
+    margin-top: 8px; border: 1px dashed #3a3e49; border-radius: 8px;
+    padding: 14px; text-align: center; font-size: 12px; color: #9a9daa;
+  }
+  .drop small { display: block; margin-top: 4px; font-size: 10px; color: #6a6e7a; }
+
+  /* candidate rows */
+  .strip { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .strip li {
+    display: flex; align-items: center; gap: 8px;
+    background: #1c1e24; border: 1px solid #2a2c33; border-radius: 8px; padding: 6px;
+  }
+  .grip { color: #565a66; font-size: 13px; flex-shrink: 0; cursor: grab; }
+  .sw { width: 26px; height: 26px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
+  .meta { flex: 1; min-width: 0; }
+  .meta code { display: block; font-size: 11px; font-family: ui-monospace, monospace; }
+  .wbar { height: 3px; background: #2a2c33; border-radius: 2px; margin-top: 3px; }
+  .wfill { height: 100%; background: #7aa2f7; border-radius: 2px; }
+  .badge {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 2px 6px; border-radius: 99px; background: #2c3040; color: #aab2cc; flex-shrink: 0;
+  }
+  .b-primary { background: #2d4a75; color: #bcd6ff; }
+  .b-accent  { background: #4a3a75; color: #d6ccff; }
+  .b-neutral { background: #3a3d45; color: #c8ccd6; }
+  .b-chart   { background: #23484d; color: #a5e6ee; }
+  .x { padding: 0 6px; font-size: 10px; line-height: 20px; }
+
+  /* badge-as-control (proposed) */
+  .badge-ctl { cursor: pointer; border: 1px solid transparent; }
+  .badge-ctl::after { content: ' ▾'; opacity: 0.6; font-size: 8px; }
+  .badge-pinned { border-color: currentColor; }
+  .badge-pinned::before { content: '⌖ '; }
+
+  .slider {
+    -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px;
+    background: #2a2c33; outline: none; margin: 8px 0 2px;
+  }
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: #c0caf5; border: 2px solid #17181c; cursor: pointer;
+  }
+  .slider.big { height: 6px; background: linear-gradient(90deg, #5b7fc7, #2a2c33 55%, #b8743a); }
+  .slider.big::-webkit-slider-thumb { width: 18px; height: 18px; }
+
+  .divider { border: 0; border-top: 1px solid #24262d; margin: 16px -16px; }
+
+  /* proposed: input cluster card */
+  .start-card { background: #1b1d23; border: 1px solid #2a2c33; border-radius: 10px; padding: 10px; }
+  .hexfield {
+    display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0;
+    background: #1f2127; border: 1px solid #33363f; border-radius: 6px; padding: 4px 6px;
+  }
+  .hexfield .sw { width: 20px; height: 20px; cursor: pointer; }
+  .hexfield input {
+    flex: 1; min-width: 0; background: transparent; border: 0; outline: 0;
+    color: #e6e7ea; font-size: 12px;
+  }
+  .seg { display: flex; border: 1px solid #33363f; border-radius: 6px; overflow: hidden; }
+  .seg .btn { flex: 1; border: 0; border-radius: 0; text-align: center; }
+  .seg .btn + .btn { border-left: 1px solid #33363f; }
+
+  .status-chip {
+    width: 100%; display: flex; align-items: center; gap: 8px;
+    background: rgba(158, 206, 106, 0.08); border: 1px solid rgba(158, 206, 106, 0.25);
+    color: #9ece6a; border-radius: 6px; padding: 6px 10px; font-size: 11px; cursor: pointer;
+    margin-top: 14px;
+  }
+  .status-chip.warn {
+    background: rgba(224, 175, 104, 0.08); border-color: rgba(224, 175, 104, 0.3); color: #e0af68;
+  }
+  .status-more { margin-left: auto; opacity: 0.7; }
+
+  .menu {
+    background: #1c1e24; border: 1px solid #33363f; border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5); padding: 4px; width: 200px; font-size: 12px;
+  }
+  .menu div { padding: 6px 10px; border-radius: 5px; display: flex; justify-content: space-between; }
+  .menu div:hover, .menu div.sel { background: #262932; }
+  .menu .faint { font-size: 10px; }
+
+  /* mini canvas sketch: report as drawer */
+  .sketch {
+    position: relative; width: 360px; height: 190px; margin-top: 10px;
+    background: #202230; border: 1px solid #2a2c33; border-radius: 8px; overflow: hidden;
+  }
+  .sk-side { position: absolute; inset: 0 auto 0 0; width: 56px; background: #17181c; border-right: 1px solid #2a2c33; }
+  .sk-block { position: absolute; background: rgba(255,255,255,0.08); border-radius: 3px; }
+  .sk-drawer {
+    position: absolute; inset: 0 0 0 auto; width: 42%;
+    background: #14151a; border-left: 1px solid #3a3e49; box-shadow: -12px 0 24px rgba(0,0,0,0.45);
+    padding: 10px 12px; font-size: 9px; color: #9a9daa;
+  }
+  .sk-drawer table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 8px; }
+  .sk-drawer td { padding: 2px 3px; border-bottom: 1px solid #24262d; }
+  .sk-fail td { color: #ff8a8a; }
+
+  .fid-labels { display: flex; justify-content: space-between; font-size: 11px; }
+  .fid-caption { font-size: 11px; color: #6a6e7a; margin-top: 6px; text-align: center; }
+  .chip { font-size: 10px; background: #24262d; border-radius: 4px; padding: 1px 6px; color: #9a9daa; }
+  .ghost { background: transparent; border: 0; color: #7a86b8; font-size: 10px; cursor: pointer; padding: 0; }
+
+  /* annotations */
+  .notes { max-width: 380px; font-size: 13px; line-height: 1.55; }
+  .notes h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #9a9daa; margin: 22px 0 6px; }
+  .notes h3:first-child { margin-top: 0; }
+  .notes p { margin: 0 0 10px; color: #c8ccd6; }
+  .num {
+    display: inline-flex; width: 17px; height: 17px; border-radius: 50%;
+    background: #3b4252; color: #c0caf5; font-size: 10px;
+    align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0;
+  }
+  .callout { position: relative; }
+  .callout .num { position: absolute; right: -26px; top: 50%; transform: translateY(-50%); }
+  .alts { margin-top: 24px; }
+  .alts .row { margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <!-- ======================= CURRENT ======================= -->
+  <div>
+    <p class="col-title">current</p>
+    <div class="panel">
+      <h1>themesmith</h1>
+      <p class="tagline">any colors in, working theme out</p>
+
+      <section>
+        <h2>Frames</h2>
+        <div class="row">
+          <button class="btn grow" style="text-align:left">● A · light</button>
+          <button class="btn icon-btn">☾</button>
+          <button class="btn">⧉ duplicate</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Add colors</h2>
+        <div class="row">
+          <input class="inp grow" placeholder="#e63946 #457b9d oklch(…)" />
+          <span class="sw" style="background:#7aa2f7"></span>
+          <button class="btn icon-btn">⌖</button>
+          <button class="btn">Add</button>
+        </div>
+        <div class="drop">drop an image or click to browse<small>png · jpg · webp · gif · svg · heic</small></div>
+        <div class="row">
+          <select class="sel grow"><option>preset…</option></select>
+          <button class="btn">Clear</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Candidates</h2>
+        <ul class="strip">
+          <li>
+            <span class="grip">⠿</span><span class="sw" style="background:#e63946"></span>
+            <div class="meta"><code>#e63946</code>
+              <div class="row" style="gap:6px"><div class="wbar grow"><div class="wfill" style="width:100%"></div></div><span class="badge b-primary">primary</span></div>
+            </div>
+            <select class="sel" style="width:74px;font-size:10px;padding:4px"><option>auto</option></select>
+            <button class="btn x">✕</button>
+          </li>
+          <li>
+            <span class="grip">⠿</span><span class="sw" style="background:#f1faee"></span>
+            <div class="meta"><code>#f1faee</code>
+              <div class="row" style="gap:6px"><div class="wbar grow"><div class="wfill" style="width:85%"></div></div><span class="badge b-neutral">neutral</span></div>
+            </div>
+            <select class="sel" style="width:74px;font-size:10px;padding:4px"><option>auto</option></select>
+            <button class="btn x">✕</button>
+          </li>
+          <li>
+            <span class="grip">⠿</span><span class="sw" style="background:#457b9d"></span>
+            <div class="meta"><code>#457b9d</code>
+              <div class="row" style="gap:6px"><div class="wbar grow"><div class="wfill" style="width:70%"></div></div><span class="badge b-accent">accent</span></div>
+            </div>
+            <select class="sel" style="width:74px;font-size:10px;padding:4px"><option>auto</option></select>
+            <button class="btn x">✕</button>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Fidelity</h2>
+        <div class="row" style="font-size:11px" >
+          <span class="muted">harmonize</span>
+          <input type="range" class="slider grow" value="50" />
+          <span class="muted">verbatim</span>
+        </div>
+        <div class="faint" style="text-align:center;font-size:11px">0.50</div>
+      </section>
+
+      <section>
+        <h2>Mockup</h2>
+        <select class="sel" style="width:100%"><option>App dashboard</option></select>
+      </section>
+
+      <section>
+        <h2>View</h2>
+        <div class="row">
+          <button class="btn grow active">preview</button>
+          <button class="btn grow">report + css</button>
+        </div>
+      </section>
+
+      <section style="margin-bottom:0">
+        <h2>Export</h2>
+        <div class="row"><button class="btn grow">CSS variables</button></div>
+        <div class="row"><button class="btn grow">Tailwind v4 CSS</button></div>
+        <div class="row"><button class="btn grow">Design tokens JSON</button></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ======================= PROPOSED ======================= -->
+  <div>
+    <p class="col-title">proposed</p>
+    <div class="panel" style="padding-right:16px">
+      <h1>themesmith</h1>
+      <p class="tagline">any colors in, working theme out</p>
+
+      <!-- canvas: frames own their mockup -->
+      <div class="callout">
+        <div class="row">
+          <button class="btn" style="width:34px;text-align:center">● A</button>
+          <select class="sel grow"><option>App dashboard</option></select>
+          <button class="btn icon-btn">☾</button>
+          <button class="btn icon-btn" title="copy → B">⧉</button>
+          <button class="btn icon-btn">✕</button>
+        </div>
+        <span class="num">3</span>
+      </div>
+      <div class="row">
+        <button class="btn" style="width:34px;text-align:center;opacity:.6">○ B</button>
+        <select class="sel grow"><option>Brand board</option></select>
+        <button class="btn icon-btn">☀</button>
+        <button class="btn icon-btn" title="copy → A">⧉</button>
+        <button class="btn icon-btn">✕</button>
+      </div>
+      <hr class="divider" />
+
+      <!-- start card: the three entry routes, one visual unit -->
+      <div class="callout">
+        <div class="start-card">
+          <div class="row">
+            <div class="hexfield">
+              <span class="sw" style="background:#7aa2f7" title="pick"></span>
+              <input placeholder="type or pick colors…" />
+            </div>
+            <button class="btn">Add</button>
+          </div>
+          <div class="drop">drop an image<small>png · jpg · webp · gif · svg · heic</small></div>
+          <div class="row">
+            <select class="sel grow"><option>start from a preset…</option></select>
+            <button class="btn">Clear</button>
+          </div>
+        </div>
+        <span class="num">4</span>
+      </div>
+
+      <!-- candidates: badge IS the pin control -->
+      <div style="margin-top:14px">
+        <div class="row" style="justify-content:flex-end;margin-bottom:6px">
+          <button class="ghost">↺ reset pins</button>
+        </div>
+        <ul class="strip callout">
+          <li>
+            <span class="grip">⠿</span><span class="sw" style="background:#e63946"></span>
+            <div class="meta"><code>#e63946</code><div class="wbar"><div class="wfill" style="width:100%"></div></div></div>
+            <span class="badge badge-ctl badge-pinned b-primary">primary</span>
+            <button class="btn x">✕</button>
+          </li>
+          <li>
+            <span class="grip">⠿</span><span class="sw" style="background:#f1faee"></span>
+            <div class="meta"><code>#f1faee</code><div class="wbar"><div class="wfill" style="width:85%"></div></div></div>
+            <span class="badge badge-ctl b-neutral">neutral</span>
+            <button class="btn x">✕</button>
+          </li>
+          <li>
+            <span class="grip">⠿</span><span class="sw" style="background:#457b9d"></span>
+            <div class="meta"><code>#457b9d</code><div class="wbar"><div class="wfill" style="width:70%"></div></div></div>
+            <span class="badge badge-ctl b-accent">accent</span>
+            <button class="btn x">✕</button>
+          </li>
+          <li>
+            <span class="grip">⠿</span><span class="sw" style="background:#a8dadc"></span>
+            <div class="meta"><code>#a8dadc</code><div class="wbar"><div class="wfill" style="width:55%"></div></div></div>
+            <span class="badge badge-ctl b-chart">chart</span>
+            <button class="btn x">✕</button>
+          </li>
+          <span class="num" style="top:38px">1</span>
+        </ul>
+      </div>
+
+      <hr class="divider" />
+
+      <!-- fidelity, promoted -->
+      <div class="callout">
+        <div class="fid-labels">
+          <span style="color:#8fa7dd">smith's taste</span>
+          <span class="chip">0.50</span>
+          <span style="color:#cf9a66">raw colors</span>
+        </div>
+        <input type="range" class="slider big" value="50" />
+        <div class="fid-caption">gently tuning your colors · avg shift ΔE 0.03</div>
+        <span class="num">2</span>
+      </div>
+
+      <!-- status chip: the audit is glanceable, the report is a drawer -->
+      <div class="callout">
+        <button class="status-chip ok">✓ all 24 checks pass<span class="status-more">report ›</span></button>
+        <span class="num">6</span>
+      </div>
+
+      <hr class="divider" />
+
+      <!-- export: one split button, remembers last format -->
+      <div class="callout">
+        <div class="row" style="margin-bottom:0">
+          <button class="btn grow" style="text-align:center">⧉ Copy CSS variables</button>
+          <button class="btn icon-btn">▾</button>
+        </div>
+        <span class="num">7</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= NOTES ======================= -->
+  <div class="notes">
+    <h3>what changed</h3>
+    <p><span class="num">1</span><b>Role badge is the pin control.</b> The per-row "auto" select is gone.
+      The badge always states the engine's decision; clicking it opens a menu
+      (auto · primary · accent · …). A pinned badge gets a ⌖ glyph and an outline —
+      state you can see at a glance. "↺ reset pins" only appears when a pin exists:
+      that's the "auto all at once" button, shown only when it can do something.</p>
+    <p><span class="num">2</span><b>Fidelity promoted, wording settled:</b>
+      <i>smith's taste ↔ raw colors</i>. Bigger two-tone track (cool = engine,
+      warm = yours). The live caption does the real explaining: on an in-window
+      preset it reads <i>"your colors already sit well — nothing to tune"</i>;
+      at 1.0, <i>"colors kept exactly · 1 clash reported"</i>.</p>
+    <p><span class="num">3</span><b>Mockup lives in the frame row.</b> Not just moved up —
+      each frame row owns its mockup select, mode toggle, copy, close. Direct
+      manipulation: no "select the frame, then scroll down to change its mockup".</p>
+    <p><span class="num">4</span><b>One start card, three routes.</b> Hex typing and the
+      picker merge into a single field — the embedded swatch previews what you typed
+      and opens the picker (eyedropper moves inside the popover). Image drop and
+      preset sit in the same inset card, so "the ways in" read as one unit.</p>
+    <p><b>5 · No section labels.</b> Dividers group; components self-describe
+      (placeholder text, live caption, badges, option labels).</p>
+    <p><span class="num">6</span><b>The report is no longer a "view".</b> The
+      preview/report pill is gone. The audit becomes an always-visible status chip
+      under the fidelity slider — the answer to "can I trust this?" without a mode
+      flip. Clicking it slides the report in as a drawer <i>over</i> the canvas, so
+      a failing pair sits next to the live mockup instead of replacing it. The CSS
+      textarea stops being a destination; code leaves via export only.</p>
+    <p><span class="num">7</span><b>Export is one split button.</b> Copies the
+      last-used format on click; the ▾ menu swaps format. Scales to
+      "Download .css" later without new rows.</p>
+
+    <h3>status chip states</h3>
+    <div class="alts" style="width:300px">
+      <button class="status-chip ok" style="margin-top:6px">✓ all 24 checks pass<span class="status-more">report ›</span></button>
+      <button class="status-chip warn">⚠ 2 issues · 1 clash, 1 low-contrast pair<span class="status-more">report ›</span></button>
+    </div>
+
+    <h3>export menu (open)</h3>
+    <div class="menu" style="margin-top:8px">
+      <div class="sel">CSS variables <span class="faint">last used ✓</span></div>
+      <div>Tailwind v4 CSS</div>
+      <div>Design tokens JSON</div>
+    </div>
+
+    <h3>report drawer over the canvas</h3>
+    <div class="sketch">
+      <div class="sk-side"></div>
+      <div class="sk-block" style="left:70px;top:14px;width:110px;height:10px"></div>
+      <div class="sk-block" style="left:70px;top:34px;width:130px;height:52px"></div>
+      <div class="sk-block" style="left:70px;top:96px;width:90px;height:40px;background:rgba(122,162,247,0.35)"></div>
+      <div class="sk-drawer">
+        checks
+        <table>
+          <tr><td>ink / paper</td><td>7.2 ✓</td></tr>
+          <tr><td>brand / paper</td><td>4.6 ✓</td></tr>
+          <tr class="sk-fail"><td>primary / background</td><td>2.1 ✕</td></tr>
+          <tr><td>accent / paper</td><td>3.4 ✓</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <h3>badge states</h3>
+    <div class="row" style="margin-top:8px; gap:10px">
+      <span class="badge badge-ctl b-primary">primary</span><span class="faint">auto-assigned</span>
+    </div>
+    <div class="row" style="gap:10px">
+      <span class="badge badge-ctl badge-pinned b-primary">primary</span><span class="faint">pinned by you</span>
+    </div>
+    <div class="row" style="gap:10px">
+      <span class="badge badge-ctl" style="opacity:.5">unused</span><span class="faint">didn't earn a slot</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

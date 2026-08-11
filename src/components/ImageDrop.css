@@ -1,0 +1,33 @@
+/* ImageDrop-owned chrome. */
+@layer chrome-base, chrome;
+
+@layer chrome {
+  .image-drop {
+    margin-top: var(--gap-m);
+    border: 1px dashed var(--line-ctl);
+    border-radius: var(--radius-card);
+    padding: 14px;
+    text-align: center;
+    font-size: var(--fs-m);
+    color: var(--ink-muted);
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+  .image-drop.over {
+    border-color: var(--accent);
+    color: #c0caf5;
+    box-shadow: inset 0 0 16px color-mix(in srgb, var(--accent) 15%, transparent);
+  }
+  .image-drop-formats {
+    margin-top: 4px;
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+  }
+  .image-drop-error {
+    margin-top: var(--gap-s);
+    font-size: var(--fs-s);
+    color: var(--fail);
+  }
+}

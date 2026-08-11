@@ -1,0 +1,497 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>themesmith — mono lock mockup</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 28px;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    background: #101116;
+    color: #e6e7ea;
+  }
+  .sheet { display: flex; gap: 36px; align-items: flex-start; }
+  .col-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #6a6e7a;
+    margin: 0 0 10px;
+  }
+  .col-title + .col-title { margin-top: 26px; }
+  .panel {
+    width: 320px;
+    flex-shrink: 0;
+    background: #17181c;
+    border: 1px solid #2a2c33;
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  /* shared control styling (mirrors the real chrome) */
+  .inp, .sel, .btn {
+    background: #1f2127; border: 1px solid #33363f; color: #e6e7ea;
+    border-radius: 6px; padding: 6px 8px; font-size: 12px;
+  }
+  .btn { padding: 6px 10px; cursor: pointer; white-space: nowrap; }
+  .row { display: flex; gap: 6px; align-items: center; }
+  .row + .row { margin-top: 8px; }
+  .grow { flex: 1; min-width: 0; }
+  .muted { color: #9a9daa; }
+  .faint { color: #6a6e7a; }
+
+  .strip { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .strip li {
+    display: flex; align-items: center; gap: 8px;
+    background: #1c1e24; border: 1px solid #2a2c33; border-radius: 6px; padding: 6px;
+  }
+  .strip li.pickable {
+    border: 1px dashed #7aa2f7; box-shadow: 0 0 0 3px rgba(122, 162, 247, 0.12);
+    cursor: pointer;
+  }
+  .grip { color: #565a66; font-size: 13px; flex-shrink: 0; cursor: grab; }
+  .sw { width: 26px; height: 26px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
+  .meta { flex: 1; min-width: 0; }
+  .meta code { display: block; font-size: 11px; font-family: ui-monospace, monospace; }
+  .wbar { height: 3px; background: #2a2c33; border-radius: 2px; margin-top: 3px; }
+  .wfill { height: 100%; background: #7aa2f7; border-radius: 2px; }
+  .badge {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 2px 6px; border-radius: 99px; background: #2c3040; color: #aab2cc; flex-shrink: 0;
+    border: 1px solid transparent; cursor: pointer;
+  }
+  .badge::after { content: ' ▾'; opacity: 0.6; font-size: 8px; }
+  .b-primary { background: #2d4a75; color: #bcd6ff; }
+  .b-accent  { background: #4a3a75; color: #d6ccff; }
+  .b-danger  { background: #5c2b33; color: #ffb3bd; }
+  .b-warning { background: #574727; color: #f4d79a; }
+  .badge-pinned { border-color: currentColor; }
+  .badge-pinned::before { content: '⌖ '; }
+  .b-base {
+    background: #fa8072; color: #46180e; font-weight: 700; border-color: #fdbcb0;
+  }
+  .b-base::before { content: '⬤ '; font-size: 7px; vertical-align: 1px; }
+  .x { padding: 0 6px; font-size: 10px; line-height: 20px; }
+
+  /* the lock row: padlock left, reset-pins ghost right */
+  .lockrow { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .lock-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: #1f2127; border: 1px solid #33363f; color: #9a9daa;
+    border-radius: 6px; padding: 5px 9px; font-size: 11px; cursor: pointer;
+  }
+  .lock-btn svg { flex-shrink: 0; }
+  .lock-btn.picking { border-color: #7aa2f7; color: #aebff0; }
+  .lock-btn.locked {
+    border-color: #fdbcb0; color: #ffd0c6; background: rgba(250, 128, 114, 0.08);
+  }
+  .lock-sw {
+    width: 15px; height: 15px; border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.25); flex-shrink: 0; cursor: pointer;
+  }
+  .lock-sw.parked { opacity: 0.4; }
+  .lock-cap { font-size: 10px; color: #6a6e7a; margin: -2px 0 8px 3px; }
+  .lock-cap.hint { color: #7aa2f7; }
+  .ghost { background: transparent; border: 0; color: #7a86b8; font-size: 10px; cursor: pointer; padding: 0; margin-left: auto; }
+
+  .slider {
+    -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px;
+    background: linear-gradient(90deg, #5b7fc7, #2a2c33 55%, #b8743a); outline: none; margin: 8px 0 2px;
+  }
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+    background: #c0caf5; border: 2px solid #17181c; cursor: pointer;
+  }
+  .fid-labels { display: flex; justify-content: space-between; font-size: 11px; }
+  .fid-caption { font-size: 11px; color: #6a6e7a; margin-top: 6px; text-align: center; }
+  .chip { font-size: 10px; background: #24262d; border-radius: 4px; padding: 1px 6px; color: #9a9daa; }
+  .divider { border: 0; border-top: 1px solid #2a2c33; margin: 16px -16px; }
+
+  /* ---- mini theme previews ---- */
+  .minis { display: flex; gap: 10px; }
+  .mini {
+    width: 175px; height: 148px; border-radius: 8px; overflow: hidden;
+    border: 1px solid #2a2c33; background: var(--bg); color: var(--txt);
+    display: flex; font-size: 8px; flex-shrink: 0;
+  }
+  .m-side { width: 40px; background: var(--card); border-right: 1px solid var(--line); padding: 6px 5px; }
+  .m-side .s-item { height: 6px; border-radius: 2px; background: var(--mut); opacity: 0.5; margin-bottom: 5px; }
+  .m-side .s-item.on { background: var(--pri); opacity: 1; }
+  .m-main { flex: 1; padding: 7px 8px; min-width: 0; }
+  .m-title { font-weight: 700; font-size: 9px; }
+  .m-sub { color: var(--mut); font-size: 7px; margin-bottom: 6px; }
+  .m-btns { display: flex; gap: 4px; margin-bottom: 6px; }
+  .m-btn { border-radius: 3px; padding: 2.5px 6px; font-size: 7px; font-weight: 600; }
+  .m-btn.solid { background: var(--pri); color: var(--prifg); }
+  .m-btn.subtle { background: var(--acc); color: var(--accfg); }
+  .m-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 4px;
+    padding: 5px 6px; margin-bottom: 6px;
+  }
+  .m-pills { display: flex; gap: 3px; flex-wrap: wrap; }
+  .m-pill { border-radius: 99px; padding: 1.5px 5px; font-size: 6.5px; font-weight: 600; }
+  .m-chart { display: flex; gap: 3px; align-items: flex-end; height: 30px; }
+  .m-bar { flex: 1; border-radius: 2px 2px 0 0; }
+  .mini-cap { font-size: 10px; color: #6a6e7a; margin: 6px 0 14px; }
+
+  .swrow { display: flex; gap: 4px; margin-top: 8px; }
+  .swrow span { width: 26px; height: 26px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.12); }
+
+  /* annotations */
+  .notes { max-width: 400px; font-size: 13px; line-height: 1.55; }
+  .notes h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #9a9daa; margin: 22px 0 6px; }
+  .notes h3:first-child { margin-top: 0; }
+  .notes p { margin: 0 0 10px; color: #c8ccd6; }
+  .num {
+    display: inline-flex; width: 17px; height: 17px; border-radius: 50%;
+    background: #3b4252; color: #c0caf5; font-size: 10px;
+    align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0;
+  }
+  .callout { position: relative; }
+  .callout > .num { position: absolute; right: -26px; top: 50%; transform: translateY(-50%); }
+</style>
+</head>
+<body>
+<!-- inline lucide-style padlocks -->
+<svg style="display:none">
+  <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+</svg>
+<div class="sheet">
+
+  <!-- ======================= THE CONTROL ======================= -->
+  <div>
+    <p class="col-title">1 · default — padlock open, doing nothing</p>
+    <div class="panel" style="padding-bottom:12px">
+      <div class="lockrow callout">
+        <button class="lock-btn" title="lock the theme to one color's hue">
+          <svg width="13" height="13"><use href="#i-unlock"/></svg>
+        </button>
+        <span class="num">1</span>
+      </div>
+      <ul class="strip">
+        <li>
+          <span class="grip">⠿</span><span class="sw" style="background:#fa8072"></span>
+          <div class="meta"><code>#fa8072</code><div class="wbar"><div class="wfill" style="width:100%"></div></div></div>
+          <span class="badge b-primary">primary</span>
+          <button class="btn x">✕</button>
+        </li>
+      </ul>
+    </div>
+
+    <p class="col-title">2 · padlock clicked — pick the base</p>
+    <div class="panel" style="padding-bottom:12px">
+      <div class="lockrow">
+        <button class="lock-btn picking">
+          <svg width="13" height="13"><use href="#i-unlock"/></svg>
+        </button>
+      </div>
+      <div class="lock-cap hint">click a color to lock its hue · esc to cancel</div>
+      <ul class="strip callout">
+        <li class="pickable">
+          <span class="grip">⠿</span><span class="sw" style="background:#fa8072"></span>
+          <div class="meta"><code>#fa8072</code><div class="wbar"><div class="wfill" style="width:100%"></div></div></div>
+          <span class="badge b-primary">primary</span>
+          <button class="btn x">✕</button>
+        </li>
+        <li class="pickable">
+          <span class="grip">⠿</span><span class="sw" style="background:#4fc9a4"></span>
+          <div class="meta"><code>#4fc9a4</code><div class="wbar"><div class="wfill" style="width:80%"></div></div></div>
+          <span class="badge b-accent">accent</span>
+          <button class="btn x">✕</button>
+        </li>
+        <span class="num">2</span>
+      </ul>
+      <div class="lock-cap" style="margin-top:8px">with exactly one candidate this step is skipped — the padlock locks it immediately</div>
+    </div>
+
+    <p class="col-title">3 · locked — salmon rules the chrome</p>
+    <div class="panel">
+      <div class="lockrow callout">
+        <button class="lock-btn locked" title="unlock — back to the full-palette engine">
+          <svg width="13" height="13"><use href="#i-lock"/></svg>
+          <span class="lock-sw" style="background:#fa8072" title="click to pick a different base"></span>
+          <code style="font-size:10px">#fa8072</code>
+        </button>
+        <span class="num">3</span>
+      </div>
+      <div class="lock-cap">mono — engine invents no new hues</div>
+      <ul class="strip">
+        <li style="border-color:#fdbcb0">
+          <span class="grip">⠿</span><span class="sw" style="background:#fa8072"></span>
+          <div class="meta"><code>#fa8072</code><div class="wbar"><div class="wfill" style="width:100%;background:#fa8072"></div></div></div>
+          <span class="badge b-base">base</span>
+          <button class="btn x">✕</button>
+        </li>
+      </ul>
+      <hr class="divider" />
+      <div class="callout">
+        <div class="fid-labels">
+          <span style="color:#8fa7dd">smith's taste</span>
+          <span class="chip">0.50</span>
+          <span style="color:#cf9a66">raw colors</span>
+        </div>
+        <input type="range" class="slider" value="50" />
+        <div class="fid-caption">mono — varying lightness only · avg shift ΔL 0.04</div>
+        <span class="num">5</span>
+      </div>
+    </div>
+
+    <p class="col-title">4 · colors layered on top of the lock</p>
+    <div class="panel" style="padding-bottom:12px">
+      <div class="lockrow">
+        <button class="lock-btn locked">
+          <svg width="13" height="13"><use href="#i-lock"/></svg>
+          <span class="lock-sw" style="background:#fa8072"></span>
+          <code style="font-size:10px">#fa8072</code>
+        </button>
+        <button class="ghost">↺ reset pins</button>
+      </div>
+      <div class="lock-cap">mono — engine invents no new hues</div>
+      <ul class="strip callout">
+        <li style="border-color:#fdbcb0">
+          <span class="grip">⠿</span><span class="sw" style="background:#fa8072"></span>
+          <div class="meta"><code>#fa8072</code><div class="wbar"><div class="wfill" style="width:100%;background:#fa8072"></div></div></div>
+          <span class="badge b-base">base</span>
+          <button class="btn x">✕</button>
+        </li>
+        <li>
+          <span class="grip">⠿</span><span class="sw" style="background:#4fc9a4"></span>
+          <div class="meta"><code>#4fc9a4</code><div class="wbar"><div class="wfill" style="width:80%"></div></div></div>
+          <span class="badge b-accent">accent</span>
+          <button class="btn x">✕</button>
+        </li>
+        <li>
+          <span class="grip">⠿</span><span class="sw" style="background:#f3e08a"></span>
+          <div class="meta"><code>#f3e08a</code><div class="wbar"><div class="wfill" style="width:65%"></div></div></div>
+          <span class="badge b-warning">warning</span>
+          <button class="btn x">✕</button>
+        </li>
+        <li>
+          <span class="grip">⠿</span><span class="sw" style="background:#b7410e"></span>
+          <div class="meta"><code>#b7410e</code><div class="wbar"><div class="wfill" style="width:55%"></div></div></div>
+          <span class="badge badge-pinned b-danger">danger</span>
+          <button class="btn x">✕</button>
+        </li>
+        <span class="num">6</span>
+      </ul>
+    </div>
+
+    <p class="col-title">5 · unlocked again — base parked, not forgotten</p>
+    <div class="panel" style="padding-bottom:12px">
+      <div class="lockrow callout">
+        <button class="lock-btn" title="re-lock #fa8072">
+          <svg width="13" height="13"><use href="#i-unlock"/></svg>
+          <span class="lock-sw parked" style="background:#fa8072"></span>
+        </button>
+        <span class="num">4</span>
+      </div>
+      <div class="lock-cap">full-palette engine · one click re-locks salmon</div>
+    </div>
+  </div>
+
+  <!-- ======================= WHAT IT PRODUCES ======================= -->
+  <div>
+    <p class="col-title">state 3 output — one input, whole theme</p>
+    <div class="minis">
+      <!-- light mono salmon -->
+      <div class="mini" style="--bg:#fdf6f4; --card:#fbeeea; --line:#eec9bd; --txt:#48190f; --mut:#96513f; --pri:#b0402d; --prifg:#fff4f1; --acc:#f7ddd4; --accfg:#7c2c1b;">
+        <div class="m-side">
+          <div class="s-item on"></div><div class="s-item"></div><div class="s-item"></div><div class="s-item"></div>
+        </div>
+        <div class="m-main">
+          <div class="m-title">Overview</div>
+          <div class="m-sub">salmon · every hue is 24°</div>
+          <div class="m-btns">
+            <span class="m-btn solid">New invoice</span>
+            <span class="m-btn subtle">Export</span>
+          </div>
+          <div class="m-card">
+            <div class="m-pills">
+              <span class="m-pill" style="background:#f7ddd4;color:#7c2c1b">✓ paid</span>
+              <span class="m-pill" style="background:#efc0b0;color:#5f2113">⚠ due</span>
+              <span class="m-pill" style="background:#b0402d;color:#fff4f1">✕ failed</span>
+            </div>
+          </div>
+          <div class="m-chart">
+            <div class="m-bar" style="height:45%;background:#f4c9bc"></div>
+            <div class="m-bar" style="height:70%;background:#e8a08c"></div>
+            <div class="m-bar" style="height:55%;background:#d6785f"></div>
+            <div class="m-bar" style="height:90%;background:#b54c33"></div>
+            <div class="m-bar" style="height:35%;background:#832f1c"></div>
+          </div>
+        </div>
+      </div>
+      <!-- dark mono salmon -->
+      <div class="mini" style="--bg:#201310; --card:#2a1a15; --line:#4f2c21; --txt:#f8ddd4; --mut:#c48f7d; --pri:#f2937f; --prifg:#43140a; --acc:#4a251b; --accfg:#f6c4b4;">
+        <div class="m-side">
+          <div class="s-item on"></div><div class="s-item"></div><div class="s-item"></div><div class="s-item"></div>
+        </div>
+        <div class="m-main">
+          <div class="m-title">Overview</div>
+          <div class="m-sub">same ladder, flipped</div>
+          <div class="m-btns">
+            <span class="m-btn solid">New invoice</span>
+            <span class="m-btn subtle">Export</span>
+          </div>
+          <div class="m-card">
+            <div class="m-pills">
+              <span class="m-pill" style="background:#4a251b;color:#f6c4b4">✓ paid</span>
+              <span class="m-pill" style="background:#6b3423;color:#fbd4c7">⚠ due</span>
+              <span class="m-pill" style="background:#f2937f;color:#43140a">✕ failed</span>
+            </div>
+          </div>
+          <div class="m-chart">
+            <div class="m-bar" style="height:45%;background:#5f3123"></div>
+            <div class="m-bar" style="height:70%;background:#8a4630"></div>
+            <div class="m-bar" style="height:55%;background:#b7603f"></div>
+            <div class="m-bar" style="height:90%;background:#e08a6b"></div>
+            <div class="m-bar" style="height:35%;background:#f8b89f"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="mini-cap">statuses are lightness steps of the base — icons carry the meaning · charts become a sequential salmon ramp</p>
+
+    <p class="col-title">state 4 output — mono chrome, layered voices</p>
+    <div class="minis">
+      <!-- light layered -->
+      <div class="mini" style="--bg:#fdf6f4; --card:#fbeeea; --line:#eec9bd; --txt:#48190f; --mut:#96513f; --pri:#b0402d; --prifg:#fff4f1; --acc:#d9f2e8; --accfg:#0f5c44;">
+        <div class="m-side">
+          <div class="s-item on"></div><div class="s-item"></div><div class="s-item"></div><div class="s-item"></div>
+        </div>
+        <div class="m-main">
+          <div class="m-title">Overview</div>
+          <div class="m-sub">chrome unchanged — still salmon</div>
+          <div class="m-btns">
+            <span class="m-btn solid">New invoice</span>
+            <span class="m-btn subtle">Export</span>
+          </div>
+          <div class="m-card">
+            <div class="m-pills">
+              <span class="m-pill" style="background:#d9f2e8;color:#0f5c44">◆ new</span>
+              <span class="m-pill" style="background:#faf0c8;color:#6b5410">⚠ due</span>
+              <span class="m-pill" style="background:#b7410e;color:#ffe9dd">✕ failed</span>
+            </div>
+          </div>
+          <div class="m-chart">
+            <div class="m-bar" style="height:45%;background:#f4c9bc"></div>
+            <div class="m-bar" style="height:70%;background:#e8a08c"></div>
+            <div class="m-bar" style="height:90%;background:#b54c33"></div>
+            <div class="m-bar" style="height:60%;background:#4fc9a4"></div>
+            <div class="m-bar" style="height:35%;background:#0f9b74"></div>
+          </div>
+        </div>
+      </div>
+      <!-- dark layered -->
+      <div class="mini" style="--bg:#201310; --card:#2a1a15; --line:#4f2c21; --txt:#f8ddd4; --mut:#c48f7d; --pri:#f2937f; --prifg:#43140a; --acc:#123f31; --accfg:#8ee8c8;">
+        <div class="m-side">
+          <div class="s-item on"></div><div class="s-item"></div><div class="s-item"></div><div class="s-item"></div>
+        </div>
+        <div class="m-main">
+          <div class="m-title">Overview</div>
+          <div class="m-sub">accents survive the flip</div>
+          <div class="m-btns">
+            <span class="m-btn solid">New invoice</span>
+            <span class="m-btn subtle">Export</span>
+          </div>
+          <div class="m-card">
+            <div class="m-pills">
+              <span class="m-pill" style="background:#123f31;color:#8ee8c8">◆ new</span>
+              <span class="m-pill" style="background:#463a12;color:#f0dc8e">⚠ due</span>
+              <span class="m-pill" style="background:#e0632c;color:#2b1002">✕ failed</span>
+            </div>
+          </div>
+          <div class="m-chart">
+            <div class="m-bar" style="height:45%;background:#5f3123"></div>
+            <div class="m-bar" style="height:70%;background:#8a4630"></div>
+            <div class="m-bar" style="height:90%;background:#e08a6b"></div>
+            <div class="m-bar" style="height:60%;background:#3db28d"></div>
+            <div class="m-bar" style="height:35%;background:#7fe3c2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="mini-cap">aquamarine claims accent, pale yellow → warning, rust → danger · added colors keep their real hue; the chrome never budges</p>
+
+    <p class="col-title">edge: lock black or white → pure grayscale</p>
+    <div class="swrow">
+      <span style="background:#fafafa"></span>
+      <span style="background:#f0f0f0"></span>
+      <span style="background:#dcdcdc"></span>
+      <span style="background:#b8b8b8"></span>
+      <span style="background:#8a8a8a"></span>
+      <span style="background:#565656"></span>
+      <span style="background:#2e2e2e"></span>
+      <span style="background:#141414"></span>
+    </div>
+    <p class="mini-cap">an achromatic base has no hue to donate — chroma pins to 0, the whole theme is a value scale (shadcn's own default look)</p>
+  </div>
+
+  <!-- ======================= NOTES ======================= -->
+  <div class="notes">
+    <h3>the padlock flow</h3>
+    <p><span class="num">1</span><b>An open padlock sits above the candidates.</b>
+      Unlocked is the default and means: full engine, hues invented freely.
+      It's visible before you know the feature exists — that's the point of
+      promoting it out of a menu. The "↺ reset pins" ghost shares this row but
+      only appears when a pin exists (state 4, where rust is pinned to danger) —
+      and the base is not a pin: reset pins never unlocks it.</p>
+    <p><span class="num">2</span><b>Click it and the strip becomes the menu.</b>
+      Pick-mode highlights every candidate row as a target ("click a color to
+      lock its hue"); Esc, clicking outside, or the padlock again cancels.
+      With exactly one candidate — the brand-color user, the common case — the
+      prompt is skipped and the padlock locks it in one click.</p>
+    <p><span class="num">3</span><b>Locked state shows its captive.</b> The padlock
+      closes and the base swatch + hex move in next to it; the caption states
+      the contract (<i>"mono — engine invents no new hues"</i>). The locked row
+      keeps a ⬤ base badge in the strip, so the state reads in both places.
+      Clicking the little swatch re-enters pick-mode to crown a different color.</p>
+    <p><span class="num">4</span><b>Unlock parks the base instead of forgetting it.</b>
+      The swatch stays next to the open padlock, dimmed; one click re-locks it.
+      Flip, compare, flip back — no re-picking. Only removing the color from
+      the strip clears the memory.</p>
+    <p><span class="num">5</span><b>Fidelity keeps its exact meaning.</b> The dial
+      still governs how much the engine may move your colors — there's just one
+      axis left to move on. The caption switches vocabulary: ΔE becomes ΔL. At
+      raw-colors the base's own lightness is kept verbatim; at smith's-taste it
+      snaps to the ladder.</p>
+    <p><span class="num">6</span><b>Added colors are exempt — that's the workflow.</b>
+      The lock constrains what the engine <i>synthesizes</i>, never what you
+      <i>hand it</i>. Aquamarine walks in through normal scoring (or a pin) and
+      claims accent with its real hue; rust takes danger. Strict mono isn't a
+      mode — it's the lock with nothing added yet. "Mono + functional color"
+      isn't a mode either — it's the natural result of layering.</p>
+
+    <h3>what locking means (engine)</h3>
+    <p>The base donates hue + chroma to <b>everything the engine invents</b> —
+      the tinted neutral ramp, the primary solid, every role without a
+      user-supplied color, chart fills. Under the lock the engine varies
+      <b>lightness only</b>: no hue rotation, no status hue anchors, no +45°
+      chart spins.</p>
+    <p>· <b>roles.ts</b> — under lock, synthesis returns base-hue lightness
+      variants instead of hue-anchored colors; <code>fidelityAdjust</code>
+      stops injecting chroma (the clamp that would tint a locked gray).<br />
+      · <b>repair.ts</b> — <code>MOVES</code> truncates to the two lightness
+      moves for locked-provenance seeds; user-added colors keep the full move set.<br />
+      · <b>tokens.ts</b> — chart synthesis switches from hue rotation to an even
+      lightness ladder over the base.<br />
+      · <b>ramp.ts / contrast / report</b> — untouched. The ladder, APCA text
+      solving, and every check already operate in lightness.</p>
+
+    <h3>the report under lock</h3>
+    <p>Role assignment rows gain a provenance note — <i>"synthesized · mono
+      (lightness of base)"</i> — so it's legible why success is salmon-tinted
+      instead of green. The status chip and contrast checks run unchanged;
+      mono themes tend to pass more easily, not less.</p>
+
+    <h3>dropped from the last round</h3>
+    <p>The badge-menu "⬤ mono base" item and the mono bar are gone — the padlock
+      is the single way in, the single flip-switch, and the single status
+      display. One concept, one control.</p>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,160 @@
+/* CandidateStrip-owned chrome: rows, drag feedback, weight bars, role badges. */
+@layer chrome-base, chrome;
+
+@layer chrome {
+  .candidate-strip {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-s);
+  }
+  .candidate-strip li {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-m);
+    background: var(--surface-2);
+    border: 1px solid var(--line-card);
+    border-radius: var(--radius-ctl);
+    padding: 6px;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease,
+      transform 0.15s ease,
+      opacity 0.15s ease;
+  }
+
+  /* drag feedback: the lifted row dims, the target glows */
+  .candidate-strip li.dragging {
+    opacity: 0.35;
+    transform: scale(0.97);
+    border-style: dashed;
+  }
+  .candidate-strip li.drop-target {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    animation: drop-pulse 1s ease-in-out infinite;
+  }
+  @keyframes drop-pulse {
+    0%,
+    100% {
+      box-shadow:
+        0 0 0 1px var(--accent),
+        0 0 10px color-mix(in srgb, var(--accent) 25%, transparent);
+    }
+    50% {
+      box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--accent) 80%, white),
+        0 0 18px color-mix(in srgb, var(--accent) 50%, transparent);
+    }
+  }
+
+  /* mono lock: pick mode turns each row into a target; the base row is marked */
+  .candidate-strip li.pickable {
+    border: 1px dashed var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+    cursor: pointer;
+  }
+  .candidate-strip li.is-base {
+    border-color: var(--line-active);
+  }
+
+  .drag-handle {
+    display: inline-flex;
+    align-items: center;
+    color: #565a66;
+    cursor: grab;
+    flex-shrink: 0;
+    margin-left: -2px;
+    margin-right: -4px;
+  }
+  .drag-handle:hover {
+    color: var(--ink-muted);
+  }
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+
+  .candidate-meta {
+    flex: 1;
+    min-width: 0;
+  }
+  .candidate-meta code {
+    display: block;
+    font-size: var(--fs-s);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .weight-bar {
+    height: 3px;
+    background: var(--line-card);
+    border-radius: 2px;
+    margin-top: 2px;
+  }
+  .weight-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+  .candidate-remove {
+    padding: 0 6px;
+    font-size: var(--fs-xs);
+    flex-shrink: 0;
+  }
+
+  /* the badge is the pin control: it states the engine's decision and opens
+     the role menu. Pinned = ⌖ + outline, visible at a glance. */
+  .badge {
+    height: auto;
+    align-items: center;
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    border-radius: var(--radius-pill);
+    background: #2c3040;
+    color: #aab2cc;
+    border: 1px solid transparent;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .badge-pinned {
+    border-color: currentColor;
+  }
+  .badge-pinned::before {
+    content: '⌖ ';
+  }
+  .badge-ctl::after {
+    content: ' ▾';
+    font-size: 18px;
+    opacity: 0.8;
+    line-height: 0.8;
+  }
+  .badge-primary { background: #2d4a75; color: #bcd6ff; }
+  .badge-accent { background: #4a3a75; color: #d6ccff; }
+  .badge-neutral { background: #3a3d45; color: #c8ccd6; }
+  .badge-danger { background: #6b2f34; color: #ffc2c5; }
+  .badge-success { background: #2c5237; color: #b8eec7; }
+  .badge-warning { background: #5f4c22; color: #ffe3a3; }
+  .badge-chart { background: #23484d; color: #a5e6ee; }
+  .badge-unused { background: #2a2c33; color: #7a7e8a; }
+
+  /* the base badge is a status, not a control — the padlock owns the lock.
+     Its colors are the base color itself, set inline (dynamic value). */
+  .badge-base {
+    font-weight: 700;
+    border-color: rgba(255, 255, 255, 0.3);
+    cursor: default;
+  }
+
+  .role-menu {
+    top: calc(100% + 4px);
+    right: 0;
+  }
+  .strip-empty {
+    color: var(--ink-faint);
+    font-size: var(--fs-m);
+  }
+}

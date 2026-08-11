@@ -1,0 +1,146 @@
+/* StartHero-owned chrome: the first-run input hero on the stage. */
+@layer chrome-base, chrome;
+
+@layer chrome-base {
+  /* The hero lives outside .controls, so it re-declares the control skin
+     for its own inputs and buttons at zero specificity. */
+  .start-hero :where(button, input) {
+    height: var(--ctl-h);
+    padding: 0 10px;
+    background: var(--surface-3);
+    border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-ctl);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--fs-m);
+  }
+  .start-hero :where(button) {
+    cursor: pointer;
+  }
+  .start-hero :where(button):hover {
+    background: var(--surface-4);
+  }
+}
+
+@layer chrome {
+  .start-hero {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 40px;
+  }
+  .start-hero h2 {
+    font-size: 22px;
+    font-weight: 650;
+    margin: 0 0 4px;
+  }
+  .hero-sub {
+    font-size: var(--fs-m);
+    color: var(--ink-muted);
+    margin: 0 0 28px;
+  }
+  .hero-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: stretch;
+    justify-content: center;
+    width: 100%;
+    max-width: 760px;
+  }
+  .hero-card {
+    flex: 1;
+    min-width: 200px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-card);
+    border-radius: var(--radius-card);
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .hero-card h3 {
+    margin: 0;
+    font-size: var(--fs-m);
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .hero-hint {
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+    line-height: 1.45;
+    margin: auto 0 0;
+  }
+
+  /* card 1: the picker swatch grows into a hero-sized button, the
+     text field + Add wrap onto their own row underneath */
+  .hero-color {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gap-s);
+  }
+  .hero-color > .picker-anchor {
+    width: 100%;
+  }
+  .hero-color > .picker-anchor .swatch-btn {
+    width: 100%;
+    height: 56px;
+    border-radius: var(--radius-card);
+  }
+  /* the popover opens beside the card, not over the field + Add row below */
+  .hero-color .picker-pop {
+    top: 0;
+    left: calc(100% + 8px);
+  }
+  .hero-color .hexfield {
+    flex: 1;
+    min-width: 0;
+  }
+  .hero-color input {
+    height: auto;
+    font-size: var(--fs-s);
+  }
+
+  /* card 2: the dropzone stretches to fill the card */
+  .hero-card .image-drop {
+    margin-top: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 96px;
+  }
+
+  /* card 3: preset palette cards */
+  .hero-presets {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .start-hero .preset-card {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    height: auto;
+    background: var(--surface-3);
+    border: 1px solid var(--line-card);
+    border-radius: 7px;
+    padding: 6px 9px;
+    font-size: var(--fs-s);
+    white-space: nowrap;
+    text-align: left;
+  }
+  .start-hero .preset-card:hover {
+    border-color: var(--line-active);
+    background: var(--surface-3);
+  }
+
+  .hero-foot {
+    margin-top: 28px;
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+  }
+}
