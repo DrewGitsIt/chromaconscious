@@ -1,0 +1,221 @@
+/* BrandBoard-owned styles. This is mockup-world, not chrome: every color is
+   a --bb-* variable set inline by the brand adapter, and dimensions are the
+   board's own print-like design — deliberately NOT the chrome tokens. */
+@layer chrome-base, chrome;
+
+@layer chrome {
+  .brand-board {
+    flex: 1;
+    background: var(--bb-paper);
+    color: var(--bb-ink);
+    padding: 40px 48px;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    overflow: auto;
+  }
+  .brand-board header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--bb-line);
+    padding-bottom: 16px;
+    margin-bottom: 28px;
+  }
+  .bb-wordmark {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 26px;
+    letter-spacing: -0.02em;
+  }
+  .bb-meta {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--bb-ink-subtle);
+  }
+  .bb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    max-width: 1080px;
+  }
+  .bb-card {
+    border: 1px solid var(--bb-line);
+    border-radius: 4px;
+    padding: 24px;
+    min-height: 180px;
+  }
+  .bb-card h3 {
+    margin: 0 0 14px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--bb-ink-subtle);
+  }
+  .bb-logo-primary,
+  .bb-logo-reversed {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .bb-logo-primary {
+    background: var(--bb-wash);
+  }
+  .bb-logo-reversed {
+    background: var(--bb-brand);
+    color: var(--bb-brand-ink);
+    border-color: var(--bb-brand);
+  }
+  .bb-mark {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: var(--bb-brand);
+    color: var(--bb-brand-ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Georgia, serif;
+    font-size: 30px;
+    flex-shrink: 0;
+  }
+  .bb-mark-reversed {
+    background: var(--bb-brand-ink);
+    color: var(--bb-brand);
+  }
+  .bb-mark-sm {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    font-size: 18px;
+  }
+  .bb-lockup {
+    font-family: Georgia, serif;
+    font-size: 24px;
+  }
+  .bb-sub {
+    font-size: 12px;
+    color: var(--bb-ink-subtle);
+  }
+  .bb-logo-reversed .bb-sub {
+    color: var(--bb-brand-ink);
+  }
+  .bb-glyph {
+    font-family: Georgia, serif;
+    font-size: 64px;
+    line-height: 1;
+    color: var(--bb-brand);
+  }
+  .bb-alphabet {
+    margin: 12px 0 8px;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+  .bb-type p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--bb-ink-subtle);
+    max-width: 42ch;
+  }
+  .bb-chips {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .bb-chip {
+    flex: 1;
+    min-width: 56px;
+  }
+  .bb-chip-fill {
+    height: 44px;
+    border-radius: 4px;
+    border: 1px solid var(--bb-line);
+  }
+  .bb-chip-name {
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .bb-chip-hex {
+    font-size: 10px;
+    font-family: ui-monospace, monospace;
+    color: var(--bb-ink-subtle);
+  }
+  .bb-ramp {
+    display: flex;
+    height: 20px;
+    margin-top: 14px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--bb-line);
+  }
+  .bb-ramp > div {
+    flex: 1;
+  }
+  .bb-prop-bar {
+    display: flex;
+    height: 44px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--bb-line);
+  }
+  .bb-prop-legend {
+    display: flex;
+    margin-top: 8px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--bb-ink-subtle);
+  }
+  .bb-prop-legend span:nth-child(1) { flex-basis: 60%; }
+  .bb-prop-legend span:nth-child(2) { flex-basis: 30%; }
+  .bb-prop-legend span:nth-child(3) { flex-basis: 10%; }
+  .bb-cards {
+    display: flex;
+    gap: 14px;
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .bb-bizcard {
+    flex: 1;
+    min-width: 150px;
+    aspect-ratio: 7 / 4;
+    border-radius: 6px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 2px;
+  }
+  .bb-bizcard-front {
+    background: var(--bb-brand);
+    color: var(--bb-brand-ink);
+  }
+  .bb-bizcard-front .bb-mark-sm {
+    margin-bottom: auto;
+  }
+  .bb-biz-name {
+    font-family: Georgia, serif;
+    font-size: 15px;
+  }
+  .bb-biz-role {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.85;
+  }
+  .bb-bizcard-back {
+    border: 1px solid var(--bb-line);
+    background: var(--bb-paper);
+  }
+  .bb-biz-rule {
+    width: 28px;
+    height: 3px;
+    background: var(--bb-accent);
+    margin-bottom: auto;
+  }
+  .bb-biz-line {
+    font-size: 11px;
+    color: var(--bb-ink-subtle);
+  }
+}

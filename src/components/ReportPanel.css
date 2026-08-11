@@ -1,0 +1,46 @@
+/* ReportPanel-owned chrome: the audit tables inside the report drawer. */
+@layer chrome-base, chrome;
+
+@layer chrome {
+  .report {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 760px;
+    padding: var(--pad-side);
+  }
+  .report h3 {
+    margin: 0 0 var(--gap-m);
+    font-size: var(--fs-m);
+    font-weight: 600;
+  }
+  .report table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--fs-m);
+  }
+  .report th,
+  .report td {
+    text-align: left;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--line-card);
+  }
+  .report th {
+    color: var(--ink-muted);
+    font-weight: 500;
+  }
+  .report tr.fail td {
+    color: var(--fail);
+  }
+  .report .sample {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: var(--radius-ctl);
+    border: 1px solid rgba(128, 128, 128, 0.3);
+  }
+  .report-note {
+    font-size: var(--fs-m);
+    color: var(--ink-muted);
+    margin: 0 0 var(--gap-m);
+  }
+}

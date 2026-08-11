@@ -1,0 +1,473 @@
+/* App-owned chrome: layout shell, frame rows, start card, fidelity dial,
+   status chip, export, stage + report drawer. */
+@layer chrome-base, chrome;
+
+@layer chrome {
+  .app {
+    display: flex;
+    min-height: 100vh;
+  }
+  .controls {
+    width: 320px;
+    flex-shrink: 0;
+    padding: var(--pad-side);
+    border-right: 1px solid var(--line-card);
+    overflow-y: auto;
+    max-height: 100vh;
+    position: sticky;
+    top: 0;
+  }
+  .controls h1 {
+    font-size: var(--fs-h1);
+    margin: 0;
+  }
+  .tagline {
+    color: var(--ink-muted);
+    font-size: var(--fs-m);
+    margin: 2px 0 var(--pad-side);
+  }
+  .controls section {
+    margin-bottom: var(--pad-side);
+  }
+  .divider {
+    border: 0;
+    border-top: 1px solid var(--line-card);
+    margin: var(--pad-side) calc(-1 * var(--pad-side));
+  }
+
+  /* frame rows: each frame owns its mockup, mode, copy, close */
+  .frame-row {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-s);
+    margin-bottom: var(--gap-s);
+  }
+  .frame-chip {
+    width: 44px;
+    flex-shrink: 0;
+    text-align: center;
+    padding: 0 4px;
+    white-space: nowrap;
+  }
+  .frame-chip.active {
+    background: var(--surface-active);
+    border-color: var(--line-active);
+  }
+  .frame-row .mockup-select {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--fs-s);
+  }
+
+  /* the sidebar before any colors exist: just the brand and a promise */
+  .controls-empty {
+    margin-top: 140px;
+    text-align: center;
+    font-size: var(--fs-s);
+    color: var(--ink-faint);
+    line-height: 1.6;
+  }
+
+  /* start over: the one door for everything that replaces the set */
+  .startover-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--gap-m);
+  }
+  .startover-btn {
+    background: transparent;
+    color: var(--ink-muted);
+    font-size: var(--fs-s);
+    white-space: nowrap;
+  }
+  .startover-preset {
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .startover-menu {
+    top: calc(100% + 4px);
+    left: 0;
+    width: 230px;
+  }
+  .startover-menu .menu-cap {
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+    line-height: 1.5;
+    padding: 7px 10px 4px;
+    border-top: 1px solid var(--line-card);
+    margin-top: 4px;
+  }
+  .startover-menu .preset-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  .preset-dots {
+    display: inline-flex;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .preset-dots i {
+    display: block;
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  /* the add-row: the additive verb, rendered as the strip's ghost last row */
+  .add-row {
+    display: flex;
+    gap: var(--gap-s);
+    margin-top: var(--gap-s);
+    border: 1px dashed var(--line-ctl);
+    border-radius: var(--radius-ctl);
+    padding: 4px;
+  }
+  .add-row .hexfield {
+    background: transparent;
+    border-color: transparent;
+  }
+  .add-row .hexfield:focus-within {
+    border-color: var(--line-active);
+  }
+  .hexfield {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-s);
+    flex: 1;
+    min-width: 0;
+    height: var(--ctl-h);
+    background: var(--surface-3);
+    border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-ctl);
+    padding: 0 6px;
+  }
+  .hexfield:focus-within {
+    border-color: var(--line-active);
+  }
+  .hexfield input {
+    flex: 1;
+    min-width: 0;
+    height: auto;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    padding: 0;
+    font-size: var(--fs-m);
+  }
+  /* candidate strip actions (the strip itself is CandidateStrip's):
+     mono padlock left, auto-assign ghost right */
+  .strip-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--gap-s);
+  }
+  .strip-actions .ghost {
+    margin-left: auto;
+  }
+  .lock-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .lock-btn.picking {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .lock-btn.locked {
+    border-color: var(--line-active);
+    background: var(--surface-4);
+  }
+  .lock-btn code {
+    font-size: var(--fs-s);
+  }
+  .lock-sw {
+    width: 15px;
+    height: 15px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+  }
+  .lock-sw.parked {
+    opacity: 0.4;
+  }
+  .lock-cap {
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+    margin: -2px 0 var(--gap-s) 2px;
+  }
+  .lock-cap.hint {
+    color: var(--accent);
+  }
+  .ghost {
+    height: auto;
+    /* background: transparent; */
+    border: 0;
+    color: #7a86b8;
+    font-size: var(--fs-xs);
+    padding: 0;
+    cursor: pointer;
+  }
+  .ghost:hover {
+    color: #a5b3e8;
+    text-decoration: underline;
+  }
+
+  /* fidelity: the promoted dial. Cool end = engine's judgment, warm = user's. */
+  .fid-labels {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: var(--fs-s);
+  }
+  .fid-left {
+    color: #8fa7dd;
+  }
+  .fid-right {
+    color: #cf9a66;
+  }
+  .chip {
+    font-size: var(--fs-xs);
+    background: var(--surface-4);
+    border-radius: var(--radius-ctl);
+    padding: 1px 6px;
+    color: var(--ink-muted);
+  }
+  .fid-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #5b7fc7, var(--line-card) 55%, #b8743a);
+    outline: none;
+    margin: 10px 0 2px;
+  }
+  .fid-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #c0caf5;
+    border: 2px solid var(--surface-1);
+    cursor: pointer;
+  }
+  .fid-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #c0caf5;
+    border: 2px solid var(--surface-1);
+    cursor: pointer;
+  }
+  .fid-caption {
+    font-size: var(--fs-s);
+    color: var(--ink-faint);
+    text-align: center;
+    margin-top: var(--gap-s);
+    min-height: 14px;
+  }
+
+  /* audit status chip — always visible; opens the report drawer */
+  .status-chip {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: var(--gap-m);
+    margin-top: 12px;
+    background: color-mix(in srgb, var(--ok) 8%, transparent);
+    border-color: color-mix(in srgb, var(--ok) 25%, transparent);
+    color: var(--ok);
+    font-size: var(--fs-s);
+    text-align: left;
+  }
+  .status-chip.warn {
+    background: color-mix(in srgb, var(--warn) 8%, transparent);
+    border-color: color-mix(in srgb, var(--warn) 30%, transparent);
+    color: var(--warn);
+  }
+  .status-more {
+    margin-left: auto;
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+
+  /* export split button */
+  .export-row {
+    position: relative;
+    display: flex;
+    gap: var(--gap-s);
+  }
+  .export-row .export-main {
+    flex: 1;
+    min-width: 0;
+  }
+  .export-menu {
+    bottom: calc(100% + 4px);
+    right: 0;
+  }
+  .export-msg {
+    margin-top: var(--gap-s);
+    font-size: var(--fs-s);
+    color: var(--ok);
+  }
+  .export-icon {
+    font-size: 18px;
+  }
+
+  /* stage — the canvas is mockup-only: no cards, borders, or chrome. */
+  .stage {
+    flex: 1;
+    padding: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .stage .preview-root {
+    flex: 1;
+  }
+  .split {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--line-card);
+  }
+  @media (max-width: 1200px) {
+    .split {
+      grid-template-columns: 1fr;
+    }
+  }
+  .split-pane {
+    min-width: 0;
+    background: var(--surface-1);
+    display: flex;
+    flex-direction: column;
+  }
+  .frame-indicator {
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-muted);
+    padding: 6px 12px;
+  }
+  .split-pane.active .frame-indicator {
+    color: #c0caf5;
+  }
+  .empty {
+    color: var(--ink-faint);
+    padding: 48px;
+    text-align: center;
+  }
+
+  /* the report slides over the canvas — audit next to the live mockup */
+  .report-drawer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(560px, 85%);
+    background: var(--surface-0);
+    border-left: 1px solid var(--line-ctl);
+    box-shadow: -16px 0 40px rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
+    z-index: 30;
+    animation: drawer-in 0.18s ease-out;
+  }
+  @keyframes drawer-in {
+    from {
+      transform: translateX(24px);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  .report-drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px var(--pad-side) 0;
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-muted);
+  }
+  .report-drawer-head button {
+    background: var(--surface-3);
+    border: 1px solid var(--line-ctl);
+    color: var(--ink);
+    border-radius: var(--radius-ctl);
+    height: 24px;
+    width: 24px;
+    font-size: var(--fs-s);
+    cursor: pointer;
+  }
+
+  /* window-wide image drop: destructiveness disclosed at the moment it matters */
+  .drop-overlay {
+    position: fixed;
+    inset: 12px;
+    z-index: 60;
+    border: 2px dashed var(--accent);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--surface-0) 88%, transparent);
+    backdrop-filter: blur(2px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .drop-overlay b {
+    font-size: 16px;
+    color: #cdd6f4;
+  }
+  .drop-overlay span {
+    font-size: var(--fs-s);
+    color: var(--ink-muted);
+  }
+  .drop-overlay .overlay-warn {
+    color: var(--warn);
+  }
+
+  /* the undo toast: every start-over is forgivable for a moment */
+  .toast {
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 70;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-card);
+    padding: 9px 14px;
+    font-size: var(--fs-m);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+  }
+  .toast-undo {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    color: var(--accent);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .toast-undo:hover {
+    text-decoration: underline;
+  }
+}

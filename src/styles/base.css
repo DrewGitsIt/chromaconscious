@@ -1,0 +1,80 @@
+/* Chrome cascade layers. Every chrome stylesheet declares this same order
+   line first, so import order can never change layer priority:
+   defaults live in `chrome-base`, component rules in `chrome`, and the
+   component layer ALWAYS wins — no specificity contests, ever.
+   (Named chrome-* to stay clear of Tailwind's base/components layers,
+   which the mockup world in index.css owns.) */
+@layer chrome-base, chrome;
+
+@layer chrome-base {
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    background: var(--surface-1);
+    color: var(--ink);
+  }
+
+  /* The chrome's control skin: one height, one surface, one edge.
+     :where() keeps specificity at zero so any component rule overrides. */
+  .controls :where(button, select, input:not([type='range'])) {
+    height: var(--ctl-h);
+    padding: 0 10px;
+    background: var(--surface-3);
+    border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-ctl);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--fs-m);
+  }
+  .controls :where(select, input:not([type='range'])) {
+    padding: 0 8px;
+  }
+  .controls :where(button) {
+    cursor: pointer;
+  }
+  .controls :where(button):hover {
+    background: var(--surface-4);
+  }
+  .controls :where(button):disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  /* shared primitives */
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--ctl-h);
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .menu {
+    position: absolute;
+    z-index: 40;
+    background: var(--surface-2);
+    border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-card);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    padding: 4px;
+    min-width: 150px;
+  }
+  .menu .item {
+    display: block;
+    width: 100%;
+    height: auto;
+    text-align: left;
+    padding: 6px 10px;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    border: 0;
+    font-size: var(--fs-m);
+  }
+  .menu .item:hover,
+  .menu .item.sel {
+    background: var(--surface-4);
+  }
+}

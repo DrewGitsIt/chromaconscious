@@ -1,0 +1,476 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>themesmith — input UX mockup</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 28px;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    background: #101116;
+    color: #e6e7ea;
+  }
+  h2 { font-size: 13px; margin: 0 0 4px; }
+  .case { margin-bottom: 44px; }
+  .case > p { font-size: 11.5px; color: #9a9daa; margin: 0 0 14px; max-width: 760px; line-height: 1.5; }
+  .duo { display: flex; gap: 20px; align-items: flex-start; }
+
+  .panel {
+    width: 300px;
+    flex-shrink: 0;
+    background: #17181c;
+    border: 1px solid #2a2c33;
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .stage {
+    flex-shrink: 0;
+    background: #101116;
+    border: 1px solid #2a2c33;
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* chrome bits */
+  .brand { font-size: 17px; font-weight: 700; margin: 0; }
+  .tagline { font-size: 10.5px; color: #6a6e7a; margin: 2px 0 12px; }
+  .inp, .sel, .btn {
+    background: #1f2127; border: 1px solid #33363f; color: #e6e7ea;
+    border-radius: 6px; padding: 6px 8px; font-size: 12px;
+  }
+  .btn { padding: 6px 10px; cursor: pointer; white-space: nowrap; }
+  .row { display: flex; gap: 6px; align-items: center; }
+  .row + .row { margin-top: 8px; }
+  .grow { flex: 1; min-width: 0; }
+  .muted { color: #9a9daa; }
+  .faint { color: #6a6e7a; }
+  .divider { border: 0; border-top: 1px solid #2a2c33; margin: 14px -16px; }
+  .chip { font-size: 10px; background: #24262d; border-radius: 4px; padding: 1px 6px; color: #9a9daa; }
+  .framechip { font-size: 11px; background: #2c3040; border: 1px solid #3a3f52; border-radius: 6px; padding: 4px 8px; }
+  .iconbtn { background: #1f2127; border: 1px solid #33363f; border-radius: 6px; padding: 4px 7px; font-size: 11px; color: #9a9daa; }
+
+  /* candidate strip */
+  .strip { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .strip li {
+    display: flex; align-items: center; gap: 8px;
+    background: #1c1e24; border: 1px solid #2a2c33; border-radius: 6px; padding: 6px;
+  }
+  .grip { color: #565a66; font-size: 13px; flex-shrink: 0; cursor: grab; }
+  .sw { width: 24px; height: 24px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
+  .meta { flex: 1; min-width: 0; }
+  .meta code { display: block; font-size: 11px; font-family: ui-monospace, monospace; }
+  .wbar { height: 3px; background: #2a2c33; border-radius: 2px; margin-top: 3px; }
+  .wfill { height: 100%; background: #7aa2f7; border-radius: 2px; }
+  .badge {
+    font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 2px 6px; border-radius: 99px; background: #2c3040; color: #aab2cc; flex-shrink: 0;
+  }
+  .badge::after { content: ' ▾'; opacity: 0.6; font-size: 8px; }
+  .b-primary { background: #2d4a75; color: #bcd6ff; }
+  .b-accent  { background: #4a3a75; color: #d6ccff; }
+  .b-danger  { background: #5c2b33; color: #ffb3bd; }
+  .b-neutral { background: #33363f; color: #b9bdc9; }
+  .b-chart   { background: #2b4a44; color: #a9e6d3; }
+  .x { color: #6a6e7a; font-size: 10px; padding: 0 4px; }
+  .lockrow { display: flex; align-items: center; margin-bottom: 8px; }
+  .lock-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: #1f2127; border: 1px solid #33363f; color: #9a9daa;
+    border-radius: 6px; padding: 5px 9px; font-size: 11px;
+  }
+
+  /* NEW: the add-color row that lives at the foot of the strip */
+  .add-row {
+    display: flex; align-items: center; gap: 6px;
+    border: 1px dashed #383c47; border-radius: 6px; padding: 5px 6px;
+    background: transparent;
+  }
+  .add-row .sw { width: 20px; height: 20px; cursor: pointer; }
+  .add-row input {
+    flex: 1; min-width: 0; background: transparent; border: 0; outline: none;
+    color: #e6e7ea; font-size: 11.5px;
+  }
+  .add-row input::placeholder { color: #565a66; }
+  .add-row .btn { padding: 4px 9px; font-size: 11px; }
+
+  /* NEW: the start-over control */
+  .startover {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: transparent; border: 1px solid #2f323b; color: #8a8ea0;
+    border-radius: 6px; padding: 4px 9px; font-size: 11px; cursor: pointer;
+  }
+  .startover::after { content: '▾'; opacity: 0.55; font-size: 9px; }
+  .menu {
+    margin-top: 6px; width: 218px;
+    background: #1c1e24; border: 1px solid #33363f; border-radius: 8px;
+    padding: 5px; box-shadow: 0 10px 28px rgba(0,0,0,0.5);
+  }
+  .menu .item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 8px; border-radius: 5px; font-size: 12px; cursor: pointer; color: #d4d6de;
+    white-space: nowrap;
+  }
+  .menu .item:hover { background: #262933; }
+  .menu .item .k { width: 16px; text-align: center; color: #8a8ea0; flex-shrink: 0; }
+  .menu .cap {
+    font-size: 10px; color: #6a6e7a; padding: 7px 8px 4px; border-top: 1px solid #2a2c33; margin-top: 4px;
+  }
+  .menu .sub { font-size: 10px; color: #6a6e7a; margin-left: auto; }
+
+  /* preset cards (hero + submenu) */
+  .preset-card {
+    display: flex; align-items: center; gap: 9px;
+    background: #1c1e24; border: 1px solid #2a2c33; border-radius: 7px;
+    padding: 7px 9px; cursor: pointer; font-size: 11px; white-space: nowrap;
+  }
+  .preset-card:hover { border-color: #3d4150; }
+  .dots { display: flex; gap: 3px; flex-shrink: 0; }
+  .dots i { width: 13px; height: 13px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.12); }
+
+  /* hero */
+  .hero {
+    width: 710px; min-height: 430px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 34px;
+  }
+  .hero h3 { font-size: 19px; font-weight: 650; margin: 0 0 4px; }
+  .hero .sub { font-size: 12px; color: #8a8ea0; margin: 0 0 26px; }
+  .hero-cards { display: flex; gap: 14px; align-items: stretch; width: 100%; }
+  .hcard {
+    flex: 1; background: #16181d; border: 1px solid #2a2c33; border-radius: 10px;
+    padding: 16px 14px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .hcard h4 { margin: 0; font-size: 12px; font-weight: 600; color: #c8cbd6; }
+  .hcard .hint { font-size: 10px; color: #6a6e7a; line-height: 1.45; margin-top: auto; }
+  .hc-drop {
+    border: 1px dashed #3a3e4a; border-radius: 8px; flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; color: #8a8ea0; font-size: 11.5px; padding: 18px 8px; min-height: 96px;
+  }
+  .hc-drop .fmt { font-size: 9.5px; color: #565a66; }
+  .hero-presets { display: flex; flex-direction: column; gap: 6px; }
+  .hero-presets .preset-card { padding: 6px 8px; }
+  .bigswatch {
+    height: 56px; border-radius: 8px; background: #7aa2f7;
+    border: 1px solid rgba(255,255,255,0.18); cursor: pointer;
+    display: flex; align-items: flex-end; justify-content: flex-end; padding: 6px;
+  }
+  .bigswatch span { font-size: 9px; background: rgba(0,0,0,0.35); border-radius: 4px; padding: 1px 5px; color: #fff; }
+  .hero-foot { margin-top: 26px; font-size: 10.5px; color: #565a66; }
+
+  /* working-state stage sketch */
+  .sketch { width: 430px; height: 300px; display: flex; font-size: 9px; }
+  .sk-side { width: 92px; background: var(--card); border-right: 1px solid var(--line); padding: 10px 9px; color: var(--txt); }
+  .sk-side .it { height: 7px; border-radius: 2px; background: var(--mut); opacity: 0.55; margin-bottom: 8px; }
+  .sk-side .it.on { background: var(--pri); opacity: 1; }
+  .sk-main { flex: 1; background: var(--bg); color: var(--txt); padding: 12px 14px; }
+  .sk-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .sk-h b { font-size: 10.5px; }
+  .sk-btn { background: var(--pri); color: var(--prifg); border-radius: 4px; padding: 3px 8px; font-size: 8.5px; }
+  .cards3 { display: flex; gap: 8px; margin-bottom: 10px; }
+  .kcard { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 7px 8px; }
+  .kcard .l { font-size: 7.5px; opacity: 0.6; }
+  .kcard .v { font-size: 12px; font-weight: 700; margin-top: 2px; }
+  .bars { display: flex; align-items: flex-end; gap: 5px; height: 74px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+  .bars i { flex: 1; border-radius: 2px 2px 0 0; }
+
+  /* drop overlay */
+  .overlay {
+    position: absolute; inset: 10px; border: 2px dashed #7aa2f7; border-radius: 10px;
+    background: rgba(13, 15, 22, 0.88); backdrop-filter: blur(2px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  }
+  .overlay b { font-size: 15px; color: #cdd6f4; }
+  .overlay span { font-size: 11px; color: #8a8ea0; }
+  .overlay .warn { color: #f4d79a; }
+
+  /* toast */
+  .toast {
+    position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+    background: #1c1e24; border: 1px solid #33363f; border-radius: 8px;
+    padding: 8px 12px; font-size: 11.5px; display: flex; gap: 12px; align-items: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5); white-space: nowrap;
+  }
+  .toast .undo { color: #7aa2f7; cursor: pointer; font-weight: 600; }
+
+  .note { max-width: 780px; font-size: 11.5px; color: #9a9daa; line-height: 1.6; }
+  .note b { color: #d4d6de; }
+  .note li { margin-bottom: 9px; }
+  .tag { display: inline-block; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; background: #2c3040; color: #aab2cc; border-radius: 4px; padding: 2px 6px; margin-right: 6px; vertical-align: 1px; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ STATE 1 -->
+<div class="case">
+  <h2><span class="tag">1</span>First run — the stage is the invitation</h2>
+  <p>
+    No candidates → no theme to preview → the stage hosts the input methods, large and
+    undistracted. The sidebar keeps only the brand; every control it would show is
+    meaningless without colors anyway. The moment a first color/preset/image lands,
+    the hero yields to the working layout (state 2). Presets become visible palette
+    cards instead of a blind dropdown — they finally get to demo themselves.
+  </p>
+  <div class="duo">
+    <div class="panel" style="min-height:430px;">
+      <p class="brand">themesmith</p>
+      <p class="tagline">any colors in, working theme out</p>
+      <hr class="divider" />
+      <p class="faint" style="font-size:11px; margin-top: 150px; text-align:center;">
+        controls appear once<br/>you have colors
+      </p>
+    </div>
+    <div class="stage hero">
+      <h3>Start with anything</h3>
+      <p class="sub">a single color, a photo, or a ready-made palette</p>
+      <div class="hero-cards">
+        <div class="hcard">
+          <h4>Pick a color</h4>
+          <div class="bigswatch"><span>#7aa2f7</span></div>
+          <div class="row">
+            <input class="inp grow" placeholder="or type — #e63946, oklch(…)" style="font-size:11px;" />
+            <button class="btn" style="font-size:11px;">Add</button>
+          </div>
+          <div class="hint">themesmith forges a full theme from even one color</div>
+        </div>
+        <div class="hcard">
+          <h4>Drop an image</h4>
+          <div class="hc-drop">
+            <div>drop here (or click)</div>
+            <div class="fmt">png · jpg · webp · avif · gif · bmp · svg · heic</div>
+          </div>
+          <div class="hint">pulls the strongest colors out of a photo, logo, or screenshot</div>
+        </div>
+        <div class="hcard">
+          <h4>Start from a preset</h4>
+          <div class="hero-presets">
+            <div class="preset-card"><span class="dots"><i style="background:#e63946"></i><i style="background:#f1faee"></i><i style="background:#a8dadc"></i><i style="background:#457b9d"></i><i style="background:#1d3557"></i></span>Coastal starter</div>
+            <div class="preset-card"><span class="dots"><i style="background:#0f172a"></i><i style="background:#38bdf8"></i></span>Ink &amp; sky</div>
+            <div class="preset-card"><span class="dots"><i style="background:#f72585"></i><i style="background:#7209b7"></i><i style="background:#3a0ca3"></i><i style="background:#4361ee"></i><i style="background:#4cc9f0"></i></span>Neon arcade</div>
+            <div class="preset-card"><span class="dots"><i style="background:#1a1a1a"></i><i style="background:#4d4d4d"></i><i style="background:#9a9a9a"></i><i style="background:#e8e8e8"></i><i style="background:#ff5c1f"></i></span>Mono + ember</div>
+            <div class="preset-card" style="justify-content:center; color:#6a6e7a;">3 more…</div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-foot">tip: you can drop an image anywhere in the window, any time</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ STATE 2 -->
+<div class="case">
+  <h2><span class="tag">2</span>Working state — add lives in the strip, start-over lives at the top</h2>
+  <p>
+    The additive verb (<b style="color:#d4d6de">add a color</b>) becomes the last row of the
+    candidate strip — it visually reads as “grow this list”. The destructive verbs
+    (image / preset / clear) collapse into one small <b style="color:#d4d6de">start over</b>
+    door next to the frame controls, at session level, far from the strip. The old
+    always-visible input block is gone entirely.
+  </p>
+  <div class="duo">
+    <div class="panel">
+      <p class="brand">themesmith</p>
+      <p class="tagline">any colors in, working theme out</p>
+      <div class="row">
+        <span class="framechip">● A</span>
+        <select class="sel grow"><option>App dashboard</option></select>
+        <span class="iconbtn">☾</span>
+        <span class="iconbtn">⧉</span>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="startover">↻ start over</button>
+        <span class="faint" style="font-size:10px;">Coastal starter</span>
+      </div>
+      <hr class="divider" />
+      <div class="lockrow"><span class="lock-btn">🔓</span></div>
+      <ul class="strip">
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#e63946"></span><div class="meta"><code>#e63946</code><div class="wbar"><div class="wfill" style="width:100%"></div></div></div><span class="badge b-primary">primary</span><span class="x">✕</span></li>
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#f1faee"></span><div class="meta"><code>#f1faee</code><div class="wbar"><div class="wfill" style="width:85%"></div></div></div><span class="badge b-neutral">neutral</span><span class="x">✕</span></li>
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#a8dadc"></span><div class="meta"><code>#a8dadc</code><div class="wbar"><div class="wfill" style="width:70%"></div></div></div><span class="badge b-accent">accent</span><span class="x">✕</span></li>
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#457b9d"></span><div class="meta"><code>#457b9d</code><div class="wbar"><div class="wfill" style="width:55%"></div></div></div><span class="badge b-chart">chart</span><span class="x">✕</span></li>
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#1d3557"></span><div class="meta"><code>#1d3557</code><div class="wbar"><div class="wfill" style="width:40%"></div></div></div><span class="badge b-chart">chart</span><span class="x">✕</span></li>
+        <li style="border:0; background:transparent; padding:0;">
+          <div class="add-row grow">
+            <span class="sw" style="background:#7aa2f7"></span>
+            <input placeholder="add a color — #e63946, oklch(…)" />
+            <button class="btn">Add</button>
+          </div>
+        </li>
+      </ul>
+      <hr class="divider" />
+      <div class="row" style="justify-content:space-between; font-size:11px;">
+        <span style="color:#7a9cd4">smith's taste</span><span class="chip">0.50</span><span style="color:#c9955c">raw colors</span>
+      </div>
+      <div style="height:6px; border-radius:3px; background:linear-gradient(90deg,#5b7fc7,#2a2c33 55%,#b8743a); margin:8px 0 6px; position:relative;"><div style="position:absolute; left:48%; top:-5px; width:16px; height:16px; border-radius:50%; background:#c0caf5; border:2px solid #17181c;"></div></div>
+      <div class="faint" style="font-size:10.5px; text-align:center;">gently tuning your colors · avg shift ΔE 0.03</div>
+    </div>
+    <div class="stage" style="--bg:#fdf6f4; --card:#ffffff; --line:#eadfdb; --txt:#27201e; --mut:#b9a7a1; --pri:#c22e3a; --prifg:#fff;">
+      <div class="sketch">
+        <div class="sk-side">
+          <div style="font-weight:700; font-size:9.5px; margin-bottom:10px;">Acme</div>
+          <div class="it on" style="width:80%"></div><div class="it" style="width:65%"></div><div class="it" style="width:72%"></div><div class="it" style="width:58%"></div>
+        </div>
+        <div class="sk-main">
+          <div class="sk-h"><b>Overview</b><span class="sk-btn">New project</span></div>
+          <div class="cards3">
+            <div class="kcard"><div class="l">REVENUE</div><div class="v">$48.2k</div></div>
+            <div class="kcard"><div class="l">USERS</div><div class="v">1,208</div></div>
+            <div class="kcard"><div class="l">CHURN</div><div class="v">2.1%</div></div>
+          </div>
+          <div class="bars">
+            <i style="height:55%; background:#c22e3a"></i><i style="height:70%; background:#457b9d"></i><i style="height:45%; background:#1d3557"></i><i style="height:82%; background:#a8dadc"></i><i style="height:60%; background:#c22e3a"></i><i style="height:38%; background:#457b9d"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ STATE 3 -->
+<div class="case">
+  <h2><span class="tag">3</span>“Start over” open — the destructive verbs, named for what they do</h2>
+  <p>
+    One menu holds everything that replaces the set. “Clear” becomes “start empty” —
+    same action, honest name, no longer a loose button waiting to be misclicked.
+    The caption states the contract once, for all three.
+  </p>
+  <div class="duo">
+    <div class="panel">
+      <p class="brand">themesmith</p>
+      <p class="tagline">any colors in, working theme out</p>
+      <div class="row">
+        <span class="framechip">● A</span>
+        <select class="sel grow"><option>App dashboard</option></select>
+        <span class="iconbtn">☾</span>
+        <span class="iconbtn">⧉</span>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="startover" style="border-color:#7aa2f7; color:#aebff0;">↻ start over</button>
+      </div>
+      <div class="menu">
+        <div class="item"><span class="k">🖼</span> from an image… <span class="sub">drop or browse</span></div>
+        <div class="item"><span class="k">▤</span> from a preset <span class="sub">7 palettes ›</span></div>
+        <div class="item"><span class="k">∅</span> start empty</div>
+        <div class="cap">each of these replaces your current 5 colors — undo is one click</div>
+      </div>
+      <hr class="divider" />
+      <ul class="strip" style="opacity:0.45;">
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#e63946"></span><div class="meta"><code>#e63946</code></div><span class="badge b-primary">primary</span></li>
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#f1faee"></span><div class="meta"><code>#f1faee</code></div><span class="badge b-neutral">neutral</span></li>
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#a8dadc"></span><div class="meta"><code>#a8dadc</code></div><span class="badge b-accent">accent</span></li>
+      </ul>
+    </div>
+    <div class="panel" style="width:300px; background:transparent; border:0;">
+      <p class="faint" style="font-size:11px; line-height:1.6;">
+        hovering <b style="color:#d4d6de;">from a preset</b> slides the palette cards out
+        as a submenu — the same cards the first-run hero shows:
+      </p>
+      <div class="menu" style="width:230px;">
+        <div class="item"><span class="dots"><i style="background:#e63946"></i><i style="background:#f1faee"></i><i style="background:#a8dadc"></i><i style="background:#457b9d"></i><i style="background:#1d3557"></i></span> Coastal starter</div>
+        <div class="item"><span class="dots"><i style="background:#0f172a"></i><i style="background:#38bdf8"></i></span> Ink &amp; sky</div>
+        <div class="item"><span class="dots"><i style="background:#ffadad"></i><i style="background:#ffd6a5"></i><i style="background:#fdffb6"></i><i style="background:#caffbf"></i><i style="background:#9bf6ff"></i></span> Pastel picnic</div>
+        <div class="item"><span class="dots"><i style="background:#f72585"></i><i style="background:#7209b7"></i><i style="background:#3a0ca3"></i><i style="background:#4361ee"></i><i style="background:#4cc9f0"></i></span> Neon arcade</div>
+        <div class="item"><span class="dots"><i style="background:#1a1a1a"></i><i style="background:#4d4d4d"></i><i style="background:#9a9a9a"></i><i style="background:#e8e8e8"></i><i style="background:#ff5c1f"></i></span> Mono + ember</div>
+        <div class="item"><span class="dots"><i style="background:#606c38"></i><i style="background:#283618"></i><i style="background:#fefae0"></i><i style="background:#dda15e"></i><i style="background:#bc6c25"></i></span> Terracotta</div>
+        <div class="item"><span class="dots"><i style="background:#0a2540"></i><i style="background:#1f6feb"></i><i style="background:#66a3ff"></i><i style="background:#f5f7fa"></i><i style="background:#d0d7de"></i></span> Corporate blue</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ STATE 4 -->
+<div class="case">
+  <h2><span class="tag">4</span>Drag an image over a working session — destructiveness disclosed at the moment it matters</h2>
+  <p>
+    Drop targets the whole window, always. With an existing set, the overlay says
+    plainly that this starts over — the user learns the contract exactly when it’s
+    about to apply, not from documentation. (With an empty set the overlay just says
+    “drop to extract colors”.)
+  </p>
+  <div class="duo">
+    <div class="stage" style="width:640px; height:300px; --bg:#fdf6f4; --card:#ffffff; --line:#eadfdb; --txt:#27201e; --mut:#b9a7a1; --pri:#c22e3a; --prifg:#fff;">
+      <div class="sketch" style="width:100%; height:100%; filter: saturate(0.6) brightness(0.75);">
+        <div class="sk-side">
+          <div style="font-weight:700; font-size:9.5px; margin-bottom:10px;">Acme</div>
+          <div class="it on" style="width:80%"></div><div class="it" style="width:65%"></div><div class="it" style="width:72%"></div>
+        </div>
+        <div class="sk-main">
+          <div class="sk-h"><b>Overview</b><span class="sk-btn">New project</span></div>
+          <div class="cards3">
+            <div class="kcard"><div class="l">REVENUE</div><div class="v">$48.2k</div></div>
+            <div class="kcard"><div class="l">USERS</div><div class="v">1,208</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="overlay">
+        <b>drop to start over from this image</b>
+        <span class="warn">replaces your current 5 colors</span>
+        <span>you can undo right after</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ STATE 5 -->
+<div class="case">
+  <h2><span class="tag">5</span>After any start-over — one undo, offered once</h2>
+  <p>
+    A toast makes every destructive verb reversible for a moment. This is the safety
+    valve that lets image/preset stay one-click (no confirmation dialogs anywhere).
+  </p>
+  <div class="duo">
+    <div class="stage" style="width:640px; height:220px; --bg:#f2f6f2; --card:#ffffff; --line:#dde7dd; --txt:#1e2a1e; --mut:#a8bfa8; --pri:#3e7d4f; --prifg:#fff;">
+      <div class="sketch" style="width:100%; height:100%;">
+        <div class="sk-side">
+          <div style="font-weight:700; font-size:9.5px; margin-bottom:10px;">Acme</div>
+          <div class="it on" style="width:80%"></div><div class="it" style="width:65%"></div><div class="it" style="width:72%"></div>
+        </div>
+        <div class="sk-main">
+          <div class="sk-h"><b>Overview</b><span class="sk-btn">New project</span></div>
+          <div class="cards3">
+            <div class="kcard"><div class="l">REVENUE</div><div class="v">$48.2k</div></div>
+            <div class="kcard"><div class="l">USERS</div><div class="v">1,208</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="toast">started over from <b>IMG_0421.heic</b> · 6 colors extracted <span class="undo">undo</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ NOTES -->
+<div class="case">
+  <h2>Design notes &amp; open questions</h2>
+  <ol class="note">
+    <li><b>The organizing principle: verbs live where they act.</b> “Add a color”
+      grows the candidate list → it renders <i>inside</i> the list, as its last row.
+      “Start over” replaces the session’s colors → it sits at session level, next to
+      the frame controls, physically far from the strip. The additive/destructive
+      distinction you named becomes spatial instead of being flattened into one box.</li>
+    <li><b>The hero breaks the “canvas is mockup-only” rule — deliberately and
+      temporarily.</b> When there are zero candidates there is no mockup to show; the
+      hero occupies the void and self-destructs on first input. No control lives in
+      the canvas while a theme exists.</li>
+    <li><b>Open question — should the app still boot with Coastal starter?</b> Today it
+      does, so no user ever sees the empty state unless they hit Clear. Your
+      “foot in the door” idea argues for booting empty into the hero: the first thing
+      a user does is <i>their</i> choice, which teaches all three doors at once. The
+      preset cards in the hero keep the show-something-instantly value. I lean
+      boot-empty, but it changes first impressions and is worth deciding explicitly.</li>
+    <li><b>No confirmation dialogs.</b> Destructive verbs stay one-click; the drag
+      overlay discloses before, the undo toast forgives after. Cheaper than a modal
+      and doesn’t punish the 95% case where starting over is exactly what you meant.</li>
+    <li><b>“Clear” disappears as a word.</b> It becomes “start empty” inside the
+      start-over menu — the only truly rare verb, now priced accordingly.</li>
+    <li><b>Alternative considered: keep the add-color field above the strip</b> (like
+      today, minus dropzone and preset dropdown). Less novel, but the field then reads
+      as a peer of the padlock rather than part of the collection. I prefer the
+      in-strip row; easy to flip if it feels cramped with many candidates.</li>
+  </ol>
+</div>
+
+</body>
+</html>

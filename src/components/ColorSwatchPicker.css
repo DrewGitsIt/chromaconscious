@@ -1,0 +1,75 @@
+/* ColorSwatchPicker-owned chrome: the swatch button and its picker popover.
+   Swatch dimensions live HERE (via variant classes), not in TSX props —
+   one lever per property. */
+@layer chrome-base, chrome;
+
+@layer chrome {
+  .picker-anchor {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+  .swatch-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    cursor: pointer;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-ctl);
+  }
+  /* compact variant: sits inside a field (hexfield) */
+  .swatch-btn--sm {
+    width: 20px;
+    height: 20px;
+  }
+  /* hover affordance: swatches are editable (they open the picker) */
+  .swatch-btn:hover::after {
+    content: '✎';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--fs-m);
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: calc(var(--radius-ctl) - 1px);
+  }
+
+  .picker-pop {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 40;
+    background: var(--surface-2);
+    border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-card);
+    padding: var(--pad-card);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-m);
+  }
+  .picker-pop .react-colorful {
+    width: 184px;
+    height: 150px;
+  }
+  .picker-pop-row {
+    display: flex;
+    gap: var(--gap-s);
+  }
+  .picker-pop-row input {
+    flex: 1;
+    width: 0;
+    min-width: 0;
+    font-family: ui-monospace, monospace;
+  }
+  .eyedrop-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+}

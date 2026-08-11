@@ -1,0 +1,46 @@
+/* Design tokens for the playground chrome. Every visual decision the chrome
+   makes pulls one of these levers — tweak here, not in component files.
+   (The mockups are themed by the engine's generated variables, not these.) */
+:root {
+  /* surfaces, dark → light */
+  --surface-0: #14151a; /* report drawer */
+  --surface-1: #17181c; /* app background, sidebar */
+  --surface-2: #1c1e24; /* cards: start card, candidate rows, popovers */
+  --surface-3: #1f2127; /* controls at rest */
+  --surface-4: #262932; /* control hover, value chips */
+  --surface-active: #3b4252;
+
+  /* borders */
+  --line-card: #2a2c33; /* containers and dividers */
+  --line-ctl: #33363f; /* control edges */
+  --line-active: #4c566a; /* selected / focused */
+
+  /* ink */
+  --ink: #e6e7ea;
+  --ink-muted: #9a9daa;
+  --ink-faint: #6a6e7a;
+
+  /* accents */
+  --accent: #7aa2f7;
+  --ok: #9ece6a;
+  --warn: #e0af68;
+  --fail: #ff8a8a;
+
+  /* dimensions */
+  --ctl-h: 32px; /* every standard control */
+  --radius-ctl: 6px; /* controls, small cards */
+  --radius-card: 10px; /* containers, popovers */
+  --radius-pill: 999px;
+
+  /* type scale */
+  --fs-xs: 10px; /* badges, chips, fine print */
+  --fs-s: 11px; /* captions, hex codes, dense controls */
+  --fs-m: 12px; /* default control text */
+  --fs-h1: 20px;
+
+  /* rhythm */
+  --gap-s: 6px;
+  --gap-m: 8px;
+  --pad-card: 10px;
+  --pad-side: 16px; /* sidebar padding + section rhythm */
+}
