@@ -1,6 +1,7 @@
+import { useMemo } from 'react'
 import type { CSSProperties } from 'react'
 import type { ThemeResult } from '../engine'
-import { resolveBrand } from '../engine'
+import { brandAncestry, locateMuted, locateTokens, resolveBrand } from '../engine'
 import './BrandBoard.css'
 
 interface Props {
@@ -8,6 +9,8 @@ interface Props {
   mode: 'light' | 'dark'
   /** Unused here (no portaled ids), part of the shared mockup contract. */
   uid: string
+  /** Locate mode: candidate whose descendants stay lit; null = normal render. */
+  locateIndex?: number | null
 }
 
 /**
@@ -16,9 +19,23 @@ interface Props {
  * adapter's paper/ink vocabulary — not shadcn tokens — because a brand sheet
  * has figure and ground, not surface stacks. Everything inside is mockup.
  */
-export function BrandBoard({ result, mode }: Props) {
-  const b = resolveBrand(result, mode)
-  const ramp = result[mode].ramps.primary
+export function BrandBoard({ result, mode, locateIndex = null }: Props) {
+  // Locate mode reuses the app mockup's ancestry logic through the brand
+  // adapter's own name → role mapping: non-descendant colors go muted.
+  const b = useMemo(() => {
+    const resolved = resolveBrand(result, mode)
+    return locateIndex == null
+      ? resolved
+      : locateTokens(resolved, brandAncestry(result), locateIndex, resolved.paper)
+  }, [result, mode, locateIndex])
+  // The ramp strip renders raw primary-ramp steps, so it mutes as a unit
+  // whenever the hovered candidate isn't the primary's ancestor.
+  const primaryIndex = result.assignments.find((a) => a.role === 'primary')?.candidateIndex ?? null
+  const rawRamp = result[mode].ramps.primary
+  const ramp =
+    locateIndex == null || locateIndex === primaryIndex
+      ? rawRamp
+      : rawRamp.map((hex) => locateMuted(hex, b.paper))
   const vars = {
     '--bb-paper': b.paper,
     '--bb-ink': b.ink,

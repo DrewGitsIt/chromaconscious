@@ -1,31 +1,33 @@
-import type { ColorCandidate, GenerateOptions, Oklch, Role, ThemeResult } from './types'
+import type { ColorCandidate, GenerateOptions, JudgeInput, Oklch, Role, ThemeResult } from './types'
 import { deltaEok, lerp, parseColor } from './color'
+import type { AssignmentResult } from './roles'
 import { assignRoles, chartAdjust } from './roles'
+import { judgePalette } from './judge'
+import { subSeed } from './random'
 import type { RepairEdge, RepairNode } from './repair'
 import { repairSeeds } from './repair'
 import { buildMode } from './tokens'
 import { emitCss } from './css'
 
 export * from './types'
+export { assignRoles, CHART_CHROMA_GATE } from './roles'
+export { JUDGE_WEIGHTS, judgePalette } from './judge'
+export { jobsSummary, pinConsequence, whyLines } from './explain'
 export { parseColor, toHex } from './color'
 export { extractCandidates } from './extract'
 export { apcaLc, wcagRatio } from './contrast'
 export { themeTailwind, themeTokensJson } from './css'
-export { resolveBrand } from './adapters'
+export { brandAncestry, resolveBrand } from './adapters'
 export type { BrandColorName } from './adapters'
+export { tokenAncestry } from './tokens'
+export { locateMuted, locateTokens } from './locate'
 
 /** Build candidates from a manual, ordered list of color strings. */
 export function candidatesFromList(inputs: string[]): ColorCandidate[] {
-  const parsed = inputs
+  return inputs
     .map((raw) => ({ raw: raw.trim(), color: parseColor(raw) }))
     .filter((x): x is { raw: string; color: Oklch } => x.color != null)
-  const n = parsed.length
-  return parsed.map((p, i) => ({
-    color: p.color,
-    weight: n > 1 ? 1 - 0.6 * (i / (n - 1)) : 1,
-    source: 'manual' as const,
-    raw: p.raw,
-  }))
+    .map((p) => ({ color: p.color, source: 'manual' as const, raw: p.raw }))
 }
 
 // Minimum ΔE-OK between seed pairs that meet on a page. Charts sit side by
@@ -48,15 +50,43 @@ function repairBudget(candidateIndex: number | null, pinned: boolean, fidelity: 
   return (pinned ? 0.5 : 1) * lerp(0.12, 0, fidelity)
 }
 
+// How many repertoire variants the palate tastes per riff seed before the
+// pipeline runs. The cook generates many plates; the judge rejects the bad ones.
+const RIFF_POOL = 8
+
 export function generateTheme(options: GenerateOptions): ThemeResult {
   const fidelity = options.fidelity ?? 0.5
+  const seed = options.seed ?? 0
   const monoBase =
     options.monoBase != null && options.candidates[options.monoBase] ? options.monoBase : null
-  const { assignments, chartCandidateIndexes, unusedCandidateIndexes } = assignRoles(
-    options.candidates,
-    fidelity,
-    monoBase,
-  )
+
+  // Best-of-K riff sampling. Seed 0 bypasses sampling entirely — it IS the
+  // canonical cookbook, bit-identical. For seed s > 0, draw K variant
+  // seed-sets keyed by (s, k) (subSeed avalanches, so the sub-draws never
+  // disturb any other keyed decision), judge each on seeds alone — casting
+  // is seed-independent, so only synthesized seeds differ and no ramps are
+  // ever built per variant — and keep the argmax; ties keep the lowest k.
+  // The judge sees the full context: user-cast seeds and chart seeds
+  // participate in the features, since harmony is relational.
+  const judgeInput = (r: AssignmentResult): JudgeInput => ({
+    seeds: Object.fromEntries(r.assignments.map((a) => [a.role, a.seed])) as Record<Role, Oklch>,
+    synthesized: r.assignments.filter((a) => a.candidateIndex == null).map((a) => a.role),
+    chartSeeds: r.chartCandidateIndexes.map((ci) =>
+      chartAdjust(options.candidates[ci].color, fidelity),
+    ),
+  })
+  const taste = (variantSeed: number) => {
+    const cast = assignRoles(options.candidates, fidelity, monoBase, variantSeed)
+    return { cast, judge: judgePalette(judgeInput(cast)) }
+  }
+  let winner = taste(seed === 0 ? 0 : subSeed(seed, 'variant 0'))
+  if (seed > 0) {
+    for (let k = 1; k < RIFF_POOL; k++) {
+      const variant = taste(subSeed(seed, `variant ${k}`))
+      if (variant.judge.score > winner.judge.score) winner = variant
+    }
+  }
+  const { assignments, chartCandidateIndexes, unusedCandidateIndexes, casting } = winner.cast
 
   // Pairwise repair over the resolved seeds: build the contrast graph, then
   // nudge whoever has budget until every pair keeps its minimum distance.
@@ -76,7 +106,7 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
     nodes.push({
       id: `chart-${k + 1}`,
       color: chartAdjust(options.candidates[ci].color, fidelity),
-      budget: repairBudget(ci, false, fidelity),
+      budget: repairBudget(ci, options.candidates[ci].pin === 'chart', fidelity),
     })
   })
 
@@ -143,9 +173,12 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
     assignments: finalAssignments,
     chartCandidateIndexes,
     unusedCandidateIndexes,
+    casting,
     repairs: residuals,
     fidelity,
     monoBase,
+    seed,
+    judge: winner.judge,
     css: emitCss(light.tokens, dark.tokens),
   }
 }

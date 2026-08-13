@@ -1,4 +1,4 @@
-import type { ThemeMode, ThemeResult } from './types'
+import type { Role, ThemeMode, ThemeResult } from './types'
 import { compliantSolid, popBudget } from './tokens'
 
 /**
@@ -52,6 +52,33 @@ export const brandAdapter: ThemeAdapter<BrandColorName> = {
       accentInk: accent.fg,
     }
   },
+}
+
+/**
+ * Which role ramp each brand color descends from — the adapter's half of the
+ * ancestry contract (same shape tokens.ts keeps for the app space). Kept next
+ * to `resolve` so a new name can't ship without declaring its ancestor.
+ */
+const BRAND_ANCESTRY: Record<BrandColorName, Role> = {
+  paper: 'neutral',
+  ink: 'neutral',
+  inkSubtle: 'neutral',
+  line: 'neutral',
+  wash: 'primary',
+  brand: 'primary',
+  brandInk: 'primary',
+  accent: 'accent',
+  accentInk: 'accent',
+}
+
+/** Brand-name → candidate-index ancestry (null = the role was synthesized). */
+export function brandAncestry(result: ThemeResult): Record<BrandColorName, number | null> {
+  const byRole = new Map(result.assignments.map((a) => [a.role, a.candidateIndex]))
+  const out = {} as Record<BrandColorName, number | null>
+  for (const [name, role] of Object.entries(BRAND_ANCESTRY) as Array<[BrandColorName, Role]>) {
+    out[name] = byRole.get(role) ?? null
+  }
+  return out
 }
 
 export function resolveBrand(result: ThemeResult, modeName: 'light' | 'dark'): Record<BrandColorName, string> {

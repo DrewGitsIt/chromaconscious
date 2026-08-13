@@ -120,6 +120,67 @@
     border: 1px solid rgba(255, 255, 255, 0.12);
   }
 
+  /* riff: walk the invented colors through the seeded repertoire */
+  .riff-cluster {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--gap-s);
+  }
+  .riff-btn {
+    background: transparent;
+    color: var(--ink-muted);
+    font-size: var(--fs-s);
+    white-space: nowrap;
+  }
+  .riff-back {
+    padding: 0 7px;
+    font-size: var(--fs-s);
+    color: var(--ink-muted);
+  }
+  .riff-chip {
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+
+  /* invented-row: the roles the engine synthesized, each one keepable */
+  .invented-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    margin-top: var(--gap-s);
+  }
+  .invented-cap {
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+  }
+  .invented-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: auto;
+    padding: 2px 7px;
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+    background: var(--surface-3);
+    border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-ctl);
+    cursor: pointer;
+  }
+  .invented-item:hover {
+    border-color: var(--line-active);
+    color: var(--ink);
+  }
+  .invented-sw {
+    display: block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
   /* the add-row: the additive verb, rendered as the strip's ghost last row */
   .add-row {
     display: flex;
