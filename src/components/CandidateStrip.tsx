@@ -9,6 +9,18 @@ import './CandidateStrip.css'
 interface Props {
   candidates: ColorCandidate[]
   roleByCandidate: Map<number, Role | 'chart' | 'unused'>
+  /** Why-lines for candidate i, from the engine's casting report (explain.ts). */
+  explain: (i: number) => string[]
+  /** Consequence subtitle for pinning candidate i to target (null = unpin). */
+  pinHint: (i: number, target: Role | 'chart' | null) => string
+  /** Jobs summary for candidate i ("links · focus ring · chart 1"), shown on hover. */
+  jobs?: (i: number) => string
+  /** Locate mode: i on row hover, null on leave (App debounces the enter). */
+  onLocate?: (i: number | null) => void
+  /** The debounced locate index from App — drives the jobs-line and row state.
+      Keyed to App's state (not raw hover) so a drag gesture never re-renders
+      the row out from under the pointer. */
+  locatingIndex?: number | null
   /** Mono lock: index of the base candidate (shown with a static "base" badge). */
   baseIndex?: number | null
   /** Pick mode: rows become targets; clicking one crowns it the mono base. */
@@ -19,9 +31,17 @@ interface Props {
   onReorder: (from: number, to: number) => void
 }
 
+/** Everything the pin menu offers: the six roles plus the chart series. */
+const PIN_TARGETS: Array<Role | 'chart'> = [...ROLES, 'chart']
+
 export function CandidateStrip({
   candidates,
   roleByCandidate,
+  explain,
+  pinHint,
+  jobs,
+  onLocate,
+  locatingIndex = null,
   baseIndex = null,
   picking = false,
   onPickBase,
@@ -60,8 +80,13 @@ export function CandidateStrip({
               dragIndex === i ? 'dragging' : '',
               isBase ? 'is-base' : '',
               picking ? 'pickable' : '',
+              locatingIndex === i ? 'locating' : '',
             ].join(' ')}
             aria-label={picking ? `lock to ${c.raw}` : undefined}
+            onMouseEnter={() => {
+              if (dragIndex == null) onLocate?.(i)
+            }}
+            onMouseLeave={() => onLocate?.(null)}
             onClickCapture={
               picking
                 ? (e) => {
@@ -87,10 +112,13 @@ export function CandidateStrip({
             <span
               className="drag-handle"
               draggable
-              title="Drag to reorder — position sets prominence"
+              title="Drag to reorder — higher rows claim roles first"
               aria-label={`Reorder ${c.raw}`}
               onDragStart={(e) => {
                 setDragIndex(i)
+                // a pending locate firing mid-drag would re-render the row
+                // out from under the gesture
+                onLocate?.(null)
                 e.dataTransfer?.setData('text/plain', String(i))
                 if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
               }}
@@ -108,12 +136,6 @@ export function CandidateStrip({
             />
             <div className="candidate-meta">
               <code>{c.raw}</code>
-              <div
-                className="weight-bar"
-                title={`prominence ${Math.round(c.weight * 100)}% — how strongly this color claims major roles; drag to change`}
-              >
-                <div className="weight-fill" style={{ width: `${Math.round(c.weight * 100)}%` }} />
-              </div>
             </div>
             {isBase ? (
               <span
@@ -146,25 +168,38 @@ export function CandidateStrip({
               </button>
               {menuIndex === i && (
                 <div className="menu role-menu">
-                  <button
-                    className={`item ${!c.pin ? 'sel' : ''}`}
-                    onClick={() => {
-                      onUpdate(i, { pin: undefined })
-                      setMenuIndex(null)
-                    }}
-                  >
-                    auto
-                  </button>
-                  {ROLES.map((r) => (
+                  <div className="role-why">
+                    {explain(i).map((line, k) => (
+                      <div key={k} className="why-line">
+                        {line}
+                      </div>
+                    ))}
+                  </div>
+                  {c.pin && (
+                    <button
+                      className="item pin-item"
+                      aria-label="unpin"
+                      onClick={() => {
+                        onUpdate(i, { pin: undefined })
+                        setMenuIndex(null)
+                      }}
+                    >
+                      <span className="pin-verb">unpin</span>
+                      <span className="pin-hint">{pinHint(i, null)}</span>
+                    </button>
+                  )}
+                  {PIN_TARGETS.map((r) => (
                     <button
                       key={r}
-                      className={`item ${c.pin === r ? 'sel' : ''}`}
+                      className={`item pin-item ${c.pin === r ? 'sel' : ''}`}
+                      aria-label={`pin to → ${r}`}
                       onClick={() => {
                         onUpdate(i, { pin: r })
                         setMenuIndex(null)
                       }}
                     >
-                      pin to → {r}
+                      <span className="pin-verb">pin to → {r}</span>
+                      <span className="pin-hint">{pinHint(i, r)}</span>
                     </button>
                   ))}
                 </div>
@@ -174,6 +209,9 @@ export function CandidateStrip({
             <button className="candidate-remove" onClick={() => onRemove(i)} title="Remove">
               ✕
             </button>
+            {locatingIndex === i && jobs && jobs(i) && (
+              <div className="jobs-line">used as: {jobs(i)}</div>
+            )}
           </li>
         )
       })}

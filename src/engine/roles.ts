@@ -1,11 +1,19 @@
-import type { ColorCandidate, Oklch, Role, RoleAssignment } from './types'
+import type {
+  CastingExplanation,
+  ColorCandidate,
+  GateMiss,
+  Oklch,
+  Role,
+  RoleAssignment,
+} from './types'
 import { clamp, deltaEok, hueDistance, lerp, lerpHue } from './color'
+import { accentRepertoire, monoRepertoire, neutralRepertoire, statusRepertoire } from './repertoire'
 
 /**
  * Role assignment: score every candidate against every role's target region in
- * OKLCH, then assign greedily in role-priority order. Weight (image population
- * or list position) interacts with the role: backgrounds favor dominant muted
- * colors, accents favor rare vivid ones. Roles whose best score is below a
+ * OKLCH, then assign greedily in role-priority order. List position is a single
+ * monotonic prior: higher in the list = stronger claim on EVERY seat — no role
+ * ever benefits from a color sitting lower. Roles whose best score is below a
  * threshold get synthesized instead of eating an ill-fitting input.
  */
 
@@ -17,7 +25,7 @@ const smoothstep = (x: number, lo: number, hi: number) => {
 }
 
 // Hue anchors for status roles (OKLCH degrees).
-const STATUS_HUE: Record<'danger' | 'success' | 'warning', number> = {
+export const STATUS_HUE: Record<'danger' | 'success' | 'warning', number> = {
   danger: 27,
   success: 150,
   warning: 80,
@@ -27,20 +35,21 @@ function scoreForRole(c: ColorCandidate, role: Role, primaryHue: number | null):
   const { l, c: chroma, h } = c.color
   switch (role) {
     case 'primary':
-      // Weight matters most here: the user's first/dominant color leads.
-      return (
-        smoothstep(chroma, 0.03, 0.11) * 0.45 +
-        gauss(l, 0.55, 0.18) * 0.2 +
-        c.weight * 0.35
-      )
+      // Chroma fit saturates very early: any clearly-colored candidate ties on
+      // it, so lightness fit and the order prior arbitrate — a dominant muted
+      // lead outranks a rare vivid one (which the accent seat wants anyway).
+      return smoothstep(chroma, 0.02, 0.06) * 0.55 + gauss(l, 0.55, 0.18) * 0.25
     case 'neutral':
-      return (1 - smoothstep(chroma, 0.02, 0.09)) * 0.7 + c.weight * 0.3
+      return (1 - smoothstep(chroma, 0.02, 0.09)) * 0.9
     case 'accent': {
       const hueFit = primaryHue == null ? 0.5 : smoothstep(hueDistance(h, primaryHue), 15, 60)
       // Chroma gate: a washed-out color can't be the accent regardless of hue.
+      // Lightness gate: neither can a near-white — it reads as background tint,
+      // not as the theme's second voice.
       return (
-        (hueFit * 0.45 + smoothstep(chroma, 0.04, 0.11) * 0.4 + (1 - c.weight) * 0.15) *
-        smoothstep(chroma, 0.03, 0.07)
+        (hueFit * 0.55 + smoothstep(chroma, 0.05, 0.1) * 0.45) *
+        smoothstep(chroma, 0.03, 0.07) *
+        (1 - smoothstep(l, 0.9, 0.99))
       )
     }
     case 'danger':
@@ -48,15 +57,19 @@ function scoreForRole(c: ColorCandidate, role: Role, primaryHue: number | null):
     case 'warning': {
       const sigma = role === 'warning' ? 25 : 32
       // Chroma gate: status colors must read as colored, not as tinted gray.
+      // Peaks slightly above accent's 1.0 so a dead-on status hue takes its
+      // status seat instead of the accent seat when it could serve either.
       return (
-        (gauss(hueDistance(h, STATUS_HUE[role]), 0, sigma) * 0.55 +
-          smoothstep(chroma, 0.04, 0.12) * 0.35 +
-          c.weight * 0.1) *
+        (gauss(hueDistance(h, STATUS_HUE[role]), 0, sigma) * 0.62 +
+          smoothstep(chroma, 0.04, 0.12) * 0.42) *
         smoothstep(chroma, 0.03, 0.08)
       )
     }
   }
 }
+
+// Strength of the list-order prior added uniformly to every role score.
+const ORDER_PRIOR_K = 0.08
 
 // Below this score a role is synthesized rather than assigned a poor fit.
 const ASSIGN_THRESHOLD: Record<Role, number> = {
@@ -84,39 +97,27 @@ function harmonize(color: Oklch, towardHue: number): Oklch {
  * base (c ≈ 0) therefore yields a pure value scale. Semantics that hue
  * normally carries (danger = red…) fall to iconography; the user can layer
  * real colors on top at any time, which bypass synthesis entirely.
+ * The riff seed varies lightness/chroma placement only (repertoire.ts).
  */
-function monoSynthesize(role: Role, base: Oklch): Oklch {
-  const h = base.h
-  switch (role) {
-    case 'primary':
-      return { l: 0.55, c: Math.min(base.c, 0.23), h }
-    case 'neutral':
-      return { l: 0.5, c: Math.min(0.03, base.c * 0.25), h }
-    case 'accent':
-      return { l: 0.62, c: Math.min(base.c * 0.6, 0.12), h }
-    case 'danger':
-      return { l: 0.38, c: Math.min(base.c, 0.16), h }
-    case 'success':
-      return { l: 0.55, c: Math.min(base.c * 0.8, 0.14), h }
-    case 'warning':
-      return { l: 0.75, c: Math.min(base.c * 0.8, 0.14), h }
-  }
+function monoSynthesize(role: Role, base: Oklch, seed: number): Oklch {
+  return monoRepertoire(role, base, seed)
 }
 
-function synthesize(role: Role, primary: Oklch): Oklch {
+// Invented seeds come from the seeded repertoire; seed 0 is the canonical
+// cookbook (accent = primary + 60°, neutral tinted toward primary, statuses
+// on their fixed anchors), bit-identical to the pre-riff engine.
+function synthesize(role: Role, primary: Oklch, seed: number): Oklch {
   switch (role) {
     case 'primary':
       return { l: 0.55, c: 0.15, h: 250 } // no usable input at all: default blue
     case 'neutral':
-      return { l: 0.5, c: Math.min(0.03, primary.c * 0.25), h: primary.h }
+      return neutralRepertoire(primary, seed)
     case 'accent':
-      return { l: 0.6, c: Math.max(primary.c * 0.8, 0.1), h: (primary.h + 60) % 360 }
+      return accentRepertoire(primary, seed)
     case 'danger':
-      return harmonize({ l: 0.55, c: 0.19, h: 27 }, primary.h)
     case 'success':
-      return harmonize({ l: 0.55, c: 0.11, h: 150 }, primary.h)
     case 'warning':
-      return harmonize({ l: 0.75, c: 0.16, h: 80 }, primary.h)
+      return harmonize(statusRepertoire(role, seed), primary.h)
   }
 }
 
@@ -168,12 +169,18 @@ export interface AssignmentResult {
   assignments: RoleAssignment[]
   chartCandidateIndexes: number[]
   unusedCandidateIndexes: number[]
+  casting: CastingExplanation[]
 }
+
+// The leftover chroma bar: below this a candidate can't chart (unless pinned).
+export const CHART_CHROMA_GATE = 0.05
+const CHART_SEATS = 5
 
 export function assignRoles(
   candidates: ColorCandidate[],
   fidelity: number,
   monoBase: number | null = null,
+  seed = 0,
 ): AssignmentResult {
   const taken = new Set<number>()
   const roleSeeds = new Map<Role, { index: number | null; input: Oklch | null }>()
@@ -189,8 +196,19 @@ export function assignRoles(
     taken.add(monoBase!)
   }
 
-  // 1. Pins win outright.
+  // 1. Pins win outright. A chart pin claims a chart seat directly: the
+  // candidate skips role scoring entirely and bypasses the leftover chroma
+  // gate (chartAdjust normalizes chroma downstream, so even a near-gray
+  // stays a visible series color).
+  const chartPinned: number[] = []
   candidates.forEach((c, i) => {
+    if (c.pin === 'chart') {
+      if (!taken.has(i)) {
+        chartPinned.push(i)
+        taken.add(i)
+      }
+      return
+    }
     if (c.pin && !roleSeeds.has(c.pin)) {
       roleSeeds.set(c.pin, { index: i, input: c.color })
       taken.add(i)
@@ -198,20 +216,25 @@ export function assignRoles(
   })
 
   // 2. Primary first (its hue anchors accent scoring), greedily.
+  // The one order prior: linear in list position, same K for every role, so
+  // dragging a color up can only strengthen its claim — on any seat.
   const n = candidates.length
-  const orderBonus = (i: number) => (n > 1 ? ((n - 1 - i) / (n - 1)) * 0.06 : 0)
+  const orderPrior = (i: number) => (n > 1 ? ((n - 1 - i) / (n - 1)) * ORDER_PRIOR_K : 0)
   if (!roleSeeds.has('primary')) {
     let best = -1
     let bestScore = -Infinity
     candidates.forEach((c, i) => {
       if (taken.has(i)) return
-      const s = scoreForRole(c, 'primary', null) + orderBonus(i)
+      const s = scoreForRole(c, 'primary', null) + orderPrior(i)
       if (s > bestScore) {
         bestScore = s
         best = i
       }
     })
-    if (best >= 0 && bestScore >= ASSIGN_THRESHOLD.primary) {
+    // Primary never synthesizes while a free candidate exists: an all-muted
+    // palette must be led by its best muted color, not by an invented blue —
+    // the theme always derives from something the user actually gave us.
+    if (best >= 0) {
       roleSeeds.set('primary', { index: best, input: candidates[best].color })
       taken.add(best)
     } else {
@@ -229,7 +252,7 @@ export function assignRoles(
     const opts: Array<{ index: number; score: number }> = []
     candidates.forEach((c, i) => {
       if (taken.has(i)) return
-      const s = scoreForRole(c, role, primaryHue) + orderBonus(i)
+      const s = scoreForRole(c, role, primaryHue) + orderPrior(i)
       if (s >= ASSIGN_THRESHOLD[role]) opts.push({ index: i, score: s })
     })
     opts.sort((a, b) => b.score - a.score)
@@ -274,7 +297,7 @@ export function assignRoles(
   const primarySeed =
     primaryInput.input != null
       ? fidelityAdjust(primaryInput.input, 'primary', fidelity, baseIsPrimary)
-      : synthesize('primary', { l: 0.55, c: 0.15, h: 250 })
+      : synthesize('primary', { l: 0.55, c: 0.15, h: 250 }, seed)
   // The donor every invented role inherits hue + chroma from. Usually the
   // primary seed itself; when a pin took primary, the base still donates.
   const monoDonor = baseInput
@@ -292,19 +315,126 @@ export function assignRoles(
     return {
       role,
       candidateIndex: null,
-      seed: monoDonor ? monoSynthesize(role, monoDonor) : synthesize(role, primarySeed),
+      seed: monoDonor ? monoSynthesize(role, monoDonor, seed) : synthesize(role, primarySeed, seed),
       deltaE: 0,
     }
   })
 
-  // 4. Leftovers: vivid ones become chart colors, rest unused.
-  const chart: number[] = []
+  // 4. Leftovers: vivid ones become chart colors, rest unused. Chart-pinned
+  // candidates lead the series, gate-free.
+  const chart: number[] = [...chartPinned]
   const unused: number[] = []
   candidates.forEach((c, i) => {
     if (taken.has(i)) return
-    if (c.color.c >= 0.05 && chart.length < 5) chart.push(i)
+    if (c.color.c >= CHART_CHROMA_GATE && chart.length < CHART_SEATS) chart.push(i)
     else unused.push(i)
   })
 
-  return { assignments, chartCandidateIndexes: chart, unusedCandidateIndexes: unused }
+  const casting = buildCasting(candidates, roleSeeds, chart, monoBase, primaryHue, orderPrior)
+
+  return { assignments, chartCandidateIndexes: chart, unusedCandidateIndexes: unused, casting }
+}
+
+// ---------------------------------------------------------------------------
+// Casting report: recompute the same scores the passes above used and distill
+// them into per-candidate facts (winning margins, contested seats, failed
+// gates). Pure observation — assignment is already decided by this point.
+// ---------------------------------------------------------------------------
+
+// A gate multiplier at or below its midpoint reads as "failed" for reporting.
+const GATE_SPECS: Array<{
+  gate: GateMiss['gate']
+  value: (c: Oklch) => number
+  passesAbove: boolean
+  needed: number
+}> = [
+  // smoothstep(c, 0.03, 0.07) midpoint — below this the accent seat is shut
+  { gate: 'accent-chroma', value: (c) => c.c, passesAbove: true, needed: 0.05 },
+  // smoothstep(c, 0.03, 0.08) midpoint — same for the three status seats
+  { gate: 'status-chroma', value: (c) => c.c, passesAbove: true, needed: 0.055 },
+  // 1 - smoothstep(l, 0.9, 0.99): a near-white reads as background tint
+  { gate: 'accent-lightness', value: (c) => c.l, passesAbove: false, needed: 0.9 },
+]
+
+function buildCasting(
+  candidates: ColorCandidate[],
+  roleSeeds: Map<Role, { index: number | null; input: Oklch | null }>,
+  chart: number[],
+  monoBase: number | null,
+  primaryHue: number | null,
+  orderPrior: (i: number) => number,
+): CastingExplanation[] {
+  const seatOf = new Map<number, Role>()
+  for (const role of ASSIGN_ORDER) {
+    const idx = roleSeeds.get(role)?.index
+    if (idx != null) seatOf.set(idx, role)
+  }
+  const chartSet = new Set(chart)
+
+  // Same scoring calls the assignment passes make: primary is scored hue-blind,
+  // every other role against the final primary hue, order prior on top.
+  const score = (i: number, role: Role) =>
+    scoreForRole(candidates[i], role, role === 'primary' ? null : primaryHue) + orderPrior(i)
+  // A candidate that was never in the scoring pool can't contest a seat.
+  const contends = (i: number) => !candidates[i].pin && i !== monoBase
+
+  return candidates.map((c, i): CastingExplanation => {
+    const seat = seatOf.get(i)
+    const outcome = seat ?? (chartSet.has(i) ? ('chart' as const) : ('unused' as const))
+    const via: CastingExplanation['via'] =
+      c.pin === outcome || (c.pin === 'chart' && outcome === 'chart')
+        ? 'pin'
+        : i === monoBase && seat === 'primary'
+          ? 'mono-base'
+          : seat
+            ? 'score'
+            : 'leftover'
+
+    const out: CastingExplanation = { outcome, via, lost: [], gates: [] }
+
+    if (primaryHue != null && seat !== 'primary') {
+      out.hueDistToPrimary = hueDistance(c.color.h, primaryHue)
+    }
+
+    if (via === 'score' && seat) {
+      out.score = { total: score(i, seat), orderPrior: orderPrior(i) }
+      // Who else wanted this seat: the best contender above the seat's bar.
+      let rival: CastingExplanation['rival']
+      candidates.forEach((_, j) => {
+        if (j === i || !contends(j)) return
+        const s = score(j, seat)
+        if (s < ASSIGN_THRESHOLD[seat]) return
+        if (!rival || out.score!.total - s < rival.margin) {
+          rival = { index: j, margin: out.score!.total - s }
+        }
+      })
+      if (rival) out.rival = rival
+    }
+
+    if (contends(i)) {
+      // Seats this candidate had a real claim on, held by someone else.
+      for (const role of ASSIGN_ORDER) {
+        if (role === seat) continue
+        const winner = roleSeeds.get(role)?.index
+        if (winner == null || winner === i) continue
+        const mine = score(i, role)
+        if (mine < ASSIGN_THRESHOLD[role]) continue
+        out.lost.push({ role, winnerIndex: winner, margin: score(winner, role) - mine })
+      }
+      // Gates that shut seats regardless of hue fit.
+      for (const spec of GATE_SPECS) {
+        const v = spec.value(c.color)
+        const fails = spec.passesAbove ? v < spec.needed : v > spec.needed
+        if (fails) out.gates.push({ gate: spec.gate, actual: v, needed: spec.needed })
+      }
+    }
+    if (outcome === 'unused') {
+      if (c.color.c < CHART_CHROMA_GATE) {
+        out.gates.push({ gate: 'chart-chroma', actual: c.color.c, needed: CHART_CHROMA_GATE })
+      } else {
+        out.chartFull = true
+      }
+    }
+    return out
+  })
 }

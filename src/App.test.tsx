@@ -269,7 +269,7 @@ describe('window drop', () => {
 })
 
 describe('candidates', () => {
-  it('drag-reordering swaps positions but keeps weights attached to slots', () => {
+  it('drag-reordering moves the row — position is the only prominence', () => {
     bootCoastal()
     const before = stripColors()
     const items = document.querySelectorAll('.candidate-strip li')
@@ -279,11 +279,6 @@ describe('candidates', () => {
     const after = stripColors()
     expect(after[0]).toBe(before[1])
     expect(after[1]).toBe(before[0])
-    // the top slot keeps the top weight: fills stay in descending order
-    const fills = [...document.querySelectorAll('.weight-fill')].map(
-      (el) => parseFloat((el as HTMLElement).style.width),
-    )
-    expect(fills[0]).toBeGreaterThanOrEqual(fills[1])
   })
 
   it('a drop target is highlighted while dragging over it', () => {
@@ -434,5 +429,121 @@ describe('export', () => {
     await screen.findByText(/Tailwind v4 CSS copied ✓/)
     expect(write.mock.calls[0][0]).toContain('@theme inline')
     expect(screen.getByRole('button', { name: /Copy Tailwind v4 CSS/ })).toBeTruthy()
+  })
+})
+
+describe('chip menu v2', () => {
+  it('opens with why-lines derived from the casting report', () => {
+    bootCoastal()
+    fireEvent.click(document.querySelectorAll('.badge-ctl')[0] as HTMLElement)
+    const lines = [...document.querySelectorAll('.role-menu .why-line')].map((el) => el.textContent)
+    expect(lines.length).toBeGreaterThan(0)
+    expect(lines[0]).toBe('leads: strongest claim at the top of your list')
+  })
+
+  it('pin options carry consequence subtitles computed from current casting', () => {
+    bootCoastal()
+    // #1d3557 (row 5) charts today; pinning it to accent would bench #457b9d
+    fireEvent.click(document.querySelectorAll('.badge-ctl')[4] as HTMLElement)
+    const accentItem = screen.getByRole('button', { name: 'pin to → accent' })
+    expect(accentItem.querySelector('.pin-hint')?.textContent).toBe('benches #457b9d')
+  })
+
+  it('chart is pinnable; a sub-gate color discloses the chroma nudge', () => {
+    bootCoastal()
+    // #f1faee (row 2) is near-gray — under the 0.05 chart bar
+    fireEvent.click(document.querySelectorAll('.badge-ctl')[1] as HTMLElement)
+    const chartItem = screen.getByRole('button', { name: 'pin to → chart' })
+    expect(chartItem.querySelector('.pin-hint')?.textContent).toContain(
+      'nudges chroma up so the series stays visible',
+    )
+    fireEvent.click(chartItem)
+    expect(document.querySelectorAll('.badge-ctl')[1].textContent).toBe('chart')
+    expect(document.querySelectorAll('.badge-pinned')).toHaveLength(1)
+    // reopening offers unpin
+    fireEvent.click(document.querySelectorAll('.badge-ctl')[1] as HTMLElement)
+    fireEvent.click(screen.getByRole('button', { name: 'unpin' }))
+    expect(document.querySelectorAll('.badge-pinned')).toHaveLength(0)
+  })
+})
+
+describe('riff', () => {
+  const riffChip = () => document.querySelector('.riff-chip')?.textContent ?? null
+
+  it('riff walks the seed forward; back walks it home', () => {
+    bootCoastal()
+    expect(riffChip()).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: '⚄ riff' }))
+    expect(riffChip()).toBe('riff 1')
+    fireEvent.click(screen.getByRole('button', { name: '⚄ riff' }))
+    expect(riffChip()).toBe('riff 2')
+    fireEvent.click(screen.getByRole('button', { name: 'previous riff' }))
+    expect(riffChip()).toBe('riff 1')
+    // seed 0 is canonical: the chip and the back button both retire
+    fireEvent.click(screen.getByRole('button', { name: 'previous riff' }))
+    expect(riffChip()).toBeNull()
+    expect(screen.queryByRole('button', { name: 'previous riff' })).toBeNull()
+  })
+
+  it('start over resets the riff walk', () => {
+    bootCoastal()
+    fireEvent.click(screen.getByRole('button', { name: '⚄ riff' }))
+    expect(riffChip()).toBe('riff 1')
+    openStartOver()
+    fireEvent.click(screen.getByRole('button', { name: 'from a preset ›' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Neon arcade' }))
+    expect(riffChip()).toBeNull()
+  })
+
+  it('keep as your color pins the invented seed as a real candidate', () => {
+    render(<App />)
+    fireEvent.change(screen.getByPlaceholderText(/or type/), { target: { value: '#7c3aed' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    // one user color: the other five roles are invented and keepable
+    expect(document.querySelectorAll('.invented-item')).toHaveLength(5)
+    fireEvent.click(screen.getByRole('button', { name: 'keep danger as your color' }))
+    expect(stripColors()).toHaveLength(2)
+    expect(document.querySelectorAll('.badge-pinned')).toHaveLength(1)
+    expect(document.querySelectorAll('.badge-ctl')[1].textContent).toBe('danger')
+    // danger is now user-cast — no longer offered as invented
+    expect(screen.queryByRole('button', { name: 'keep danger as your color' })).toBeNull()
+    expect(document.querySelectorAll('.invented-item')).toHaveLength(4)
+  })
+})
+
+describe('role-transfer toast', () => {
+  it('an edit that moves a seat announces the transfer; undo restores', () => {
+    bootCoastal()
+    // pin #1d3557 to accent: it takes the seat from #457b9d — both colors
+    // exist before and after, so the transfer is news
+    fireEvent.click(document.querySelectorAll('.badge-ctl')[4] as HTMLElement)
+    fireEvent.click(screen.getByRole('button', { name: 'pin to → accent' }))
+    expect(document.querySelector('.toast')?.textContent).toContain(
+      '#1d3557 took accent from #457b9d',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'undo' }))
+    expect(document.querySelectorAll('.badge-pinned')).toHaveLength(0)
+    expect(document.querySelector('.toast')).toBeNull()
+  })
+
+  it('a newly added color claiming a seat is not news', () => {
+    bootCoastal()
+    // #2563eb out-scores #457b9d for accent the moment it lands — but it did
+    // not exist before the edit, so no toast fires
+    fireEvent.change(screen.getByPlaceholderText(/add a color/), {
+      target: { value: '#2563eb' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    expect(stripColors()).toContain('#2563eb')
+    expect(document.querySelector('.toast')).toBeNull()
+  })
+
+  it('removing a color never announces — the leaver is gone from the after side', () => {
+    bootCoastal()
+    // removing accent-holder #457b9d reseats accent, but #457b9d is not
+    // present after the edit, so the both-sides rule keeps it quiet
+    const idx = stripColors().indexOf('#457b9d')
+    fireEvent.click(screen.getAllByTitle('Remove')[idx])
+    expect(document.querySelector('.toast')).toBeNull()
   })
 })

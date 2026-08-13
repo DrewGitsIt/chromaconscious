@@ -305,6 +305,95 @@ describe('extractCandidates', () => {
   })
 })
 
+describe('accent jobs: link, ring, accent-strong, chart-1', () => {
+  const PASTEL = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff']
+  // The pairs the app mockup actually renders: links (table, banner action,
+  // outlined-button text) and the accent's non-text marks (ring, tab
+  // indicator, button border).
+  const ACCENT_PAIRS: Array<[string, string, number]> = [
+    ['link', 'background', 4.5],
+    ['link', 'card', 4.5],
+    ['link', 'success-subtle', 4.5],
+    ['ring', 'background', 3],
+    ['ring', 'card', 3],
+    ['accent-strong', 'background', 3],
+    ['accent-strong', 'card', 3],
+  ]
+
+  const CASES: Array<[string, Parameters<typeof generateTheme>[0]]> = [
+    ['pastel picnic', { candidates: candidatesFromList(PASTEL) }],
+    ['dark ink & sky', { candidates: candidatesFromList(['#0f172a', '#38bdf8']) }],
+    [
+      'mono-ish ember',
+      { candidates: candidatesFromList(['#1a1a1a', '#4d4d4d', '#9a9a9a', '#e8e8e8', '#ff5c1f']) },
+    ],
+    ['mono lock salmon', { candidates: candidatesFromList(['#fa8072']), monoBase: 0 }],
+  ]
+
+  for (const [name, opts] of CASES) {
+    it(`report includes and passes the accent pairs — ${name}`, () => {
+      const result = generateTheme(opts)
+      for (const modeName of ['light', 'dark'] as const) {
+        const mode = result[modeName]
+        for (const [token, background, required] of ACCENT_PAIRS) {
+          const row = mode.report.find((r) => r.token === token && r.background === background)
+          expect(row, `${modeName}: ${token} on ${background} must be audited`).toBeTruthy()
+          expect(row!.requiredWcag).toBe(required)
+          expect(row!.pass, `${modeName}: ${token} on ${background} (${row!.fg} on ${row!.bg})`).toBe(
+            true,
+          )
+        }
+      }
+    })
+  }
+
+  it('the accent ramp claims chart-1 when no leftover covers its hue', () => {
+    const result = generateTheme({ candidates: candidatesFromList(PASTEL) })
+    const accent = result.assignments.find((a) => a.role === 'accent')!
+    for (const mode of [result.light, result.dark]) {
+      const c1 = parseColor(mode.tokens['chart-1'])!
+      expect(hueDistance(c1.h, accent.seed.h), 'chart-1 wears the accent hue').toBeLessThan(25)
+    }
+    // the actual chart candidates follow, shifted one slot down
+    expect(result.chartCandidateIndexes.length).toBeGreaterThan(0)
+  })
+
+  it('dedupe: an accent-hued leftover keeps chart-1, the accent is not doubled', () => {
+    // #5c88ad sits a few degrees from the accent #457b9d; fidelity 1 keeps
+    // both verbatim so the proximity survives to the chart pass.
+    const result = generateTheme({
+      candidates: candidatesFromList(['#e63946', '#f1faee', '#457b9d', '#5c88ad']),
+      fidelity: 1,
+    })
+    const accent = result.assignments.find((a) => a.role === 'accent')!
+    const c1 = parseColor(result.light.tokens['chart-1'])!
+    const c2 = parseColor(result.light.tokens['chart-2'])!
+    expect(hueDistance(c1.h, accent.seed.h), 'the near-accent candidate leads').toBeLessThan(20)
+    expect(hueDistance(c2.h, accent.seed.h), 'no second accent-hued series').toBeGreaterThan(20)
+  })
+
+  it('ring and the tab/button mark share the solved accent solid', () => {
+    const result = generateTheme({ candidates: candidatesFromList(PASTEL) })
+    for (const mode of [result.light, result.dark]) {
+      expect(mode.tokens.ring).toBe(mode.tokens['accent-strong'])
+      expect(mode.tokens['sidebar-ring']).toBe(mode.tokens.ring)
+    }
+  })
+
+  it('under the achromatic mono lock the accent jobs stay gray but still pass', () => {
+    const result = generateTheme({ candidates: candidatesFromList(['#565656']), monoBase: 0 })
+    for (const mode of [result.light, result.dark]) {
+      for (const token of ['link', 'accent-strong', 'ring']) {
+        expect(parseColor(mode.tokens[token])!.c, token).toBeLessThan(0.01)
+      }
+      for (const [token, background] of ACCENT_PAIRS) {
+        const row = mode.report.find((r) => r.token === token && r.background === background)!
+        expect(row.pass, `${token} on ${background}`).toBe(true)
+      }
+    }
+  })
+})
+
 describe('brand adapter', () => {
   it('resolves a paper/ink vocabulary with solved contrast', () => {
     const result = generateTheme({ candidates: candidatesFromList(PALETTE) })

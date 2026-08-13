@@ -75,6 +75,7 @@ export function Preview({ tokens, mode, uid }: Props) {
     Object.entries(tokens).map(([k, v]) => [`--${k}`, v]),
   ) as CSSProperties
   const [page, setPage] = useState<Page>('dashboard')
+  const [tab, setTab] = useState('activity')
 
   return (
     <div
@@ -111,7 +112,13 @@ export function Preview({ tokens, mode, uid }: Props) {
               <DropdownMenu>
                 <DropdownMenuTrigger
                   render={
-                    <Button variant="outline" size="sm">
+                    /* Secondary action in the accent's voice: accent outline +
+                       accent text on transparent — both solver-backed tokens. */
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-accent-strong bg-transparent text-link hover:bg-accent hover:text-link aria-expanded:bg-accent aria-expanded:text-link dark:border-accent-strong dark:bg-transparent dark:hover:bg-accent"
+                    >
                       <Share className="size-4" /> Export
                     </Button>
                   }
@@ -159,7 +166,10 @@ export function Preview({ tokens, mode, uid }: Props) {
               <Alert className="border-success bg-success-subtle text-success-subtle-foreground">
                 <AlertTitle>Deploy succeeded</AlertTitle>
                 <AlertDescription className="text-success-subtle-foreground/90">
-                  All 42 checks passed on production.
+                  All 42 checks passed on production.{' '}
+                  <a className="banner-action cursor-pointer font-medium text-link underline decoration-link/40 underline-offset-2 hover:decoration-link">
+                    View report
+                  </a>
                 </AlertDescription>
               </Alert>
               <Alert className="border-warning bg-warning-subtle text-warning-subtle-foreground">
@@ -195,12 +205,18 @@ export function Preview({ tokens, mode, uid }: Props) {
                 ))}
               </div>
 
-              <Tabs defaultValue="activity">
+              {/* Selection speaks in the accent's voice, not the brand's: the
+                  active tab carries an accent-strong indicator bar. */}
+              <Tabs value={tab} onValueChange={(v) => setTab(String(v))}>
                 <TabsList>
                   <TabsTrigger value="activity">
                     <BarChart3 className="size-4" /> Activity
+                    {tab === 'activity' && <TabIndicator />}
                   </TabsTrigger>
-                  <TabsTrigger value="alerts">Alerts</TabsTrigger>
+                  <TabsTrigger value="alerts">
+                    Alerts
+                    {tab === 'alerts' && <TabIndicator />}
+                  </TabsTrigger>
                 </TabsList>
                 <TabsContent value="activity">
                   <ServiceTable />
@@ -285,6 +301,16 @@ export function Preview({ tokens, mode, uid }: Props) {
   )
 }
 
+/** Accent underline marking the selected tab (TabsTrigger is `relative`). */
+function TabIndicator() {
+  return (
+    <span
+      aria-hidden
+      className="tab-accent-indicator pointer-events-none absolute inset-x-1 bottom-0 h-0.5 rounded-full bg-accent-strong"
+    />
+  )
+}
+
 function ServiceTable() {
   const rows = [
     ['marketing-site', 'live', 'ana', '99.98%'],
@@ -313,7 +339,11 @@ function ServiceTable() {
       <TableBody>
         {rows.map(([name, status, owner, uptime]) => (
           <TableRow key={name}>
-            <TableCell className="font-medium">{name}</TableCell>
+            <TableCell className="font-medium">
+              <a className="project-link cursor-pointer text-link underline decoration-link/40 underline-offset-2 hover:decoration-link">
+                {name}
+              </a>
+            </TableCell>
             <TableCell>{badge(status)}</TableCell>
             <TableCell>{owner}</TableCell>
             <TableCell className="text-right text-muted-foreground">{uptime}</TableCell>

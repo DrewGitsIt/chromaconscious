@@ -3,7 +3,7 @@ import type { ColorCandidate } from './types'
 import { deltaEok, hueDistance, parseColor } from './color'
 
 /**
- * Image pixels -> weighted color candidates.
+ * Image pixels -> ordered color candidates.
  *
  * A photo is evidence about hues and their prominence, not a set of finished
  * palette colors — so extraction curates, it doesn't just count:
@@ -38,7 +38,7 @@ export function extractCandidates(pixels: Uint8ClampedArray, maxCandidates = 8):
 
   interface Entry {
     color: NonNullable<ReturnType<typeof parseColor>>
-    weight: number
+    share: number
     hex: string
   }
   const entries: Entry[] = []
@@ -47,14 +47,14 @@ export function extractCandidates(pixels: Uint8ClampedArray, maxCandidates = 8):
     const hex = hexFromArgb(argbColor)
     const color = parseColor(hex)
     if (!color) continue
-    const weight = pop / total
+    const share = pop / total
     // Merge perceptually-close colors into the more popular one.
     const existing = entries.find((e) => deltaEok(e.color, color) < 0.07)
     if (existing) {
-      existing.weight += weight
+      existing.share += share
       continue
     }
-    entries.push({ color, weight, hex })
+    entries.push({ color, share, hex })
   }
 
   // Best chromatic color per hue neighborhood, plus dominant neutrals.
@@ -68,26 +68,26 @@ export function extractCandidates(pixels: Uint8ClampedArray, maxCandidates = 8):
   }
   const neutrals = entries
     .filter((e) => e.color.c < 0.05)
-    .sort((a, b) => b.weight - a.weight)
+    .sort((a, b) => b.share - a.share)
     .slice(0, 3)
 
-  const picked = [...chromatic, ...neutrals]
+  // Population survives as the initial list order (most-populous first) and a
+  // display-only share; role casting reads only color properties + position.
+  return [...chromatic, ...neutrals]
     .slice(0, maxCandidates)
-    .sort((a, b) => b.weight - a.weight)
-
-  const maxWeight = Math.max(...picked.map((e) => e.weight), 1e-6)
-  return picked.map((e) => ({
-    color: e.color,
-    weight: e.weight / maxWeight,
-    source: 'image' as const,
-    raw: e.hex,
-  }))
+    .sort((a, b) => b.share - a.share)
+    .map((e) => ({
+      color: e.color,
+      share: e.share,
+      source: 'image' as const,
+      raw: e.hex,
+    }))
 }
 
-function score(e: { weight: number; color: { l: number; c: number } }): number {
+function score(e: { share: number; color: { l: number; c: number } }): number {
   const { l, c } = e.color
   // Palette-worthiness: prominent, colorful, and in a usable lightness band —
   // a photo's shadow mass shouldn't outrank its actual subject colors.
   const lightnessFit = smoothstep(l, 0.22, 0.42) * (1 - smoothstep(l, 0.85, 0.97))
-  return e.weight * 0.45 + (Math.min(c, 0.25) / 0.25) * 0.3 + lightnessFit * 0.25
+  return e.share * 0.45 + (Math.min(c, 0.25) / 0.25) * 0.3 + lightnessFit * 0.25
 }

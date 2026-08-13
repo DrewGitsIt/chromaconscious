@@ -1,0 +1,200 @@
+/* taste-test harness — a dev instrument, deliberately plain */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #16161a;
+  color: #e6e6ea;
+  font: 13px/1.4 ui-sans-serif, system-ui, sans-serif;
+}
+
+.harness {
+  padding: 16px 20px 48px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.harness h1 {
+  font-size: 15px;
+  margin: 0 0 12px;
+}
+
+.harness h1 span {
+  color: #8a8a94;
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.row {
+  margin-bottom: 18px;
+  border: 1px solid #2a2a31;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.row-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.row-head h2 {
+  font-size: 13px;
+  margin: 0;
+}
+
+.row-inputs {
+  display: flex;
+  gap: 2px;
+}
+
+.sort-toggle {
+  margin-left: auto;
+  color: #8a8a94;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.cells {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+}
+
+.cell {
+  appearance: none;
+  border: 1px solid #2a2a31;
+  border-radius: 6px;
+  background: #1d1d23;
+  color: inherit;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+  cursor: pointer;
+  font: inherit;
+}
+
+.cell:hover {
+  border-color: #4a4a55;
+}
+
+.cell-on {
+  border-color: #8a8af0;
+}
+
+.cell-seed {
+  color: #8a8a94;
+  font-size: 10px;
+  text-align: left;
+}
+
+.strip {
+  display: flex;
+  gap: 2px;
+}
+
+.sw {
+  position: relative;
+  flex: 1;
+  height: 18px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.sw-chart {
+  height: 8px;
+}
+
+.sw-input {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+.sw-big {
+  flex: none;
+  width: 44px;
+  height: 32px;
+}
+
+.synth-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fff;
+  outline: 1px solid rgb(0 0 0 / 45%);
+}
+
+.cell-score {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  text-align: right;
+  color: #c8c8d0;
+}
+
+.detail {
+  margin-top: 8px;
+  border-top: 1px solid #2a2a31;
+  padding-top: 8px;
+}
+
+.detail-swatches {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.detail-role {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.detail-role .strip {
+  width: 140px;
+  height: 32px;
+}
+
+.detail-role .strip .sw {
+  height: 100%;
+}
+
+.detail-name {
+  color: #8a8a94;
+  font-size: 11px;
+}
+
+.detail-role code {
+  font-size: 11px;
+  color: #c8c8d0;
+}
+
+.detail-features {
+  margin-top: 8px;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  color: #8a8a94;
+  font-size: 11px;
+}
+
+.detail-features b {
+  color: #e6e6ea;
+  font-weight: 600;
+}
+
+.detail-total {
+  color: #e6e6ea;
+}

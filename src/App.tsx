@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Lock, LockOpen, Moon, Sun } from 'lucide-react'
-import type { ColorCandidate, Role, ThemeResult } from './engine'
+import type { ColorCandidate, Oklch, Role, ThemeResult } from './engine'
 import {
+  assignRoles,
   candidatesFromList,
   generateTheme,
+  jobsSummary,
   parseColor,
+  pinConsequence,
+  ROLES,
   themeTailwind,
   themeTokensJson,
   toHex,
+  tokenAncestry,
+  whyLines,
 } from './engine'
 import type { ExportFormat } from './components/Preview'
 import { CandidateStrip } from './components/CandidateStrip'
@@ -39,10 +45,12 @@ interface FrameState {
   monoBase: number | null
   /** Last base after unlocking — one click re-locks it. */
   monoParked: number | null
+  /** Riff seed for the engine's invented colors; 0 = canonical cookbook. */
+  seed: number
 }
 
 /** What "start over" replaces — and what undo brings back. */
-type StartOverState = Pick<FrameState, 'candidates' | 'preset' | 'monoBase' | 'monoParked'>
+type StartOverState = Pick<FrameState, 'candidates' | 'preset' | 'monoBase' | 'monoParked' | 'seed'>
 
 interface Toast {
   text: string
@@ -65,12 +73,65 @@ const emptyFrameState = (): FrameState => ({
   preset: null,
   monoBase: null,
   monoParked: null,
+  seed: 0,
 })
 
 const cloneFrame = (f: FrameState): FrameState => ({
   ...f,
   candidates: f.candidates.map((c) => ({ ...c })),
 })
+
+// ---- role-transfer detection --------------------------------------------
+// When an edit moves a seat between two colors that exist on BOTH sides of
+// the edit, the app says so. A newly added color claiming a seat is not news,
+// and start-over has its own toast. If several seats moved, announce the most
+// important one.
+const SEAT_PRIORITY: Array<Role | 'chart'> = [...ROLES, 'chart']
+
+interface SeatTransfer {
+  role: Role | 'chart'
+  fromHex: string
+  toHex: string
+}
+
+function findSeatTransfer(
+  before: Pick<FrameState, 'candidates' | 'fidelity' | 'monoBase'>,
+  after: Pick<FrameState, 'candidates' | 'fidelity' | 'monoBase'>,
+): SeatTransfer | null {
+  if (before.candidates.length === 0 || after.candidates.length === 0) return null
+  const seats = (f: typeof before) => {
+    const cast = assignRoles(f.candidates, f.fidelity, f.monoBase)
+    const byRole = new Map<Role, string>()
+    for (const a of cast.assignments) {
+      if (a.candidateIndex != null) byRole.set(a.role, toHex(f.candidates[a.candidateIndex].color))
+    }
+    return { byRole, chart: cast.chartCandidateIndexes.map((i) => toHex(f.candidates[i].color)) }
+  }
+  const b = seats(before)
+  const a = seats(after)
+  const beforeHexes = new Set(before.candidates.map((c) => toHex(c.color)))
+  const afterHexes = new Set(after.candidates.map((c) => toHex(c.color)))
+  const onBothSides = (hex: string) => beforeHexes.has(hex) && afterHexes.has(hex)
+
+  for (const role of SEAT_PRIORITY) {
+    if (role === 'chart') {
+      // Chart is a pooled seat set: pair a color that lost its series slot
+      // with one that gained a slot.
+      const lost = b.chart.filter((h) => !a.chart.includes(h) && onBothSides(h))
+      const gained = a.chart.filter((h) => !b.chart.includes(h) && onBothSides(h))
+      if (lost.length > 0 && gained.length > 0) {
+        return { role: 'chart', fromHex: lost[0], toHex: gained[0] }
+      }
+      continue
+    }
+    const fromHex = b.byRole.get(role)
+    const toHex_ = a.byRole.get(role)
+    if (fromHex && toHex_ && fromHex !== toHex_ && onBothSides(fromHex) && onBothSides(toHex_)) {
+      return { role, fromHex, toHex: toHex_ }
+    }
+  }
+  return null
+}
 
 /** Proper component wrapper so each mockup's hooks stay its own. */
 function FrameMockup({ mockup, ...props }: { mockup: string } & MockupProps) {
@@ -86,6 +147,7 @@ function useThemeResult(f: FrameState | undefined) {
         candidates: f.candidates,
         fidelity: f.fidelity,
         monoBase: f.monoBase ?? undefined,
+        seed: f.seed,
       })
     } catch (err) {
       console.error(err)
@@ -174,25 +236,50 @@ export default function App() {
     setTimeout(() => setExportMsg(null), 2000)
   }
 
+  // ---- seat-transfer aware candidate edits --------------------------------
+  // Every additive/editing verb funnels through here: if the edit moved a
+  // seat between two colors present before AND after, a toast says so, with
+  // undo restoring the pre-edit frame (same snapshot shape as start over).
+  const editCandidatesAt = (i: number, patch: Partial<FrameState> & Pick<FrameState, 'candidates'>) => {
+    const prev = frames[i]
+    if (!prev) return
+    const transfer = findSeatTransfer(prev, {
+      candidates: patch.candidates,
+      fidelity: prev.fidelity,
+      monoBase: patch.monoBase !== undefined ? patch.monoBase : prev.monoBase,
+    })
+    updateFrame(i, patch)
+    if (transfer) {
+      setToast({
+        text: `${transfer.toHex} took ${transfer.role} from ${transfer.fromHex}`,
+        undo: {
+          frameIndex: i,
+          prev: {
+            candidates: prev.candidates,
+            preset: prev.preset,
+            monoBase: prev.monoBase,
+            monoParked: prev.monoParked,
+            seed: prev.seed,
+          },
+        },
+      })
+    }
+  }
+
   // ---- the additive verb: grow frame i's candidate list -------------------
   const addCandidatesAt = (i: number, inputs: string[]) => {
+    const f = frames[i]
+    if (!f) return
     const parsed = inputs
       .map((raw) => ({ raw, color: parseColor(raw) }))
       .filter((x): x is { raw: string; color: NonNullable<ReturnType<typeof parseColor>> } => !!x.color)
     if (parsed.length === 0) return
-    setFrames((prev) =>
-      prev.map((f, j) => {
-        if (j !== i) return f
-        const existing = f.candidates.length
-        const added: ColorCandidate[] = parsed.map((x, k) => ({
-          color: x.color,
-          weight: Math.max(0.2, 1 - 0.15 * (existing + k)),
-          source: 'manual',
-          raw: x.raw,
-        }))
-        return { ...f, candidates: [...f.candidates, ...added], preset: null }
-      }),
-    )
+    const added: ColorCandidate[] = parsed.map((x) => ({
+      color: x.color,
+      source: 'manual',
+      raw: x.raw,
+    }))
+    editCandidatesAt(i, { candidates: [...f.candidates, ...added], preset: null })
   }
   const addCandidates = (inputs: string[]) => addCandidatesAt(active, inputs)
   const inList = (hex: string) => {
@@ -208,7 +295,7 @@ export default function App() {
     label: string,
   ) => {
     const prev = frames[i]
-    updateFrame(i, { candidates, preset, monoBase: null, monoParked: null })
+    updateFrame(i, { candidates, preset, monoBase: null, monoParked: null, seed: 0 })
     setPicking(false)
     if (prev.candidates.length > 0) {
       setToast({
@@ -220,6 +307,7 @@ export default function App() {
             preset: prev.preset,
             monoBase: prev.monoBase,
             monoParked: prev.monoParked,
+            seed: prev.seed,
           },
         },
       })
@@ -252,7 +340,7 @@ export default function App() {
   }, [toast])
 
   const updateCandidate = (i: number, patch: Partial<ColorCandidate>) => {
-    updateActive({
+    editCandidatesAt(active, {
       candidates: frame.candidates.map((c, j) => (j === i ? { ...c, ...patch } : c)),
       preset: null,
     })
@@ -273,7 +361,7 @@ export default function App() {
             : idx
 
   const removeCandidate = (i: number) =>
-    updateActive({
+    editCandidatesAt(active, {
       candidates: frame.candidates.filter((_, j) => j !== i),
       preset: null,
       monoBase: remapAfterRemove(frame.monoBase, i),
@@ -281,14 +369,13 @@ export default function App() {
     })
   const reorderCandidate = (from: number, to: number) => {
     if (from === to) return
-    // Weights stay attached to list positions, so dragging a color up genuinely
-    // raises its prominence in role scoring (the engine scores weight, not index).
-    const slotWeights = frame.candidates.map((c) => c.weight)
+    // Position is the engine's order prior: dragging a color up strengthens
+    // its claim on every role.
     const next = [...frame.candidates]
     const [moved] = next.splice(from, 1)
     next.splice(to, 0, moved)
-    updateActive({
-      candidates: next.map((c, i) => ({ ...c, weight: slotWeights[i] })),
+    editCandidatesAt(active, {
+      candidates: next,
       preset: null,
       monoBase: remapAfterMove(frame.monoBase, from, to),
       monoParked: remapAfterMove(frame.monoParked, from, to),
@@ -305,6 +392,51 @@ export default function App() {
     for (const i of result.unusedCandidateIndexes) map.set(i, 'unused')
     return map
   }, [result])
+
+  // The chip menu's content: why-lines and pin consequences, both derived
+  // from the engine's casting report — never canned strings.
+  const explainCandidate = (i: number) =>
+    result ? whyLines(i, result.casting, frame.candidates) : []
+  const pinHintFor = (i: number, target: Role | 'chart' | null) =>
+    result ? pinConsequence(i, target, result.casting, frame.candidates) : ''
+
+  // Riff: walk the invented material through the seeded repertoire. Linear
+  // and non-destructive — back is the undo, seed 0 the canonical cookbook.
+  const riff = (delta: number) => updateActive({ seed: Math.max(0, frame.seed + delta) })
+
+  // The engine's invented roles (no candidate behind them). "keep as your
+  // color" promotes a synthesized seed to a real candidate pinned to its
+  // role — it stops being invented, so it survives future riffs.
+  const invented = result ? result.assignments.filter((a) => a.candidateIndex == null) : []
+  const keepInvented = (role: Role, color: Oklch) => {
+    const hex = toHex(color)
+    const parsed = parseColor(hex)
+    if (!parsed) return
+    editCandidatesAt(active, {
+      candidates: [...frame.candidates, { color: parsed, source: 'manual', raw: hex, pin: role }],
+      preset: null,
+    })
+  }
+
+  // Locate mode: hovering a row lights only that candidate's descendants in
+  // the active frame's mockup (token substitution — see engine/locate.ts).
+  // Enter is debounced so casual mouse travel doesn't strobe; leave restores
+  // instantly. Any candidate edit clears it — indexes may have shifted.
+  const [locating, setLocating] = useState<number | null>(null)
+  const locateTimer = useRef<number | null>(null)
+  const onLocate = (i: number | null) => {
+    if (locateTimer.current != null) window.clearTimeout(locateTimer.current)
+    locateTimer.current = null
+    if (i == null) {
+      setLocating(null)
+      return
+    }
+    locateTimer.current = window.setTimeout(() => setLocating(i), 150)
+  }
+  useEffect(() => {
+    setLocating(null)
+  }, [frame.candidates])
+  const jobsFor = (i: number) => (result ? jobsSummary(tokenAncestry(result, frame.mode), i) : '')
 
   const hasPins = frame.candidates.some((c) => c.pin)
 
@@ -487,6 +619,30 @@ export default function App() {
                   ↻ start over
                 </button>
                 {frame.preset && <span className="startover-preset">{frame.preset}</span>}
+                {result && (
+                  <span className="riff-cluster">
+                    {frame.seed > 0 && (
+                      <>
+                        <button
+                          className="riff-back"
+                          aria-label="previous riff"
+                          title="back one riff"
+                          onClick={() => riff(-1)}
+                        >
+                          ‹
+                        </button>
+                        <span className="riff-chip">riff {frame.seed}</span>
+                      </>
+                    )}
+                    <button
+                      className="riff-btn"
+                      title="re-imagine the colors the engine invented"
+                      onClick={() => riff(1)}
+                    >
+                      ⚄ riff
+                    </button>
+                  </span>
+                )}
                 {startOverOpen && (
                   <div className="menu startover-menu">
                     {startOverPage === 'root' ? (
@@ -617,6 +773,11 @@ export default function App() {
               <CandidateStrip
                 candidates={frame.candidates}
                 roleByCandidate={roleByCandidate}
+                explain={explainCandidate}
+                pinHint={pinHintFor}
+                jobs={jobsFor}
+                onLocate={onLocate}
+                locatingIndex={locating}
                 baseIndex={locked ? frame.monoBase : null}
                 picking={picking}
                 onPickBase={pickBase}
@@ -624,6 +785,23 @@ export default function App() {
                 onRemove={removeCandidate}
                 onReorder={reorderCandidate}
               />
+              {invented.length > 0 && (
+                <div className="invented-row">
+                  <span className="invented-cap">invented</span>
+                  {invented.map((a) => (
+                    <button
+                      key={a.role}
+                      className="invented-item"
+                      title="keep as your color"
+                      aria-label={`keep ${a.role} as your color`}
+                      onClick={() => keepInvented(a.role, a.seed)}
+                    >
+                      <i className="invented-sw" style={{ background: toHex(a.seed) }} />
+                      {a.role}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="add-row">
                 <ColorAddField
                   placeholder="add a color — #e63946, oklch(…)"
@@ -731,6 +909,7 @@ export default function App() {
                       result={results[i]!}
                       mode={f.mode}
                       uid={FRAME_LABEL[i].toLowerCase()}
+                      locateIndex={active === i ? locating : null}
                     />
                   </PreviewBoundary>
                 ) : (
@@ -741,7 +920,13 @@ export default function App() {
           </div>
         ) : result ? (
           <PreviewBoundary>
-            <FrameMockup mockup={frame.mockup} result={result} mode={frame.mode} uid="a" />
+            <FrameMockup
+              mockup={frame.mockup}
+              result={result}
+              mode={frame.mode}
+              uid="a"
+              locateIndex={locating}
+            />
           </PreviewBoundary>
         ) : (
           hero(active)

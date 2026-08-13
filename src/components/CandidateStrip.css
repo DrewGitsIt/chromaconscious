@@ -1,4 +1,4 @@
-/* CandidateStrip-owned chrome: rows, drag feedback, weight bars, role badges. */
+/* CandidateStrip-owned chrome: rows, drag feedback, role badges. */
 @layer chrome-base, chrome;
 
 @layer chrome {
@@ -87,17 +87,6 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .weight-bar {
-    height: 3px;
-    background: var(--line-card);
-    border-radius: 2px;
-    margin-top: 2px;
-  }
-  .weight-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 2px;
-  }
   .candidate-remove {
     padding: 0 6px;
     font-size: var(--fs-xs);
@@ -152,9 +141,57 @@
   .role-menu {
     top: calc(100% + 4px);
     right: 0;
+    width: 240px;
+  }
+
+  /* the why section: the engine showing its work, straight from the report */
+  .role-why {
+    padding: 6px 10px 8px;
+    border-bottom: 1px solid var(--line-card);
+    margin-bottom: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .why-line {
+    font-size: var(--fs-xs);
+    line-height: 1.45;
+    color: var(--ink-muted);
+  }
+  .why-line:first-child {
+    color: var(--ink);
+  }
+
+  /* pin options: verb line + consequence subtitle, both from live casting */
+  .pin-item {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .pin-verb {
+    display: block;
+  }
+  .pin-hint {
+    display: block;
+    font-size: var(--fs-xs);
+    line-height: 1.4;
+    color: var(--ink-faint);
+    white-space: normal;
   }
   .strip-empty {
     color: var(--ink-faint);
     font-size: var(--fs-m);
+  }
+
+  /* locate mode: the hovered row grows a one-line jobs summary */
+  .candidate-strip li.locating {
+    flex-wrap: wrap;
+  }
+  .jobs-line {
+    width: 100%;
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+    line-height: 1.4;
+    padding: 3px 2px 0 28px;
   }
 }

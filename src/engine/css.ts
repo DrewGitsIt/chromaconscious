@@ -17,13 +17,19 @@ export function themeTailwind(result: Pick<ThemeResult, 'light' | 'dark'>): stri
 }
 
 /** DTCG-style design tokens: each token as { $type, $value } per mode. */
-export function themeTokensJson(result: Pick<ThemeResult, 'light' | 'dark'>): string {
+export function themeTokensJson(result: Pick<ThemeResult, 'light' | 'dark'> & { seed?: number }): string {
   const block = (tokens: Record<string, string>) =>
     Object.fromEntries(
       Object.entries(tokens).map(([k, v]) => [k, { $type: 'color', $value: v }]),
     )
   return JSON.stringify(
-    { light: block(result.light.tokens), dark: block(result.dark.tokens) },
+    {
+      // seed 0 is canonical — riffed exports carry their seed so a theme is
+      // reproducible; the canonical export stays byte-identical to before.
+      ...(result.seed ? { $meta: { seed: result.seed } } : {}),
+      light: block(result.light.tokens),
+      dark: block(result.dark.tokens),
+    },
     null,
     2,
   )

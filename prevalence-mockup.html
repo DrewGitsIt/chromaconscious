@@ -1,0 +1,496 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>themesmith — prevalence &amp; role legibility mockup</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 28px;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    background: #101116;
+    color: #e6e7ea;
+  }
+  h2 { font-size: 13px; margin: 0 0 4px; }
+  .case { margin-bottom: 48px; }
+  .case > p { font-size: 11.5px; color: #9a9daa; margin: 0 0 14px; max-width: 780px; line-height: 1.5; }
+  .duo { display: flex; gap: 20px; align-items: flex-start; }
+
+  .panel {
+    width: 300px;
+    flex-shrink: 0;
+    background: #17181c;
+    border: 1px solid #2a2c33;
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .panel-label {
+    font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.09em;
+    color: #6a6e7a; margin: 0 0 10px;
+  }
+  .muted { color: #9a9daa; }
+  .faint { color: #6a6e7a; }
+  .btn {
+    background: #1f2127; border: 1px solid #33363f; color: #e6e7ea;
+    border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer; white-space: nowrap;
+  }
+  .row { display: flex; gap: 6px; align-items: center; }
+
+  /* candidate strip */
+  .strip { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .strip li {
+    display: flex; align-items: center; gap: 8px;
+    background: #1c1e24; border: 1px solid #2a2c33; border-radius: 6px; padding: 6px;
+  }
+  .grip { color: #565a66; font-size: 13px; flex-shrink: 0; cursor: grab; }
+  .sw { width: 24px; height: 24px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
+  .meta { flex: 1; min-width: 0; }
+  .meta code { display: block; font-size: 11px; font-family: ui-monospace, monospace; }
+  .badge {
+    font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 2px 6px; border-radius: 99px; background: #2c3040; color: #aab2cc; flex-shrink: 0;
+  }
+  .badge::after { content: ' ▾'; opacity: 0.6; font-size: 8px; }
+  .b-primary { background: #2d4a75; color: #bcd6ff; }
+  .b-accent  { background: #4a3a75; color: #d6ccff; }
+  .b-warning { background: #5a4a22; color: #f0d9a0; }
+  .b-success { background: #274a33; color: #a7e0b8; }
+  .b-neutral { background: #33363f; color: #b9bdc9; }
+  .b-chart   { background: #2b4a44; color: #a9e6d3; }
+  .b-unused  { background: #24262d; color: #6a6e7a; }
+  .b-flip { box-shadow: 0 0 0 2px rgba(122,162,247,0.55); }
+  .x { color: #6a6e7a; font-size: 10px; padding: 0 4px; }
+
+  /* today's weight bar */
+  .wbar { height: 3px; background: #2a2c33; border-radius: 2px; margin-top: 4px; }
+  .wfill { height: 100%; background: #7aa2f7; border-radius: 2px; }
+
+  /* v2: the prevalence slider */
+  .psl { position: relative; height: 11px; margin-top: 3px; }
+  .psl .track { position: absolute; top: 4px; left: 0; right: 0; height: 3px; background: #2a2c33; border-radius: 2px; }
+  .psl .fill { position: absolute; top: 4px; left: 0; height: 3px; background: #7aa2f7; border-radius: 2px; }
+  .psl .thumb {
+    position: absolute; top: 1px; width: 9px; height: 9px; margin-left: -4px;
+    border-radius: 50%; background: #c0caf5; border: 1.5px solid #17181c; cursor: ew-resize;
+  }
+  .psl.drag .thumb { width: 12px; height: 12px; top: 0; margin-left: -6px; box-shadow: 0 0 0 3px rgba(122,162,247,0.3); }
+  .psl .bubble {
+    position: absolute; top: -17px; transform: translateX(-50%);
+    font-size: 9px; background: #2c3040; border: 1px solid #3a3f52; border-radius: 4px;
+    padding: 0 4px; color: #c0caf5; white-space: nowrap;
+  }
+  li.dragging { border-color: #3d4150; background: #20232b; }
+
+  /* floating tooltip */
+  .tip {
+    max-width: 230px; background: #24262d; border: 1px solid #383c47; border-radius: 7px;
+    padding: 8px 10px; font-size: 10.5px; color: #c8cbd6; line-height: 1.5;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.5);
+  }
+  .tip b { color: #e6e7ea; }
+
+  /* chip dropdown */
+  .menu {
+    margin-top: 6px; width: 246px;
+    background: #1c1e24; border: 1px solid #33363f; border-radius: 8px;
+    padding: 5px; box-shadow: 0 10px 28px rgba(0,0,0,0.5);
+  }
+  .menu .why {
+    font-size: 10.5px; color: #c8cbd6; line-height: 1.55; padding: 6px 8px 7px;
+  }
+  .menu .why b { color: #e6e7ea; }
+  .menu .why .dot { display: inline-block; width: 9px; height: 9px; border-radius: 3px; vertical-align: -1px; margin: 0 2px; border: 1px solid rgba(255,255,255,0.2); }
+  .menu .item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; border-radius: 5px; font-size: 11.5px; cursor: pointer; color: #d4d6de;
+    white-space: nowrap;
+  }
+  .menu .item:hover { background: #262933; }
+  .menu .item .sub { font-size: 9.5px; color: #6a6e7a; margin-left: auto; }
+  .menu .sect {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: #6a6e7a;
+    padding: 6px 8px 3px; border-top: 1px solid #2a2c33; margin-top: 3px;
+  }
+  .menu .cap { font-size: 10px; color: #6a6e7a; padding: 6px 8px 4px; border-top: 1px solid #2a2c33; margin-top: 4px; line-height: 1.5; }
+
+  /* toast */
+  .toastbox { position: relative; flex: 1; min-height: 64px; }
+  .toast {
+    display: inline-flex; gap: 12px; align-items: center;
+    background: #1c1e24; border: 1px solid #33363f; border-radius: 8px;
+    padding: 8px 12px; font-size: 11.5px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5); white-space: nowrap;
+  }
+  .toast .undo { color: #7aa2f7; cursor: pointer; font-weight: 600; }
+
+  /* ---------- dashboard sketch (light, pastel-picnic-derived) ---------- */
+  .stagebox {
+    flex-shrink: 0; border: 1px solid #2a2c33; border-radius: 10px; overflow: hidden;
+    background: #101116;
+  }
+  .stagecap {
+    font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.09em; color: #6a6e7a;
+    padding: 8px 12px 7px; border-bottom: 1px solid #2a2c33;
+  }
+  .sk2 {
+    width: 442px; display: flex; font-size: 9px;
+    --bg:#fdf4f2; --card:#ffffff; --line:#f0dfdc; --txt:#33272a; --mut:#c0a9a9;
+    --pri:#b25f66; --prifg:#fff; --acc:#5672ac; --ok:#5c9a6b; --warnb:#b08a3e; --bad:#bb4f52;
+    background: var(--bg); color: var(--txt);
+  }
+  .sk2-side { width: 84px; flex-shrink: 0; background: var(--card); border-right: 1px solid var(--line); padding: 10px 8px; }
+  .sk2-side .logo { font-weight: 700; font-size: 10px; color: var(--pri); margin-bottom: 10px; }
+  .sk2-side .nav { border-radius: 4px; padding: 4px 6px; margin-bottom: 3px; color: var(--txt); opacity: 0.75; }
+  .sk2-side .nav.on { background: var(--pri); color: var(--prifg); opacity: 1; }
+  .sk2-main { flex: 1; min-width: 0; padding: 10px 12px 12px; }
+  .sk2-h { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .sk2-h b { font-size: 11px; margin-right: auto; }
+  .skbtn { border-radius: 4px; padding: 3px 8px; font-size: 8.5px; border: 1px solid var(--line); background: var(--card); }
+  .skbtn.pri { background: var(--pri); color: var(--prifg); border-color: var(--pri); }
+  .skban {
+    border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent);
+    background: color-mix(in srgb, var(--ok) 9%, var(--card));
+    color: var(--ok); border-radius: 5px; padding: 4px 8px; margin-bottom: 8px; font-size: 8.5px;
+  }
+  .kpis { display: flex; gap: 7px; margin-bottom: 9px; }
+  .kpi { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 6px 7px; }
+  .kpi .l { font-size: 7.5px; opacity: 0.6; }
+  .kpi .v { font-size: 11px; font-weight: 700; margin: 1px 0 4px; }
+  .kpi .mb { display: flex; align-items: flex-end; gap: 2px; height: 22px; }
+  .kpi .mb i { flex: 1; border-radius: 1.5px 1.5px 0 0; }
+  .sk2-tabs { display: flex; gap: 10px; margin-bottom: 7px; align-items: center; }
+  .sk2-tab { padding: 3px 2px; font-size: 8.5px; opacity: 0.65; }
+  .sk2-tab.pill { background: color-mix(in srgb, var(--pri) 14%, var(--card)); border-radius: 4px; padding: 3px 8px; opacity: 1; }
+  .sk2-tab.uln { opacity: 1; color: var(--acc); border-bottom: 2px solid var(--acc); font-weight: 600; }
+  .sk2-table { background: var(--card); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .sk2-tr { display: flex; align-items: center; gap: 8px; padding: 5px 9px; border-top: 1px solid var(--line); }
+  .sk2-tr:first-child { border-top: 0; font-size: 7.5px; opacity: 0.55; }
+  .sk2-tr .nm { width: 92px; }
+  .sk2-tr .bdg { font-size: 7.5px; border-radius: 6px; padding: 1px 6px; color: #fff; }
+  .sk2-tr .up { margin-left: auto; }
+  .lnk { color: var(--acc); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--acc) 45%, transparent); }
+  .focusring { outline: 2px solid var(--acc); outline-offset: 2px; border-radius: 4px; }
+
+  /* callout markers */
+  .co {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+    background: #5672ac; color: #fff; font-size: 7.5px; font-weight: 700;
+    margin-left: 3px; vertical-align: 2px;
+  }
+  .legend { font-size: 10.5px; color: #9a9daa; line-height: 1.7; margin-top: 10px; max-width: 780px; }
+  .legend .co { vertical-align: -2px; margin: 0 4px 0 0; }
+
+  /* state 5: dim + highlight */
+  .dm { opacity: 0.3; }
+  .hot { outline: 2px solid rgba(86,114,172,0.85); outline-offset: 2px; border-radius: 3px; }
+  li.hovered { border-color: #7aa2f7; background: #20232b; }
+  .userow {
+    font-size: 10px; color: #8a8ea0; line-height: 1.5; padding: 6px 8px 2px;
+  }
+  .userow b { color: #c8cbd6; }
+
+  .note { max-width: 800px; font-size: 11.5px; color: #9a9daa; line-height: 1.6; }
+  .note b { color: #d4d6de; }
+  .note li { margin-bottom: 9px; }
+  .tag { display: inline-block; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; background: #2c3040; color: #aab2cc; border-radius: 4px; padding: 2px 6px; margin-right: 6px; vertical-align: 1px; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ STATE 1 -->
+<div class="case">
+  <h2><span class="tag">1</span>Candidate row v2 — the bar becomes a slider, order becomes just order</h2>
+  <p>
+    Today the value is welded to list position: dragging a color to a new slot swaps it
+    into that slot's weight (plus a second hidden order bonus). In v2 the value belongs
+    to the <i>color</i>: a real slider named <b style="color:#d4d6de">prevalence</b>,
+    seeded by image population or add order, editable in place. Reordering the list
+    moves nothing but the row — the flip you hit literally cannot happen from a drag
+    anymore. Only the deliberate gesture (sliding) changes casting.
+  </p>
+  <div class="duo">
+    <div class="panel">
+      <p class="panel-label">today — weight welded to position</p>
+      <ul class="strip">
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#ffadad"></span><div class="meta"><code>#ffadad</code><div class="wbar"><div class="wfill" style="width:100%"></div></div></div><span class="badge b-primary">primary</span><span class="x">✕</span></li>
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#ffd6a5"></span><div class="meta"><code>#ffd6a5</code><div class="wbar"><div class="wfill" style="width:85%"></div></div></div><span class="badge b-warning">warning</span><span class="x">✕</span></li>
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#a0c4ff"></span><div class="meta"><code>#a0c4ff</code><div class="wbar"><div class="wfill" style="width:25%"></div></div></div><span class="badge b-accent">accent</span><span class="x">✕</span></li>
+      </ul>
+      <p class="faint" style="font-size:10px; line-height:1.55; margin:12px 2px 0;">
+        the bar reads as an output promise (“this much of my design”),
+        drag changes it as a side effect, and a hidden order bonus
+        double-counts position. three lies in one control.
+      </p>
+    </div>
+    <div class="panel">
+      <p class="panel-label">v2 — prevalence, owned by the color</p>
+      <ul class="strip">
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#ffadad"></span><div class="meta"><code>#ffadad</code><div class="psl"><div class="track"></div><div class="fill" style="width:100%"></div><div class="thumb" style="left:100%"></div></div></div><span class="badge b-primary">primary</span><span class="x">✕</span></li>
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#ffd6a5"></span><div class="meta"><code>#ffd6a5</code><div class="psl"><div class="track"></div><div class="fill" style="width:70%"></div><div class="thumb" style="left:70%"></div></div></div><span class="badge b-warning">warning</span><span class="x">✕</span></li>
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#a0c4ff"></span><div class="meta"><code>#a0c4ff</code><div class="psl"><div class="track"></div><div class="fill" style="width:15%"></div><div class="thumb" style="left:15%"></div></div></div><span class="badge b-accent">accent</span><span class="x">✕</span></li>
+      </ul>
+      <p class="faint" style="font-size:10px; line-height:1.55; margin:12px 2px 0;">
+        grip = organization only. slider = the one channel of prevalence.
+        no hidden order bonus. thumbs invite touch the way the bar never did.
+      </p>
+    </div>
+    <div style="max-width:250px;">
+      <div class="tip">
+        <b>prevalence</b> — how much of this color you have.
+        dominant colors take the big-area roles; scarce vivid ones take the pop.
+      </div>
+      <p class="faint" style="font-size:10px; line-height:1.55; margin:10px 2px 0;">
+        the hover tooltip. it names the value for what the engine actually
+        consumes — <i>evidence in</i>, never <i>coverage out</i>. the old word
+        (“prominence”) promised featuring, which is the pin's job, not the slider's.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ STATE 2 -->
+<div class="case">
+  <h2><span class="tag">2</span>Chips explain themselves — UNUSED finally says why</h2>
+  <p>
+    Every role chip is already a dropdown (that's where pins live). v2 gives the menu a
+    first section: <i>why this casting</i>. For a benched color it's the difference
+    between “the engine doesn't like my color” and three checkable facts. The pin list
+    below stays the hard word — intent lives here, not in the slider.
+  </p>
+  <div class="duo">
+    <div class="panel">
+      <p class="panel-label">your murk palette — unused chip open</p>
+      <ul class="strip">
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#837c6f"></span><div class="meta"><code>#837c6f</code><div class="psl"><div class="track"></div><div class="fill" style="width:85%"></div><div class="thumb" style="left:85%"></div></div></div><span class="badge b-primary">primary</span><span class="x">✕</span></li>
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#030508"></span><div class="meta"><code>#030508</code><div class="psl"><div class="track"></div><div class="fill" style="width:40%"></div><div class="thumb" style="left:40%"></div></div></div><span class="badge b-neutral">neutral</span><span class="x">✕</span></li>
+        <li style="border-color:#3d4150;"><span class="grip">⋮⋮</span><span class="sw" style="background:#4e5c73"></span><div class="meta"><code>#4e5c73</code><div class="psl"><div class="track"></div><div class="fill" style="width:28%"></div><div class="thumb" style="left:28%"></div></div></div><span class="badge b-unused" style="box-shadow:0 0 0 2px rgba(122,162,247,0.4);">unused</span><span class="x">✕</span></li>
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#a2975c"></span><div class="meta"><code>#a2975c</code><div class="psl"><div class="track"></div><div class="fill" style="width:18%"></div><div class="thumb" style="left:18%"></div></div></div><span class="badge b-warning">warning</span><span class="x">✕</span></li>
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#a1e501"></span><div class="meta"><code>#a1e501</code><div class="psl"><div class="track"></div><div class="fill" style="width:13%"></div><div class="thumb" style="left:13%"></div></div></div><span class="badge b-success">success</span><span class="x">✕</span></li>
+      </ul>
+    </div>
+    <div>
+      <div class="menu">
+        <div class="why">
+          <b>#4e5c73 — no seat fits</b><br/>
+          · too muted for <b>accent</b> or a status — the color reads as tinted gray<br/>
+          · missed <b>chart</b> by a hair (chroma 0.041, needs 0.05)<br/>
+          · <b>neutral</b> went to <span class="dot" style="background:#030508"></span><b>#030508</b>, a purer gray
+        </div>
+        <div class="sect">pin a role to override</div>
+        <div class="item"><span class="badge b-chart" style="padding:1px 6px;">chart</span> make it a data color <span class="sub">nudges chroma up</span></div>
+        <div class="item"><span class="badge b-neutral" style="padding:1px 6px;">neutral</span> gray the UI with it <span class="sub">benches #030508</span></div>
+        <div class="item"><span class="badge b-accent" style="padding:1px 6px;">accent</span> feature it <span class="sub">benches #846d99</span></div>
+        <div class="cap">a pin is your hard word — the engine recasts everyone else around it</div>
+      </div>
+      <p class="faint" style="font-size:10px; line-height:1.55; max-width:250px; margin:10px 2px 0;">
+        same menu on a cast color reads e.g. “<b style="color:#c8cbd6">accent</b> —
+        most hue-distant vivid color from primary”. one sentence, from the
+        actual score, not canned copy.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ STATE 3 -->
+<div class="case">
+  <h2><span class="tag">3</span>Sliding across a cliff — the flip happens in front of you, then offers undo</h2>
+  <p>
+    Prevalence feeds a discrete optimizer, so the slider has flats and cliffs — that's
+    physics we can't hide, only disclose. The theme already recomputes live: mid-drag,
+    the chips flip in the sidebar and the mockup re-inks. On release, if any seat
+    changed hands, the existing toast machinery names the trade and offers one undo.
+  </p>
+  <div class="duo">
+    <div class="panel">
+      <p class="panel-label">mid-drag — blue's prevalence 15% → 62%</p>
+      <ul class="strip">
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#ffadad"></span><div class="meta"><code>#ffadad</code><div class="psl"><div class="track"></div><div class="fill" style="width:100%"></div><div class="thumb" style="left:100%"></div></div></div><span class="badge b-primary">primary</span><span class="x">✕</span></li>
+        <li class="dragging"><span class="grip">⋮⋮</span><span class="sw" style="background:#a0c4ff"></span><div class="meta"><code>#a0c4ff</code><div class="psl drag"><div class="track"></div><div class="fill" style="width:62%"></div><div class="thumb" style="left:62%"></div><div class="bubble" style="left:62%">62%</div></div></div><span class="badge b-chart b-flip">chart</span><span class="x">✕</span></li>
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#fdffb6"></span><div class="meta"><code>#fdffb6</code><div class="psl"><div class="track"></div><div class="fill" style="width:55%"></div><div class="thumb" style="left:55%"></div></div></div><span class="badge b-accent b-flip">accent</span><span class="x">✕</span></li>
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#caffbf"></span><div class="meta"><code>#caffbf</code><div class="psl"><div class="track"></div><div class="fill" style="width:40%"></div><div class="thumb" style="left:40%"></div></div></div><span class="badge b-success">success</span><span class="x">✕</span></li>
+      </ul>
+      <p class="faint" style="font-size:10px; line-height:1.55; margin:12px 2px 0;">
+        both flipped chips glow while you're still holding the thumb —
+        cause and effect in the same glance. release keeps it; undo reverts it.
+      </p>
+    </div>
+    <div class="toastbox" style="padding-top:24px;">
+      <p class="faint" style="font-size:10px; margin:0 0 8px;">on release:</p>
+      <div class="toast"><span class="sw" style="width:14px;height:14px;background:#fdffb6"></span>#fdffb6 took accent from <span class="sw" style="width:14px;height:14px;background:#a0c4ff"></span>#a0c4ff <span class="undo">undo</span></div>
+      <p class="faint" style="font-size:10px; line-height:1.55; max-width:330px; margin:14px 2px 0;">
+        the same toast fires for <i>any</i> edit that moves a seat — add, remove,
+        slide, start-over. role changes stop being something you notice three
+        clicks later.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ STATE 4 -->
+<div class="case">
+  <h2><span class="tag">4</span>The accent audit — your pop color gets real jobs in the app mockup</h2>
+  <p>
+    The collision: the engine's <b style="color:#d4d6de">accent role</b> is the pop color,
+    but the shadcn <b style="color:#d4d6de">accent token</b> is a muted hover wash — and our
+    app adapter maps one onto the other by name, so the entire dashboard consumes your
+    accent only as <code style="font-size:10px;">hover:bg-sidebar-accent</code>. Left: today.
+    Right: the same theme with accent doing the jobs a pop color holds in real app UI.
+  </p>
+  <div class="duo">
+    <div class="stagebox">
+      <div class="stagecap">today — accent nowhere</div>
+      <div class="sk2">
+        <div class="sk2-side">
+          <div class="logo">Acme</div>
+          <div class="nav on">Dashboard</div>
+          <div class="nav">Projects</div>
+          <div class="nav">Settings</div>
+        </div>
+        <div class="sk2-main">
+          <div class="sk2-h"><b>Dashboard</b><span class="skbtn">⬆ Export</span><span class="skbtn pri">+ New project</span></div>
+          <div class="skban">Deploy succeeded — all 42 checks passed.</div>
+          <div class="kpis">
+            <div class="kpi"><div class="l">REVENUE</div><div class="v">$48,210</div><div class="mb"><i style="height:40%;background:#a3a361"></i><i style="height:60%;background:#a3a361"></i><i style="height:45%;background:#a3a361"></i><i style="height:80%;background:#a3a361"></i><i style="height:55%;background:#a3a361"></i><i style="height:95%;background:#a3a361"></i></div></div>
+            <div class="kpi"><div class="l">ACTIVE USERS</div><div class="v">3,842</div><div class="mb"><i style="height:35%;background:#6cc3cc"></i><i style="height:55%;background:#6cc3cc"></i><i style="height:40%;background:#6cc3cc"></i><i style="height:75%;background:#6cc3cc"></i><i style="height:50%;background:#6cc3cc"></i><i style="height:90%;background:#6cc3cc"></i></div></div>
+            <div class="kpi"><div class="l">CHURN</div><div class="v">2.1%</div><div class="mb"><i style="height:50%;background:#7cbf8a"></i><i style="height:65%;background:#7cbf8a"></i><i style="height:45%;background:#7cbf8a"></i><i style="height:85%;background:#7cbf8a"></i><i style="height:60%;background:#7cbf8a"></i><i style="height:95%;background:#7cbf8a"></i></div></div>
+          </div>
+          <div class="sk2-tabs"><span class="sk2-tab pill">▥ Activity</span><span class="sk2-tab">Alerts</span></div>
+          <div class="sk2-table">
+            <div class="sk2-tr"><span class="nm">PROJECT</span><span>STATUS</span><span class="up">UPTIME</span></div>
+            <div class="sk2-tr"><span class="nm">marketing-site</span><span class="bdg" style="background:var(--ok)">live</span><span class="up">99.98%</span></div>
+            <div class="sk2-tr"><span class="nm">billing-service</span><span class="bdg" style="background:var(--warnb)">degraded</span><span class="up">97.20%</span></div>
+            <div class="sk2-tr"><span class="nm">legacy-importer</span><span class="bdg" style="background:var(--bad)">down</span><span class="up">61.05%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="stagebox">
+      <div class="stagecap">v2 — accent on the job</div>
+      <div class="sk2">
+        <div class="sk2-side">
+          <div class="logo">Acme</div>
+          <div class="nav on">Dashboard</div>
+          <div class="nav">Projects</div>
+          <div class="nav">Settings</div>
+        </div>
+        <div class="sk2-main">
+          <div class="sk2-h"><b>Dashboard</b><span class="skbtn focusring" style="color:var(--acc); border-color:color-mix(in srgb, var(--acc) 45%, transparent);">⬆ Export<span class="co">4</span></span><span class="skbtn pri">+ New project</span></div>
+          <div class="skban">Deploy succeeded — all 42 checks passed. <span class="lnk">view report</span><span class="co">2</span></div>
+          <div class="kpis">
+            <div class="kpi"><div class="l">REVENUE<span class="co">5</span></div><div class="v">$48,210</div><div class="mb"><i style="height:40%;background:#5672ac"></i><i style="height:60%;background:#5672ac"></i><i style="height:45%;background:#5672ac"></i><i style="height:80%;background:#5672ac"></i><i style="height:55%;background:#5672ac"></i><i style="height:95%;background:#5672ac"></i></div></div>
+            <div class="kpi"><div class="l">ACTIVE USERS</div><div class="v">3,842</div><div class="mb"><i style="height:35%;background:#6cc3cc"></i><i style="height:55%;background:#6cc3cc"></i><i style="height:40%;background:#6cc3cc"></i><i style="height:75%;background:#6cc3cc"></i><i style="height:50%;background:#6cc3cc"></i><i style="height:90%;background:#6cc3cc"></i></div></div>
+            <div class="kpi"><div class="l">CHURN</div><div class="v">2.1%</div><div class="mb"><i style="height:50%;background:#7cbf8a"></i><i style="height:65%;background:#7cbf8a"></i><i style="height:45%;background:#7cbf8a"></i><i style="height:85%;background:#7cbf8a"></i><i style="height:60%;background:#7cbf8a"></i><i style="height:95%;background:#7cbf8a"></i></div></div>
+          </div>
+          <div class="sk2-tabs"><span class="sk2-tab uln">▥ Activity<span class="co">3</span></span><span class="sk2-tab">Alerts</span></div>
+          <div class="sk2-table">
+            <div class="sk2-tr"><span class="nm">PROJECT</span><span>STATUS</span><span class="up">UPTIME</span></div>
+            <div class="sk2-tr"><span class="nm lnk">marketing-site<span class="co">1</span></span><span class="bdg" style="background:var(--ok)">live</span><span class="up">99.98%</span></div>
+            <div class="sk2-tr"><span class="nm lnk">billing-service</span><span class="bdg" style="background:var(--warnb)">degraded</span><span class="up">97.20%</span></div>
+            <div class="sk2-tr"><span class="nm lnk">legacy-importer</span><span class="bdg" style="background:var(--bad)">down</span><span class="up">61.05%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="legend">
+    <span class="co">1</span><b style="color:#d4d6de">links</b> — the classic accent job; instantly answers “where's my blue?” &nbsp;
+    <span class="co">2</span><b style="color:#d4d6de">inline actions</b> in banners and empty states &nbsp;
+    <span class="co">3</span><b style="color:#d4d6de">selected-tab indicator</b> — selection ≠ primary's brand voice &nbsp;
+    <span class="co">4</span><b style="color:#d4d6de">focus ring + secondary button</b> — <code style="font-size:10px;">ring</code> token moves to the accent ramp &nbsp;
+    <span class="co">5</span><b style="color:#d4d6de">first claim on a chart slot</b> — the pop color leads the data series
+  </div>
+</div>
+
+<!-- ============================================================ STATE 5 -->
+<div class="case">
+  <h2><span class="tag">5</span>“Where is this color?” — hover a row, see its descendants</h2>
+  <p>
+    The consumption surface. Hovering a candidate row dims the stage and rings every
+    element whose color descends from that candidate — we can do this honestly because
+    adapters never invent colors without ramp ancestry. The row itself grows a one-line
+    summary of the jobs. Works for every role; most valuable for accent and chart.
+  </p>
+  <div class="duo">
+    <div class="panel">
+      <p class="panel-label">hovering the accent row</p>
+      <ul class="strip">
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#ffadad"></span><div class="meta"><code>#ffadad</code><div class="psl"><div class="track"></div><div class="fill" style="width:100%"></div><div class="thumb" style="left:100%"></div></div></div><span class="badge b-primary">primary</span><span class="x">✕</span></li>
+        <li class="hovered" style="flex-wrap:wrap;">
+          <span class="grip">⋮⋮</span><span class="sw" style="background:#a0c4ff"></span><div class="meta"><code>#a0c4ff</code><div class="psl"><div class="track"></div><div class="fill" style="width:15%"></div><div class="thumb" style="left:15%"></div></div></div><span class="badge b-accent">accent</span><span class="x">✕</span>
+          <div class="userow" style="width:100%;">used as: <b>links · focus ring · tab indicator · chart 1 · hover wash</b></div>
+        </li>
+        <li><span class="grip">⋮⋮</span><span class="sw" style="background:#caffbf"></span><div class="meta"><code>#caffbf</code><div class="psl"><div class="track"></div><div class="fill" style="width:40%"></div><div class="thumb" style="left:40%"></div></div></div><span class="badge b-success">success</span><span class="x">✕</span></li>
+      </ul>
+    </div>
+    <div class="stagebox">
+      <div class="stagecap">stage — accent descendants ringed, rest dimmed</div>
+      <div class="sk2">
+        <div class="sk2-side dm">
+          <div class="logo">Acme</div>
+          <div class="nav on">Dashboard</div>
+          <div class="nav">Projects</div>
+          <div class="nav">Settings</div>
+        </div>
+        <div class="sk2-main">
+          <div class="sk2-h"><b class="dm">Dashboard</b><span class="skbtn hot" style="color:var(--acc); border-color:color-mix(in srgb, var(--acc) 45%, transparent);">⬆ Export</span><span class="skbtn pri dm">+ New project</span></div>
+          <div class="skban dm">Deploy succeeded — all 42 checks passed.</div>
+          <div class="kpis">
+            <div class="kpi"><div class="l dm">REVENUE</div><div class="v dm">$48,210</div><div class="mb hot"><i style="height:40%;background:#5672ac"></i><i style="height:60%;background:#5672ac"></i><i style="height:45%;background:#5672ac"></i><i style="height:80%;background:#5672ac"></i><i style="height:55%;background:#5672ac"></i><i style="height:95%;background:#5672ac"></i></div></div>
+            <div class="kpi dm"><div class="l">ACTIVE USERS</div><div class="v">3,842</div><div class="mb"><i style="height:35%;background:#6cc3cc"></i><i style="height:55%;background:#6cc3cc"></i><i style="height:40%;background:#6cc3cc"></i><i style="height:75%;background:#6cc3cc"></i><i style="height:50%;background:#6cc3cc"></i><i style="height:90%;background:#6cc3cc"></i></div></div>
+            <div class="kpi dm"><div class="l">CHURN</div><div class="v">2.1%</div><div class="mb"><i style="height:50%;background:#7cbf8a"></i><i style="height:65%;background:#7cbf8a"></i><i style="height:45%;background:#7cbf8a"></i><i style="height:85%;background:#7cbf8a"></i><i style="height:60%;background:#7cbf8a"></i><i style="height:95%;background:#7cbf8a"></i></div></div>
+          </div>
+          <div class="sk2-tabs"><span class="sk2-tab uln hot">▥ Activity</span><span class="sk2-tab dm">Alerts</span></div>
+          <div class="sk2-table">
+            <div class="sk2-tr"><span class="nm dm">PROJECT</span><span class="dm">STATUS</span><span class="up dm">UPTIME</span></div>
+            <div class="sk2-tr"><span class="nm lnk hot">marketing-site</span><span class="bdg dm" style="background:var(--ok)">live</span><span class="up dm">99.98%</span></div>
+            <div class="sk2-tr"><span class="nm lnk hot">billing-service</span><span class="bdg dm" style="background:var(--warnb)">degraded</span><span class="up dm">97.20%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ NOTES -->
+<div class="case">
+  <h2>Design notes &amp; open questions</h2>
+  <ol class="note">
+    <li><b>Two levers, cleanly split: prevalence is evidence, pin is intent.</b>
+      The slider says “this is how much of this color I have”; the chip dropdown says
+      “this is what I want it to be”. The accent rarity term survives untouched — under
+      prevalence semantics it's correct design theory — but no gesture trips it by
+      accident anymore, and when a deliberate slide does, state 3 discloses the trade.</li>
+    <li><b>Reorder becomes purely organizational.</b> Slot-welded weights and the hidden
+      <code>orderBonus</code> both die; prevalence travels with the color. This deletes the
+      original bug class (drag-up demotes) rather than explaining it better. Engine change
+      is small: seed prevalence at add/extract time, stop recomputing from position.</li>
+    <li><b>The engine finally shows its work.</b> The “why” section in state 2 is
+      generated from the actual scores (which gate failed, who won the contested seat, by
+      how much) — not canned strings. Same data powers the near-miss nudge
+      (“missed chart by a hair”), which quietly teaches the model.</li>
+    <li><b>The accent audit is adapter work, not engine work.</b> Casting already picks a
+      good pop color; the app adapter just spends it on a hover wash because of the
+      shadcn name collision. New jobs: links, inline actions, selected-tab indicator,
+      focus <code>ring</code>, secondary button, first chart slot. Export stays fully
+      shadcn-compatible — we're changing which tokens the mockup consumes and pointing
+      <code>ring</code> at the accent ramp, not renaming tokens.</li>
+    <li><b>Open question — does UNUSED deserve a rescue action?</b> The pin-to-chart item
+      in state 2 nudges chroma to qualify the color (0.041 → 0.05 is invisible to the eye).
+      Alternative: leave unused colors truly untouched and let the pin force it verbatim,
+      accepting a washed-out data series. I lean nudge-with-disclosure — it follows the
+      fidelity philosophy (normalize at the seams, disclose the shift).</li>
+    <li><b>Open question — slider footprint.</b> Always-visible thumbs (mocked here) make
+      the value obviously editable but add visual noise × N rows. Alternative: thumb
+      appears on row hover, bar otherwise identical to today. I lean always-visible —
+      discoverability is the whole point of this change.</li>
+    <li><b>Not doing: score bars in the row.</b> Considered showing each color's per-role
+      scores on hover (full transparency). It turns the sidebar into an engine debugger;
+      the one-sentence “why” plus the live flip covers 95% of the confusion at 5% of the
+      pixels.</li>
+  </ol>
+</div>
+
+</body>
+</html>
