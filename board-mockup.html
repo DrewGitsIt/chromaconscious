@@ -1,0 +1,1332 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>themesmith — the role board</title>
+<style>
+  /* ============================================================
+     Round 3. The inversion: instead of picking a role FOR a color,
+     the roles are labeled slots on a board and you fill them.
+       · order does not survive — drag now means "place", nothing else
+       · the bench is collapsed by default
+       · chart is a pooled SERIES tray, not a slot
+       · role labels teach: gloss + a job list derived from JOB_TOKENS
+     Live. Drag bench colors into slots, drag slot colors out, click a
+     label to learn, click a color to reassign, riff to re-roll the
+     smith's slots only.
+     ============================================================ */
+  :root {
+    --surface-0: #14151a; --surface-1: #17181c; --surface-2: #1c1e24;
+    --surface-3: #1f2127; --surface-4: #262932;
+    --line-card: #2a2c33; --line-ctl: #33363f; --line-active: #4c566a;
+    --ink: #e6e7ea; --ink-muted: #9a9daa; --ink-faint: #6a6e7a;
+    --accent: #7aa2f7; --ok: #9ece6a; --warn: #e0af68; --fail: #ff8a8a;
+    --ink-bright: #c0caf5; --accent-cool: #8fa7dd; --accent-warm: #cf9a66;
+    --ctl-h: 32px; --radius-ctl: 6px; --radius-card: 10px; --radius-pill: 999px;
+    --fs-xs: 10px; --fs-s: 11px; --fs-m: 12px; --fs-h1: 20px;
+    --gap-s: 6px; --gap-m: 8px; --pad-side: 16px;
+    --t: 1;
+    --d-fast: calc(120ms * var(--t));
+    --d-base: calc(200ms * var(--t));
+    --d-slow: calc(340ms * var(--t));
+    --ease: cubic-bezier(0.2, 0.8, 0.3, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-back: cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 28px 60px;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    background: #101116; color: var(--ink);
+  }
+  code, .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  svg { display: block; flex-shrink: 0; }
+
+  .sheet-head {
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    padding-bottom: 18px; margin-bottom: 22px; border-bottom: 1px solid #22242b;
+  }
+  .sheet-head h1 { font-size: 15px; margin: 0; }
+  .sheet-head .sub { font-size: var(--fs-m); color: var(--ink-faint); margin-right: auto; }
+  .tog {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--surface-3); border: 1px solid var(--line-ctl); color: var(--ink-muted);
+    border-radius: var(--radius-pill); padding: 5px 12px;
+    font-size: var(--fs-s); font-family: inherit; cursor: pointer;
+    transition: all var(--d-fast) var(--ease);
+  }
+  .tog:hover { background: var(--surface-4); color: var(--ink); }
+  .tog[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent);
+  }
+  .tog .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .35; }
+  .tog[aria-pressed="true"] .dot { opacity: 1; }
+
+  .sheet { display: flex; gap: 30px; align-items: flex-start; }
+  .col-title {
+    font-size: var(--fs-s); text-transform: uppercase; letter-spacing: .14em;
+    color: var(--ink-faint); margin: 0 0 10px; display: flex; align-items: baseline; gap: 8px;
+  }
+  .col-title b { color: var(--ink-muted); font-weight: 600; }
+  .col-note { font-size: var(--fs-xs); letter-spacing: 0; text-transform: none; color: #4e525c; }
+
+  /* ---------------- panel shell ---------------- */
+  .panel {
+    width: 320px; flex-shrink: 0; padding: 0; display: flex; flex-direction: column;
+    height: 850px; position: relative; overflow: hidden;
+    border: 1px solid var(--line-card); border-radius: var(--radius-card);
+    background:
+      radial-gradient(120% 60% at 0% 0%, color-mix(in srgb, var(--pal-primary) 13%, transparent), transparent 70%),
+      radial-gradient(90% 50% at 100% 100%, color-mix(in srgb, var(--pal-accent) 9%, transparent), transparent 65%),
+      var(--surface-1);
+    transition: background var(--d-slow) var(--ease);
+  }
+  .panel :where(button, select, input:not([type="range"])) {
+    height: var(--ctl-h); padding: 0 10px; background: var(--surface-3);
+    border: 1px solid var(--line-ctl); border-radius: var(--radius-ctl);
+    color: var(--ink); font: inherit; font-size: var(--fs-m);
+  }
+  .panel :where(button) { cursor: pointer; transition: background var(--d-fast) var(--ease), border-color var(--d-fast) var(--ease), color var(--d-fast) var(--ease); }
+  .panel :where(button):hover { background: var(--surface-4); }
+  .panel :where(button):focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: var(--ctl-h); padding: 0; flex-shrink: 0; }
+
+  .b-head { padding: var(--pad-side) var(--pad-side) 12px; flex-shrink: 0; }
+  .b-wordmark {
+    font-size: var(--fs-h1); letter-spacing: -.02em; font-weight: 650; width: fit-content;
+    background: linear-gradient(96deg, var(--pal-primary) 0%, var(--pal-accent) 55%, var(--ink) 105%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    transition: background var(--d-slow) var(--ease);
+  }
+  .b-tagline { color: var(--ink-faint); font-size: var(--fs-s); margin: 3px 0 0; }
+  .b-body { flex: 1; min-height: 0; overflow-y: auto; padding: 4px var(--pad-side) var(--pad-side); scrollbar-width: thin; scrollbar-color: var(--line-ctl) transparent; }
+  .b-foot {
+    flex-shrink: 0; padding: 12px var(--pad-side) var(--pad-side);
+    border-top: 1px solid var(--line-card);
+    background: color-mix(in srgb, var(--surface-0) 55%, transparent); backdrop-filter: blur(6px);
+  }
+  .sec { margin: 0 0 16px; }
+  .sec-head { display: flex; align-items: center; gap: var(--gap-m); margin: 0 0 9px; min-height: 22px; }
+  .sec-label { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .16em; color: var(--ink-faint); white-space: nowrap; font-weight: 600; }
+  .sec-rule { flex: 1; height: 1px; min-width: 8px; background: linear-gradient(90deg, var(--line-card), transparent); }
+  .sec-act { display: inline-flex; align-items: center; gap: var(--gap-s); flex-shrink: 0; }
+  .mini {
+    height: 22px; padding: 0 8px; font-size: var(--fs-xs); background: transparent;
+    border: 1px solid transparent; color: var(--ink-faint); border-radius: var(--radius-pill);
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .mini:hover { background: var(--surface-3); border-color: var(--line-ctl); color: var(--ink-muted); }
+  .mini.on { background: color-mix(in srgb, var(--pal-primary) 20%, transparent); border-color: color-mix(in srgb, var(--pal-primary) 45%, transparent); color: var(--ink); }
+  .mini-sw { width: 11px; height: 11px; border-radius: 3px; border: 1px solid rgba(255,255,255,.28); }
+
+  .frame-card { background: var(--surface-2); border: 1px solid var(--line-card); border-radius: var(--radius-ctl); padding: 6px; display: flex; align-items: center; gap: var(--gap-s); }
+  .frame-dot {
+    width: 26px; height: 26px; border-radius: var(--radius-ctl); padding: 0; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center; font-size: var(--fs-s); font-weight: 700;
+    background: color-mix(in srgb, var(--pal-primary) 22%, var(--surface-4));
+    border: 1px solid color-mix(in srgb, var(--pal-primary) 40%, transparent); color: var(--ink);
+  }
+  .frame-card select { flex: 1; min-width: 0; height: 26px; background: transparent; border-color: transparent; font-size: var(--fs-s); }
+  .frame-card select:hover { background: var(--surface-3); }
+  .frame-card .icon-btn { width: 26px; height: 26px; background: transparent; border-color: transparent; color: var(--ink-faint); }
+  .frame-card .icon-btn:hover { background: var(--surface-3); color: var(--ink); }
+
+  /* ============================================================
+     THE BOARD
+     ============================================================ */
+  .board { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .slot {
+    position: relative; height: 60px; border-radius: 9px; padding: 7px 8px 6px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    transition: box-shadow var(--d-base) var(--ease), transform var(--d-fast) var(--ease),
+                background var(--d-slow) var(--ease), border-color var(--d-base) var(--ease);
+  }
+  /* YOURS / KEPT — solid, the color fills the slot */
+  .slot.yours, .slot.kept {
+    background: var(--c); color: var(--ink-on); border: 1px solid transparent;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.1), 0 1px 3px rgba(0,0,0,.4);
+  }
+  /* DERIVED — dashed with the color pooled inside. Same visual language the
+     invented lane used in round 2, so provenance needs no legend. This is the
+     ONLY state riff touches, which is the whole point of the distinction. */
+  .slot.derived {
+    border: 1px dashed color-mix(in srgb, var(--c) 60%, var(--line-ctl));
+    background: color-mix(in srgb, var(--c) 20%, var(--surface-2));
+    color: var(--ink);
+  }
+  .slot.drop-ok {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 2px var(--accent), 0 6px 18px rgba(0,0,0,.5);
+  }
+  .slot-top { display: flex; align-items: center; gap: 4px; }
+  /* the LABEL is the teacher — its own target, separate from the color */
+  .slot-name {
+    display: inline-flex; align-items: center; gap: 4px; height: 17px; padding: 0 5px 0 4px;
+    margin-left: -4px; border-radius: var(--radius-pill);
+    font-size: 9px; text-transform: uppercase; letter-spacing: .13em; font-weight: 650;
+    background: transparent; border: 0; color: inherit; opacity: .75;
+    transition: background var(--d-fast) var(--ease), opacity var(--d-fast) var(--ease);
+  }
+  .slot.yours .slot-name:hover, .slot.kept .slot-name:hover { background: var(--well); opacity: 1; }
+  .slot.derived .slot-name:hover { background: var(--surface-4); opacity: 1; }
+  .slot-name.open { background: var(--accent); color: #10131c; opacity: 1; }
+  .slot-name .q { font-size: 9px; opacity: .55; font-weight: 700; }
+  .slot-name:hover .q { opacity: 1; }
+  .slot-anchor { margin-left: auto; font-size: 9px; opacity: .8; display: flex; }
+  /* the COLOR BODY is the assigner */
+  .slot-body {
+    display: flex; align-items: flex-end; gap: 5px; width: 100%; height: auto;
+    background: transparent; border: 0; padding: 0; color: inherit; cursor: pointer;
+    border-radius: 5px; text-align: left;
+  }
+  .slot-body:hover { background: transparent; }
+  .slot-hex { font-size: var(--fs-s); font-weight: 550; letter-spacing: -.01em; }
+  .slot.yours .slot-body:hover .slot-hex, .slot.kept .slot-body:hover .slot-hex { text-decoration: underline; text-underline-offset: 3px; }
+  .slot.derived .slot-hex { color: var(--ink-muted); }
+  .slot-tag .pinmark { opacity: .9; margin-right: 3px; }
+  .slot-tag {
+    margin-left: auto; font-size: 8px; text-transform: uppercase; letter-spacing: .1em;
+    opacity: .6; white-space: nowrap;
+  }
+  .slot.yours, .slot.kept { cursor: grab; }
+  .slot.yours:active, .slot.kept:active { cursor: grabbing; }
+  .slot.dragging { opacity: .35; }
+  /* claim: smith's color becomes yours, so riff stops touching it */
+  .slot-keep {
+    position: absolute; right: 5px; top: 5px; width: 18px; height: 18px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%; border: 0; background: var(--surface-4); color: var(--ink);
+    opacity: 0; transform: scale(.7);
+    transition: opacity var(--d-fast) var(--ease), transform var(--d-fast) var(--ease-back), background var(--d-fast) var(--ease);
+  }
+  .slot:hover .slot-keep { opacity: 1; transform: scale(1); }
+  .slot-keep:hover { background: var(--ok); color: #0f1a0c; }
+  @keyframes reroll {
+    0%   { transform: translateY(0) scale(1); }
+    35%  { transform: translateY(-4px) scale(1.04); }
+    100% { transform: translateY(0) scale(1); }
+  }
+  .slot.rerolling { animation: reroll var(--d-slow) var(--ease-back) both; }
+  @keyframes landed {
+    0%,100% { box-shadow: inset 0 0 0 1px rgba(255,255,255,.1), 0 1px 3px rgba(0,0,0,.4); }
+    45%     { box-shadow: 0 0 0 2px var(--ok), 0 4px 14px rgba(0,0,0,.5); }
+  }
+  .slot.landed, .series.landed { animation: landed calc(var(--d-slow) * 2) var(--ease) both; }
+
+  /* ---------------- series tray (chart is pooled, not a slot) -------------- */
+  .tray {
+    border: 1px solid var(--line-card); border-radius: 9px; padding: 7px 8px 8px;
+    background: var(--surface-2);
+  }
+  .tray-top { display: flex; align-items: center; gap: 4px; margin-bottom: 7px; }
+  .tray .slot-name { color: var(--ink-faint); opacity: 1; }
+  .tray .slot-name:hover { background: var(--surface-4); color: var(--ink-muted); }
+  .tray-cap { margin-left: auto; font-size: 8px; color: var(--ink-faint); letter-spacing: .08em; }
+  .tray-set { display: flex; gap: 5px; align-items: center; }
+  .series {
+    position: relative; width: 34px; height: 30px; border-radius: 7px; flex-shrink: 0; cursor: grab;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    transition: transform var(--d-fast) var(--ease);
+  }
+  .series:hover { transform: translateY(-2px); }
+  .series.derived { box-shadow: inset 0 0 0 1px var(--line-ctl); }
+  .series.derived::after {
+    content: ''; position: absolute; inset: 0; border-radius: 7px;
+    border: 1px dashed color-mix(in srgb, var(--c) 70%, var(--line-ctl));
+  }
+  .series-add {
+    width: 34px; height: 30px; padding: 0; border-radius: 7px;
+    border: 1px dashed var(--line-ctl); background: transparent; color: var(--ink-faint);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .tray.drop-ok { box-shadow: 0 0 0 2px var(--accent); }
+
+  /* ---------------- the bench — collapsed by default ---------------- */
+  .bench { margin-top: 10px; }
+  .bench-bar {
+    display: flex; align-items: center; gap: 7px; width: 100%; height: 30px;
+    padding: 0 9px; background: transparent; border: 1px solid var(--line-card);
+    border-radius: var(--radius-pill); color: var(--ink-faint); font-size: var(--fs-xs);
+  }
+  .bench-bar:hover { background: var(--surface-3); color: var(--ink-muted); border-color: var(--line-ctl); }
+  .bench-bar .caret { transition: transform var(--d-base) var(--ease); }
+  .bench-bar.open .caret { transform: rotate(180deg); }
+  .bench-dots { display: inline-flex; gap: 3px; margin-left: auto; }
+  .bench-dots i { width: 12px; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.2); }
+  .bench-bar.drop-ok { border-color: var(--accent); border-style: dashed; color: var(--accent); }
+  .bench-drawer { overflow: hidden; transition: height var(--d-base) var(--ease); }
+  .bench-inner { padding-top: 8px; }
+  .bench-set { display: flex; flex-wrap: wrap; gap: 6px; }
+  .benched {
+    position: relative; display: flex; align-items: center; gap: 7px;
+    height: 30px; padding: 0 9px 0 6px; border-radius: var(--radius-pill); cursor: grab;
+    background: var(--surface-3); border: 1px solid var(--line-card); font-size: var(--fs-s);
+    transition: transform var(--d-fast) var(--ease), border-color var(--d-fast) var(--ease);
+  }
+  .benched:hover { border-color: var(--line-ctl); transform: translateY(-1px); }
+  .benched:active { cursor: grabbing; }
+  .benched.dragging { opacity: .35; }
+  .benched i { width: 18px; height: 18px; border-radius: 5px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.2); }
+  .benched .kill {
+    width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%;
+    background: transparent; color: var(--ink-faint);
+    display: inline-flex; align-items: center; justify-content: center; opacity: 0;
+    transition: opacity var(--d-fast) var(--ease);
+  }
+  .benched:hover .kill { opacity: 1; }
+  .benched .kill:hover { color: var(--fail); background: var(--surface-4); }
+  .bench-empty { font-size: var(--fs-xs); color: var(--ink-faint); padding: 4px 2px; }
+
+  .add-row { display: flex; gap: var(--gap-s); margin-top: 10px; }
+  .hexfield {
+    display: flex; align-items: center; gap: var(--gap-s); flex: 1; min-width: 0; height: var(--ctl-h);
+    background: var(--surface-3); border: 1px solid var(--line-card); border-radius: var(--radius-ctl); padding: 0 6px;
+  }
+  .hexfield:focus-within { border-color: color-mix(in srgb, var(--pal-primary) 55%, transparent); }
+  .hexfield .dot { width: 18px; height: 18px; border-radius: 5px; background: #4a4f5c; border: 1px solid rgba(255,255,255,.12); }
+  .hexfield input { flex: 1; min-width: 0; height: auto; background: transparent; border: 0; outline: 0; padding: 0; font-size: var(--fs-m); color: var(--ink); }
+
+  /* ============================================================
+     POPOVERS — portaled to .panel so the scrolling body can't clip
+     ============================================================ */
+  .pop {
+    position: absolute; z-index: 60;
+    background: var(--surface-2); border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-card); box-shadow: 0 14px 38px rgba(0,0,0,.6);
+    overflow: hidden; animation: pop-in var(--d-fast) var(--ease-out) both;
+    transform-origin: var(--origin, top left);
+  }
+  @keyframes pop-in { from { opacity: 0; transform: scale(.93) translateY(-4px); } to { opacity: 1; transform: none; } }
+
+  /* the TEACHING tooltip: gloss + a job list derived from JOB_TOKENS */
+  .tip { width: 228px; padding: 11px 12px 12px; }
+  .tip-name { font-size: var(--fs-m); font-weight: 650; letter-spacing: .02em; text-transform: capitalize; }
+  .tip-gloss { font-size: var(--fs-s); color: #c8ccd6; line-height: 1.5; margin-top: 4px; }
+  .tip-jobs-label { font-size: 8px; text-transform: uppercase; letter-spacing: .16em; color: var(--ink-faint); margin: 10px 0 4px; }
+  .tip-jobs { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tip-job {
+    font-size: 9px; padding: 2px 6px; border-radius: var(--radius-pill);
+    background: var(--surface-4); color: var(--ink-muted);
+  }
+  .tip-src { font-size: 9px; color: #4e525c; margin-top: 9px; line-height: 1.5; }
+
+  /* the ASSIGN popover: "which color goes here?" — the transpose */
+  .asg { width: 236px; }
+  .asg-head { display: flex; align-items: center; gap: 8px; padding: 10px 11px 9px; border-bottom: 1px solid var(--line-card); }
+  .asg-sw { width: 24px; height: 24px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+  .asg-q { font-size: var(--fs-m); font-weight: 550; }
+  .asg-sub { font-size: var(--fs-xs); color: var(--ink-faint); margin-top: 1px; }
+  .asg-label { font-size: 9px; text-transform: uppercase; letter-spacing: .16em; color: var(--ink-faint); padding: 9px 11px 4px; }
+  .asg-list { padding: 0 4px 4px; max-height: 250px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line-ctl) transparent; }
+  .opt {
+    display: flex; align-items: center; gap: 8px; width: 100%; height: auto;
+    padding: 6px 7px; border-radius: var(--radius-ctl); text-align: left;
+    background: transparent; border: 1px solid transparent; color: var(--ink);
+  }
+  .opt:hover { background: var(--surface-4); }
+  .opt.cur { background: color-mix(in srgb, var(--pal-primary) 16%, transparent); border-color: color-mix(in srgb, var(--pal-primary) 34%, transparent); }
+  .opt i { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(255,255,255,.2); }
+  .opt i.auto { background: repeating-linear-gradient(45deg, #2a2c33, #2a2c33 3px, #1f2127 3px, #1f2127 6px); }
+  .opt-txt { flex: 1; min-width: 0; }
+  .opt-name { font-size: var(--fs-m); }
+  .opt-hint { font-size: var(--fs-xs); color: var(--ink-faint); line-height: 1.4; margin-top: 1px; }
+
+  /* ============================================================
+     THE SURFACE CONTROL — closes the three gaps `neutral` can't express
+     (tinted secondary, sidebar apart from card, popover apart from card)
+     with three intent levers instead of five extra token slots.
+     ============================================================ */
+  .surf-preview {
+    display: flex; height: 74px; border-radius: 8px; overflow: hidden;
+    border: 1px solid var(--line-card); margin-bottom: 10px; position: relative;
+  }
+  .sp-side { width: 34px; flex-shrink: 0; transition: background var(--d-base) var(--ease); }
+  .sp-side i { display: block; height: 4px; margin: 7px 6px; border-radius: 2px; opacity: .55; }
+  .sp-page { flex: 1; position: relative; padding: 8px; transition: background var(--d-base) var(--ease); }
+  .sp-card {
+    height: 100%; border-radius: 5px; padding: 7px;
+    transition: background var(--d-base) var(--ease), box-shadow var(--d-base) var(--ease);
+  }
+  .sp-card i { display: block; height: 4px; border-radius: 2px; opacity: .5; }
+  .sp-card i + i { margin-top: 5px; width: 60%; }
+  .sp-btn {
+    position: absolute; left: 46px; bottom: 9px; height: 13px; width: 34px; border-radius: 3px;
+    transition: background var(--d-base) var(--ease);
+  }
+  .sp-pop {
+    position: absolute; right: 8px; bottom: 8px; width: 62px; height: 34px; border-radius: 5px;
+    transition: background var(--d-base) var(--ease), box-shadow var(--d-base) var(--ease);
+  }
+  .surf-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .surf-row:last-child { margin-bottom: 0; }
+  .surf-key {
+    font-size: 9px; text-transform: uppercase; letter-spacing: .12em;
+    color: var(--ink-faint); width: 66px; flex-shrink: 0;
+  }
+  .seg {
+    display: flex; flex: 1; background: var(--surface-3);
+    border: 1px solid var(--line-card); border-radius: var(--radius-pill); padding: 2px; gap: 2px;
+  }
+  .seg button {
+    flex: 1; height: 20px; padding: 0 4px; border: 0; border-radius: var(--radius-pill);
+    background: transparent; color: var(--ink-faint); font-size: 9px;
+    text-transform: uppercase; letter-spacing: .07em;
+  }
+  .seg button:hover { background: var(--surface-4); color: var(--ink-muted); }
+  .seg button.on {
+    background: color-mix(in srgb, var(--pal-primary) 30%, var(--surface-4));
+    color: var(--ink); font-weight: 600;
+  }
+
+  /* ---------------- dial + footer ---------------- */
+  .dial-ends { display: flex; justify-content: space-between; font-size: var(--fs-s); margin-bottom: 14px; }
+  .fid-left { color: var(--accent-cool); } .fid-right { color: var(--accent-warm); }
+  .dial-track-wrap { position: relative; height: 26px; }
+  .dial-slider {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: var(--radius-pill);
+    outline: none; margin: 0; position: absolute; top: 4px;
+    background: linear-gradient(90deg, var(--accent-cool) 0%, #3a3f4d 48%, #4a4034 62%, var(--accent-warm) 100%);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.5);
+  }
+  .dial-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--ink-bright); border: 3px solid var(--surface-1); cursor: grab;
+    box-shadow: 0 0 0 1px var(--line-active), 0 2px 8px rgba(0,0,0,.55);
+  }
+  .dial-bubble {
+    position: absolute; top: -20px; transform: translateX(-50%); font-size: var(--fs-xs);
+    font-variant-numeric: tabular-nums; background: var(--surface-4); color: var(--ink);
+    border: 1px solid var(--line-ctl); padding: 2px 7px; border-radius: var(--radius-pill);
+    pointer-events: none; transition: left var(--d-fast) var(--ease);
+  }
+  .dial-caption { font-size: var(--fs-s); color: var(--ink-faint); text-align: center; margin-top: 12px; min-height: 15px; }
+  .dial-caption span { display: block; transition: opacity var(--d-fast) linear; }
+  .dial-caption.swapping span { opacity: 0; }
+  .status-chip {
+    width: 100%; display: flex; align-items: center; gap: var(--gap-m); font-size: var(--fs-s); text-align: left;
+    background: color-mix(in srgb, var(--ok) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ok) 25%, transparent); color: var(--ok);
+  }
+  .status-more { margin-left: auto; opacity: .7; }
+  .export-row { display: flex; gap: var(--gap-s); margin-top: var(--gap-m); }
+  .export-main {
+    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    background: linear-gradient(180deg, var(--surface-4), var(--surface-3));
+    border-color: color-mix(in srgb, var(--pal-primary) 32%, var(--line-ctl)); font-weight: 550;
+  }
+
+  /* ---------------- specimen column ---------------- */
+  .specs { width: 330px; flex-shrink: 0; }
+  .spec-h {
+    font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .16em;
+    color: var(--ink-faint); margin: 22px 0 9px; font-weight: 600;
+  }
+  .spec-h:first-child { margin-top: 0; }
+  .spec-box { background: var(--surface-1); border: 1px solid var(--line-card); border-radius: var(--radius-card); padding: 14px; }
+  .spec-cap { font-size: var(--fs-xs); color: var(--ink-faint); margin-top: 7px; line-height: 1.5; }
+  .anat { position: relative; }
+  .anat .slot { height: 78px; padding: 10px 11px 9px; }
+  .anat .slot-name { font-size: 10px; height: 20px; }
+  .anat .slot-hex { font-size: 13px; }
+  .cal { position: absolute; display: flex; align-items: center; gap: 6px; font-size: 9px; color: var(--accent); white-space: nowrap; }
+  .cal::before { content: ''; width: 14px; height: 1px; background: var(--accent); }
+  .cal.l { flex-direction: row-reverse; }
+  .cal.l::before { content: ''; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* ---------------- notes ---------------- */
+  .notes { max-width: 390px; font-size: 13px; line-height: 1.6; }
+  .notes h3 { font-size: var(--fs-m); text-transform: uppercase; letter-spacing: .12em; color: var(--ink-muted); margin: 26px 0 8px; }
+  .notes h3:first-child { margin-top: 0; }
+  .notes p { margin: 0 0 11px; color: #c8ccd6; }
+  .notes b { color: var(--ink); }
+  .notes ul { margin: 0 0 11px; padding-left: 18px; color: #c8ccd6; }
+  .notes li { margin-bottom: 6px; }
+  .notes .try {
+    display: inline-block; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .1em;
+    color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border-radius: 3px; padding: 1px 5px; margin-right: 6px;
+  }
+  .rule-box { border-left: 2px solid var(--accent); padding: 2px 0 2px 12px; margin: 0 0 12px; color: #c8ccd6; }
+  .t3 { width: 100%; border-collapse: collapse; font-size: var(--fs-m); margin: 6px 0 12px; }
+  .t3 td { padding: 6px 8px 6px 0; border-bottom: 1px solid #22242b; color: #c8ccd6; vertical-align: top; }
+  .t3 td:first-child { color: var(--ink-faint); width: 122px; white-space: nowrap; }
+  .dead { color: var(--fail); }
+
+  body.no-motion { --t: 0.001; }
+  @media (prefers-reduced-motion: reduce) { :root { --t: 0.001; } }
+</style>
+</head>
+<body>
+
+<div class="sheet-head">
+  <h1>themesmith — the role board</h1>
+  <span class="sub">round 3 · drag a bench color into a slot · click a label to learn · riff re-rolls only the smith's slots</span>
+  <button class="tog" id="slowmo" aria-pressed="false"><span class="dot"></span> slow-mo 4×</button>
+  <button class="tog" id="nomotion" aria-pressed="false"><span class="dot"></span> reduced motion</button>
+</div>
+
+<div class="sheet">
+  <div>
+    <p class="col-title"><b>the board</b> <span class="col-note">live — drag, click, riff</span></p>
+    <div class="panel" id="p1"></div>
+  </div>
+
+  <div>
+    <p class="col-title"><b>11 slots</b> <span class="col-note">tweakcn granularity — the test</span></p>
+    <div class="panel" id="p2"></div>
+  </div>
+
+  <div class="specs">
+    <p class="col-title"><b>anatomy</b> <span class="col-note">enlarged specimens</span></p>
+
+    <div class="spec-h">a slot has two targets</div>
+    <div class="spec-box anat">
+      <div class="slot yours" style="--c:#7832c3;--ink-on:rgba(255,255,255,.95);--well:rgba(255,255,255,.14)">
+        <div class="slot-top">
+          <span class="slot-name">primary <span class="q">?</span></span>
+          <span class="slot-anchor"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/><circle cx="12" cy="5" r="3"/></svg></span>
+        </div>
+        <span class="slot-body"><span class="slot-hex mono">#7832c3</span><span class="slot-tag">yours</span></span>
+      </div>
+      <div class="spec-cap">
+        <b style="color:var(--ink)">The label teaches</b> — click it for the gloss and the live job list.
+        <b style="color:var(--ink)">The color assigns</b> — click it to swap what fills this seat.
+        Two verbs, two areas, no menu-inside-a-menu.
+      </div>
+    </div>
+
+    <div class="spec-h">four states</div>
+    <div class="spec-box">
+      <div class="grid2">
+        <div class="slot yours" style="--c:#79f77a;--ink-on:rgba(0,0,0,.82);--well:rgba(0,0,0,.10)">
+          <div class="slot-top"><span class="slot-name">success <span class="q">?</span></span></div>
+          <span class="slot-body"><span class="slot-hex mono">#79f77a</span><span class="slot-tag">yours</span></span>
+        </div>
+        <div class="slot derived" style="--c:#e5484d">
+          <div class="slot-top"><span class="slot-name">danger <span class="q">?</span></span></div>
+          <span class="slot-body"><span class="slot-hex mono">#e5484d</span><span class="slot-tag">derived</span></span>
+        </div>
+        <div class="slot kept" style="--c:#f5a623;--ink-on:rgba(0,0,0,.82);--well:rgba(0,0,0,.10)">
+          <div class="slot-top"><span class="slot-name">warning <span class="q">?</span></span></div>
+          <span class="slot-body"><span class="slot-hex mono">#f5a623</span><span class="slot-tag"><span class="pinmark"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.8V4h6v6.8a2 2 0 0 0 .6 1.4l1.4 1.4a1 1 0 0 1-.7 1.7H7.7a1 1 0 0 1-.7-1.7l1.4-1.4a2 2 0 0 0 .6-1.4Z"/></svg></span>kept</span></span>
+        </div>
+        <div class="slot yours" style="--c:#316264;--ink-on:rgba(255,255,255,.95);--well:rgba(255,255,255,.14);box-shadow:inset 0 0 0 2px rgba(255,255,255,.95),0 1px 3px rgba(0,0,0,.4)">
+          <div class="slot-top"><span class="slot-name">neutral <span class="q">?</span></span><span class="slot-anchor"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/><circle cx="12" cy="5" r="3"/></svg></span></div>
+          <span class="slot-body"><span class="slot-hex mono">#316264</span><span class="slot-tag">mono base</span></span>
+        </div>
+      </div>
+      <div class="spec-cap">
+        <b style="color:var(--ink)">yours</b> — you supplied and placed it.
+        <b style="color:var(--ink)">derived</b> — the engine computed it, and
+        <i>riff re-rolls it</i>; dashed with the color pooled inside, reusing
+        round 2's invented language. <b style="color:var(--ink)">kept</b> —
+        derived, then frozen by you, so riff leaves it alone. Every slot is
+        always filled; there is no empty state after your first color.
+      </div>
+    </div>
+
+    <div class="spec-h">the label's tooltip</div>
+    <div class="spec-box">
+      <div class="pop tip" style="position:relative;animation:none;box-shadow:none;width:auto">
+        <div class="tip-name">Accent</div>
+        <div class="tip-gloss">The quiet second voice — what the UI uses to show
+          you where you are, without shouting.</div>
+        <div class="tip-jobs-label">does these jobs right now</div>
+        <div class="tip-jobs">
+          <span class="tip-job">hover wash</span>
+          <span class="tip-job">tab indicator</span>
+          <span class="tip-job">focus ring</span>
+        </div>
+        <div class="tip-src">Job list is derived from the same ancestry map the
+          locator uses — it can't drift from what the engine actually does, and it
+          changes per mockup.</div>
+      </div>
+    </div>
+
+    <div class="spec-h">the transpose</div>
+    <div class="spec-box">
+      <div class="pop asg" style="position:relative;animation:none;box-shadow:none;width:auto">
+        <div class="asg-head">
+          <span class="asg-sw" style="background:#e0629a"></span>
+          <span><div class="asg-q">What fills accent?</div>
+            <div class="asg-sub">derived — riff re-rolls it</div></span>
+        </div>
+        <div class="asg-label">your colors</div>
+        <div class="asg-list">
+          <button class="opt"><i style="background:#c8b8a0"></i>
+            <span class="opt-txt"><span class="opt-name mono">#c8b8a0</span>
+              <span class="opt-hint">on the bench — nothing to free up</span></span></button>
+          <button class="opt"><i style="background:#7832c3"></i>
+            <span class="opt-txt"><span class="opt-name mono">#7832c3</span>
+              <span class="opt-hint">moves out of primary · smith refills it</span></span></button>
+          <button class="opt cur"><i class="auto"></i>
+            <span class="opt-txt"><span class="opt-name">let the smith derive it</span>
+              <span class="opt-hint">riff re-rolls it · current #e0629a</span></span></button>
+        </div>
+      </div>
+      <div class="spec-cap">
+        The same popover we built in round 2, transposed. It listed roles for a
+        color; this lists colors for a role — and <b style="color:var(--ink)">"let
+        the smith derive it" is now a first-class option</b> rather than an
+        "unpin" escape hatch.
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <h3>this is the right move</h3>
+    <p>It answers the question you raised — the labels now teach the vocabulary
+      instead of assuming it — but the bigger payoff is that it <b>collapses three
+      concepts into one</b>:</p>
+    <table class="t3">
+      <tr><td>colors with roles</td><td>slots <b>you</b> filled</td></tr>
+      <tr><td>invented colors</td><td>slots the smith <b>derived</b></td></tr>
+      <tr><td>unused colors</td><td>your <b>bench</b></td></tr>
+    </table>
+    <p>"Invented" stops being a concept needing its own lane, its own explanation
+      and its own verb. It's just a slot the smith filled. And "unused" stops being
+      a dead end on a color you cared enough to add — it's a bench, which answers
+      <i>"why isn't my color doing anything?"</i> at a glance.</p>
+    <p><span class="try">try</span><b>Riff.</b> Only the dashed slots re-roll;
+      yours sit perfectly still. That's the clearest statement of what riff does
+      that any of these rounds has produced — better than the cross-fade I was
+      pleased with two sheets ago.</p>
+
+    <h3>what dropping order killed</h3>
+    <p>Real deletions, not just visual ones:</p>
+    <ul>
+      <li class="dead"><code>reorderCandidate</code> and <code>remapAfterMove</code> in App.tsx</li>
+      <li class="dead">drag-to-reorder + the grip in CandidateStrip</li>
+      <li class="dead">the "higher rows claim roles first" model the user had to infer</li>
+    </ul>
+    <p>And drag gets <b>stronger by losing a job</b>: it used to mean "nudge this
+      color's priority," an invisible effect. Now it means one thing — place this
+      color in this seat. Explicit placement becomes the only steering mechanism,
+      which is a simplification, but it does mean the board has to carry all the
+      weight that ordering used to share.</p>
+    <p>Worth naming: this is the second concept you've cut for being confusing,
+      after weight. The pattern seems to be that implicit, continuous signals lose
+      to explicit, discrete ones here.</p>
+
+    <h3>the bench, collapsed</h3>
+    <p>A pill showing the count and the actual colors as dots, so even collapsed
+      it says <i>something is parked here</i>. It expands on click, and it's a
+      drop target while collapsed — drag a slot color onto the bar and it takes it.</p>
+    <p>One consequence to watch: with the bench closed, a color you add that
+      doesn't win a seat lands somewhere invisible. In the live panel the bar
+      pulses when that happens; a stronger option is auto-expanding on the first
+      bench arrival per session.</p>
+
+    <h3>chart as a series tray</h3>
+    <p><code>chartCandidateIndexes</code> is an array — several colors hold chart
+      at once, so it can't be a slot. It's a wide tray below the board that accepts
+      N colors, with smith-supplied entries dashed like everything else. It also
+      usefully absorbs extra colors when someone arrives with eight.</p>
+
+    <h3>the granularity test — read column 2</h3>
+    <p>Column 2 is tweakcn's grouping rendered as slots, on the same code path.
+      Two things show up immediately that a spec argument wouldn't have caught:</p>
+    <ul>
+      <li><b>Most of the labels are token names, not intents.</b> <i>popover</i>,
+        <i>muted</i>, <i>border &amp; input</i>, <i>base</i> — you can't guess any
+        of them without already knowing shadcn. That's the exact assumption the
+        board was invented to remove, reintroduced ten times over. The glosses
+        get thinner too, because there's nothing to say beyond restating the
+        token.</li>
+      <li><b>Three colors can't fill ten slots.</b> Column 1 boots 3 yours / 3
+        derived. Column 2 boots 3 yours / 7 derived — the board stops reading as
+        "your palette, arranged" and starts reading as "a form you haven't
+        finished." Riff makes it worse: seven slots thrash at once.</li>
+    </ul>
+    <p>And it still isn't tweakcn parity — tweakcn gives every group a
+      <i>background and a foreground</i>, so honest parity is ~22 controls, not
+      10. At that point it isn't a generator, it's a token editor with extra
+      steps.</p>
+
+    <h3>the surface control (column 1)</h3>
+    <p>The three gaps were real but they were <b>one concept, not five</b>. Three
+      intent levers, sitting under the board:</p>
+    <table class="t3">
+      <tr><td>separation</td><td>flat / layered / lifted — how far apart the surfaces sit. <b>lifted</b> is what splits popover off card.</td></tr>
+      <tr><td>tint</td><td>none / subtle / strong — how much the greys borrow the primary hue. <b>strong</b> is what makes secondary buttons brand-tinted.</td></tr>
+      <tr><td>sidebar</td><td>match / recessed / tinted — the one surface people most often want to break out.</td></tr>
+    </table>
+    <p>Every one of them is a <i>question about the design</i>, not a token name —
+      so it survives the test column 2 fails. And the live preview above them does
+      the teaching, the same way the role tooltips do: <b>show the effect, never
+      name the variable.</b></p>
+    <p><span class="try">try</span>Set separation to <b>lifted</b> and watch the
+      popover break away from the card. Then tint to <b>strong</b> and watch the
+      secondary button pick up the brand. Those are the two intents the 6-role
+      board genuinely couldn't express — now both are one click, and neither cost
+      a slot.</p>
+    <p>Measured against the code: <code>neutral</code> drives 15 of the 44 app
+      tokens and already yields 5 distinct surface values out of 8, so the ramp
+      was never the problem — the missing piece was a way to <i>aim</i> it.</p>
+
+    <h3>still open</h3>
+    <ul>
+      <li><b>Drag between two filled slots</b> — currently a move (the source
+        reverts to the smith). Swap might be less destructive but harder to
+        predict. Genuinely unsure.</li>
+      <li><b>Height.</b> The board + tray + collapsed bench is ~300px, which fits,
+        but it pushes the dial below the fold on short viewports. The dial was the
+        thing we promoted two rounds ago — worth checking it isn't being demoted
+        by accident.</li>
+      <li><b>Where does the palette-as-a-set reading go?</b> Chips gave you your
+        colors as one coherent object. Sorted into slots, that's weakened. Maybe
+        the collapsed bench bar grows into a full palette strip.</li>
+      <li><b>Does "lifted" need a real elevation model?</b> Right now it lightens
+        the popover; a proper implementation probably wants shadow tokens too,
+        which themesmith doesn't generate at all yet.</li>
+      <li><b>Six glosses to write.</b> The job lists derive themselves, but the
+        one-line plain-English glosses are hand-written and will be read by every
+        new user — worth drafting carefully rather than in a mockup.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const ICON = {
+  lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  unlock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  chevDown: '<path d="m6 9 6 6 6-6"/>',
+  rotate: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+  dice: '<rect width="12" height="12" x="2" y="10" rx="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01M10 14h.01"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  plus: '<path d="M5 12h14M12 5v14"/>',
+  columns: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 3v18"/>',
+  pin: '<path d="M12 17v5"/><path d="M9 10.8V4h6v6.8a2 2 0 0 0 .6 1.4l1.4 1.4a1 1 0 0 1-.7 1.7H7.7a1 1 0 0 1-.7-1.7l1.4-1.4a2 2 0 0 0 .6-1.4Z"/>',
+  anchor: '<path d="M12 22V8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/><circle cx="12" cy="5" r="3"/>',
+};
+const icon = (n, s = 14, w = 1.7) =>
+  `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${ICON[n]}</svg>`;
+
+const lum = (hex) => {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+  return 0.2126 * f(n >> 16) + 0.7152 * f((n >> 8) & 255) + 0.0722 * f(n & 255);
+};
+const isLight = (h) => lum(h) > 0.34;
+const inkOn = (h) => (isLight(h) ? 'rgba(0,0,0,.82)' : 'rgba(255,255,255,.95)');
+const wellOn = (h) => (isLight(h) ? 'rgba(0,0,0,.10)' : 'rgba(255,255,255,.14)');
+
+/* src/engine/types.ts — what themesmith actually steers */
+const ROLES = ['primary', 'accent', 'neutral', 'danger', 'success', 'warning'];
+
+/* tweakcn's groups, for the granularity test. Note how many are TOKEN names
+   rather than intents — "popover", "muted", "border & input" can't be guessed
+   by someone who doesn't already know shadcn. */
+const TWEAK_ROLES = [
+  'primary', 'secondary', 'accent', 'base', 'card',
+  'popover', 'muted', 'destructive', 'border & input', 'sidebar',
+];
+
+/* Hand-written glosses (stable) + job lists that in the real thing come from
+   JOB_TOKENS via tokenAncestry — see explain.ts. */
+const TWEAK_GLOSS = {
+  primary: 'Buttons and primary actions.',
+  secondary: 'The secondary button variant.',
+  accent: 'Hover and selection wash.',
+  base: 'Page background and its text.',
+  card: 'Card surfaces.',
+  popover: 'Popover and dropdown surfaces.',
+  muted: 'Muted surfaces and secondary text.',
+  destructive: 'Destructive actions and errors.',
+  'border & input': 'Borders, input borders, focus ring.',
+  sidebar: 'The sidebar and everything in it.',
+  chart: 'Data series — up to five.',
+};
+const TWEAK_JOBS = {
+  primary: ['primary', 'primary-fg'], secondary: ['secondary', 'secondary-fg'],
+  accent: ['accent', 'accent-fg'], base: ['background', 'foreground'],
+  card: ['card', 'card-fg'], popover: ['popover', 'popover-fg'],
+  muted: ['muted', 'muted-fg'], destructive: ['destructive', 'destructive-fg'],
+  'border & input': ['border', 'input', 'ring'],
+  sidebar: ['sidebar', 'sidebar-fg', 'sidebar-primary', 'sidebar-accent', 'sidebar-border', 'sidebar-ring'],
+  chart: ['chart 1', 'chart 2', 'chart 3', 'chart 4', 'chart 5'],
+  surfaces: ['background', 'card', 'popover', 'muted', 'secondary', 'sidebar', 'border'],
+};
+
+const GLOSS = {
+  primary: 'Your brand colour — the thing users click, and the loudest voice in the theme.',
+  accent: 'The quiet second voice — what the UI uses to show you where you are, without shouting.',
+  neutral: 'Surfaces and text. Most of the pixels on screen are this, so it decides how the theme feels.',
+  danger: 'Destructive actions and errors — the only colour allowed to alarm.',
+  success: 'Confirmations and healthy states.',
+  warning: "Cautions that aren't failures — expiring, degraded, needs-a-look.",
+  chart: 'Data series — up to five, kept distinguishable from each other and from the page.',
+  surfaces: 'How the greys separate from each other. One neutral ramp drives 15 tokens; these three levers decide how it spends them.',
+};
+const JOBS = {
+  primary: ['buttons', 'links', 'focus ring'],
+  accent: ['hover wash', 'tab indicator', 'focus ring'],
+  neutral: ['backgrounds', 'text', 'borders'],
+  danger: ['danger alerts'],
+  success: ['success alerts'],
+  warning: ['warning alerts'],
+  chart: ['chart 1', 'chart 2', 'chart 3', 'chart 4', 'chart 5'],
+};
+
+/* Every role needs an entry: a vacated primary is "derived" and MUST re-roll.
+   (It didn't, before — the map only covered accent/danger/warning.) */
+const REPERTOIRE = [
+  { primary: '#7c4dd0', accent: '#e0629a', neutral: '#3a5f63', danger: '#e5484d', success: '#5fc97a', warning: '#f5a623', series: '#8d6fe0' },
+  { primary: '#5b62d8', accent: '#c964d8', neutral: '#4a5560', danger: '#f05252', success: '#4fbf86', warning: '#e8b923', series: '#5ec8d8' },
+  { primary: '#2f8f8a', accent: '#5ec8d8', neutral: '#3f4a55', danger: '#dc4b52', success: '#6ad07f', warning: '#f0994a', series: '#c964d8' },
+  { primary: '#a2508f', accent: '#f0776a', neutral: '#4d4a58', danger: '#e33b48', success: '#57c58e', warning: '#d9b038', series: '#79a7f0' },
+];
+const SPARE = ['#8d6fe0', '#5ec8d8', '#c964d8', '#f0994a', '#79a7f0', '#57c58e', '#dc4b52', '#b0b6c2', '#6f7686', '#9d7ff0'];
+/* a derived value for any slot name, so the 11-slot board re-rolls too */
+function derivedHex(role, seed) {
+  const r = REPERTOIRE[seed % REPERTOIRE.length];
+  if (r[role]) return r[role];
+  let h = 0;
+  for (const ch of role) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return SPARE[(h + seed) % SPARE.length];
+}
+
+/* ---- surface maths: derive the whole neutral stack from ONE ramp + intent ---- */
+const hex2rgb = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const rgb2hex = (c) => '#' + c.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+const mix = (a, b, t) => rgb2hex(hex2rgb(a).map((v, i) => v + (hex2rgb(b)[i] - v) * t));
+
+const SEP = { flat: 0, layered: 1, lifted: 1.9 };
+const TINT = { none: 0, subtle: 0.06, strong: 0.16 };
+
+/* Everything below is ONE neutral ramp plus three intent levers. This is the
+   argument: you steer surfaces by intent, not by naming five more tokens. */
+function surfaces(neutral, primary, surf) {
+  const k = SEP[surf.separation], t = TINT[surf.tint];
+  const base = mix(mix(neutral, '#ffffff', 0.93), primary, t);
+  const step = (n) => mix(base, '#000000', 0.022 * n * k);
+  const page = base;
+  const card = step(1);
+  const popover = surf.separation === 'lifted' ? mix(step(0), '#ffffff', 0.5) : step(1);
+  const muted = step(2.4);
+  const secondary = surf.tint === 'strong' ? mix(step(2.4), primary, 0.22) : step(2.4);
+  const sidebar =
+    surf.sidebar === 'match' ? card
+    : surf.sidebar === 'recessed' ? step(3.2)
+    : mix(step(1), primary, Math.max(0.14, t * 2));
+  return { page, card, popover, muted, secondary, sidebar, ink: mix(neutral, '#000000', 0.72) };
+}
+
+const CAPTION = (f, locked) =>
+  locked ? 'mono — varying lightness only · avg shift ΔL 0.06'
+  : f >= 0.99 ? 'colors kept exactly · 1 clash reported'
+  : f <= 0.35 ? 'reworking your colors · avg shift ΔE 0.11'
+  : f >= 0.8 ? 'your colors already sit well — nothing to tune'
+  : 'gently tuning your colors · avg shift ΔE 0.04';
+
+const newState = (cfg = {}) => ({
+  roles: cfg.roles || ROLES,
+  gloss: cfg.gloss || GLOSS,
+  jobs: cfg.jobs || JOBS,
+  tray: cfg.tray !== false,
+  benchOn: cfg.bench !== false,
+  surfacesOn: !!cfg.surfaces,
+  // Every slot is always filled. Three provenances, because two wasn't enough:
+  //   yours   — a color you supplied and placed
+  //   derived — the engine computed it; RIFF RE-ROLLS IT
+  //   kept    — the engine computed it and you froze it; riff leaves it alone
+  // "kept" is the app's own existing word (App.tsx: "keep as your color").
+  slots: {
+    primary: { hex: '#7832c3', src: 'yours' },
+    accent: { hex: '#e0629a', src: 'derived' },
+    neutral: { hex: '#316264', src: 'yours' },
+    danger: { hex: '#e5484d', src: 'derived' },
+    success: { hex: '#79f77a', src: 'yours' },
+    warning: { hex: '#f5a623', src: 'derived' },
+  },
+  series: [
+    { hex: '#7832c3', src: 'yours' },
+    { hex: '#316264', src: 'yours' },
+    { hex: '#8d6fe0', src: 'derived' },
+  ],
+  bench: ['#c8b8a0'],
+  seed: 0, fidelity: 0.5, anchor: null, benchOpen: false,
+  tipFor: null, asgFor: null, split: false, flash: false, landed: null,
+  // the SURFACE control — one lever set, not five extra slots
+  surf: { separation: 'layered', tint: 'subtle', sidebar: 'match' },
+});
+
+/* build a slot map for an arbitrary role list */
+function slotsFor(roles, placed, seed = 0) {
+  const out = {};
+  for (const r of roles) out[r] = placed[r] ? { hex: placed[r], src: 'yours' } : { hex: derivedHex(r, seed), src: 'derived' };
+  return out;
+}
+
+let SPEED = 1;
+const motionOff = () => document.body.classList.contains('no-motion');
+const dur = (ms) => (motionOff() ? 0 : ms * SPEED);
+
+/* ---------------- chrome ---------------- */
+const headHTML = () => `<div class="b-head">
+    <div class="b-wordmark">themesmith</div>
+    <p class="b-tagline">any colors in, working theme out</p>
+  </div>`;
+
+const canvasHTML = (s) => `<div class="sec">
+    <div class="sec-head">
+      <span class="sec-label">canvas</span><span class="sec-rule"></span>
+      <span class="sec-act"><button class="mini${s.split ? ' on' : ''}" data-act="split">
+        ${s.split ? icon('x', 11, 2.2) + ' close B' : icon('columns', 11) + ' compare'}</button></span>
+    </div>
+    <div class="frame-card">
+      <span class="frame-dot">A</span>
+      <select><option>App dashboard</option><option>Brand board</option></select>
+      <button class="icon-btn" title="switch to dark">${icon('moon', 13)}</button>
+      ${s.split ? `<button class="icon-btn" title="copy → B">${icon('copy', 13)}</button>` : ''}
+    </div>
+  </div>`;
+
+const SOLID = (v) => v.src !== 'derived';
+const TAG = { yours: 'yours', kept: 'kept', derived: 'derived' };
+
+function slotHTML(s, role) {
+  const v = s.slots[role];
+  const anch = s.anchor === role;
+  const solid = SOLID(v);
+  const style = solid
+    ? `--c:${v.hex};--ink-on:${inkOn(v.hex)};--well:${wellOn(v.hex)}`
+    : `--c:${v.hex}`;
+  return `<div class="slot ${v.src} ${s.landed === role ? 'landed' : ''}" data-slot="${role}"
+      ${solid ? `draggable="true" data-dragslot="${role}"` : ''}
+      style="${style}${anch && solid ? ';box-shadow:inset 0 0 0 2px var(--ink-on),0 1px 3px rgba(0,0,0,.4)' : ''}">
+      <div class="slot-top">
+        <button class="slot-name ${s.tipFor === role ? 'open' : ''}" data-tip="${role}" data-anchor="tip-${role}"
+          title="what is ${role}?">${role} <span class="q">?</span></button>
+        ${anch ? `<span class="slot-anchor" title="mono base">${icon('anchor', 11, 2)}</span>` : ''}
+      </div>
+      <button class="slot-body" data-asg="${role}" data-anchor="asg-${role}">
+        <span class="slot-hex mono">${v.hex}</span>
+        <span class="slot-tag">${v.src === 'kept' ? `<span class="pinmark">${icon('pin', 8, 2.6)}</span>` : ''}${TAG[v.src]}</span>
+      </button>
+      ${v.src === 'derived' ? `<button class="slot-keep" data-keep="${role}" title="keep this — riff will stop changing it">${icon('pin', 10, 2.4)}</button>` : ''}
+    </div>`;
+}
+
+function boardHTML(s) {
+  return `<div class="sec">
+      <div class="sec-head">
+        <span class="sec-label">roles</span><span class="sec-rule"></span>
+        <span class="sec-act">
+          <button class="mini${s.anchor ? ' on' : ''}" data-act="anchor" title="lock the theme to one hue">
+            ${icon(s.anchor ? 'lock' : 'unlock', 12)}
+            ${s.anchor ? `<span class="mini-sw" style="background:${s.slots[s.anchor].hex}"></span>` : 'mono'}
+          </button>
+          <button class="mini" data-act="startover" title="start over">${icon('rotate', 12)}</button>
+          <button class="mini" data-act="riff" title="re-roll the slots the smith filled">
+            <span data-riffdie style="display:inline-flex">${icon('dice', 12)}</span>${s.seed > 0 ? ` ${s.seed}` : ''}
+          </button>
+        </span>
+      </div>
+      <div class="board">${s.roles.map((r) => slotHTML(s, r)).join('')}</div>
+
+      ${!s.tray ? '' : `<div class="tray" data-tray style="margin-top:8px">
+        <div class="tray-top">
+          <button class="slot-name ${s.tipFor === 'chart' ? 'open' : ''}" data-tip="chart" data-anchor="tip-chart">chart series <span class="q">?</span></button>
+          <span class="tray-cap">${s.series.length} of 5</span>
+        </div>
+        <div class="tray-set">
+          ${s.series.map((c, i) => `<span class="series ${c.src} ${s.landed === 'series' + i ? 'landed' : ''}" data-series="${i}"
+            draggable="true" style="background:${c.hex};--c:${c.hex}" title="${c.hex} — ${TAG[c.src]}"></span>`).join('')}
+          ${s.series.length < 5 ? `<button class="series-add" data-act="series-add" title="add a series color">${icon('plus', 12, 2.4)}</button>` : ''}
+        </div>
+      </div>
+
+      `}
+      ${!s.benchOn ? '' : `<div class="bench">
+        <button class="bench-bar ${s.benchOpen ? 'open' : ''} ${s.flash ? 'drop-ok' : ''}" data-act="bench" data-bench-drop>
+          <span class="caret" style="display:flex">${icon('chevDown', 12)}</span>
+          bench · ${s.bench.length} color${s.bench.length === 1 ? '' : 's'} not in play
+          <span class="bench-dots">${s.bench.map((h) => `<i style="background:${h}"></i>`).join('')}</span>
+        </button>
+        <div class="bench-drawer" data-drawer style="height:0">
+          <div class="bench-inner" data-inner>
+            ${s.bench.length ? `<div class="bench-set">${s.bench.map((h, i) => `
+              <span class="benched" data-benched="${i}" draggable="true">
+                <i style="background:${h}"></i><span class="mono">${h}</span>
+                <button class="kill" data-act="unbench" data-i="${i}" title="remove">${icon('x', 10, 2.6)}</button>
+              </span>`).join('')}</div>`
+              : '<div class="bench-empty">every color you added is in play</div>'}
+          </div>
+        </div>
+      </div>`}
+
+      <div class="add-row">
+        <label class="hexfield"><span class="dot"></span>
+          <input placeholder="add a color — #e63946, oklch(…)" /></label>
+        <button data-act="add">Add</button>
+      </div>
+    </div>`;
+}
+
+function surfacesHTML(s) {
+  if (!s.surfacesOn) return '';
+  const n = (s.slots.neutral || s.slots.base || { hex: '#316264' }).hex;
+  const p = s.slots.primary.hex;
+  const v = surfaces(n, p, s.surf);
+  const seg = (key, opts) => `<div class="seg">${opts.map((o) =>
+    `<button class="${s.surf[key] === o ? 'on' : ''}" data-surf="${key}" data-val="${o}">${o}</button>`).join('')}</div>`;
+  return `<div class="sec">
+      <div class="sec-head">
+        <span class="sec-label">surfaces</span><span class="sec-rule"></span>
+        <span class="sec-act"><button class="mini" data-tip="surfaces" data-anchor="tip-surfaces">?</button></span>
+      </div>
+      <div class="surf-preview">
+        <div class="sp-side" style="background:${v.sidebar}">
+          <i style="background:${v.ink}"></i><i style="background:${v.ink}"></i><i style="background:${v.ink}"></i>
+        </div>
+        <div class="sp-page" style="background:${v.page}">
+          <div class="sp-card" style="background:${v.card};box-shadow:0 1px 2px rgba(0,0,0,${0.10 * SEP[s.surf.separation]})">
+            <i style="background:${v.ink}"></i><i style="background:${v.ink}"></i>
+          </div>
+          <span class="sp-btn" style="background:${v.secondary}"></span>
+          <span class="sp-pop" style="background:${v.popover};box-shadow:0 3px 10px rgba(0,0,0,${0.16 * SEP[s.surf.separation]})"></span>
+        </div>
+      </div>
+      <div class="surf-row"><span class="surf-key">separation</span>${seg('separation', ['flat', 'layered', 'lifted'])}</div>
+      <div class="surf-row"><span class="surf-key">tint</span>${seg('tint', ['none', 'subtle', 'strong'])}</div>
+      <div class="surf-row"><span class="surf-key">sidebar</span>${seg('sidebar', ['match', 'recessed', 'tinted'])}</div>
+    </div>`;
+}
+
+const tailHTML = (s) => `<div class="sec">
+    <div class="sec-head"><span class="sec-label">tuning</span><span class="sec-rule"></span></div>
+    <div class="dial-ends"><span class="fid-left">smith's taste</span><span class="fid-right">raw colors</span></div>
+    <div class="dial-track-wrap">
+      <span class="dial-bubble" data-bubble style="left:${s.fidelity * 100}%">${s.fidelity.toFixed(2)}</span>
+      <input type="range" class="dial-slider" data-fid min="0" max="1" step="0.05" value="${s.fidelity}" />
+    </div>
+    <div class="dial-caption" data-cap><span>${CAPTION(s.fidelity, !!s.anchor)}</span></div>
+  </div>`;
+
+const footHTML = () => `<div class="b-foot">
+    <button class="status-chip">${icon('check', 13)} all 40 checks pass<span class="status-more">report ›</span></button>
+    <div class="export-row">
+      <button class="export-main">${icon('copy', 14)} Copy CSS variables</button>
+      <button class="icon-btn">${icon('chevDown', 14)}</button>
+    </div>
+  </div>`;
+
+const render = (s) => headHTML() + `<div class="b-body">${canvasHTML(s)}${boardHTML(s)}${surfacesHTML(s)}${tailHTML(s)}</div>` + footHTML();
+
+/* ---------------- popovers ---------------- */
+function tipHTML(s, role) {
+  return `<div class="pop tip" data-pop>
+      <div class="tip-name">${role === 'chart' ? 'Chart series' : role}</div>
+      <div class="tip-gloss">${s.gloss[role] || ''}</div>
+      <div class="tip-jobs-label">does these jobs right now</div>
+      <div class="tip-jobs">${(s.jobs[role] || []).map((j) => `<span class="tip-job">${j}</span>`).join('')}</div>
+      <div class="tip-src">derived from the ancestry map — changes with the mockup</div>
+    </div>`;
+}
+function asgHTML(s, role) {
+  const v = s.slots[role];
+  const others = s.roles.filter((r) => r !== role && SOLID(s.slots[r]));
+  return `<div class="pop asg" data-pop>
+      <div class="asg-head">
+        <span class="asg-sw" style="background:${v.hex}"></span>
+        <span><div class="asg-q">What fills ${role}?</div>
+          <div class="asg-sub">${v.src === 'yours' ? 'you placed this one' : v.src === 'kept' ? 'derived, then kept by you' : 'derived — riff re-rolls it'}</div></span>
+      </div>
+      <div class="asg-label">your colors</div>
+      <div class="asg-list">
+        ${s.bench.map((h, i) => `<button class="opt" data-fill="${role}" data-from="bench" data-i="${i}">
+            <i style="background:${h}"></i>
+            <span class="opt-txt"><span class="opt-name mono">${h}</span>
+              <span class="opt-hint">on the bench — nothing to free up</span></span></button>`).join('')}
+        ${others.map((r) => `<button class="opt" data-fill="${role}" data-from="slot" data-role="${r}">
+            <i style="background:${s.slots[r].hex}"></i>
+            <span class="opt-txt"><span class="opt-name mono">${s.slots[r].hex}</span>
+              <span class="opt-hint">moves out of ${r} · smith refills it</span></span></button>`).join('')}
+        <button class="opt ${v.src === 'derived' ? 'cur' : ''}" data-fill="${role}" data-from="auto">
+          <i class="auto"></i>
+          <span class="opt-txt"><span class="opt-name">let the smith derive it</span>
+            <span class="opt-hint">${v.src === 'yours' ? 'sends ' + v.hex + ' to the bench' : v.src === 'kept' ? 'unfreezes it · riff re-rolls again' : 'riff re-rolls it · current ' + v.hex}</span></span></button>
+      </div>
+    </div>`;
+}
+
+/* ================= controller ================= */
+class Board {
+  constructor(root, cfg = {}) {
+    this.root = root; this.cfg = cfg;
+    this.s = newState(cfg);
+    this.s.slots = slotsFor(this.s.roles, cfg.placed || {}, 0);
+    this.render(); this.bind();
+  }
+  vars() {
+    this.root.style.setProperty('--pal-primary', this.s.slots.primary.hex);
+    this.root.style.setProperty('--pal-accent', (this.s.slots.accent || this.s.slots.primary).hex);
+  }
+  render() {
+    this.root.innerHTML = render(this.s);
+    this.vars();
+    // bench drawer height (animatable, unlike `auto`)
+    const drawer = this.root.querySelector('[data-drawer]');
+    const inner = this.root.querySelector('[data-inner]');
+    if (drawer && inner) drawer.style.height = this.s.benchOpen ? `${inner.offsetHeight}px` : '0px';
+    this.placePop();
+    if (this.pending) { const f = this.pending; this.pending = null; f.call(this); }
+  }
+  placePop() {
+    const { tipFor, asgFor } = this.s;
+    if (!tipFor && !asgFor) return;
+    const key = tipFor ? `tip-${tipFor}` : `asg-${asgFor}`;
+    const anchor = this.root.querySelector(`[data-anchor="${key}"]`);
+    if (!anchor) return;
+    this.root.insertAdjacentHTML('beforeend', tipFor ? tipHTML(this.s, tipFor) : asgHTML(this.s, asgFor));
+    const pop = this.root.querySelector('[data-pop]');
+    const pr = this.root.getBoundingClientRect();
+    const ar = anchor.getBoundingClientRect();
+    const w = pop.offsetWidth, h = pop.offsetHeight;
+    let left = Math.max(8, Math.min(ar.left - pr.left, pr.width - w - 8));
+    let top = ar.bottom - pr.top + 6;
+    if (top + h > pr.height - 8) {
+      top = Math.max(8, ar.top - pr.top - h - 6);
+      pop.style.setProperty('--origin', 'bottom left');
+    }
+    pop.style.left = `${left}px`;
+    pop.style.top = `${top}px`;
+  }
+  closePops() { this.s.tipFor = null; this.s.asgFor = null; }
+  swapCaption() {
+    const cap = this.root.querySelector('[data-cap]');
+    if (!cap) return;
+    const span = cap.querySelector('span'), text = CAPTION(this.s.fidelity, !!this.s.anchor);
+    if (span.textContent === text) return;
+    const d = dur(120);
+    if (!d) { span.textContent = text; return; }
+    cap.classList.add('swapping');
+    setTimeout(() => { span.textContent = text; cap.classList.remove('swapping'); }, d);
+  }
+  /* RIFF — only the smith's slots re-roll. Yours don't move, and you can see it. */
+  riff() {
+    this.s.seed++;
+    const r = REPERTOIRE[this.s.seed % REPERTOIRE.length];
+    const rolled = [];
+    for (const role of this.s.roles) {
+      if (this.s.slots[role].src === 'derived') { this.s.slots[role].hex = derivedHex(role, this.s.seed); rolled.push(role); }
+    }
+    this.s.series = this.s.series.map((c) => (c.src === 'derived' ? { ...c, hex: r.series } : c));
+    this.closePops();
+    this.pending = function () {
+      const die = this.root.querySelector('[data-riffdie]');
+      if (die && dur(340)) die.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(180deg)' }],
+        { duration: dur(340), easing: 'cubic-bezier(.34,1.4,.64,1)' });
+      if (motionOff()) return;
+      rolled.forEach((role, k) => {
+        const el = this.root.querySelector(`[data-slot="${role}"]`);
+        if (!el) return;
+        el.style.animationDelay = `${k * 55 * SPEED}ms`;
+        el.classList.add('rerolling');
+      });
+    };
+    this.render();
+  }
+  /* place a color into a slot; whatever it displaces goes to the bench */
+  fill(role, hex) {
+    const cur = this.s.slots[role];
+    if (cur.src === 'yours' && cur.hex !== hex) this.s.bench.push(cur.hex);
+    this.s.slots[role] = { hex, src: 'yours' };
+    this.s.bench = this.s.bench.filter((h) => h !== hex);
+    this.closePops();
+    this.render();
+  }
+  /* vacate a slot — the smith takes it back over */
+  vacate(role, toBench = true) {
+    const cur = this.s.slots[role];
+    if (cur.src === 'yours' && toBench) this.s.bench.push(cur.hex);
+    this.s.slots[role] = { hex: derivedHex(role, this.s.seed), src: 'derived' };
+  }
+  flashBench() {
+    this.s.flash = true;
+    setTimeout(() => { this.s.flash = false; this.render(); }, dur(900) || 0);
+  }
+  bind() {
+    const R = this.root;
+
+    R.addEventListener('click', (e) => {
+      const t = e.target.closest('[data-act],[data-tip],[data-asg],[data-keep],[data-fill],[data-surf]');
+      if (!t) {
+        if ((this.s.tipFor || this.s.asgFor) && !e.target.closest('[data-pop]')) { this.closePops(); this.render(); }
+        return;
+      }
+      if (t.dataset.surf) {
+        this.s.surf = { ...this.s.surf, [t.dataset.surf]: t.dataset.val };
+        this.closePops(); this.render(); return;
+      }
+      if (t.dataset.tip) {
+        const wasOpen = this.s.tipFor === t.dataset.tip;
+        this.closePops();
+        if (!wasOpen) this.s.tipFor = t.dataset.tip;
+        this.render(); return;
+      }
+      if (t.dataset.asg) {
+        const wasOpen = this.s.asgFor === t.dataset.asg;
+        this.closePops();
+        if (!wasOpen) this.s.asgFor = t.dataset.asg;
+        this.render(); return;
+      }
+      if (t.dataset.keep) {
+        // freeze a derived color so riff stops re-rolling it. NOT "adds a random
+        // color" — the color was already there; this only pins it.
+        this.s.slots[t.dataset.keep].src = 'kept';
+        this.closePops(); this.render(); return;
+      }
+      if (t.dataset.fill) {
+        const role = t.dataset.fill;
+        if (t.dataset.from === 'auto') { this.vacate(role); this.closePops(); this.render(); }
+        else if (t.dataset.from === 'bench') this.fill(role, this.s.bench[+t.dataset.i]);
+        else { const src = t.dataset.role; const hex = this.s.slots[src].hex; this.vacate(src, false); this.fill(role, hex); }
+        return;
+      }
+      switch (t.dataset.act) {
+        case 'riff': this.riff(); break;
+        case 'split': this.s.split = !this.s.split; this.render(); break;
+        case 'startover': {
+          this.s = newState(this.cfg);
+          this.s.slots = slotsFor(this.s.roles, this.cfg.placed || {}, 0);
+          this.render(); break;
+        }
+        case 'anchor': {
+          const filled = this.s.roles.filter((r) => SOLID(this.s.slots[r]));
+          this.s.anchor = this.s.anchor ? null : (filled[0] || null);
+          this.closePops(); this.render(); this.swapCaption(); break;
+        }
+        case 'bench': this.s.benchOpen = !this.s.benchOpen; this.closePops(); this.render(); break;
+        case 'unbench': this.s.bench.splice(+t.dataset.i, 1); this.render(); break;
+        case 'series-add': {
+          const r = REPERTOIRE[(this.s.seed + this.s.series.length) % REPERTOIRE.length];
+          this.s.series.push({ hex: r.series, src: 'derived' }); this.render(); break;
+        }
+        case 'add': {
+          const inp = R.querySelector('.hexfield input');
+          const v = (inp.value || '').trim();
+          const hex = /^#[0-9a-f]{6}$/i.test(v) ? v : '#c964d8';
+          inp.value = '';
+          // "any colors in, working theme out" — a color you add should go to
+          // work, not sit on a closed bench you can't see. Fill the first
+          // derived slot, else an open series slot, else bench (and say so).
+          const gap = this.s.roles.find((r) => this.s.slots[r].src === 'derived');
+          if (gap) {
+            this.s.slots[gap] = { hex, src: 'yours' };
+            this.s.landed = gap;
+          } else if (this.s.series.length < 5) {
+            this.s.series.push({ hex, src: 'yours' });
+            this.s.landed = 'series' + (this.s.series.length - 1);
+          } else {
+            this.s.bench.push(hex);
+            this.render();
+            this.flashBench();
+            break;
+          }
+          this.render();
+          setTimeout(() => { this.s.landed = null; this.render(); }, dur(700) || 0);
+          break;
+        }
+      }
+    });
+
+    R.addEventListener('input', (e) => {
+      if (!e.target.matches('[data-fid]')) return;
+      this.s.fidelity = parseFloat(e.target.value);
+      const b = R.querySelector('[data-bubble]');
+      if (b) { b.style.left = `${this.s.fidelity * 100}%`; b.textContent = this.s.fidelity.toFixed(2); }
+      this.swapCaption();
+    });
+
+    /* ---- drag: ONE meaning now — place this color here ---- */
+    let drag = null;   // {kind:'bench'|'slot'|'series', hex, i|role}
+    R.addEventListener('dragstart', (e) => {
+      const b = e.target.closest('[data-benched]');
+      const sl = e.target.closest('[data-dragslot]');
+      const se = e.target.closest('[data-series]');
+      if (b) { drag = { kind: 'bench', i: +b.dataset.benched, hex: this.s.bench[+b.dataset.benched] }; b.classList.add('dragging'); }
+      else if (sl) { const role = sl.dataset.dragslot; drag = { kind: 'slot', role, hex: this.s.slots[role].hex }; sl.classList.add('dragging'); }
+      else if (se) { const i = +se.dataset.series; drag = { kind: 'series', i, hex: this.s.series[i].hex }; }
+      else return;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', drag.hex);
+    });
+    R.addEventListener('dragover', (e) => {
+      if (!drag) return;
+      const target = e.target.closest('[data-slot],[data-tray],[data-bench-drop]');
+      if (!target) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      R.querySelectorAll('.drop-ok').forEach((el) => el.classList.remove('drop-ok'));
+      target.classList.add('drop-ok');
+    });
+    R.addEventListener('dragleave', (e) => {
+      const target = e.target.closest('[data-slot],[data-tray],[data-bench-drop]');
+      if (target) target.classList.remove('drop-ok');
+    });
+    R.addEventListener('drop', (e) => {
+      if (!drag) return;
+      const slot = e.target.closest('[data-slot]');
+      const tray = e.target.closest('[data-tray]');
+      const bench = e.target.closest('[data-bench-drop]');
+      e.preventDefault();
+      if (slot) {
+        const role = slot.dataset.slot;
+        if (drag.kind === 'slot' && drag.role !== role) this.vacate(drag.role, false);
+        if (drag.kind === 'series') this.s.series.splice(drag.i, 1);
+        this.fill(role, drag.hex);
+      } else if (tray) {
+        if (this.s.series.length < 5) {
+          if (drag.kind === 'bench') this.s.bench.splice(drag.i, 1);
+          if (drag.kind === 'slot') this.vacate(drag.role, false);
+          this.s.series.push({ hex: drag.hex, src: 'yours' });
+          this.render();
+        }
+      } else if (bench) {
+        if (drag.kind === 'slot') { this.vacate(drag.role); this.render(); }
+        if (drag.kind === 'series') { this.s.series.splice(drag.i, 1); this.s.bench.push(drag.hex); this.render(); }
+      }
+      drag = null;
+    });
+    R.addEventListener('dragend', () => {
+      drag = null;
+      R.querySelectorAll('.dragging,.drop-ok').forEach((el) => el.classList.remove('dragging', 'drop-ok'));
+    });
+  }
+}
+
+// A — themesmith's own vocabulary, plus the surface control
+const board = new Board(document.getElementById('p1'), {
+  roles: ROLES, gloss: GLOSS, jobs: JOBS, surfaces: true,
+  placed: { primary: '#7832c3', neutral: '#316264', success: '#79f77a' },
+});
+// B — the granularity test: tweakcn's groups as slots, same code path
+const board2 = new Board(document.getElementById('p2'), {
+  roles: TWEAK_ROLES, gloss: TWEAK_GLOSS, jobs: TWEAK_JOBS, surfaces: false,
+  placed: { primary: '#7832c3', base: '#316264', accent: '#79f77a' },
+});
+document.getElementById('slowmo').addEventListener('click', (e) => {
+  const on = e.currentTarget.getAttribute('aria-pressed') === 'true';
+  e.currentTarget.setAttribute('aria-pressed', String(!on));
+  SPEED = on ? 1 : 4;
+  document.documentElement.style.setProperty('--t', SPEED);
+});
+document.getElementById('nomotion').addEventListener('click', (e) => {
+  const on = e.currentTarget.getAttribute('aria-pressed') === 'true';
+  e.currentTarget.setAttribute('aria-pressed', String(!on));
+  document.body.classList.toggle('no-motion', !on);
+});
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  for (const b of [board, board2]) if (b.s.tipFor || b.s.asgFor) { b.closePops(); b.render(); }
+});
+</script>
+</body>
+</html>

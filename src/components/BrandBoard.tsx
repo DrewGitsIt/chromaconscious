@@ -1,7 +1,14 @@
 import { useMemo } from 'react'
 import type { CSSProperties } from 'react'
-import type { ThemeResult } from '../engine'
-import { brandAncestry, locateMuted, locateTokens, resolveBrand } from '../engine'
+import type { ThemeResult, TokenAncestor } from '../engine'
+import {
+  brandAncestors,
+  effectVars,
+  locateMuted,
+  locateTokens,
+  resolveBrand,
+  sameAncestor,
+} from '../engine'
 import './BrandBoard.css'
 
 interface Props {
@@ -9,8 +16,8 @@ interface Props {
   mode: 'light' | 'dark'
   /** Unused here (no portaled ids), part of the shared mockup contract. */
   uid: string
-  /** Locate mode: candidate whose descendants stay lit; null = normal render. */
-  locateIndex?: number | null
+  /** Locate mode: the seat whose descendants stay lit; null = normal render. */
+  locateTarget?: TokenAncestor | null
 }
 
 /**
@@ -18,25 +25,46 @@ interface Props {
  * specimen, color system, proportions, business cards. Speaks the brand
  * adapter's paper/ink vocabulary — not shadcn tokens — because a brand sheet
  * has figure and ground, not surface stacks. Everything inside is mockup.
+ *
+ * **Elevation here is one deliberate exception, not a policy.** The sheet and
+ * its panels get none: `.bb-card` is a region of a printed page delimited by a
+ * hairline, not a surface floating over another surface, and shadowing those
+ * would turn a brand sheet into a dashboard — the exact confusion the
+ * paper/ink vocabulary exists to prevent. There is likewise no level 2 or 3
+ * and no scrim: nothing on a sheet is summoned, and nothing takes it over.
+ *
+ * The business-card specimens are different in kind. They are depicted
+ * *objects* — printed cards lying on the sheet — and every real brand manual
+ * photographs them that way. That is figure on ground, which is the board's
+ * own grammar, so they take level 1 and nothing else does. It degrades
+ * correctly under `separation: 'flat'`, where level 1 is `none`: the front
+ * card is still a brand-filled rectangle and the back card still has its
+ * hairline, exactly as they read today.
  */
-export function BrandBoard({ result, mode, locateIndex = null }: Props) {
+export function BrandBoard({ result, mode, locateTarget = null }: Props) {
   // Locate mode reuses the app mockup's ancestry logic through the brand
   // adapter's own name → role mapping: non-descendant colors go muted.
   const b = useMemo(() => {
     const resolved = resolveBrand(result, mode)
-    return locateIndex == null
+    return locateTarget == null
       ? resolved
-      : locateTokens(resolved, brandAncestry(result), locateIndex, resolved.paper)
-  }, [result, mode, locateIndex])
+      : locateTokens(resolved, brandAncestors(), locateTarget, resolved.paper)
+  }, [result, mode, locateTarget])
   // The ramp strip renders raw primary-ramp steps, so it mutes as a unit
-  // whenever the hovered candidate isn't the primary's ancestor.
-  const primaryIndex = result.assignments.find((a) => a.role === 'primary')?.candidateIndex ?? null
+  // whenever the located seat isn't the primary.
   const rawRamp = result[mode].ramps.primary
   const ramp =
-    locateIndex == null || locateIndex === primaryIndex
+    locateTarget == null || sameAncestor({ kind: 'role', role: 'primary' }, locateTarget)
       ? rawRamp
       : rawRamp.map((hex) => locateMuted(hex, b.paper))
+  // BrandBoard takes the whole result, not TokenSpaceProps, so it serializes
+  // the effects itself — same engine function the exporter uses, so the sheet
+  // cannot drift from the CSS. Only `--elevation-1` is consumed (see above);
+  // the rest ride along because they cost nothing and the next specimen that
+  // earns one shouldn't have to re-wire this.
+  const effects = useMemo(() => effectVars(result[mode].effects), [result, mode])
   const vars = {
+    ...effects,
     '--bb-paper': b.paper,
     '--bb-ink': b.ink,
     '--bb-ink-subtle': b.inkSubtle,

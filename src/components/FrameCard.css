@@ -1,0 +1,103 @@
+@layer chrome-base, chrome;
+
+/* The frame card — the canvas selector reads as a thing, not a toolbar.
+   Its controls stay borderless until hovered so the card, not the buttons,
+   is what you see first. The dot borrows the live theme's primary, which is
+   why the card looks like it belongs to the palette you just forged. */
+@layer chrome {
+  .frame-card {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-s);
+    padding: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-card);
+    border-radius: var(--radius-ctl);
+    transition: border-color var(--d-fast) var(--ease);
+  }
+  .frame-card:hover {
+    border-color: var(--line-ctl);
+  }
+  .frame-card.active {
+    border-color: var(--line-active);
+  }
+
+  .frame-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    flex-shrink: 0;
+    border-radius: var(--radius-ctl);
+    font: inherit;
+    font-size: var(--fs-s);
+    font-weight: 700;
+    cursor: pointer;
+    background: color-mix(in srgb, var(--pal-primary, var(--accent)) 22%, var(--surface-4));
+    border: 1px solid color-mix(in srgb, var(--pal-primary, var(--accent)) 40%, transparent);
+    color: var(--ink-muted);
+    transition:
+      background var(--d-base) var(--ease),
+      border-color var(--d-base) var(--ease),
+      color var(--d-fast) var(--ease);
+  }
+  .frame-card.active .frame-dot {
+    color: var(--ink-bright);
+    border-color: color-mix(in srgb, var(--pal-primary, var(--accent)) 65%, transparent);
+  }
+
+  .frame-mockup {
+    flex: 1;
+    min-width: 0;
+    height: 26px;
+    padding: 0 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-ctl);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--fs-s);
+    cursor: pointer;
+    transition: background var(--d-fast) var(--ease);
+  }
+  .frame-mockup:hover {
+    background: var(--surface-3);
+  }
+
+  .frame-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-ctl);
+    color: var(--ink-faint);
+    cursor: pointer;
+    transition:
+      background var(--d-fast) var(--ease),
+      color var(--d-fast) var(--ease);
+  }
+  .frame-icon:hover:not(:disabled) {
+    background: var(--surface-3);
+    color: var(--ink);
+  }
+  .frame-icon:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .frame-card,
+    .frame-dot,
+    .frame-mockup,
+    .frame-icon {
+      transition: none;
+    }
+  }
+}

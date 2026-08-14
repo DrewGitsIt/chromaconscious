@@ -1,0 +1,93 @@
+/* Shared motion vocabulary for the chrome.
+   Keyframes that more than one component needs live here so they are defined
+   exactly once, and the reduced-motion kill switch lives here so every
+   component inherits it without repeating a media query.
+   Durations/easings themselves are tokens — see styles/tokens.css. */
+@layer chrome-base, chrome;
+
+@layer chrome-base {
+  /* menus, popovers, chips: grow from their anchor corner */
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.93) translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* toasts: rise into place, sink back out */
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes toast-out {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+
+  /* first paint: the panel assembles instead of blinking into being */
+  @keyframes sec-in {
+    from {
+      opacity: 0;
+      transform: translateY(7px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Any container marked .stagger deals its children in, 45ms apart.
+     Delays are capped at the sixth child — past that the wait reads as lag. */
+  .stagger > * {
+    animation: sec-in var(--d-slow) var(--ease-out) both;
+  }
+  .stagger > *:nth-child(2) {
+    animation-delay: 45ms;
+  }
+  .stagger > *:nth-child(3) {
+    animation-delay: 90ms;
+  }
+  .stagger > *:nth-child(4) {
+    animation-delay: 135ms;
+  }
+  .stagger > *:nth-child(5) {
+    animation-delay: 180ms;
+  }
+  .stagger > *:nth-child(n + 6) {
+    animation-delay: 225ms;
+  }
+}
+
+/* THE KILL SWITCH — deliberately unlayered.
+   tokens.css defines the durations unlayered, and unlayered rules beat every
+   cascade layer, so an override inside @layer chrome-base would silently lose.
+   `:root:root` outranks tokens' `:root` on specificity, so this wins no matter
+   which stylesheet the bundler emits first.
+   Zeroing (not removing) the durations keeps transitionend/animationend firing,
+   so any component that waits on those events still completes its state change. */
+@media (prefers-reduced-motion: reduce) {
+  :root:root {
+    --d-fast: 0.001ms;
+    --d-base: 0.001ms;
+    --d-slow: 0.001ms;
+  }
+  .stagger > * {
+    animation: none;
+  }
+}

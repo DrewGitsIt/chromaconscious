@@ -1,0 +1,730 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>themesmith — what separation & tint do to the frame</title>
+<style>
+  /* ============================================================
+     The board's 74px surface preview was a toy. This is the real
+     question: what do SEPARATION and TINT actually do to a mocked
+     frame UI? The dashboard below is modelled on src/components/
+     Preview.tsx and is driven entirely by derived surface tokens.
+     ============================================================ */
+  :root {
+    --surface-0:#14151a; --surface-1:#17181c; --surface-2:#1c1e24;
+    --surface-3:#1f2127; --surface-4:#262932;
+    --line-card:#2a2c33; --line-ctl:#33363f; --line-active:#4c566a;
+    --ink:#e6e7ea; --ink-muted:#9a9daa; --ink-faint:#6a6e7a;
+    --accent:#7aa2f7; --ok:#9ece6a; --warn:#e0af68; --fail:#ff8a8a;
+    --fs-xs:10px; --fs-s:11px; --fs-m:12px;
+    --radius-pill:999px;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; padding:24px 28px 60px; background:#101116; color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;
+  }
+  code,.mono { font-family:ui-monospace,"SF Mono",Menlo,monospace; }
+
+  .sheet-head {
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+    padding-bottom:16px; margin-bottom:20px; border-bottom:1px solid #22242b;
+  }
+  .sheet-head h1 { font-size:15px; margin:0; }
+  .sheet-head .sub { font-size:var(--fs-m); color:var(--ink-faint); margin-right:auto; }
+
+  .ctl { display:flex; align-items:center; gap:8px; }
+  .ctl-key {
+    font-size:9px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-faint);
+  }
+  .seg {
+    display:flex; background:var(--surface-3); border:1px solid var(--line-card);
+    border-radius:var(--radius-pill); padding:2px; gap:2px;
+  }
+  .seg button {
+    height:22px; padding:0 11px; border:0; border-radius:var(--radius-pill);
+    background:transparent; color:var(--ink-faint); font:inherit; font-size:9px;
+    text-transform:uppercase; letter-spacing:.08em; cursor:pointer;
+    transition:background .12s, color .12s;
+  }
+  .seg button:hover { background:var(--surface-4); color:var(--ink-muted); }
+  .seg button.on { background:#3d4a6d; color:#fff; font-weight:650; }
+
+  .sheet { display:flex; gap:28px; align-items:flex-start; }
+  .col-title {
+    font-size:var(--fs-s); text-transform:uppercase; letter-spacing:.14em;
+    color:var(--ink-faint); margin:0 0 10px; display:flex; align-items:baseline; gap:8px;
+  }
+  .col-title b { color:var(--ink-muted); font-weight:600; }
+  .col-note { font-size:var(--fs-xs); letter-spacing:0; text-transform:none; color:#4e525c; }
+
+  /* ============================================================
+     THE FRAME — everything below paints from derived tokens only
+     ============================================================ */
+  .frame {
+    width:600px; border-radius:10px; overflow:hidden; border:1px solid var(--line-card);
+    position:relative;
+  }
+  .ui { display:flex; min-height:430px; font-size:11px; }
+  .ui * { box-sizing:border-box; }
+  .ui-side { width:104px; flex-shrink:0; padding:11px 9px; display:flex; flex-direction:column; }
+  .ui-brand { font-size:12px; font-weight:700; padding:0 6px 11px; }
+  .ui-nav { display:flex; flex-direction:column; gap:2px; }
+  .ui-nav div { padding:5px 7px; border-radius:5px; display:flex; align-items:center; gap:6px; }
+  .ui-nav div .g { width:9px; height:9px; border-radius:2px; opacity:.5; background:currentColor; }
+  .ui-ver { margin-top:auto; font-size:9px; padding:0 6px; }
+
+  .ui-main { flex:1; min-width:0; padding:12px; display:flex; flex-direction:column; gap:9px; }
+  .ui-head { display:flex; align-items:center; gap:7px; }
+  .ui-h1 { font-size:13px; font-weight:650; flex:1; }
+  .btn { height:23px; padding:0 10px; border-radius:5px; display:inline-flex; align-items:center; font-size:10px; font-weight:550; border:1px solid transparent; }
+  .ui-alert { border-radius:6px; padding:8px 10px; border:1px solid; }
+  .ui-alert b { display:block; font-size:10.5px; margin-bottom:2px; }
+  .ui-alert span { font-size:10px; opacity:.92; }
+
+  .ui-cards { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .card { border-radius:7px; padding:9px; border:1px solid; }
+  .card .lab { font-size:9px; margin-bottom:3px; }
+  .card .val { font-size:15px; font-weight:660; letter-spacing:-.02em; }
+  .card .bars { display:flex; align-items:flex-end; gap:2px; height:22px; margin-top:7px; }
+  .card .bars i { flex:1; border-radius:2px 2px 0 0; display:block; }
+  .card .delta { font-size:9px; margin-top:5px; }
+
+  .ui-tabs { display:flex; gap:2px; border-radius:6px; padding:3px; width:fit-content; }
+  .ui-tabs div { padding:4px 11px; border-radius:4px; font-size:10px; }
+
+  .ui-panel { border-radius:7px; border:1px solid; overflow:hidden; }
+  .ui-row { display:flex; align-items:center; gap:8px; padding:6px 10px; border-bottom:1px solid; font-size:10px; }
+  .ui-row:last-child { border-bottom:0; }
+  .ui-row .nm { flex:1; }
+  .pill { font-size:8.5px; padding:2px 6px; border-radius:99px; font-weight:600; }
+  .ui-foot { display:flex; align-items:center; gap:7px; padding:8px 10px; border-top:1px solid; }
+  .ui-input { flex:1; height:23px; border-radius:5px; border:1px solid; padding:0 8px; display:flex; align-items:center; font-size:10px; }
+
+  /* the popover — the whole reason "lifted" exists */
+  .ui-pop {
+    position:absolute; right:16px; top:52px; width:132px; border-radius:7px;
+    padding:4px; border:1px solid; z-index:5;
+  }
+  .ui-pop div { padding:5px 8px; border-radius:4px; font-size:10px; }
+  .pop-tag {
+    position:absolute; right:16px; top:34px; font-size:8px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--accent); z-index:6;
+  }
+
+  .ui-scrim { position:absolute; inset:0; z-index:8; pointer-events:none; }
+  .scrim-warn {
+    position:absolute; z-index:10; left:0; right:0; top:0; padding:4px 8px;
+    background:var(--warn); color:#241a06; font-size:9px; font-weight:650;
+    letter-spacing:.03em; text-align:center;
+  }
+  .ui-dialog {
+    position:absolute; z-index:9; left:50%; top:56%; transform:translate(-50%,-50%);
+    width:196px; border-radius:9px; border:1px solid; padding:12px;
+    display:flex; flex-direction:column; gap:4px;
+  }
+  .ui-dialog b { font-size:11.5px; }
+  .ui-dialog span { font-size:10px; }
+  .ui-dialog .dlg-row { display:flex; gap:6px; margin-top:7px; }
+
+  .modal-spec {
+    position:relative; height:120px; border-radius:9px; border:1px solid;
+    padding:14px; display:flex; gap:10px; overflow:hidden;
+  }
+  .ms-card { flex:1; border-radius:7px; border:1px solid; }
+  .ms-dialog {
+    position:absolute; z-index:9; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:190px; border-radius:9px; border:1px solid; padding:11px;
+    display:flex; flex-direction:column; gap:3px;
+  }
+  .ms-dialog b { font-size:11px; }
+  .ms-dialog span { font-size:9.5px; }
+
+  /* ---------------- elevation ladder ---------------- */
+  .ladder { display:flex; gap:10px; margin-top:10px; }
+  .rung { flex:1; border-radius:8px; padding:9px; border:1px solid; }
+  .rung b { display:block; font-size:10px; margin-bottom:2px; }
+  .rung span { font-size:9px; opacity:.7; }
+  .shadow-read { margin-top:10px; display:flex; flex-direction:column; gap:3px; }
+  .shadow-read div { font-size:9px; font-family:ui-monospace,monospace; color:var(--ink-faint); }
+  .shadow-read b { color:var(--ink-muted); font-family:ui-sans-serif,system-ui,sans-serif; }
+
+  /* ---------------- matrix ---------------- */
+  .matrix { display:grid; grid-template-columns:auto repeat(3,1fr); gap:7px; align-items:center; }
+  .mx-h {
+    font-size:9px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-faint);
+    text-align:center; padding-bottom:2px;
+  }
+  .mx-r { font-size:9px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-faint); padding-right:4px; text-align:right; }
+  .thumb {
+    width:186px; height:135px; overflow:hidden; border-radius:6px;
+    border:1px solid var(--line-card); position:relative; cursor:pointer;
+    transition:border-color .12s, transform .12s;
+  }
+  .thumb:hover { border-color:var(--line-active); transform:translateY(-2px); }
+  .thumb.on { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+  .thumb > .frame {
+    width:600px; border:0; border-radius:0; position:absolute; top:0; left:0;
+    transform:scale(.31); transform-origin:top left; pointer-events:none;
+  }
+
+  /* ---------------- token readout ---------------- */
+  .tokens { display:grid; grid-template-columns:repeat(2,1fr); gap:2px 12px; margin-top:10px; }
+  .tk {
+    display:flex; align-items:center; gap:8px; font-size:10px;
+    padding:2px 6px 2px 4px; border-radius:5px; border-left:2px solid transparent;
+  }
+  /* dark hairline INSIDE + light hairline OUTSIDE, so the chip reads against a
+     near-white fill and a near-black one with the same rule */
+  .tk i {
+    width:20px; height:20px; border-radius:4px; flex-shrink:0;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.30), 0 0 0 1px rgba(255,255,255,.16);
+  }
+  .tk .n { color:var(--ink-muted); flex:1; }
+  .tk .v { color:var(--ink-faint); font-family:ui-monospace,monospace; font-size:9px; }
+  .tk .l { color:#4e525c; font-family:ui-monospace,monospace; font-size:9px; width:48px; text-align:right; white-space:nowrap; }
+  /* "moved" marks the ROW, never the chip — a ring around a swatch competes
+     with the very colour it's supposed to be showing */
+  .tk.moved { border-left-color:var(--accent); background:rgba(122,162,247,.07); }
+  .tk.moved .n { color:var(--ink); font-weight:600; }
+
+  /* adjacency is the only way a 5/255 step is visible — so show the ramp
+     contiguously as well as chip-by-chip */
+  .rampstrip { display:flex; height:34px; border-radius:6px; overflow:hidden; margin-top:9px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); }
+  .rampstrip div { flex:1; position:relative; }
+  .ramplabels { display:flex; margin-top:3px; }
+  .ramplabels span { flex:1; font-size:8px; color:var(--ink-faint); text-align:center; letter-spacing:.02em; }
+
+  /* ---------------- notes ---------------- */
+  .notes { max-width:392px; font-size:13px; line-height:1.6; }
+  .notes h3 { font-size:var(--fs-m); text-transform:uppercase; letter-spacing:.12em; color:var(--ink-muted); margin:24px 0 8px; }
+  .notes h3:first-child { margin-top:0; }
+  .notes p { margin:0 0 11px; color:#c8ccd6; }
+  .notes b { color:var(--ink); }
+  .notes ul { margin:0 0 11px; padding-left:18px; color:#c8ccd6; }
+  .notes li { margin-bottom:6px; }
+  .notes .try {
+    display:inline-block; font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:.1em;
+    color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent);
+    border-radius:3px; padding:1px 5px; margin-right:6px;
+  }
+  .t3 { width:100%; border-collapse:collapse; font-size:var(--fs-m); margin:6px 0 12px; }
+  .t3 td { padding:6px 8px 6px 0; border-bottom:1px solid #22242b; color:#c8ccd6; vertical-align:top; }
+  .t3 td:first-child { color:var(--ink-faint); width:74px; white-space:nowrap; }
+  .warnbox { border-left:2px solid var(--warn); padding:2px 0 2px 12px; margin:0 0 12px; color:#c8ccd6; }
+  .rule-box { border-left:2px solid var(--accent); padding:2px 0 2px 12px; margin:0 0 12px; color:#c8ccd6; }
+  .sec-label { font-size:9px; text-transform:uppercase; letter-spacing:.16em; color:var(--ink-faint); font-weight:600; margin:18px 0 8px; }
+</style>
+</head>
+<body>
+
+<div class="sheet-head">
+  <h1>themesmith — separation &amp; tint, on a real frame</h1>
+  <span class="sub">the App-dashboard mockup, painted entirely from derived surface tokens</span>
+  <span class="ctl"><span class="ctl-key">separation</span>
+    <span class="seg" id="segSep"></span></span>
+  <span class="ctl"><span class="ctl-key">tint</span>
+    <span class="seg" id="segTint"></span></span>
+  <span class="ctl"><span class="ctl-key">mode</span>
+    <span class="seg" id="segMode"></span></span>
+  <span class="ctl"><span class="ctl-key">overlay</span>
+    <span class="seg" id="segOver"></span></span>
+</div>
+
+<div class="sheet">
+  <div>
+    <p class="col-title"><b>the frame</b> <span class="col-note">live — same structure as Preview.tsx</span></p>
+    <div id="live"></div>
+
+    <div class="sec-label">derived neutral tokens · highlighted = moved by the current setting</div>
+    <div class="tokens" id="tokens"></div>
+    <div id="ramp"></div>
+
+    <div class="sec-label">elevation ladder · every shadow tinted by the neutral's hue</div>
+    <div class="ladder" id="ladder"></div>
+    <div class="sec-label">level 3 · the scrim lives here, not on the frame above</div>
+    <div id="modal"></div>
+    <div class="shadow-read" id="shadowRead"></div>
+  </div>
+
+  <div>
+    <p class="col-title"><b>every combination</b> <span class="col-note">click to load</span></p>
+    <div class="matrix" id="matrix"></div>
+    <div class="sec-label" style="margin-top:16px">the same grid, other mode</div>
+    <div class="matrix" id="matrix2"></div>
+  </div>
+
+  <div class="notes">
+    <h3>what each lever actually moves</h3>
+    <p>Both levers touch only the 15 tokens that descend from <code>neutral</code>.
+      Nothing else in the theme changes — primary, accent and the status colours
+      are untouched, which is why the frame stays recognisably the same theme
+      across all nine cells.</p>
+    <table class="t3">
+      <tr><td>separation</td><td>the <b>lightness spacing</b> of background, card, popover, secondary, muted, sidebar, border, input.</td></tr>
+      <tr><td>tint</td><td>the <b>chroma</b> those same steps keep from your neutral's hue — plus, at <i>strong</i>, a real primary mix into secondary.</td></tr>
+    </table>
+
+    <h3>the thing the code told us</h3>
+    <p>themesmith's current rule is <b>one step inward from the page extreme</b>.
+      Measured on a real palette:</p>
+    <div class="rule-box">
+      light — page <code>#f6fff3</code>, card <code>#f2fbef</code> · card is <b>darker</b><br>
+      dark — page <code>#0e140c</code>, card <code>#131911</code> · card is <b>lighter</b>
+    </div>
+    <p>Coherent in ramp-space, but perceptually it means cards are
+      <i>recessed</i> in light and <i>elevated</i> in dark. That asymmetry is why
+      the three settings can't be one formula:</p>
+    <ul>
+      <li><b>flat</b> — every surface at the ramp extreme; borders do all the
+        work. This is what shadcn ships by default (card and background are both
+        pure white).</li>
+      <li><b>layered</b> — today's behaviour, one step inward.</li>
+      <li><b>lifted</b> — the page steps <i>back</i> so card can reach the
+        extreme and popover can go past it. In light mode that's a grey page with
+        white cards; in dark mode pure lightness is enough.</li>
+    </ul>
+
+    <h3>review: does light actually read as light?</h3>
+    <p>Fair challenge — measured against <code>generateTheme</code>, the first
+      pass of this sheet was wrong twice:</p>
+    <table class="t3">
+      <tr><td>engine</td><td>light page L <b>.976</b> / .941 · dark page L <b>.006</b></td></tr>
+      <tr><td>was</td><td>flat <b>1.000</b> (pure white — killed the tint lever, no gamut room for chroma) · lifted <b>.886</b> (visibly grey)</td></tr>
+      <tr><td>now</td><td>top step pinned at 98.5, light stack held inside ~93–98.5</td></tr>
+    </table>
+    <p>Root cause: the plans were hardcoded absolutes instead of being anchored
+      to the range the engine emits. <b>themesmith never emits pure white</b> —
+      and it shouldn't, because a tinted neutral needs headroom to carry chroma.</p>
+
+    <h3>the honest problem with lifted</h3>
+    <div class="warnbox">
+      One part is <i>not</i> a bug and can't be fixed with numbers: to raise card
+      above the page in light mode, the page has to come down. Colour-only
+      elevation and a near-white page are mutually exclusive. <b>lifted</b> now
+      dips the page just ~2 points and lets a <b>shadow</b> carry the rest — which
+      is exactly the shadow-token gap, showing up as "light mode looks grey".
+    </div>
+    <p><span class="try">try</span>Set <b>lifted + light</b> and look at the
+      dropdown: it's separated by shadow, not colour. Now switch to <b>dark</b> —
+      the same setting separates it by lightness alone. That's the asymmetry, and
+      it's the one thing here that isn't purely a colour decision.</p>
+    <p>Three ways out, in increasing cost: cap "lifted" in light so it does
+      nothing there (honest, but a dead lever); emit a small shadow scale
+      alongside the colours; or grey the page enough for colour alone to work
+      (what the first pass did — and what you caught). <b>Only the middle one
+      keeps light mode white AND gives real elevation</b>, so the shadow scale
+      is looking less optional than I framed it two sheets ago.</p>
+
+    <h3>on tint</h3>
+    <p>The frame makes the ceiling obvious: <b>strong</b> reads as branded on the
+      sidebar and the secondary button, but the large card fields are where it
+      turns muddy first. The cap matters more than the curve.</p>
+    <p><span class="try">try</span>Compare <b>none</b> and <b>subtle</b> at
+      layered. It's a small move, and it's roughly where themesmith already sits
+      — the neutral's own hue leaks in through the ramp whether or not we expose
+      a control. So <b>none</b> is a genuinely new capability: it's the only way
+      to get true greys out of a tinted neutral.</p>
+    <div class="warnbox">
+      Building this caught a trap worth writing down. My first pass drove tint
+      with HSL <i>saturation</i> and it was invisible on light surfaces — because
+      chroma in HSL is <code>s · (1 − |2L − 1|)</code>, so at L≈99% even 100%
+      saturation yields nothing. <b>Tint has to be a target chroma, solved back
+      into whatever space you're in.</b> The engine's OKLCH ramp gets this for
+      free; anything reimplementing the preview in HSL will hit the same wall.
+    </div>
+
+    <h3>dimensionality — is it in scope?</h3>
+    <p>Checked the engine before answering: it emits <b>colour only</b>.
+      <code>themeTokensJson</code> hardcodes <code>$type:'color'</code>, and there
+      is no radius or shadow anywhere in <code>src/engine/</code>. But shadcn's
+      own contract ships <code>--radius</code>, and tweakcn edits colour, radius,
+      shadow <i>and</i> typography. So "colour generator" is already a narrower
+      claim than the format expects.</p>
+    <p>The stronger argument is that <b>a shadow is a colour decision</b>:</p>
+    <ul>
+      <li>Every shadow here is <b>tinted by the neutral's hue</b> — light mode
+        uses <code>rgba(33,58,59,…)</code>, not black, because a pure-black
+        shadow over a warm or cool theme reads dirty. That tint comes free from
+        the ramp themesmith already builds; it needs no new user input.</li>
+      <li>The alphas are <b>mode-derived</b>, and they have to be. Dark has almost
+        no absolute luminance room — page L .006 to card L .013 — so dark shadows
+        run 5–8× the light alphas just to register.</li>
+      <li>Dark also gets a <b>top inset highlight</b> that shadow can't provide:
+        <code>inset 0 1px 0 rgba(255,255,255,.075)</code>. That single line does
+        more for perceived elevation on dark than any shadow.</li>
+    </ul>
+    <div class="rule-box">Which reframes the whole control:
+      <b>separation is the border↔shadow balance</b>, not just lightness spacing.
+      <i>flat</i> pays for separation with hairlines and no shadow; <i>lifted</i>
+      softens the hairline to 44% and lets shadow carry it. The border colour
+      mixes toward the surface as the shadow grows.</div>
+    <p><span class="try">try</span>Set <b>overlay: dialog</b> and walk flat →
+      layered → lifted in each mode. Four elevation levels, one scrim, all derived
+      from one neutral. Then look at the ladder: <b>flat</b> in light gives
+      level 1 no shadow at all — correct, that's shadcn's default look.</p>
+    <p>Cost to ship: four tokens (<code>--elevation-1/2/3</code>,
+      <code>--scrim</code>), one non-colour <code>$type</code> in the DTCG export,
+      and no new UI — they fall out of separation, which already exists.</p>
+
+    <h3>the frame was lying — fixed</h3>
+    <p>You caught a real one. With the dialog open, the token readout said
+      <code>background #f3f9f9</code> while the frame rendered
+      <code>rgb(176,188,188)</code> — I measured the actual pixel. The values
+      were right; the <b>scrim was dimming the entire frame by ~27%</b>, so every
+      surface you were trying to compare was being tinted by an overlay.</p>
+    <div class="rule-box">A reference frame has one job: be truthful about the
+      colours it declares. Putting a scrim over it defeats the whole sheet. The
+      modal now lives in its own specimen below the ladder, where dimming is the
+      point rather than a lie — and the frame is never dimmed.</div>
+    <p>I also split level 1's two shadow layers apart. They were
+      <code>0 1px 2px</code> and <code>0 1px 3px</code> — near-identical, so the
+      contact shadow and the key shadow collapsed into one smudge. Now
+      <code>0 2px 6px -1px</code> for the key, which is what makes a card read as
+      lifted rather than just outlined.</p>
+
+    <h3>what I'd change on the board</h3>
+    <p>The 74px preview should show <i>this</i>, scaled — the thumbnails in the
+      middle column read fine at 186px, so a 2-up (current vs hovered) preview at
+      that size would fit under the board without inventing a new visual language.</p>
+    <p>Also worth noting: you named separation and tint, not sidebar. I've left
+      sidebar out of this sheet — with <b>lifted</b> doing the elevation work,
+      sidebar-vs-card mostly falls out of separation anyway, so it may not need
+      its own lever. Say the word if you want it back.</p>
+  </div>
+</div>
+
+<script>
+/* ---------------- colour maths (HSL stand-in for the OKLCH ramp) ---------------- */
+const hex2rgb = (h) => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+const rgb2hex = (c) => '#' + c.map((v)=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+function rgb2hsl(hex) {
+  let [r,g,b] = hex2rgb(hex).map((v)=>v/255);
+  const mx = Math.max(r,g,b), mn = Math.min(r,g,b), d = mx-mn;
+  let h = 0;
+  if (d) {
+    if (mx===r) h = ((g-b)/d) % 6; else if (mx===g) h = (b-r)/d + 2; else h = (r-g)/d + 4;
+    h *= 60; if (h<0) h += 360;
+  }
+  const l = (mx+mn)/2;
+  const s = d ? d/(1-Math.abs(2*l-1)) : 0;
+  return [h, s*100, l*100];
+}
+function hsl2hex(h,s,l) {
+  s/=100; l/=100;
+  const c = (1-Math.abs(2*l-1))*s, x = c*(1-Math.abs(((h/60)%2)-1)), m = l-c/2;
+  let r=0,g=0,b=0;
+  if (h<60)      [r,g,b]=[c,x,0];
+  else if (h<120)[r,g,b]=[x,c,0];
+  else if (h<180)[r,g,b]=[0,c,x];
+  else if (h<240)[r,g,b]=[0,x,c];
+  else if (h<300)[r,g,b]=[x,0,c];
+  else           [r,g,b]=[c,0,x];
+  return rgb2hex([(r+m)*255,(g+m)*255,(b+m)*255]);
+}
+const mix = (a,b,t) => rgb2hex(hex2rgb(a).map((v,i)=>v+(hex2rgb(b)[i]-v)*t));
+
+/* ---------------- the two levers ---------------- */
+/* Tint is a target CHROMA SPREAD, not an HSL saturation.
+   In HSL, chroma = s · (1 − |2L − 1|), so at L≈99% even s=100% yields almost
+   nothing — a naive saturation lever is invisible on light surfaces. Targeting
+   the spread and solving for s keeps the tint constant up the whole ramp,
+   which is the behaviour the engine's OKLCH ramp gets for free. */
+const TINT = { none:0, subtle:0.025, strong:0.060 };
+const satFor = (l, spread) => {
+  const room = 1 - Math.abs(2 * (l / 100) - 1);
+  return room < 1e-4 ? 0 : Math.min(100, (spread / room) * 100);
+};
+
+/* Lightness plans, ANCHORED to the range the engine actually emits rather than
+   to 0–100. Measured reference (generateTheme, fidelity .5):
+       light page L .976 (coastal) / .941 (violet), card L .941 / .903
+       dark  page L .006,                            card L .009 / .008
+   Two things follow, both of which the first pass got wrong:
+     · the top step is 98.5, never 100. At pure white there is no gamut room for
+       chroma, so a flat/100 plan silently kills the tint lever.
+     · the light stack stays inside ~93–98.5 so light mode reads near-WHITE,
+       which is themesmith's identity. `lifted` dips the page only ~2 points and
+       leans on shadow for the rest — see the note on elevation. */
+const TOP = 98.5;
+const PLAN = {
+  light: {
+    flat:    { page:TOP,  card:TOP,  pop:TOP,  sec:95,   muted:95,   border:88,   input:85,  side:TOP  },
+    layered: { page:TOP,  card:96.5, pop:96.5, sec:93.5, muted:93.5, border:87,   input:84,  side:96.5 },
+    lifted:  { page:96.4, card:98.2, pop:99.4, sec:93,   muted:93,   border:86.5, input:84,  side:97.1 },
+  },
+  dark: {
+    flat:    { page:11,   card:11,   pop:11,   sec:17,   muted:17,   border:24,   input:28,  side:11   },
+    layered: { page:7.5,  card:11,   pop:11,   sec:16,   muted:16,   border:23,   input:27,  side:11   },
+    lifted:  { page:6.5,  card:12.5, pop:17,   sec:16.5, muted:16.5, border:24,   input:28,  side:9.5  },
+  },
+};
+/* ============================================================
+   ELEVATION — derived from the SAME neutral ramp, so a shadow is a
+   colour decision, not a new input. Three things matter:
+     1. the shadow is TINTED by the neutral's hue. Pure black shadows on a
+        warm or cool theme read dirty.
+     2. light and dark elevate differently. Light has luminance headroom
+        below the page, so shadow does the work. Dark does not — page L .006
+        to card L .013 is almost no absolute room — so dark leans on a top
+        INSET HIGHLIGHT plus bigger lightness steps.
+     3. separation is really the BORDER↔SHADOW BALANCE: flat pays for
+        separation with hairlines, lifted pays with shadow.
+   ============================================================ */
+const ELEV = {                       // [ambient alpha, key alpha] per level
+  light: {
+    flat:    { 1:[0,0],        2:[.03,.05],  3:[.06,.13] },
+    layered: { 1:[.030,.045],  2:[.05,.09],  3:[.08,.18] },
+    lifted:  { 1:[.045,.075],  2:[.07,.16],  3:[.10,.25] },
+  },
+  dark: {
+    flat:    { 1:[0,0],        2:[.20,.28],  3:[.30,.45] },
+    layered: { 1:[.18,.26],    2:[.28,.40],  3:[.38,.55] },
+    lifted:  { 1:[.24,.34],    2:[.36,.52],  3:[.46,.66] },
+  },
+};
+const GEO = { 1:[2,6,-1], 2:[8,20,-6], 3:[24,48,-12] };   // y, blur, spread
+/* hairlines carry what the shadow doesn't */
+const BORDER_MIX = { flat:1, layered:.72, lifted:.44 };
+/* dark-mode raised surfaces get a lit top edge — the trick shadows can't do */
+const HILITE = { flat:0, layered:.045, lifted:.075 };
+
+function elevation(neutral, sep, mode) {
+  const [h] = rgb2hsl(neutral);
+  // a tinted shadow, not black
+  const sc = mode === 'light' ? hsl2hex(h, 28, 18) : hsl2hex(h, 32, 3);
+  const [r, g, b] = hex2rgb(sc);
+  const rgba = (a) => `rgba(${r},${g},${b},${a.toFixed(3)})`;
+  const box = (level) => {
+    const [a1, a2] = ELEV[mode][sep][level];
+    const [y, blur, spread] = GEO[level];
+    if (!a1 && !a2) return mode === 'dark' && HILITE[sep]
+      ? `inset 0 1px 0 rgba(255,255,255,${HILITE[sep]})` : 'none';
+    const parts = [`0 1px 2px ${rgba(a1)}`, `0 ${y}px ${blur}px ${spread}px ${rgba(a2)}`];
+    if (mode === 'dark' && HILITE[sep]) parts.push(`inset 0 1px 0 rgba(255,255,255,${(HILITE[sep] * (level === 1 ? 1 : 1.4)).toFixed(3)})`);
+    return parts.join(', ');
+  };
+  return { e1: box(1), e2: box(2), e3: box(3), scrim: rgba(mode === 'light' ? .32 : .58), mixed: BORDER_MIX[sep] };
+}
+
+function surfaces(neutral, primary, sep, tint, mode) {
+  const [h] = rgb2hsl(neutral);
+  const spread = TINT[tint];
+  const P = PLAN[mode][sep];
+  const step = (l) => hsl2hex(h, satFor(l, spread), l);
+  const sec = tint === 'strong' ? mix(step(P.sec), primary, mode === 'light' ? .16 : .22) : step(P.sec);
+  return {
+    background: step(P.page),
+    card: step(P.card),
+    popover: step(P.pop),
+    secondary: sec,
+    muted: step(P.muted),
+    border: step(P.border),
+    input: step(P.input),
+    sidebar: step(P.side),
+    foreground: (mode === 'light' ? step(13) : step(94)),
+    'muted-foreground': (mode === 'light' ? step(44) : step(68)),
+  };
+}
+/* which tokens the *current* lever visibly moves, for the readout */
+const MOVED = {
+  separation: ['background','card','popover','secondary','muted','border','input','sidebar'],
+  tint: ['background','card','popover','secondary','muted','border','input','sidebar','foreground','muted-foreground'],
+};
+
+/* ---------------- the frame ---------------- */
+const PRIMARY = '#7832c3', PRIMARY_FG = '#ffffff';
+const ACCENT = '#e0629a', NEUTRAL = '#316264';
+const OK = '#2f9e5f', OK_SUB_L = '#e8f7ee', OK_SUB_D = '#12241a';
+const WARNC = '#b8770f';
+
+function frameHTML(sep, tint, mode, over = 'menu') {
+  const t = surfaces(NEUTRAL, PRIMARY, sep, tint, mode);
+  const E = elevation(NEUTRAL, sep, mode);
+  // hairlines soften as the shadow takes over
+  const bd = mix(t.card, t.border, E.mixed);
+  const okSub = mode === 'light' ? OK_SUB_L : OK_SUB_D;
+  const okInk = mode === 'light' ? '#1d6b41' : '#8fe0b0';
+  const bar = (h, c) => `<i style="height:${h}%;background:${c}"></i>`;
+  const row = (nm, st, who, up) => `
+    <div class="ui-row" style="border-color:${bd}">
+      <span class="nm" style="color:${t.foreground}">${nm}</span>
+      <span class="pill" style="background:${st === 'live' ? OK : st === 'degraded' ? WARNC : '#c0392b'};color:#fff">${st}</span>
+      <span style="width:34px;color:${t['muted-foreground']}">${who}</span>
+      <span style="width:44px;text-align:right;color:${t['muted-foreground']}">${up}</span>
+    </div>`;
+  return `<div class="frame" style="background:${t.background}">
+    ${over === 'dialog' ? `<div class="scrim-warn">scrim active · surfaces below are dimmed by design — read colours with overlay “none”</div>
+    <div class="ui-scrim" style="background:${E.scrim}"></div>
+    <div class="ui-dialog" style="background:${t.popover};border-color:${bd};box-shadow:${E.e3};color:${t.foreground}">
+      <b>Delete team?</b>
+      <span style="color:${t['muted-foreground']}">This can't be undone.</span>
+      <span class="dlg-row">
+        <span class="btn" style="background:${t.secondary};color:${t.foreground};border-color:${bd}">Cancel</span>
+        <span class="btn" style="background:#c0392b;color:#fff">Delete</span>
+      </span>
+    </div>` : ''}
+    ${over === 'menu' ? `<div class="pop-tag">popover ↓</div>
+    <div class="ui-pop" style="background:${t.popover};border-color:${bd};box-shadow:${E.e2}">
+      <div style="color:${t['muted-foreground']};font-size:9px">Export as</div>
+      <div style="background:${t.secondary};color:${t.foreground}">PDF report</div>
+      <div style="color:${t.foreground}">CSV</div>
+    </div>` : ''}
+
+    <div class="ui" style="background:${t.background};color:${t.foreground}">
+      <div class="ui-side" style="background:${t.sidebar};border-right:1px solid ${bd}">
+        <div class="ui-brand" style="color:${PRIMARY}">Acme</div>
+        <div class="ui-nav">
+          <div style="background:${PRIMARY};color:${PRIMARY_FG}"><span class="g"></span>Dashboard</div>
+          <div style="color:${t.foreground}"><span class="g"></span>Projects</div>
+          <div style="color:${t.foreground}"><span class="g"></span>Settings</div>
+        </div>
+        <div class="ui-ver" style="color:${t['muted-foreground']}">v2.4.1</div>
+      </div>
+      <div class="ui-main">
+        <div class="ui-head">
+          <span class="ui-h1">Dashboard</span>
+          <span class="btn" style="background:${t.secondary};color:${t.foreground};border-color:${bd}">Export</span>
+          <span class="btn" style="background:${PRIMARY};color:${PRIMARY_FG}">New project</span>
+        </div>
+        <div class="ui-alert" style="background:${okSub};border-color:${OK};color:${okInk}">
+          <b>Deploy succeeded</b><span>All 42 checks passed on production.</span>
+        </div>
+        <div class="ui-cards">
+          ${[['Revenue','$48,210','+4.2%',PRIMARY],['Active users','3,842','+12.1%',ACCENT],['Churn','2.1%','−0.4%','#3f8fb8']]
+            .map(([lab,val,d,c])=>`
+            <div class="card" style="background:${t.card};border-color:${bd};box-shadow:${E.e1}">
+              <div class="lab" style="color:${t['muted-foreground']}">${lab}</div>
+              <div class="val" style="color:${t.foreground}">${val}</div>
+              <div class="bars">${[40,65,45,80,55,90,70].map((h)=>bar(h,c)).join('')}</div>
+              <div class="delta" style="color:${t['muted-foreground']}">${d} vs. last month</div>
+            </div>`).join('')}
+        </div>
+        <div class="ui-tabs" style="background:${t.muted}">
+          <div style="background:${t.card};color:${t.foreground};box-shadow:${E.e1}">Activity</div>
+          <div style="color:${t['muted-foreground']}">Alerts</div>
+        </div>
+        <div class="ui-panel" style="background:${t.card};border-color:${bd};box-shadow:${E.e1}">
+          ${row('marketing-site','live','ana','99.98%')}
+          ${row('billing-service','degraded','drew','97.20%')}
+          ${row('legacy-importer','down','sam','61.05%')}
+          <div class="ui-foot" style="border-color:${bd}">
+            <span class="ui-input" style="background:${t.background};border-color:${t.input};color:${t['muted-foreground']}">filter projects…</span>
+            <span class="btn" style="background:${t.secondary};color:${t.foreground};border-color:${bd}">Filter</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------------- wiring ---------------- */
+const SEPS = ['flat','layered','lifted'], TINTS = ['none','subtle','strong'],
+      MODES = ['light','dark'], OVERS = ['none','menu','dialog'];
+const state = { sep:'layered', tint:'subtle', mode:'light', over:'menu', lastLever:'separation' };
+
+function seg(el, opts, key) {
+  el.innerHTML = opts.map((o)=>`<button data-k="${key}" data-v="${o}" class="${state[key]===o?'on':''}">${o}</button>`).join('');
+}
+const relLum = (hex) => {
+  const [r,g,b] = hex2rgb(hex);
+  const f = (v) => { v/=255; return v <= 0.04045 ? v/12.92 : ((v+0.055)/1.055)**2.4; };
+  return 0.2126*f(r) + 0.7152*f(g) + 0.0722*f(b);
+};
+function tokensHTML() {
+  const t = surfaces(NEUTRAL, PRIMARY, state.sep, state.tint, state.mode);
+  const moved = MOVED[state.lastLever];
+  return Object.entries(t).map(([n,v])=>`
+    <span class="tk ${moved.includes(n)?'moved':''}">
+      <i style="background:${v}"></i><span class="n">${n}</span>
+      <span class="v">${v}</span><span class="l">L ${relLum(v).toFixed(3)}</span>
+    </span>`).join('');
+}
+/* the surfaces, adjacent and in lightness order. Two chips 5/255 apart look
+   identical in isolation and obviously different edge-to-edge. */
+function rampHTML() {
+  const t = surfaces(NEUTRAL, PRIMARY, state.sep, state.tint, state.mode);
+  const names = ['background','card','popover','secondary','muted','border','input','sidebar'];
+  const steps = names.map((n) => [n, t[n]]).sort((a,b) => relLum(b[1]) - relLum(a[1]));
+  return `<div class="rampstrip">${steps.map(([,v]) => `<div style="background:${v}"></div>`).join('')}</div>
+    <div class="ramplabels">${steps.map(([n]) => `<span>${n}</span>`).join('')}</div>`;
+}
+function ladderHTML() {
+  const t = surfaces(NEUTRAL, PRIMARY, state.sep, state.tint, state.mode);
+  const E = elevation(NEUTRAL, state.sep, state.mode);
+  const bd = mix(t.card, t.border, E.mixed);
+  const rungs = [
+    ['0 · page', 'background', t.background, 'none'],
+    ['1 · card', 'card', t.card, E.e1],
+    ['2 · popover', 'popover', t.popover, E.e2],
+    ['3 · dialog', 'popover', t.popover, E.e3],
+  ];
+  return `<div style="display:flex;gap:10px;flex:1;padding:14px;border-radius:9px;background:${t.background};border:1px solid var(--line-card)">
+    ${rungs.map(([lab, tok, bg, sh]) => `
+      <div class="rung" style="background:${bg};border-color:${bd};box-shadow:${sh};color:${t.foreground}">
+        <b>${lab}</b><span>${tok}</span>
+      </div>`).join('')}
+  </div>`;
+}
+function modalHTML() {
+  const t = surfaces(NEUTRAL, PRIMARY, state.sep, state.tint, state.mode);
+  const E = elevation(NEUTRAL, state.sep, state.mode);
+  const bd = mix(t.card, t.border, E.mixed);
+  return `<div class="modal-spec" style="background:${t.background};border-color:var(--line-card)">
+      <div class="ms-card" style="background:${t.card};border-color:${bd};box-shadow:${E.e1}"></div>
+      <div class="ms-card" style="background:${t.card};border-color:${bd};box-shadow:${E.e1}"></div>
+      <div class="ui-scrim" style="background:${E.scrim}"></div>
+      <div class="ms-dialog" style="background:${t.popover};border-color:${bd};box-shadow:${E.e3};color:${t.foreground}">
+        <b>Delete team?</b>
+        <span style="color:${t['muted-foreground']}">This can't be undone.</span>
+      </div>
+    </div>`;
+}
+function shadowReadHTML() {
+  const E = elevation(NEUTRAL, state.sep, state.mode);
+  return [['elevation-1', E.e1], ['elevation-2', E.e2], ['elevation-3', E.e3], ['scrim', E.scrim]]
+    .map(([n, v]) => `<div><b>--${n}:</b> ${v};</div>`).join('');
+}
+function matrixHTML(mode) {
+  let h = `<span></span>` + TINTS.map((ti)=>`<span class="mx-h">tint ${ti}</span>`).join('');
+  for (const sp of SEPS) {
+    h += `<span class="mx-r">${sp}</span>`;
+    h += TINTS.map((ti)=>{
+      const on = state.sep===sp && state.tint===ti && state.mode===mode;
+      return `<span class="thumb ${on?'on':''}" data-sep="${sp}" data-tint="${ti}" data-mode="${mode}">${frameHTML(sp,ti,mode,state.over)}</span>`;
+    }).join('');
+  }
+  return h;
+}
+function render() {
+  seg(document.getElementById('segSep'), SEPS, 'sep');
+  seg(document.getElementById('segTint'), TINTS, 'tint');
+  seg(document.getElementById('segMode'), MODES, 'mode');
+  seg(document.getElementById('segOver'), OVERS, 'over');
+  document.getElementById('live').innerHTML = frameHTML(state.sep, state.tint, state.mode, state.over);
+  document.getElementById('tokens').innerHTML = tokensHTML();
+  document.getElementById('ramp').innerHTML = rampHTML();
+  document.getElementById('ladder').innerHTML = ladderHTML();
+  document.getElementById('modal').innerHTML = modalHTML();
+  document.getElementById('shadowRead').innerHTML = shadowReadHTML();
+  document.getElementById('matrix').innerHTML = matrixHTML(state.mode);
+  document.getElementById('matrix2').innerHTML = matrixHTML(state.mode === 'light' ? 'dark' : 'light');
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-k]');
+  if (b) {
+    state[b.dataset.k] = b.dataset.v;
+    if (b.dataset.k === 'sep' || b.dataset.k === 'tint') state.lastLever = b.dataset.k === 'sep' ? 'separation' : 'tint';
+    render(); return;
+  }
+  const th = e.target.closest('.thumb');
+  if (th) {
+    state.sep = th.dataset.sep; state.tint = th.dataset.tint; state.mode = th.dataset.mode;
+    render();
+  }
+});
+render();
+</script>
+</body>
+</html>

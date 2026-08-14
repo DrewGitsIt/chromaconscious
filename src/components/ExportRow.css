@@ -1,0 +1,154 @@
+@layer chrome-base, chrome;
+
+/* The export split button. The main half commits the format you already
+   chose; the caret half opens the alternatives UPWARD, because this row
+   sits at the foot of the panel. */
+@layer chrome {
+  .export-row {
+    position: relative;
+    display: flex;
+    gap: var(--gap-s);
+  }
+
+  .export-main {
+    flex: 1;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    height: var(--ctl-h);
+    padding: 0 10px;
+    background: linear-gradient(180deg, var(--surface-4), var(--surface-3));
+    border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-ctl);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--fs-m);
+    cursor: pointer;
+    transition:
+      border-color var(--d-fast) var(--ease),
+      color var(--d-fast) var(--ease);
+  }
+  .export-main:hover:not(:disabled) {
+    border-color: var(--line-active);
+  }
+  .export-main:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .export-main-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* the confirmation is a state of the same button, not a stray line of text */
+  .export-main.copied {
+    color: var(--ok);
+    border-color: color-mix(in srgb, var(--ok) 40%, transparent);
+  }
+  .export-check {
+    animation: export-check-in var(--d-base) var(--ease-back) both;
+  }
+  @keyframes export-check-in {
+    from {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .export-caret {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--ctl-h);
+    height: var(--ctl-h);
+    padding: 0;
+    flex-shrink: 0;
+    background: var(--surface-3);
+    border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-ctl);
+    color: var(--ink-muted);
+    cursor: pointer;
+    transition:
+      background var(--d-fast) var(--ease),
+      color var(--d-fast) var(--ease);
+  }
+  .export-caret:hover:not(:disabled) {
+    background: var(--surface-4);
+    color: var(--ink);
+  }
+  .export-caret:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .export-menu {
+    position: absolute;
+    z-index: 40;
+    bottom: calc(100% + 4px);
+    right: 0;
+    min-width: 180px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-card);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+    padding: 4px;
+    animation: export-menu-in var(--d-fast) var(--ease-out) both;
+    transform-origin: bottom right;
+  }
+  @keyframes export-menu-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .export-item {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-m);
+    width: 100%;
+    height: auto;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--fs-m);
+    text-align: left;
+    cursor: pointer;
+  }
+  .export-item:hover {
+    background: var(--surface-4);
+  }
+  .export-item-label {
+    flex: 1;
+    min-width: 0;
+  }
+  .export-item-check {
+    flex-shrink: 0;
+    color: var(--accent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .export-main,
+    .export-caret {
+      transition: none;
+    }
+    .export-menu,
+    .export-check {
+      animation: none;
+    }
+  }
+}

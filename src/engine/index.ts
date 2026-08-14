@@ -12,15 +12,16 @@ import { emitCss } from './css'
 export * from './types'
 export { assignRoles, CHART_CHROMA_GATE } from './roles'
 export { JUDGE_WEIGHTS, judgePalette } from './judge'
-export { jobsSummary, pinConsequence, whyLines } from './explain'
+export { JOB_TOKENS, jobsSummary, pinConsequence, whyLines } from './explain'
 export { parseColor, toHex } from './color'
 export { extractCandidates } from './extract'
 export { apcaLc, wcagRatio } from './contrast'
 export { themeTailwind, themeTokensJson } from './css'
-export { brandAncestry, resolveBrand } from './adapters'
+export { brandAncestors, brandAncestry, resolveBrand } from './adapters'
 export type { BrandColorName } from './adapters'
 export { tokenAncestry } from './tokens'
-export { locateMuted, locateTokens } from './locate'
+export { locateMuted, locateTokens, sameAncestor } from './locate'
+export { buildEffects, cssAlphaColor, cssShadow, effectVars } from './elevation'
 
 /** Build candidates from a manual, ordered list of color strings. */
 export function candidatesFromList(inputs: string[]): ColorCandidate[] {
@@ -164,8 +165,9 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
       ? (finalAssignments.find((a) => a.candidateIndex === monoBase)?.seed ??
         options.candidates[monoBase].color)
       : null
-  const light = buildMode(seeds, chartSeeds, 'light', fidelity, monoSeed)
-  const dark = buildMode(seeds, chartSeeds, 'dark', fidelity, monoSeed)
+  const separation = options.separation ?? 'layered'
+  const light = buildMode(seeds, chartSeeds, 'light', fidelity, monoSeed, separation)
+  const dark = buildMode(seeds, chartSeeds, 'dark', fidelity, monoSeed, separation)
 
   return {
     light,
@@ -177,8 +179,9 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
     repairs: residuals,
     fidelity,
     monoBase,
+    separation,
     seed,
     judge: winner.judge,
-    css: emitCss(light.tokens, dark.tokens),
+    css: emitCss(light, dark),
   }
 }

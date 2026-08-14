@@ -19,7 +19,7 @@
 
   /* The chrome's control skin: one height, one surface, one edge.
      :where() keeps specificity at zero so any component rule overrides. */
-  .controls :where(button, select, input:not([type='range'])) {
+  .sidebar-shell :where(button, select, input:not([type='range'])) {
     height: var(--ctl-h);
     padding: 0 10px;
     background: var(--surface-3);
@@ -29,16 +29,16 @@
     font: inherit;
     font-size: var(--fs-m);
   }
-  .controls :where(select, input:not([type='range'])) {
+  .sidebar-shell :where(select, input:not([type='range'])) {
     padding: 0 8px;
   }
-  .controls :where(button) {
+  .sidebar-shell :where(button) {
     cursor: pointer;
   }
-  .controls :where(button):hover {
+  .sidebar-shell :where(button):hover {
     background: var(--surface-4);
   }
-  .controls :where(button):disabled {
+  .sidebar-shell :where(button):disabled {
     opacity: 0.35;
     cursor: default;
   }

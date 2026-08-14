@@ -1,0 +1,260 @@
+@layer chrome-base, chrome;
+
+/* RoleBoard-owned chrome: the seats, their two targets, and the riff bounce.
+   Provenance is the entire visual language here — solid means riff can't move
+   it, dashed-with-the-colour-pooled-behind means it will. */
+@layer chrome {
+  .role-board {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--gap-m);
+  }
+
+  .rb-slot {
+    position: relative;
+    height: 60px;
+    border-radius: 9px;
+    padding: 7px 8px 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition:
+      box-shadow var(--d-base) var(--ease),
+      transform var(--d-fast) var(--ease),
+      background var(--d-slow) var(--ease),
+      border-color var(--d-base) var(--ease);
+  }
+
+  /* YOURS / KEPT — solid: the colour fills the seat, and it can be dragged out */
+  .rb-slot.rb-yours,
+  .rb-slot.rb-kept {
+    background: var(--c);
+    color: var(--ink-on);
+    border: 1px solid transparent;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+      0 1px 3px rgba(0, 0, 0, 0.4);
+    cursor: grab;
+  }
+  .rb-slot.rb-yours:active,
+  .rb-slot.rb-kept:active {
+    cursor: grabbing;
+  }
+
+  /* DERIVED — the only state riff touches, so it must never read as settled */
+  .rb-slot.rb-derived {
+    border: 1px dashed color-mix(in srgb, var(--c) 60%, var(--line-ctl));
+    background: color-mix(in srgb, var(--c) 20%, var(--surface-2));
+    color: var(--ink);
+  }
+
+  /* the mono base wears a second ring in its own ink, plus the anchor badge */
+  .rb-slot.rb-yours.is-anchored,
+  .rb-slot.rb-kept.is-anchored {
+    box-shadow:
+      inset 0 0 0 2px var(--ink-on),
+      0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+  .rb-slot.rb-derived.is-anchored {
+    border-color: var(--accent);
+  }
+
+  .rb-slot.is-dragging {
+    opacity: 0.35;
+  }
+  .rb-slot.drop-ok {
+    transform: scale(1.03);
+    box-shadow:
+      0 0 0 2px var(--accent),
+      0 6px 18px rgba(0, 0, 0, 0.5);
+  }
+
+  .rb-top {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* the LABEL teaches — its own target, deliberately not the colour's */
+  .rb-slot .rb-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 17px;
+    padding: 0 5px 0 4px;
+    margin-left: -4px;
+    border-radius: var(--radius-pill);
+    font: inherit;
+    font-size: 9px;
+    font-weight: 650;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    opacity: 0.75;
+    cursor: pointer;
+    transition:
+      background var(--d-fast) var(--ease),
+      opacity var(--d-fast) var(--ease),
+      color var(--d-fast) var(--ease);
+  }
+  .rb-slot .rb-name svg {
+    opacity: 0.55;
+    transition: opacity var(--d-fast) var(--ease);
+  }
+  .rb-slot .rb-name:hover svg {
+    opacity: 1;
+  }
+  .rb-yours .rb-name:hover,
+  .rb-kept .rb-name:hover {
+    background: var(--well);
+    opacity: 1;
+  }
+  .rb-derived .rb-name:hover {
+    background: var(--surface-4);
+    opacity: 1;
+  }
+  .rb-slot .rb-name.open {
+    background: var(--accent);
+    color: var(--surface-0);
+    opacity: 1;
+  }
+
+  .rb-anchor {
+    display: flex;
+    margin-left: auto;
+    opacity: 0.8;
+  }
+
+  /* the COLOUR BODY assigns — "what fills this seat?" */
+  .rb-slot .rb-body {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    width: 100%;
+    height: auto;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 5px;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .rb-hex {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: var(--fs-s);
+    font-weight: 550;
+    letter-spacing: -0.01em;
+  }
+  .rb-yours .rb-body:hover .rb-hex,
+  .rb-kept .rb-body:hover .rb-hex {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .rb-derived .rb-hex {
+    color: var(--ink-muted);
+  }
+  .rb-tag {
+    display: inline-flex;
+    align-items: center;
+    margin-left: auto;
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.6;
+    white-space: nowrap;
+  }
+  .rb-pinmark {
+    opacity: 0.9;
+    margin-right: 3px;
+  }
+
+  /* KEEP — claim the smith's colour as yours, so riff stops re-rolling it.
+     Derived seats only; there is nothing to claim on a seat you filled. */
+  .rb-slot .rb-keep {
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: var(--surface-4);
+    color: var(--ink);
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(0.7);
+    transition:
+      opacity var(--d-fast) var(--ease),
+      transform var(--d-fast) var(--ease-back),
+      background var(--d-fast) var(--ease),
+      color var(--d-fast) var(--ease);
+  }
+  .rb-slot:hover .rb-keep,
+  .rb-slot .rb-keep:focus-visible {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .rb-slot .rb-keep:hover {
+    background: var(--ok);
+    color: var(--surface-0);
+  }
+
+  .rb-slot :where(.rb-name, .rb-body, .rb-keep):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  /* riff bounce — only derived seats move, which is the clearest statement of
+     what riff does. Delay is set inline, staggered 55ms by index. */
+  @keyframes rb-reroll {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+    40% {
+      transform: translateY(-4px) scale(1.04);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+    }
+  }
+  .rb-slot.is-rerolling {
+    animation: rb-reroll var(--d-slow) var(--ease-back) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rb-slot,
+    .rb-slot .rb-name,
+    .rb-slot .rb-name svg,
+    .rb-slot .rb-keep {
+      transition: none;
+    }
+    .rb-slot.is-rerolling {
+      animation: none;
+    }
+    .rb-slot.drop-ok {
+      transform: none;
+    }
+    .rb-slot .rb-keep {
+      transform: none;
+    }
+  }
+}
+
+@layer chrome {
+  /* pick mode: every seat is a target, and says so */
+  .role-board .rb-slot.is-picking {
+    cursor: pointer;
+  }
+  .role-board .rb-slot.is-picking:hover {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+}

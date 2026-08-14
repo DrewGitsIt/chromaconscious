@@ -1,0 +1,174 @@
+
+> themesmith@0.0.0 dev
+> vite --port 5199
+
+
+  VITE v8.2.0  ready in 90 ms
+
+  ➜  Local:   http://localhost:5199/
+  ➜  Network: use --host to expose
+12:28:19 AM [vite] (client) page reload panel-mockup.html
+12:29:04 AM [vite] (client) page reload panel-mockup.html
+12:29:10 AM [vite] (client) page reload panel-mockup.html
+12:29:52 AM [vite] (client) page reload panel-mockup.html
+12:29:57 AM [vite] (client) page reload panel-mockup.html
+12:30:06 AM [vite] (client) hmr update /src/index.css
+1:07:03 AM [vite] (client) page reload palette-mockup.html
+1:07:35 AM [vite] (client) page reload palette-mockup.html
+1:07:56 AM [vite] (client) hmr update /src/index.css
+1:20:15 AM [vite] (client) page reload palette-mockup.html
+1:20:56 AM [vite] (client) page reload palette-mockup.html
+1:21:14 AM [vite] (client) hmr update /src/index.css
+1:35:32 AM [vite] (client) page reload board-mockup.html
+1:36:17 AM [vite] (client) page reload board-mockup.html
+1:36:26 AM [vite] (client) hmr update /src/index.css
+1:53:21 AM [vite] (client) page reload board-mockup.html
+1:54:03 AM [vite] (client) page reload board-mockup.html
+1:55:21 AM [vite] (client) page reload board-mockup.html
+1:56:38 AM [vite] (client) page reload board-mockup.html
+1:57:11 AM [vite] (client) hmr update /src/index.css
+2:07:02 AM [vite] (client) page reload board-mockup.html
+2:07:40 AM [vite] (client) page reload board-mockup.html
+2:08:11 AM [vite] (client) page reload board-mockup.html
+2:23:55 PM [vite] (client) page reload surfaces-mockup.html
+2:25:00 PM [vite] (client) page reload surfaces-mockup.html
+2:25:31 PM [vite] (client) hmr update /src/index.css
+4:35:53 PM [vite] (client) page reload surfaces-mockup.html
+4:36:12 PM [vite] (client) hmr update /src/index.css
+4:54:54 PM [vite] (client) page reload surfaces-mockup.html
+4:55:59 PM [vite] (client) page reload surfaces-mockup.html
+4:56:15 PM [vite] (client) hmr update /src/index.css
+10:36:09 PM [vite] (client) page reload surfaces-mockup.html
+10:36:12 PM [vite] (client) hmr update /src/index.css
+10:45:35 PM [vite] (client) page reload surfaces-mockup.html
+10:45:37 PM [vite] (client) hmr update /src/index.css
+10:45:57 PM [vite] (client) page reload surfaces-mockup.html
+10:45:58 PM [vite] (client) hmr update /src/index.css
+11:17:57 PM [vite] (client) hmr update /src/index.css, /src/App.tsx, /src/components/CandidateStrip.tsx, /src/components/ImageDrop.tsx, /src/components/ColorAddField.tsx, /src/components/ReportPanel.tsx, /src/mockups.tsx, /src/components/BrandBoard.tsx
+11:17:57 PM [vite] (client) hmr invalidate /src/components/ImageDrop.tsx Could not Fast Refresh ("fileToCandidates" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+11:17:57 PM [vite] (client) hmr update /src/App.tsx, /src/components/StartHero.tsx
+11:17:57 PM [vite] (client) hmr invalidate /src/mockups.tsx Could not Fast Refresh ("MOCKUPS" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+11:17:57 PM [vite] (client) hmr update /src/App.tsx
+11:18:12 PM [vite] (client) hmr update /src/index.css, /src/App.tsx, /src/components/CandidateStrip.tsx, /src/components/ImageDrop.tsx, /src/components/ColorAddField.tsx, /src/components/ReportPanel.tsx, /src/mockups.tsx, /src/components/BrandBoard.tsx
+11:18:12 PM [vite] (client) hmr invalidate /src/components/ImageDrop.tsx Could not Fast Refresh ("fileToCandidates" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+11:18:12 PM [vite] (client) hmr update /src/App.tsx, /src/components/StartHero.tsx
+11:18:12 PM [vite] (client) hmr invalidate /src/mockups.tsx Could not Fast Refresh ("MOCKUPS" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+11:18:12 PM [vite] (client) hmr update /src/App.tsx
+11:27:45 PM [vite] (client) hmr update /src/index.css, /src/App.tsx, /src/components/CandidateStrip.tsx, /src/components/ImageDrop.tsx, /src/components/ColorAddField.tsx, /src/components/ReportPanel.tsx, /src/mockups.tsx, /src/components/BrandBoard.tsx
+11:27:45 PM [vite] (client) hmr invalidate /src/components/ImageDrop.tsx Could not Fast Refresh ("fileToCandidates" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+11:27:45 PM [vite] (client) hmr update /src/App.tsx, /src/components/StartHero.tsx
+11:27:45 PM [vite] (client) hmr invalidate /src/mockups.tsx Could not Fast Refresh ("MOCKUPS" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+11:27:45 PM [vite] (client) hmr update /src/App.tsx
+11:27:51 PM [vite] (client) hmr update /src/App.tsx, /src/components/CandidateStrip.tsx, /src/components/ImageDrop.tsx, /src/components/ColorAddField.tsx, /src/components/ReportPanel.tsx, /src/mockups.tsx, /src/components/BrandBoard.tsx, /src/index.css
+11:27:51 PM [vite] (client) hmr invalidate /src/components/ImageDrop.tsx Could not Fast Refresh ("fileToCandidates" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+11:27:51 PM [vite] (client) hmr update /src/App.tsx, /src/components/StartHero.tsx
+11:27:51 PM [vite] (client) hmr invalidate /src/mockups.tsx Could not Fast Refresh ("MOCKUPS" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+11:27:51 PM [vite] (client) hmr update /src/App.tsx
+11:28:53 PM [vite] (client) hmr update /src/styles/tokens.css, /src/index.css
+11:29:02 PM [vite] (client) hmr update /src/index.css
+11:29:02 PM [vite] (client) hmr update /src/index.css
+11:29:34 PM [vite] (client) hmr update /src/styles/tokens.css, /src/index.css
+11:30:10 PM [vite] (client) hmr update /src/index.css
+11:30:18 PM [vite] (client) hmr update /src/index.css
+11:30:39 PM [vite] (client) page reload __cascade.html
+11:30:41 PM [vite] (client) hmr update /src/index.css
+11:30:41 PM [vite] (client) page reload __cascade.html
+11:30:53 PM [vite] (client) page reload __cascade.html
+11:30:53 PM [vite] (client) page reload .tmp-cascade.mjs
+11:30:54 PM [vite] (client) page reload .tmp-cascade.mjs
+11:30:54 PM [vite] (client) page reload __cascade.html
+11:32:38 PM [vite] (client) hmr update /src/index.css
+11:32:38 PM [vite] (client) hmr update /src/index.css
+11:32:38 PM [vite] (client) hmr update /src/index.css
+11:32:52 PM [vite] (client) hmr update /src/index.css
+11:33:03 PM [vite] (client) hmr update /src/index.css
+11:33:03 PM [vite] (client) hmr update /src/index.css
+11:38:03 PM [vite] (client) hmr update /src/App.tsx, /src/index.css
+11:38:03 PM [vite] (client) hmr invalidate /src/App.tsx Could not Fast Refresh (new export)
+11:38:03 PM [vite] (client) page reload src/App.tsx
+11:38:30 PM [vite] (client) hmr update /src/styles/base.css, /src/index.css
+11:39:03 PM [vite] (client) hmr update /src/App.css, /src/index.css
+
+> themesmith@0.0.0 dev
+> vite --port 5199
+
+
+  VITE v8.2.0  ready in 89 ms
+
+  ➜  Local:   http://localhost:5199/
+  ➜  Network: use --host to expose
+12:29:29 AM [vite] (client) hmr update /src/mockups.tsx, /src/index.css
+12:29:29 AM [vite] Internal server error: Failed to resolve import "./components/Analytics" from "src/mockups.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/drew/repo/themesmith/src/mockups.tsx:4:26
+  1  |  import { useMemo } from "react";
+  2  |  import { locateTokens, tokenAncestry } from "./engine";
+  3  |  import { Analytics } from "./components/Analytics";
+     |                             ^
+  4  |  import { BrandBoard } from "./components/BrandBoard";
+  5  |  import { Marketing } from "./components/Marketing";
+      at TransformPluginContext._formatLog (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:31011:39)
+      at TransformPluginContext.error (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:31008:14)
+      at normalizeUrl (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:27957:18)
+      at async file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:28025:30
+      at async Promise.all (index 2)
+      at async TransformPluginContext.transform (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:27993:4)
+      at async EnvironmentPluginContainer.transform (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:30796:14)
+      at async loadAndTransform (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:20594:26)
+      at async viteTransformMiddleware (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:25092:20)
+12:29:30 AM [vite] (client) Pre-transform error: Failed to resolve import "./components/Analytics" from "src/mockups.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/drew/repo/themesmith/src/mockups.tsx:4:26
+  1  |  import { useMemo } from "react";
+  2  |  import { locateTokens, tokenAncestry } from "./engine";
+  3  |  import { Analytics } from "./components/Analytics";
+     |                             ^
+  4  |  import { BrandBoard } from "./components/BrandBoard";
+  5  |  import { Marketing } from "./components/Marketing";
+12:29:30 AM [vite] Internal server error: Failed to resolve import "./components/Analytics" from "src/mockups.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/drew/repo/themesmith/src/mockups.tsx:4:26
+  1  |  import { useMemo } from "react";
+  2  |  import { locateTokens, tokenAncestry } from "./engine";
+  3  |  import { Analytics } from "./components/Analytics";
+     |                             ^
+  4  |  import { BrandBoard } from "./components/BrandBoard";
+  5  |  import { Marketing } from "./components/Marketing";
+      at TransformPluginContext._formatLog (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:31011:39)
+      at TransformPluginContext.error (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:31008:14)
+      at normalizeUrl (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:27957:18)
+      at async file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:28025:30
+      at async Promise.all (index 2)
+      at async TransformPluginContext.transform (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:27993:4)
+      at async EnvironmentPluginContainer.transform (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:30796:14)
+      at async loadAndTransform (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:20594:26)
+      at async viteTransformMiddleware (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:25092:20)
+12:29:42 AM [vite] (client) hmr update /src/App.tsx
+12:29:42 AM [vite] (client) Pre-transform error: Failed to resolve import "./components/Marketing" from "src/mockups.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/drew/repo/themesmith/src/mockups.tsx:6:26
+  3  |  import { Analytics } from "./components/Analytics";
+  4  |  import { BrandBoard } from "./components/BrandBoard";
+  5  |  import { Marketing } from "./components/Marketing";
+     |                             ^
+  6  |  import { Preview } from "./components/Preview";
+  7  |  var _jsxFileName = "/home/drew/repo/themesmith/src/mockups.tsx";
+12:29:42 AM [vite] Internal server error: Failed to resolve import "./components/Marketing" from "src/mockups.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/drew/repo/themesmith/src/mockups.tsx:6:26
+  3  |  import { Analytics } from "./components/Analytics";
+  4  |  import { BrandBoard } from "./components/BrandBoard";
+  5  |  import { Marketing } from "./components/Marketing";
+     |                             ^
+  6  |  import { Preview } from "./components/Preview";
+  7  |  var _jsxFileName = "/home/drew/repo/themesmith/src/mockups.tsx";
+      at TransformPluginContext._formatLog (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:31011:39)
+      at TransformPluginContext.error (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:31008:14)
+      at normalizeUrl (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:27957:18)
+      at async file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:28025:30
+      at async Promise.all (index 4)
+      at async TransformPluginContext.transform (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:27993:4)
+      at async EnvironmentPluginContainer.transform (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:30796:14)
+      at async loadAndTransform (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:20594:26)
+      at async viteTransformMiddleware (file:///home/drew/repo/themesmith/node_modules/vite/dist/node/chunks/node.js:25092:20)
+12:29:45 AM [vite] (client) hmr update /src/App.tsx

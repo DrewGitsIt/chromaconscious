@@ -1,4 +1,4 @@
-import type { Oklch, Ramp } from './types'
+import type { Oklch, Ramp, Separation } from './types'
 import { clamp, toGamut, toHex } from './color'
 import { solveLightnessForLc } from './contrast'
 
@@ -34,8 +34,44 @@ const DARK_NEUTRAL_CAP = [0.03, 0.028, 0.026, 0.025, 0.024, 0.023, 0.024, 0.026]
 // for chroma there). Tapers off by mid-ramp so borders keep their ladder.
 const NEUTRAL_L_TAPER = [1, 0.95, 0.7, 0.45, 0.2, 0.1, 0, 0]
 
+/**
+ * Separation as signed deltas on the neutral ladder — never as an absolute
+ * lightness plan. The ladder is already moved by `NEUTRAL_L_TAPER` (a
+ * chromatic neutral pulls light backgrounds down off near-white by up to
+ * .045), so an absolute plan would overwrite that correction and re-break
+ * light mode for tinted neutrals. Deltas ride on top of whatever the taper
+ * decided.
+ *
+ * `layered` is all zeroes by construction: an existing theme is byte-identical
+ * unless the user actually moves the control. That is unit-enforced.
+ *
+ * The shape of each plan, reading steps 1→8 (page, card, secondary … border,
+ * input):
+ *   flat   — surfaces CONVERGE (card meets the page) and the hairlines get
+ *            stronger to carry the separation the lightness no longer does.
+ *   lifted — the page RECEDES and the card floats above it, while hairlines
+ *            soften because the shadow has taken over. In light mode that
+ *            means the card ends up lighter than the page, inverting the
+ *            engine's usual order — which is the whole point of the setting.
+ */
+const SEPARATION_DELTA: Record<'light' | 'dark', Record<Separation, number[]>> = {
+  light: {
+    flat: [0, 0.013, 0.011, 0.008, 0.006, -0.017, -0.015, -0.01],
+    layered: [0, 0, 0, 0, 0, 0, 0, 0],
+    lifted: [-0.022, 0.011, -0.007, -0.006, -0.005, 0.017, 0.012, 0.008],
+  },
+  dark: {
+    // In dark, a STRONGER hairline is a lighter one, so the border signs flip.
+    flat: [0.025, 0, 0.01, 0.008, 0.006, 0.02, 0.015, 0.01],
+    layered: [0, 0, 0, 0, 0, 0, 0, 0],
+    lifted: [-0.012, 0.014, 0.008, 0.006, 0.005, -0.01, -0.008, -0.006],
+  },
+}
+
 export interface RampOptions {
   isNeutral?: boolean
+  /** Surface separation; only the neutral ramp responds. Default `layered`. */
+  separation?: Separation
 }
 
 function stepChroma(seedC: number, i: number, dark: boolean, neutral: boolean): number {
@@ -62,6 +98,15 @@ export function makeRamp(seed: Oklch, mode: 'light' | 'dark', opts: RampOptions 
   if (opts.isNeutral && !dark) {
     const dip = clamp((seedC - 0.02) * 0.9, 0, 0.045)
     if (dip > 0) ladder = ladder.map((l, i) => l - dip * NEUTRAL_L_TAPER[i])
+  }
+  // Separation rides on top of the taper, and only on the surface ramp — the
+  // brand and status ramps have no surfaces to separate. The ceiling sits
+  // above the ladder's own top step (0.99) so `layered` passes through
+  // untouched; it exists only to stop a delta reaching pure white, where
+  // there is no gamut room left for the neutral's chroma.
+  if (opts.isNeutral) {
+    const delta = SEPARATION_DELTA[dark ? 'dark' : 'light'][opts.separation ?? 'layered']
+    ladder = ladder.map((l, i) => clamp(l + delta[i], 0.02, 0.995))
   }
 
   const steps: Oklch[] = ladder.map((l, i) =>
