@@ -1,0 +1,130 @@
+@layer chrome-base, chrome;
+
+/* SEPARATION — the border↔shadow balance, as one object.
+
+   A segmented control rather than three buttons: the settings are three stops
+   on a single axis (left = the hairline carries it, right = the shadow does),
+   so what the user should read is a POSITION. That is why the indicator is one
+   thumb that slides between the segments instead of a per-button "on" style.
+
+   The thumb borrows --pal-primary, like .frame-dot and .mini.on, so the control
+   belongs to the palette being forged. Every colour here is a chrome token. */
+@layer chrome {
+  .sep {
+    margin-top: 18px;
+    padding: 0 2px;
+  }
+
+  /* names the control — "tuning" now holds two of them, and the dial's own
+     end labels are the only naming it needs */
+  .sep-name {
+    display: block;
+    font-size: var(--fs-s);
+    color: var(--ink-faint);
+    margin-bottom: 8px;
+  }
+
+  .sep-seg {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 3px;
+    background: var(--surface-3);
+    border: 1px solid var(--line-card);
+    border-radius: var(--radius-ctl);
+  }
+
+  /* one segment wide, translated by its index — the whole reading of the
+     control is where this sits */
+  .sep-thumb {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc((100% - 6px) / 3);
+    border-radius: calc(var(--radius-ctl) - 2px);
+    background: color-mix(in srgb, var(--pal-primary, var(--accent)) 20%, var(--surface-4));
+    border: 1px solid color-mix(in srgb, var(--pal-primary, var(--accent)) 45%, transparent);
+    transform: translateX(calc(var(--sep-i) * 100%));
+    pointer-events: none;
+    transition:
+      transform var(--d-base) var(--ease),
+      background var(--d-base) var(--ease),
+      border-color var(--d-base) var(--ease);
+  }
+
+  .sep-opt {
+    position: relative; /* above the thumb */
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 0;
+    height: 26px;
+    padding: 0 4px;
+    background: transparent;
+    border: 0;
+    border-radius: calc(var(--radius-ctl) - 2px);
+    font: inherit;
+    font-size: var(--fs-s);
+    color: var(--ink-faint);
+    cursor: pointer;
+    transition: color var(--d-fast) var(--ease);
+  }
+  .sep-opt:hover {
+    color: var(--ink-muted);
+  }
+  .sep-opt.on {
+    color: var(--ink-bright);
+  }
+  .sep-opt svg {
+    flex-shrink: 0;
+  }
+  .sep-opt-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sep-opt:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+
+  /* the sentence under the control: what the CURRENT (or hovered) setting
+     actually does. Two lines' worth of room reserved, so previewing a
+     neighbour never shifts the panel under the pointer. */
+  .sep-caption {
+    margin: 10px 0 0;
+    font-size: var(--fs-s);
+    line-height: 1.55;
+    color: var(--ink-faint);
+    min-height: calc(var(--fs-s) * 1.55 * 2);
+  }
+  .sep-caption span {
+    display: block;
+    animation: sep-cap-in var(--d-fast) var(--ease-out) both;
+  }
+  @keyframes sep-cap-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* THE KILL SWITCH — unlayered on purpose, exactly as styles/motion.css is.
+   The duration tokens are already zeroed there, but an override written inside
+   @layer chrome would lose to any unlayered rule that ever landed on these
+   selectors; unlayered CSS outranks every layer, so this one cannot silently
+   fail. Reduced motion gets the same control, minus the travel. */
+@media (prefers-reduced-motion: reduce) {
+  .sep-thumb,
+  .sep-opt {
+    transition: none;
+  }
+  .sep-caption span {
+    animation: none;
+  }
+}

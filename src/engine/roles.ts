@@ -185,12 +185,27 @@ export function assignRoles(
   const taken = new Set<number>()
   const roleSeeds = new Map<Role, { index: number | null; input: Oklch | null }>()
 
+  // -1. Benched: colors the user parked. Marked taken so no seat can claim
+  // them, and re-added to `unused` at the end so they still surface as the
+  // bench. This is the only way to hand a seat back to the engine — dropping
+  // a pin alone can't, since the same color would win the same seat again.
+  const benched = new Set<number>()
+  candidates.forEach((c, i) => {
+    if (c.benched) {
+      benched.add(i)
+      taken.add(i)
+    }
+  })
+
   // 0. Mono lock: the base is crowned primary — unless the user pinned another
   // color there. A pin is the user's strongest word and outranks the lock (the
   // lock constrains what the engine invents, never what the user hands it), so
   // pinning navy primary inside salmon-tinted chrome is a supported design.
   // Either way the base donates its hue to every invented role (monoSynthesize).
-  const baseInput = monoBase != null && candidates[monoBase] ? candidates[monoBase].color : null
+  const baseInput =
+    monoBase != null && candidates[monoBase] && !benched.has(monoBase)
+      ? candidates[monoBase].color
+      : null
   if (baseInput && !candidates.some((c, i) => i !== monoBase && c.pin === 'primary')) {
     roleSeeds.set('primary', { index: monoBase, input: baseInput })
     taken.add(monoBase!)
@@ -202,6 +217,7 @@ export function assignRoles(
   // stays a visible series color).
   const chartPinned: number[] = []
   candidates.forEach((c, i) => {
+    if (benched.has(i)) return
     if (c.pin === 'chart') {
       if (!taken.has(i)) {
         chartPinned.push(i)
@@ -325,6 +341,10 @@ export function assignRoles(
   const chart: number[] = [...chartPinned]
   const unused: number[] = []
   candidates.forEach((c, i) => {
+    if (benched.has(i)) {
+      unused.push(i)
+      return
+    }
     if (taken.has(i)) return
     if (c.color.c >= CHART_CHROMA_GATE && chart.length < CHART_SEATS) chart.push(i)
     else unused.push(i)

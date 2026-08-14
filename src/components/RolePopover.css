@@ -1,0 +1,219 @@
+@layer chrome-base, chrome;
+
+/* RolePopover-owned chrome: the seat's two popovers. Fixed-position, so the
+   scrolling sidebar body can't clip them; every dimension here matches the
+   settled board mockup. */
+@layer chrome {
+  .rp-pop {
+    position: fixed;
+    z-index: 60;
+    background: var(--surface-2);
+    border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-card);
+    box-shadow: 0 14px 38px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    color: var(--ink);
+    /* transform-origin is set inline: it follows the flip direction */
+    animation: rp-pop-in var(--d-fast) var(--ease-out) both;
+  }
+
+  @keyframes rp-pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.93) translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* the micro-label that introduces a list */
+  .rp-label {
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--ink-faint);
+    margin: 10px 0 4px;
+  }
+
+  .rp-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  /* ---------------------------------------------------------------
+     the TEACHING tooltip: what this seat is for, and what it's doing
+     --------------------------------------------------------------- */
+  .rp-tip {
+    width: 228px;
+    padding: 11px 12px 12px;
+  }
+  .rp-tip-name {
+    font-size: var(--fs-m);
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    text-transform: capitalize;
+  }
+  .rp-tip-gloss {
+    margin: 4px 0 0;
+    font-size: var(--fs-s);
+    line-height: 1.5;
+    color: var(--ink-bright);
+  }
+  .rp-tip-jobs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .rp-tip-job {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: var(--radius-pill);
+    background: var(--surface-4);
+    color: var(--ink-muted);
+  }
+
+  /* ---------------------------------------------------------------
+     the ASSIGN popover: which colour goes here — the transpose
+     --------------------------------------------------------------- */
+  .rp-asg {
+    width: 236px;
+  }
+  .rp-asg-head {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-m);
+    padding: 10px 11px 9px;
+    border-bottom: 1px solid var(--line-card);
+  }
+  .rp-asg-sw {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    border-radius: var(--radius-ctl);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  }
+  .rp-asg-head-txt {
+    min-width: 0;
+  }
+  .rp-asg-q {
+    display: block;
+    font-size: var(--fs-m);
+    font-weight: 550;
+    text-transform: capitalize;
+  }
+  .rp-asg-sub {
+    display: block;
+    margin-top: 1px;
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+  }
+  .rp-asg-label {
+    font-size: 9px;
+    margin: 0;
+    padding: 9px 11px 4px;
+  }
+  .rp-asg-list {
+    padding: 0 4px 4px;
+    max-height: 250px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-ctl) transparent;
+  }
+  .rp-asg-empty {
+    margin: 2px 7px 6px;
+    font-size: var(--fs-xs);
+    line-height: 1.4;
+    color: var(--ink-faint);
+  }
+
+  /* one candidate row (and the footer, which is one too) */
+  .rp-opt {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-m);
+    width: 100%;
+    height: auto;
+    padding: 6px 7px;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-ctl);
+    transition:
+      background var(--d-fast) var(--ease-out),
+      border-color var(--d-fast) var(--ease-out);
+  }
+  .rp-opt:hover {
+    background: var(--surface-4);
+  }
+  .rp-opt:focus-visible {
+    outline: 1px solid var(--line-active);
+    outline-offset: -1px;
+  }
+  /* The option already sitting in the seat. A tint of --accent rather than
+     --accent-quiet: that token is an ink (ghost links), so as a fill it would
+     slab the row instead of washing it. */
+  .rp-opt--cur {
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+  }
+  .rp-opt--cur:hover {
+    background: color-mix(in srgb, var(--accent) 24%, transparent);
+  }
+  .rp-opt-sw {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  }
+  /* the footer's swatch stands for "no colour of yours" */
+  .rp-opt-sw--auto {
+    background: repeating-linear-gradient(
+      45deg,
+      var(--line-card) 0 3px,
+      var(--surface-3) 3px 6px
+    );
+  }
+  .rp-opt-txt {
+    flex: 1;
+    min-width: 0;
+  }
+  .rp-opt-name {
+    display: block;
+    font-size: var(--fs-m);
+  }
+  .rp-opt-hint {
+    display: block;
+    margin-top: 1px;
+    font-size: var(--fs-xs);
+    line-height: 1.4;
+    color: var(--ink-faint);
+  }
+  .rp-opt-check {
+    flex-shrink: 0;
+    color: var(--accent);
+  }
+
+  /* freeing the seat is a different kind of act — fenced off below the list */
+  .rp-free {
+    width: 100%;
+    margin-top: 2px;
+    padding: 8px 11px 9px;
+    border: 0;
+    border-top: 1px solid var(--line-card);
+    border-radius: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rp-pop {
+      animation: none;
+    }
+    .rp-opt {
+      transition: none;
+    }
+  }
+}

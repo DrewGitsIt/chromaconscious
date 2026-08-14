@@ -5,9 +5,12 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/')
 })
 
+/** One labelled seat on the board. */
+const seat = (page: Page, role: string) => page.locator(`.rb-slot[data-role="${role}"]`)
+
 const bootPicnic = async (page: Page) => {
   await page.getByRole('button', { name: 'Pastel picnic' }).click()
-  await expect(page.locator('.candidate-strip')).toContainText('#a0c4ff')
+  await expect(seat(page, 'accent').locator('.rb-hex')).toHaveText('#a0c4ff')
 }
 
 const rgbOf = async (page: Page, selector: string, prop = 'color') =>
@@ -19,30 +22,55 @@ const spread = (rgb: string) => {
   return Math.max(...m.slice(0, 3)) - Math.min(...m.slice(0, 3))
 }
 
+const newProjectBg = (page: Page) =>
+  page
+    .locator('.preview-root button', { hasText: 'New project' })
+    .evaluate((el) => getComputedStyle(el).backgroundColor)
+
 test.describe('color locator', () => {
-  test('hovering the accent row keeps links lit and grays the primary button', async ({ page }) => {
+  test('hovering the accent seat keeps links lit and grays the primary button', async ({ page }) => {
     await bootPicnic(page)
-    const linkBefore = await rgbOf(page, '.project-link')
-    await page.locator('.candidate-strip li', { hasText: '#a0c4ff' }).hover()
+    // `.banner-action` is the link-colored element on the landing view (the
+    // project table now lives a page over); like `.project-link` it descends
+    // from the accent, so it is what must stay lit while the rest grays.
+    const linkBefore = await rgbOf(page, '.banner-action')
+    await seat(page, 'accent').hover()
     await page.waitForTimeout(300) // locate enter debounce is 150ms
     // accent descendants stay verbatim
-    expect(await rgbOf(page, '.project-link')).toBe(linkBefore)
+    expect(await rgbOf(page, '.banner-action')).toBe(linkBefore)
     // primary-derived button goes near-gray
-    const btn = page.locator('.preview-root button', { hasText: 'New project' })
-    const btnColor = await btn.evaluate((el) => getComputedStyle(el).backgroundColor)
-    expect(spread(btnColor)).toBeLessThanOrEqual(8)
+    expect(spread(await newProjectBg(page))).toBeLessThanOrEqual(8)
   })
 
-  test('the hovered row shows its jobs line; leave restores the mockup', async ({ page }) => {
+  test('leaving the board restores the mockup', async ({ page }) => {
     await bootPicnic(page)
-    const row = page.locator('.candidate-strip li', { hasText: '#a0c4ff' })
-    await row.hover()
-    await expect(row.locator('.jobs-line')).toContainText('links')
-    // moving off the strip restores full color
+    await seat(page, 'accent').hover()
+    await page.waitForTimeout(300)
+    expect(spread(await newProjectBg(page))).toBeLessThanOrEqual(8)
+    // moving off the board restores full color
     await page.locator('.stage').hover({ position: { x: 400, y: 300 } })
-    await page.waitForTimeout(120)
-    const btn = page.locator('.preview-root button', { hasText: 'New project' })
-    const btnColor = await btn.evaluate((el) => getComputedStyle(el).backgroundColor)
-    expect(spread(btnColor)).toBeGreaterThan(8)
+    await page.waitForTimeout(300)
+    expect(spread(await newProjectBg(page))).toBeGreaterThan(8)
+  })
+
+  /**
+   * This used to assert the opposite — that a derived seat located nothing,
+   * "because there is no color of yours behind it". That reasoned about
+   * provenance when the question is about USE: a derived neutral still owns
+   * the backgrounds, the text and the borders, which is most of the frame.
+   * Locate is now keyed on the role rather than on a candidate, so it answers
+   * for derived seats too.
+   */
+  test('hovering a DERIVED seat locates it — provenance is not the question', async ({ page }) => {
+    await bootPicnic(page)
+    const neutral = seat(page, 'neutral')
+    await expect(neutral.locator('.rb-tag')).toHaveText('derived')
+    // the page background descends from the neutral, so it must stay verbatim
+    const bgBefore = await rgbOf(page, '.preview-root', 'background-color')
+    await neutral.hover()
+    await page.waitForTimeout(300)
+    expect(await rgbOf(page, '.preview-root', 'background-color')).toBe(bgBefore)
+    // ...while the primary-derived button, which is not the neutral's, grays out
+    expect(spread(await newProjectBg(page))).toBeLessThanOrEqual(8)
   })
 })

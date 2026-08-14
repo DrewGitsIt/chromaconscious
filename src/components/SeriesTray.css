@@ -1,0 +1,122 @@
+@layer chrome-base, chrome;
+
+/* The chart series tray: a pooled seat set, so a wide card of swatches rather
+   than a single slot. Dashed swatch = the smith computed it. */
+@layer chrome {
+  .tray {
+    border: 1px solid var(--line-card);
+    border-radius: 9px;
+    padding: 7px 8px 8px;
+    background: var(--surface-2);
+    transition: box-shadow var(--d-fast) var(--ease);
+  }
+  .tray.drop-ok {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+
+  .tray-top {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 7px;
+  }
+
+  /* the label is the teacher — its own target, separate from the colours */
+  .tray-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 17px;
+    padding: 0 5px 0 4px;
+    margin-left: -4px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--ink-faint);
+    font-size: 9px;
+    font-weight: 650;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+      background var(--d-fast) var(--ease),
+      color var(--d-fast) var(--ease);
+  }
+  .tray-name:hover {
+    background: var(--surface-4);
+    color: var(--ink-muted);
+  }
+  .tray-name:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .tray-name svg {
+    opacity: 0.55;
+  }
+  .tray-name:hover svg {
+    opacity: 1;
+  }
+
+  .tray-cap {
+    margin-left: auto;
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+  }
+
+  .tray-set {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+
+  /* ---- a series swatch ---- */
+  .series {
+    position: relative;
+    width: 34px;
+    height: 30px;
+    border-radius: 7px;
+    flex-shrink: 0;
+    cursor: grab;
+    background: var(--c);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    transition:
+      transform var(--d-fast) var(--ease),
+      opacity var(--d-fast) var(--ease);
+  }
+  .series:hover {
+    transform: translateY(-2px);
+  }
+  .series:active {
+    cursor: grabbing;
+  }
+  .series.dragging {
+    opacity: 0.35;
+  }
+
+  /* derived: the smith's, and therefore provisional — dashed, colour pooled
+     behind it rather than stated flat. Same language the slots use. */
+  .series.derived {
+    background: color-mix(in srgb, var(--c) 20%, var(--surface-3));
+    box-shadow: none;
+  }
+  .series.derived::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 7px;
+    border: 1px dashed color-mix(in srgb, var(--c) 70%, var(--line-ctl));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tray,
+    .tray-name,
+    .series {
+      transition: none;
+    }
+    .series:hover {
+      transform: none;
+    }
+  }
+}

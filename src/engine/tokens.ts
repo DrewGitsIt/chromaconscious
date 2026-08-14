@@ -3,12 +3,14 @@ import type {
   Oklch,
   Ramp,
   Role,
+  Separation,
   ThemeMode,
   ThemeResult,
   TokenAncestor,
 } from './types'
 import { hueDistance, parseColor, toGamut, toHex } from './color'
 import { apcaLc, bestForeground, solveLightnessForLc, wcagRatio } from './contrast'
+import { buildEffects } from './elevation'
 import { chartAdjust } from './roles'
 import { makeRamp } from './ramp'
 
@@ -58,10 +60,15 @@ export function buildMode(
   fidelity = 0.5,
   /** Mono lock: the base seed everything invented inherits hue + chroma from. */
   monoSeed: Oklch | null = null,
+  /** Surface separation: moves the neutral ladder and the shadow scale together. */
+  separation: Separation = 'layered',
 ): ThemeMode {
   const ramps = {} as Record<Role, Ramp>
   for (const role of Object.keys(seeds) as Role[]) {
-    ramps[role] = makeRamp(seeds[role], mode, { isNeutral: role === 'neutral' }).hex
+    ramps[role] = makeRamp(seeds[role], mode, {
+      isNeutral: role === 'neutral',
+      separation,
+    }).hex
   }
 
   const N = ramps.neutral
@@ -275,7 +282,10 @@ export function buildMode(
   }
 
   const report = buildReport(tokens)
-  return { tokens, ramps, report, ancestry }
+  // Shadows come from the neutral seed, so they track the palette without the
+  // user supplying anything. Held outside `tokens` — see ThemeEffects.
+  const effects = buildEffects(seeds.neutral, mode, separation)
+  return { tokens, ramps, report, ancestry, effects }
 }
 
 /**

@@ -1,0 +1,1089 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>themesmith — palette object redesign</title>
+<style>
+  /* ============================================================
+     Iteration on panel-mockup.html's column B.
+       1. can the candidate list stop being "rows inside cards"?
+       2. can invented colors read as provisional, not as pills?
+       3. and — role assignment has to keep WORKING. (round 2)
+     Three live variants. Wired: drag-reorder, hover-kill, role menu with
+     pin/unpin + consequences, promote-an-invented-color, mono lock, riff.
+     ============================================================ */
+  :root {
+    --surface-0: #14151a; --surface-1: #17181c; --surface-2: #1c1e24;
+    --surface-3: #1f2127; --surface-4: #262932; --surface-active: #3b4252;
+    --line-card: #2a2c33; --line-ctl: #33363f; --line-active: #4c566a;
+    --ink: #e6e7ea; --ink-muted: #9a9daa; --ink-faint: #6a6e7a;
+    --accent: #7aa2f7; --ok: #9ece6a; --warn: #e0af68; --fail: #ff8a8a;
+    --ink-bright: #c0caf5; --accent-cool: #8fa7dd; --accent-warm: #cf9a66;
+
+    --ctl-h: 32px; --radius-ctl: 6px; --radius-card: 10px; --radius-pill: 999px;
+    --fs-xs: 10px; --fs-s: 11px; --fs-m: 12px; --fs-h1: 20px;
+    --gap-s: 6px; --gap-m: 8px; --pad-side: 16px;
+
+    --t: 1;
+    --d-fast: calc(120ms * var(--t));
+    --d-base: calc(200ms * var(--t));
+    --d-slow: calc(340ms * var(--t));
+    --ease: cubic-bezier(0.2, 0.8, 0.3, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-back: cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 28px 60px;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    background: #101116; color: var(--ink);
+  }
+  code, .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  svg { display: block; flex-shrink: 0; }
+
+  .sheet-head {
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    padding-bottom: 18px; margin-bottom: 22px; border-bottom: 1px solid #22242b;
+  }
+  .sheet-head h1 { font-size: 15px; margin: 0; letter-spacing: -0.01em; }
+  .sheet-head .sub { font-size: var(--fs-m); color: var(--ink-faint); margin-right: auto; }
+  .tog {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--surface-3); border: 1px solid var(--line-ctl); color: var(--ink-muted);
+    border-radius: var(--radius-pill); padding: 5px 12px;
+    font-size: var(--fs-s); font-family: inherit; cursor: pointer;
+    transition: all var(--d-fast) var(--ease);
+  }
+  .tog:hover { background: var(--surface-4); color: var(--ink); }
+  .tog[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent);
+  }
+  .tog .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .35; }
+  .tog[aria-pressed="true"] .dot { opacity: 1; }
+
+  .sheet { display: flex; gap: 30px; align-items: flex-start; }
+  .col-title {
+    font-size: var(--fs-s); text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--ink-faint); margin: 0 0 10px; display: flex; align-items: baseline; gap: 8px;
+  }
+  .col-title b { color: var(--ink-muted); font-weight: 600; }
+  .col-note { font-size: var(--fs-xs); letter-spacing: 0; text-transform: none; color: #4e525c; }
+
+  /* ---------------- panel shell ---------------- */
+  .panel {
+    width: 320px; flex-shrink: 0; padding: 0; display: flex; flex-direction: column;
+    height: 700px; position: relative; overflow: hidden;
+    border: 1px solid var(--line-card); border-radius: var(--radius-card);
+    background:
+      radial-gradient(120% 60% at 0% 0%, color-mix(in srgb, var(--pal-primary) 13%, transparent), transparent 70%),
+      radial-gradient(90% 50% at 100% 100%, color-mix(in srgb, var(--pal-accent) 9%, transparent), transparent 65%),
+      var(--surface-1);
+    transition: background var(--d-slow) var(--ease);
+  }
+  .panel :where(button, select, input:not([type="range"])) {
+    height: var(--ctl-h); padding: 0 10px; background: var(--surface-3);
+    border: 1px solid var(--line-ctl); border-radius: var(--radius-ctl);
+    color: var(--ink); font: inherit; font-size: var(--fs-m);
+  }
+  .panel :where(button) { cursor: pointer; transition: background var(--d-fast) var(--ease), border-color var(--d-fast) var(--ease), color var(--d-fast) var(--ease); }
+  .panel :where(button):hover { background: var(--surface-4); }
+  .panel :where(button):focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: var(--ctl-h); padding: 0; flex-shrink: 0; }
+
+  .b-head { padding: var(--pad-side) var(--pad-side) 12px; flex-shrink: 0; }
+  .b-wordmark {
+    font-size: var(--fs-h1); letter-spacing: -0.02em; font-weight: 650; width: fit-content;
+    background: linear-gradient(96deg, var(--pal-primary) 0%, var(--pal-accent) 55%, var(--ink) 105%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    transition: background var(--d-slow) var(--ease);
+  }
+  .b-tagline { color: var(--ink-faint); font-size: var(--fs-s); margin: 3px 0 0; }
+  .b-body { flex: 1; min-height: 0; overflow-y: auto; padding: 4px var(--pad-side) var(--pad-side); scrollbar-width: thin; scrollbar-color: var(--line-ctl) transparent; }
+  .b-foot {
+    flex-shrink: 0; padding: 12px var(--pad-side) var(--pad-side);
+    border-top: 1px solid var(--line-card);
+    background: color-mix(in srgb, var(--surface-0) 55%, transparent); backdrop-filter: blur(6px);
+  }
+
+  .sec { margin: 0 0 18px; }
+  .sec-head { display: flex; align-items: center; gap: var(--gap-m); margin: 0 0 9px; min-height: 22px; }
+  .sec-label { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-faint); white-space: nowrap; font-weight: 600; }
+  .sec-rule { flex: 1; height: 1px; min-width: 8px; background: linear-gradient(90deg, var(--line-card), transparent); }
+  .sec-act { display: inline-flex; align-items: center; gap: var(--gap-s); flex-shrink: 0; }
+  .mini {
+    height: 22px; padding: 0 8px; font-size: var(--fs-xs); background: transparent;
+    border: 1px solid transparent; color: var(--ink-faint); border-radius: var(--radius-pill);
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .mini:hover { background: var(--surface-3); border-color: var(--line-ctl); color: var(--ink-muted); }
+  .mini.on { background: color-mix(in srgb, var(--pal-primary) 20%, transparent); border-color: color-mix(in srgb, var(--pal-primary) 45%, transparent); color: var(--ink); }
+  .mini.picking { border-color: var(--accent); color: var(--accent); }
+  .mini-sw { width: 11px; height: 11px; border-radius: 3px; border: 1px solid rgba(255,255,255,.28); transition: background var(--d-base) var(--ease); }
+
+  .frame-card { background: var(--surface-2); border: 1px solid var(--line-card); border-radius: var(--radius-ctl); padding: 6px; display: flex; align-items: center; gap: var(--gap-s); }
+  .frame-card:hover { border-color: var(--line-ctl); }
+  .frame-dot {
+    width: 26px; height: 26px; border-radius: var(--radius-ctl); padding: 0; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center; font-size: var(--fs-s); font-weight: 700;
+    background: color-mix(in srgb, var(--pal-primary) 22%, var(--surface-4));
+    border: 1px solid color-mix(in srgb, var(--pal-primary) 40%, transparent); color: var(--ink);
+  }
+  .frame-card select { flex: 1; min-width: 0; height: 26px; background: transparent; border-color: transparent; font-size: var(--fs-s); }
+  .frame-card select:hover { background: var(--surface-3); }
+  .frame-card .icon-btn { width: 26px; height: 26px; background: transparent; border-color: transparent; color: var(--ink-faint); }
+  .frame-card .icon-btn:hover { background: var(--surface-3); color: var(--ink); }
+
+  /* ============================================================
+     VARIANT 0 — as shipped-ish: rows in a card, badge-as-button.
+     Kept as the control: it's the design that ALREADY had working
+     role editing, so it's the bar the new ones have to clear.
+     ============================================================ */
+  .palette-obj {
+    position: relative; background: var(--surface-2); border: 1px solid var(--line-card);
+    border-radius: var(--radius-card); padding: 8px 8px 8px 14px;
+  }
+  .spine { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 10px 0 0 10px; background: var(--spine, var(--line-card)); transition: background var(--d-slow) var(--ease); }
+  .strip { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--gap-s); }
+  .v0 .strip li {
+    display: flex; align-items: center; gap: var(--gap-m);
+    background: transparent; border: 1px solid transparent; border-radius: var(--radius-ctl); padding: 5px 6px;
+    transition: background var(--d-fast) var(--ease), border-color var(--d-fast) var(--ease);
+  }
+  .v0 .strip li:hover { background: var(--surface-3); border-color: var(--line-card); }
+  .v0 .grip { color: #565a66; cursor: grab; display: flex; }
+  .v0 .sw { width: 28px; height: 28px; border-radius: var(--radius-ctl); border: 1px solid rgba(255,255,255,.15); flex-shrink: 0; }
+  .v0 .meta { flex: 1; min-width: 0; font-size: var(--fs-s); }
+  .v0 .badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .05em; padding: 3px 6px;
+    border-radius: var(--radius-pill); background: #2c3040; color: #aab2cc; height: auto;
+    border: 1px solid transparent;
+  }
+  .v0 .badge.pinned { border-color: currentColor; }
+  .v0 .row-x { width: 22px; height: 22px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: 0; color: var(--ink-faint); }
+  .v0 .row-x:hover { color: var(--fail); background: var(--surface-4); }
+  .v0 .invented-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 8px 2px; }
+  .v0 .invented-cap { font-size: var(--fs-xs); color: var(--ink-faint); }
+  .v0 .invented-item {
+    display: inline-flex; align-items: center; gap: 5px; height: auto; padding: 3px 8px;
+    font-size: var(--fs-xs); color: var(--ink-muted); background: var(--surface-3);
+    border: 1px solid var(--line-ctl); border-radius: var(--radius-pill);
+  }
+  .v0 .invented-sw { width: 10px; height: 10px; border-radius: 3px; border: 1px solid rgba(255,255,255,.2); }
+
+  /* ============================================================
+     VARIANT 1 — CHIPS. The color IS the row.
+     Round 2: the role is no longer a passive label — it's the control.
+     The kill's 22px is permanently reserved, so nothing slides on hover
+     and the role never moves out from under the pointer.
+     ============================================================ */
+  .v1 .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+  .v1 .chip {
+    position: relative; display: flex; align-items: center; gap: 6px;
+    height: 46px; padding: 0 6px 0 12px; border-radius: 9px; cursor: grab;
+    background: var(--c); color: var(--ink-on);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.09), 0 1px 2px rgba(0,0,0,.35);
+    transition: transform var(--d-fast) var(--ease), box-shadow var(--d-base) var(--ease),
+                height var(--d-base) var(--ease), opacity var(--d-fast) linear;
+  }
+  .v1 .chip:hover { transform: translateX(2px); box-shadow: inset 0 0 0 1px rgba(255,255,255,.18), 0 3px 10px rgba(0,0,0,.4); }
+  .v1 .chip:active { cursor: grabbing; }
+  .v1 .chip.dragging { opacity: .3; }
+  /* the hex area opens the picker */
+  .v1 .chip .hex {
+    font-size: var(--fs-m); font-weight: 550; letter-spacing: -.01em; flex: 1;
+    align-self: stretch; display: flex; align-items: center;
+    background: transparent; border: 0; color: inherit; padding: 0; height: auto; cursor: pointer;
+    border-radius: 6px; text-align: left;
+  }
+  .v1 .chip .hex:hover { background: transparent; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  /* THE ROLE CONTROL — an affordance built from the color, not foreign chrome */
+  .v1 .chip .role {
+    display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+    height: 24px; padding: 0 7px; border-radius: var(--radius-pill);
+    font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .12em;
+    background: transparent; border: 1px solid transparent; color: inherit; opacity: .72;
+    transition: background var(--d-fast) var(--ease), opacity var(--d-fast) var(--ease), border-color var(--d-fast) var(--ease);
+  }
+  .v1 .chip .role .caret { opacity: 0; transition: opacity var(--d-fast) var(--ease); }
+  .v1 .chip:hover .role { background: var(--well); opacity: 1; }
+  .v1 .chip:hover .role .caret { opacity: .75; }
+  .v1 .chip .role:hover { background: var(--well-hi); }
+  .v1 .chip .role.open { background: var(--well-hi); opacity: 1; border-color: var(--ink-on); }
+  .v1 .chip .role.pinned::before { content: '◆'; font-size: 8px; opacity: .85; }
+  /* the kill: space always reserved, paint only on hover */
+  .v1 .chip .kill {
+    width: 22px; height: 22px; padding: 0; flex-shrink: 0; opacity: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 0; border-radius: 50%; background: transparent; color: var(--ink-on);
+    transition: opacity var(--d-fast) var(--ease), background var(--d-fast) var(--ease);
+  }
+  .v1 .chip:hover .kill { opacity: .8; background: var(--well); }
+  .v1 .chip .kill:hover { opacity: 1; background: var(--well-hi); }
+  .v1 .chip.is-base { box-shadow: inset 0 0 0 2px var(--ink-on), 0 3px 12px rgba(0,0,0,.45); }
+  .v1 .chip.unused { height: 32px; opacity: .6; }
+  .v1 .chip.pickable { animation: breathe calc(var(--d-slow) * 5) ease-in-out infinite; }
+  @keyframes breathe {
+    0%,100% { box-shadow: inset 0 0 0 1px rgba(255,255,255,.09), 0 1px 2px rgba(0,0,0,.35); }
+    50%     { box-shadow: inset 0 0 0 2px var(--ink-on), 0 1px 2px rgba(0,0,0,.35); }
+  }
+
+  /* ============================================================
+     VARIANT 2 — TILES. Round 2: the role caption grows into a real
+     control — a full-width pill under the tile. It was 9px of dead
+     text; now it's the tile's primary verb.
+     ============================================================ */
+  .v2 .tiles { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+  .v2 .tile { position: relative; width: 74px; transition: transform var(--d-fast) var(--ease), opacity var(--d-fast) linear; }
+  .v2 .tile.dragging { opacity: .3; }
+  .v2 .tile .face {
+    display: block; position: relative; width: 100%; height: 62px; padding: 0;
+    border: 0; border-radius: 10px; background: var(--c); cursor: grab;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.1), 0 2px 6px rgba(0,0,0,.4);
+    transition: box-shadow var(--d-base) var(--ease), transform var(--d-fast) var(--ease);
+  }
+  .v2 .tile .face:hover { transform: translateY(-3px); box-shadow: inset 0 0 0 1px rgba(255,255,255,.2), 0 6px 16px rgba(0,0,0,.5); }
+  .v2 .tile .face:active { cursor: grabbing; }
+  .v2 .tile.is-base .face { box-shadow: inset 0 0 0 2px var(--ink-on), 0 6px 16px rgba(0,0,0,.5); }
+  .v2 .tile.unused .face { opacity: .45; }
+  .v2 .tile .ord { position: absolute; left: 6px; top: 5px; font-size: 8px; font-weight: 700; opacity: .5; letter-spacing: .04em; }
+  .v2 .tile .hex { font-size: 9px; color: var(--ink-muted); margin-top: 5px; text-align: center; letter-spacing: -.02em; }
+  /* THE ROLE CONTROL */
+  .v2 .tile .role {
+    display: flex; align-items: center; justify-content: center; gap: 3px;
+    width: 100%; height: 20px; margin-top: 3px; padding: 0 4px;
+    font-size: 9px; text-transform: uppercase; letter-spacing: .08em;
+    background: var(--surface-3); border: 1px solid var(--line-card);
+    color: var(--ink-faint); border-radius: var(--radius-pill);
+  }
+  .v2 .tile .role:hover { background: var(--surface-4); color: var(--ink); border-color: var(--line-ctl); }
+  .v2 .tile .role.open { background: var(--surface-4); color: var(--ink); border-color: var(--line-active); }
+  .v2 .tile .role.pinned { color: var(--ink-muted); border-color: var(--line-ctl); }
+  .v2 .tile .role.pinned::before { content: '◆'; font-size: 7px; }
+  .v2 .tile .role .caret { opacity: 0; transition: opacity var(--d-fast) var(--ease); }
+  .v2 .tile:hover .role .caret { opacity: .7; }
+  .v2 .tile .kill {
+    position: absolute; top: -5px; right: -5px; width: 19px; height: 19px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%; border: 1.5px solid var(--surface-1);
+    background: var(--surface-4); color: var(--ink); opacity: 0; transform: scale(.7);
+    transition: opacity var(--d-fast) var(--ease), transform var(--d-fast) var(--ease-back), background var(--d-fast) var(--ease);
+  }
+  .v2 .tile:hover .kill { opacity: 1; transform: scale(1); }
+  .v2 .tile .kill:hover { background: var(--fail); color: #1a0e0e; }
+  .v2 .tile.pickable .face { animation: breathe2 calc(var(--d-slow) * 5) ease-in-out infinite; }
+  @keyframes breathe2 {
+    0%,100% { box-shadow: inset 0 0 0 1px rgba(255,255,255,.1), 0 2px 6px rgba(0,0,0,.4); }
+    50%     { box-shadow: inset 0 0 0 2px var(--accent), 0 2px 6px rgba(0,0,0,.4); }
+  }
+
+  /* ============================================================
+     THE ROLE POPOVER — shared by all three variants.
+     Portaled to .panel so the scrolling body can't clip it (the snag
+     flagged in panel-mockup.html, now solved rather than noted).
+     ============================================================ */
+  .pop {
+    position: absolute; z-index: 60; width: 244px;
+    background: var(--surface-2); border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-card); box-shadow: 0 14px 38px rgba(0,0,0,.6);
+    overflow: hidden; animation: pop-in var(--d-fast) var(--ease-out) both;
+    transform-origin: var(--origin, top right);
+  }
+  @keyframes pop-in { from { opacity: 0; transform: scale(.93) translateY(-4px); } to { opacity: 1; transform: none; } }
+  .pop-head { display: flex; align-items: center; gap: 9px; padding: 10px 11px 9px; border-bottom: 1px solid var(--line-card); }
+  .pop-sw { width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+  .pop-id { min-width: 0; }
+  .pop-hex { font-size: var(--fs-m); font-weight: 550; letter-spacing: -.01em; }
+  .pop-cast { font-size: var(--fs-xs); color: var(--ink-faint); margin-top: 1px; }
+  .pop-why { padding: 8px 11px; border-bottom: 1px solid var(--line-card); background: color-mix(in srgb, var(--surface-0) 45%, transparent); }
+  .pop-why div { font-size: var(--fs-xs); color: var(--ink-muted); line-height: 1.55; }
+  .pop-why div + div { margin-top: 2px; }
+  .pop-label { font-size: 9px; text-transform: uppercase; letter-spacing: .16em; color: var(--ink-faint); padding: 9px 11px 4px; }
+  .pop-list { padding: 0 4px 4px; max-height: 232px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line-ctl) transparent; }
+  .pin {
+    display: flex; align-items: center; gap: 8px; width: 100%; height: auto;
+    padding: 6px 7px; border-radius: var(--radius-ctl); text-align: left;
+    background: transparent; border: 1px solid transparent; color: var(--ink);
+  }
+  .pin:hover { background: var(--surface-4); }
+  .pin.cur { background: color-mix(in srgb, var(--pal-primary) 16%, transparent); border-color: color-mix(in srgb, var(--pal-primary) 34%, transparent); }
+  .pin-dot { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(255,255,255,.2); }
+  .pin-dot.empty { background: repeating-linear-gradient(45deg, #2a2c33, #2a2c33 3px, #1f2127 3px, #1f2127 6px); }
+  .pin-txt { flex: 1; min-width: 0; }
+  .pin-name { font-size: var(--fs-m); display: flex; align-items: center; gap: 5px; }
+  .pin-name .mark { font-size: 8px; opacity: .8; }
+  .pin-hint { font-size: var(--fs-xs); color: var(--ink-faint); line-height: 1.4; margin-top: 1px; }
+  .pop-foot { border-top: 1px solid var(--line-card); padding: 4px; }
+  .pop-foot .pin-name { color: var(--accent); }
+
+  /* ---------------- invented lane ---------------- */
+  .inv-dock { margin-top: 12px; }
+  .inv-lead { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+  .inv-lead span { font-size: var(--fs-xs); color: var(--ink-faint); letter-spacing: .04em; }
+  .inv-lead .rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--line-card), transparent); }
+  .inv-set { display: flex; gap: 6px; }
+  .inv {
+    position: relative; flex: 1; height: 30px; border-radius: 8px; padding: 0;
+    background: transparent; border: 1px dashed color-mix(in srgb, var(--c) 65%, var(--line-ctl));
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    font-size: var(--fs-xs); color: var(--ink-muted); overflow: hidden;
+    transition: border-color var(--d-fast) var(--ease), color var(--d-fast) var(--ease), transform var(--d-fast) var(--ease);
+  }
+  .inv::before {
+    content: ''; position: absolute; inset: 0; background: var(--c);
+    opacity: .22; transition: opacity var(--d-base) var(--ease), background var(--d-slow) var(--ease);
+  }
+  .inv:hover { border-style: solid; border-color: var(--c); color: var(--ink); transform: translateY(-2px); }
+  .inv:hover::before { opacity: .42; }
+  .inv .lab { position: relative; z-index: 1; }
+  .inv .plus { position: relative; z-index: 1; opacity: 0; margin-left: -4px; transition: opacity var(--d-fast) var(--ease), margin var(--d-fast) var(--ease); }
+  .inv:hover .plus { opacity: .9; margin-left: 0; }
+  .inv.riffing { animation: riff-lift var(--d-slow) var(--ease-back) both; }
+  @keyframes riff-lift {
+    0% { transform: translateY(0) scale(1); }
+    40% { transform: translateY(-4px) scale(1.05); }
+    100% { transform: translateY(0) scale(1); }
+  }
+
+  .add-row { display: flex; gap: var(--gap-s); margin-top: 10px; }
+  .hexfield {
+    display: flex; align-items: center; gap: var(--gap-s); flex: 1; min-width: 0; height: var(--ctl-h);
+    background: var(--surface-3); border: 1px solid var(--line-card); border-radius: var(--radius-ctl); padding: 0 6px;
+  }
+  .hexfield:focus-within { border-color: color-mix(in srgb, var(--pal-primary) 55%, transparent); }
+  .hexfield .dot { width: 18px; height: 18px; border-radius: 5px; background: #4a4f5c; border: 1px solid rgba(255,255,255,.12); }
+  .hexfield input { flex: 1; min-width: 0; height: auto; background: transparent; border: 0; outline: 0; padding: 0; font-size: var(--fs-m); color: var(--ink); }
+
+  /* ---------------- dial + footer ---------------- */
+  .dial-ends { display: flex; justify-content: space-between; font-size: var(--fs-s); margin-bottom: 14px; }
+  .fid-left { color: var(--accent-cool); } .fid-right { color: var(--accent-warm); }
+  .dial-track-wrap { position: relative; height: 26px; }
+  .dial-slider {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: var(--radius-pill);
+    outline: none; margin: 0; position: absolute; top: 4px;
+    background: linear-gradient(90deg, var(--accent-cool) 0%, #3a3f4d 48%, #4a4034 62%, var(--accent-warm) 100%);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.5);
+  }
+  .dial-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--ink-bright); border: 3px solid var(--surface-1); cursor: grab;
+    box-shadow: 0 0 0 1px var(--line-active), 0 2px 8px rgba(0,0,0,.55);
+    transition: transform var(--d-fast) var(--ease-back);
+  }
+  .dial-slider:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.2); }
+  .dial-bubble {
+    position: absolute; top: -20px; transform: translateX(-50%); font-size: var(--fs-xs);
+    font-variant-numeric: tabular-nums; background: var(--surface-4); color: var(--ink);
+    border: 1px solid var(--line-ctl); padding: 2px 7px; border-radius: var(--radius-pill);
+    pointer-events: none; transition: left var(--d-fast) var(--ease);
+  }
+  .dial-caption { font-size: var(--fs-s); color: var(--ink-faint); text-align: center; margin-top: 12px; min-height: 15px; }
+  .dial-caption span { display: block; transition: opacity var(--d-fast) linear; }
+  .dial-caption.swapping span { opacity: 0; }
+  .status-chip {
+    width: 100%; display: flex; align-items: center; gap: var(--gap-m); font-size: var(--fs-s); text-align: left;
+    background: color-mix(in srgb, var(--ok) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ok) 25%, transparent); color: var(--ok);
+  }
+  .status-more { margin-left: auto; opacity: .7; }
+  .export-row { display: flex; gap: var(--gap-s); margin-top: var(--gap-m); }
+  .export-main {
+    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    background: linear-gradient(180deg, var(--surface-4), var(--surface-3));
+    border-color: color-mix(in srgb, var(--pal-primary) 32%, var(--line-ctl)); font-weight: 550;
+  }
+
+  /* seat-transfer pulse when a pin benches somebody */
+  @keyframes benched {
+    0%,100% { box-shadow: inset 0 0 0 1px rgba(255,255,255,.09), 0 1px 2px rgba(0,0,0,.35); }
+    40%     { box-shadow: inset 0 0 0 2px var(--fail), 0 1px 2px rgba(0,0,0,.35); }
+  }
+  .benched { animation: benched calc(var(--d-slow) * 1.6) var(--ease) both; }
+
+  /* ---------------- notes ---------------- */
+  .notes { max-width: 400px; font-size: 13px; line-height: 1.6; }
+  .notes h3 { font-size: var(--fs-m); text-transform: uppercase; letter-spacing: .12em; color: var(--ink-muted); margin: 26px 0 8px; }
+  .notes h3:first-child { margin-top: 0; }
+  .notes p { margin: 0 0 11px; color: #c8ccd6; }
+  .notes b { color: var(--ink); }
+  .notes ul { margin: 0 0 11px; padding-left: 18px; color: #c8ccd6; }
+  .notes li { margin-bottom: 6px; }
+  .notes .try {
+    display: inline-block; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .1em;
+    color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border-radius: 3px; padding: 1px 5px; margin-right: 6px;
+  }
+  .rule-box {
+    border-left: 2px solid var(--accent); padding: 2px 0 2px 12px; margin: 0 0 12px;
+    color: #c8ccd6;
+  }
+  .kill-table { width: 100%; border-collapse: collapse; font-size: var(--fs-m); margin: 6px 0 12px; }
+  .kill-table td { padding: 5px 8px 5px 0; border-bottom: 1px solid #22242b; color: #c8ccd6; vertical-align: top; }
+  .kill-table td:first-child { color: var(--ink-faint); width: 118px; white-space: nowrap; }
+  .kill-table td.keep { color: var(--ok); }
+
+  body.no-motion { --t: 0.001; }
+  @media (prefers-reduced-motion: reduce) { :root { --t: 0.001; } }
+</style>
+</head>
+<body>
+
+<div class="sheet-head">
+  <h1>themesmith — the palette object</h1>
+  <span class="sub">round 2 · click any role to reassign it · drag a color · hover to kill</span>
+  <button class="tog" id="slowmo" aria-pressed="false"><span class="dot"></span> slow-mo 4×</button>
+  <button class="tog" id="nomotion" aria-pressed="false"><span class="dot"></span> reduced motion</button>
+</div>
+
+<div class="sheet">
+  <div>
+    <p class="col-title"><b>0 · as shipped</b> <span class="col-note">rows in a card · badge-as-button</span></p>
+    <div class="panel v0" id="p0"></div>
+  </div>
+  <div>
+    <p class="col-title"><b>1 · chips</b> <span class="col-note">the role is the control</span></p>
+    <div class="panel v1" id="p1"></div>
+  </div>
+  <div>
+    <p class="col-title"><b>2 · tiles</b> <span class="col-note">role pill under the tile</span></p>
+    <div class="panel v2" id="p2"></div>
+  </div>
+
+  <div class="notes">
+    <h3>you were right — and it changes the rule</h3>
+    <p>Round 1 deleted the role badge along with the grip and the ✕. That was
+      one deletion too many: the badge <i>looked</i> like chrome but it was the
+      only door to pinning. Here's the line I should have drawn:</p>
+    <div class="rule-box">Delete widgets that <b>duplicate</b> information.
+      Never delete the only <b>verb</b>. Where information must be displayed
+      anyway, make <i>that</i> the control — it costs zero new chrome.</div>
+    <p>By that rule the grip and the ✕ still go (the color already affords
+      dragging; kill can hide until hover). But the role has to be shown
+      regardless — so making the role label itself the button is free.</p>
+    <table class="kill-table">
+      <tr><td>grip dots</td><td>gone — pure chrome, the color is the handle</td></tr>
+      <tr><td>inline ✕</td><td>gone — hover-revealed, destructive shouldn't hold real estate</td></tr>
+      <tr><td>separate swatch</td><td>gone — there's just the color</td></tr>
+      <tr><td>badge chrome</td><td>gone — pill background/border fought the color</td></tr>
+      <tr><td class="keep">the role verb</td><td class="keep"><b>restored</b> — as the label itself, not a widget beside it</td></tr>
+    </table>
+
+    <h3>what changed in each</h3>
+    <p><b>1 · chips.</b> The role became a pill-shaped hit area drawn <i>from
+      the color</i> — on hover it fills with a well of the chip's own contrast
+      ink at low alpha, so the affordance is still zero foreign chrome. The
+      kill's 22px is now <b>permanently reserved</b> rather than slid into on
+      hover: round 1 had the role sliding left to clear room, which would have
+      moved a click target out from under the pointer. Nothing moves now.</p>
+    <p><b>2 · tiles.</b> The 9px role caption was dead text; it's now a
+      full-width pill under the tile — the tile's primary verb, and a far bigger
+      hit target than the old badge ever was. Tiles widened to 74px to carry
+      real role names.</p>
+    <p><span class="try">try</span>Click any role. Then pin one color to a role
+      another color already holds — the displaced chip <b>pulses red</b> and
+      drops to unused, which is the seat transfer made visible.</p>
+
+    <h3>the popover</h3>
+    <p>Same information architecture the shipped menu has, given room to
+      breathe: the color and its current casting, then the why-lines from
+      <code>explain.ts</code>, then all seven targets (six roles + chart).</p>
+    <ul>
+      <li><b>Each target shows who holds it now</b> as a small swatch, with a
+        hatched placeholder when the engine is inventing that role. You can see
+        what you'd displace before you click.</li>
+      <li>Consequence subtitles use <code>pinConsequence</code>'s real
+        phrasing — <i>benches #316264</i>, <i>takes a seat the engine was
+        inventing</i>, <i>frees primary for #79f77a</i>.</li>
+      <li><b>Unpin</b> is a footer row, present only when pinned.</li>
+      <li>It's <b>portaled to the panel</b>, not the scrolling body — which
+        solves the clipping snag I flagged in the last sheet rather than just
+        noting it again.</li>
+    </ul>
+
+    <h3>three targets, and why that's still fewer</h3>
+    <p>Each color now has three: the color area (picker), the role (pin menu),
+      the hover ✕ (remove). The old row had five, two of which were pure
+      furniture. Three distinct verbs on three spatially distinct areas is the
+      floor — you can't go lower without hiding a capability behind a
+      right-click or a mode.</p>
+
+    <h3>open</h3>
+    <ul>
+      <li><b>Chart is a pooled seat</b> — several colors can hold it at once, so
+        its "who holds it" swatch shows the first of the set. Should it show a
+        cluster of dots instead?</li>
+      <li>In tiles, an 8-color palette makes 8 role pills — a lot of repeated
+        uppercase. Worth showing the role only on hover + when pinned?</li>
+      <li>Should dragging a chip <i>onto</i> a role be a second path to pinning?
+        Discoverable, but it competes with drag-to-reorder.</li>
+      <li>Auto-contrast ink is still a luminance threshold; the real one should
+        call the engine's APCA solver.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const ICON = {
+  lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  unlock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  chevDown: '<path d="m6 9 6 6 6-6"/>',
+  rotate: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+  dice: '<rect width="12" height="12" x="2" y="10" rx="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01M10 14h.01"/>',
+  grip: '<circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  plus: '<path d="M5 12h14M12 5v14"/>',
+  columns: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 3v18"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+};
+const icon = (n, s = 14, w = 1.7) =>
+  `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${ICON[n]}</svg>`;
+
+/* auto-contrast ink — stands in for the engine's APCA solver */
+const lum = (hex) => {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+  return 0.2126 * f(n >> 16) + 0.7152 * f((n >> 8) & 255) + 0.0722 * f(n & 255);
+};
+const isLight = (hex) => lum(hex) > 0.34;
+const inkOn = (hex) => (isLight(hex) ? 'rgba(0,0,0,.82)' : 'rgba(255,255,255,.95)');
+const wellOn = (hex) => (isLight(hex) ? 'rgba(0,0,0,.10)' : 'rgba(255,255,255,.14)');
+const wellHiOn = (hex) => (isLight(hex) ? 'rgba(0,0,0,.20)' : 'rgba(255,255,255,.26)');
+
+/* the engine's real vocabulary — src/engine/types.ts */
+const ROLES = ['primary', 'accent', 'neutral', 'danger', 'success', 'warning'];
+const PIN_TARGETS = [...ROLES, 'chart'];
+
+const REPERTOIRE = [
+  { accent: '#e0629a', danger: '#e5484d', warning: '#f5a623' },
+  { accent: '#c964d8', danger: '#f05252', warning: '#e8b923' },
+  { accent: '#5ec8d8', danger: '#dc4b52', warning: '#f0994a' },
+  { accent: '#f0776a', danger: '#e33b48', warning: '#d9b038' },
+];
+const CAPTION = (f, locked) =>
+  locked ? 'mono — varying lightness only · avg shift ΔL 0.06'
+  : f >= 0.99 ? 'colors kept exactly · 1 clash reported'
+  : f <= 0.35 ? 'reworking your colors · avg shift ΔE 0.11'
+  : f >= 0.8 ? 'your colors already sit well — nothing to tune'
+  : 'gently tuning your colors · avg shift ΔE 0.04';
+
+const newState = () => ({
+  rows: [
+    { hex: '#7832c3', role: 'primary', auto: 'primary', pinned: true },
+    { hex: '#79f77a', role: 'success', auto: 'success', pinned: false },
+    { hex: '#316264', role: 'neutral', auto: 'neutral', pinned: false },
+    { hex: '#c8b8a0', role: 'unused', auto: 'unused', pinned: false },
+  ],
+  seed: 0, fidelity: 0.5, locked: false, baseIdx: null, picking: false, split: false,
+  menuFor: null, benched: null,
+});
+
+let SPEED = 1;
+const motionOff = () => document.body.classList.contains('no-motion');
+const dur = (ms) => (motionOff() ? 0 : ms * SPEED);
+const inventedFor = (s) => Object.entries(REPERTOIRE[s.seed % REPERTOIRE.length]);
+
+/* ---- explain.ts stand-ins ------------------------------------------------ */
+function whyLines(s, i) {
+  const r = s.rows[i];
+  const out = [];
+  if (r.pinned) out.push(`pinned to ${r.role} by you — the engine works around it`);
+  else if (r.role === 'unused') out.push('below the chart bar — not chromatic enough to carry a seat');
+  else if (r.role === 'primary') out.push('most chromatic of your colors, so it leads');
+  else if (r.role === 'neutral') out.push('least chromatic, so it carries surfaces and text');
+  else out.push(`sits in the ${r.role} band, so it took that seat`);
+  out.push(i === 0 ? 'first in your list — it claims a seat before the others'
+    : `#${i + 1} in your list — claims after ${s.rows[i - 1].hex}`);
+  return out;
+}
+/* mirrors src/engine/explain.ts pinConsequence() phrasing */
+function consequence(s, i, target) {
+  if (target == null) return 'back to the engine’s choice';
+  const mine = s.rows[i];
+  if (mine.role === target) return `keeps ${target} here through any reorder`;
+  const freedFor = s.rows.find((r, j) => j !== i && r.role === 'unused');
+  const freed = mine.role !== 'unused' && mine.role !== 'chart' && freedFor
+    ? `frees ${mine.role} for ${freedFor.hex}` : null;
+  if (target === 'chart') {
+    const base = isLight(mine.hex) && lum(mine.hex) > 0.8
+      ? 'nudges chroma up so the series stays visible' : 'joins the chart series';
+    return freed ? `${base} · ${freed}` : base;
+  }
+  const holder = s.rows.findIndex((r, j) => j !== i && r.role === target);
+  const base = holder >= 0 ? `benches ${s.rows[holder].hex}` : 'takes a seat the engine was inventing';
+  return freed ? `${base} · ${freed}` : base;
+}
+const holderOf = (s, i, role) => s.rows.find((r, j) => j !== i && r.role === role);
+
+/* ---------------- shared chrome ---------------- */
+const headHTML = () => `<div class="b-head">
+    <div class="b-wordmark">themesmith</div>
+    <p class="b-tagline">any colors in, working theme out</p>
+  </div>`;
+
+function canvasHTML(s) {
+  // ONE VERB PER LEVEL: header owns how many frames exist; the card owns
+  // what this frame is (and only offers "copy → B" once a B exists).
+  return `<div class="sec">
+      <div class="sec-head">
+        <span class="sec-label">canvas</span><span class="sec-rule"></span>
+        <span class="sec-act">
+          <button class="mini${s.split ? ' on' : ''}" data-act="split">
+            ${s.split ? icon('x', 11, 2.2) + ' close B' : icon('columns', 11) + ' compare'}
+          </button>
+        </span>
+      </div>
+      <div class="frame-card">
+        <span class="frame-dot">A</span>
+        <select><option>App dashboard</option><option>Brand board</option></select>
+        <button class="icon-btn" title="switch to dark">${icon('moon', 13)}</button>
+        ${s.split ? `<button class="icon-btn" title="copy → B">${icon('copy', 13)}</button>` : ''}
+      </div>
+      ${s.split ? `<div class="frame-card" style="margin-top:6px;opacity:.75">
+        <span class="frame-dot" style="background:var(--surface-4);border-color:var(--line-ctl)">B</span>
+        <select><option>Brand board</option><option>App dashboard</option></select>
+        <button class="icon-btn" title="switch to dark">${icon('moon', 13)}</button>
+        <button class="icon-btn" title="copy → A">${icon('copy', 13)}</button>
+      </div>` : ''}
+    </div>`;
+}
+function colorsHeadHTML(s) {
+  return `<div class="sec-head">
+      <span class="sec-label">colors</span><span class="sec-rule"></span>
+      <span class="sec-act">
+        <button class="mini${s.locked ? ' on' : ''}${s.picking ? ' picking' : ''}" data-act="lock" title="lock the theme to one hue">
+          ${icon(s.locked ? 'lock' : 'unlock', 12)}
+          ${s.locked && s.rows[s.baseIdx] ? `<span class="mini-sw" style="background:${s.rows[s.baseIdx].hex}"></span>` : 'mono'}
+        </button>
+        <button class="mini" data-act="startover" title="start over">${icon('rotate', 12)}</button>
+        <button class="mini" data-act="riff" title="re-imagine the invented colors">
+          <span data-riffdie style="display:inline-flex">${icon('dice', 12)}</span>${s.seed > 0 ? ` ${s.seed}` : ''}
+        </button>
+      </span>
+    </div>
+    ${s.picking ? '<div style="font-size:10px;color:var(--accent);margin:-2px 0 7px 2px">click a color to lock its hue · esc to cancel</div>' : ''}`;
+}
+const addFieldHTML = () => `<div class="add-row">
+    <label class="hexfield"><span class="dot"></span>
+      <input placeholder="add a color — #e63946, oklch(…)" /></label>
+    <button data-act="add">Add</button>
+  </div>`;
+
+function tailHTML(s) {
+  return `<div class="sec">
+      <div class="sec-head"><span class="sec-label">tuning</span><span class="sec-rule"></span></div>
+      <div class="dial-ends"><span class="fid-left">smith's taste</span><span class="fid-right">raw colors</span></div>
+      <div class="dial-track-wrap">
+        <span class="dial-bubble" data-bubble style="left:${s.fidelity * 100}%">${s.fidelity.toFixed(2)}</span>
+        <input type="range" class="dial-slider" data-fid min="0" max="1" step="0.05" value="${s.fidelity}" />
+      </div>
+      <div class="dial-caption" data-cap><span>${CAPTION(s.fidelity, s.locked)}</span></div>
+    </div>`;
+}
+const footHTML = () => `<div class="b-foot">
+    <button class="status-chip">${icon('check', 13)} all 40 checks pass<span class="status-more">report ›</span></button>
+    <div class="export-row">
+      <button class="export-main">${icon('copy', 14)} Copy CSS variables</button>
+      <button class="icon-btn">${icon('chevDown', 14)}</button>
+    </div>
+  </div>`;
+
+const inventedHTML = (s) => `<div class="inv-dock">
+    <div class="inv-lead"><span>smith invented</span><span class="rule"></span></div>
+    <div class="inv-set">
+      ${inventedFor(s).map(([name, hex]) => `
+        <button class="inv" data-inv="${name}" style="--c:${hex}" title="keep as your color">
+          <span class="lab">${name}</span><span class="plus">${icon('plus', 10, 2.6)}</span>
+        </button>`).join('')}
+    </div>
+  </div>`;
+
+/* ---------------- THE ROLE POPOVER ---------------- */
+function popHTML(s) {
+  const i = s.menuFor;
+  const r = s.rows[i];
+  if (!r) return '';
+  return `<div class="pop" data-pop>
+      <div class="pop-head">
+        <span class="pop-sw" style="background:${r.hex}"></span>
+        <span class="pop-id">
+          <div class="pop-hex mono">${r.hex}</div>
+          <div class="pop-cast">${r.pinned ? `pinned to ${r.role}` : r.role === 'unused' ? 'not cast' : `cast as ${r.role}`}</div>
+        </span>
+      </div>
+      <div class="pop-why">${whyLines(s, i).map((l) => `<div>${l}</div>`).join('')}</div>
+      <div class="pop-label">pin to</div>
+      <div class="pop-list">
+        ${PIN_TARGETS.map((t) => {
+          const cur = r.role === t;
+          // the seat this color already holds is held by *it* — showing the
+          // hatched "nobody" placeholder there would be a lie
+          const h = cur ? r : holderOf(s, i, t);
+          return `<button class="pin ${cur ? 'cur' : ''}" data-pin="${t}" data-i="${i}">
+              <span class="pin-dot ${h ? '' : 'empty'}" ${h ? `style="background:${h.hex}"` : ''}></span>
+              <span class="pin-txt">
+                <span class="pin-name">${t}${cur && r.pinned ? '<span class="mark">◆</span>' : ''}</span>
+                <span class="pin-hint">${consequence(s, i, t)}</span>
+              </span>
+            </button>`;
+        }).join('')}
+      </div>
+      ${r.pinned ? `<div class="pop-foot">
+        <button class="pin" data-pin="__unpin" data-i="${i}">
+          <span style="display:flex;color:var(--accent)">${icon('undo', 13)}</span>
+          <span class="pin-txt">
+            <span class="pin-name">unpin</span>
+            <span class="pin-hint">${consequence(s, i, null)}</span>
+          </span>
+        </button></div>` : ''}
+    </div>`;
+}
+
+/* ---------------- variant 0 ---------------- */
+function render0(s) {
+  const spine = `linear-gradient(180deg, ${s.rows.map((r) => r.hex).join(', ')})`;
+  return headHTML() + `<div class="b-body">
+      ${canvasHTML(s)}
+      <div class="sec">${colorsHeadHTML(s)}
+        <div class="palette-obj"><span class="spine" style="--spine:${spine}"></span>
+          <ul class="strip" data-list>
+            ${s.rows.map((r, i) => `
+              <li data-i="${i}" draggable="true" class="${s.picking ? 'pickable' : ''} ${s.benched === i ? 'benched' : ''}">
+                <span class="grip">${icon('grip', 14)}</span>
+                <span class="sw" style="background:${r.hex}"></span>
+                <span class="meta"><code>${r.hex}</code></span>
+                <button class="badge ${r.pinned ? 'pinned' : ''} ${s.menuFor === i ? 'open' : ''}"
+                  data-role="${i}" data-roleanchor="${i}">
+                  ${s.locked && s.baseIdx === i ? 'base' : r.role}${icon('chevDown', 9, 2.6)}
+                </button>
+                <button class="row-x" data-act="remove" data-i="${i}">${icon('x', 12, 2.2)}</button>
+              </li>`).join('')}
+          </ul>
+          <div class="invented-row">
+            <span class="invented-cap">invented</span>
+            ${inventedFor(s).map(([n, hex]) => `<button class="invented-item" data-inv="${n}">
+              <i class="invented-sw" style="background:${hex}"></i>${n}</button>`).join('')}
+          </div>
+          ${addFieldHTML()}
+        </div>
+      </div>
+      ${tailHTML(s)}
+    </div>` + footHTML();
+}
+
+/* ---------------- variant 1: chips ---------------- */
+function render1(s) {
+  return headHTML() + `<div class="b-body">
+      ${canvasHTML(s)}
+      <div class="sec">${colorsHeadHTML(s)}
+        <ul class="chips" data-list>
+          ${s.rows.map((r, i) => {
+            const base = s.locked && s.baseIdx === i;
+            return `<li class="chip ${r.role === 'unused' ? 'unused' : ''} ${base ? 'is-base' : ''} ${s.picking ? 'pickable' : ''} ${s.benched === i ? 'benched' : ''}"
+                data-i="${i}" draggable="true"
+                style="--c:${r.hex};--ink-on:${inkOn(r.hex)};--well:${wellOn(r.hex)};--well-hi:${wellHiOn(r.hex)}">
+                <button class="hex mono" data-act="pick" title="edit this color">${r.hex}</button>
+                <button class="role ${r.pinned ? 'pinned' : ''} ${s.menuFor === i ? 'open' : ''}"
+                  data-role="${i}" data-roleanchor="${i}" title="${r.pinned ? `pinned to ${r.role} — click to change` : `cast as ${r.role} — click to pin`}">
+                  ${base ? 'base' : r.role}<span class="caret">${icon('chevDown', 9, 2.8)}</span>
+                </button>
+                <button class="kill" data-act="remove" data-i="${i}" title="remove">${icon('x', 12, 2.4)}</button>
+              </li>`;
+          }).join('')}
+        </ul>
+        ${inventedHTML(s)}
+        ${addFieldHTML()}
+      </div>
+      ${tailHTML(s)}
+    </div>` + footHTML();
+}
+
+/* ---------------- variant 2: tiles ---------------- */
+function render2(s) {
+  return headHTML() + `<div class="b-body">
+      ${canvasHTML(s)}
+      <div class="sec">${colorsHeadHTML(s)}
+        <ul class="tiles" data-list>
+          ${s.rows.map((r, i) => {
+            const base = s.locked && s.baseIdx === i;
+            return `<li class="tile ${r.role === 'unused' ? 'unused' : ''} ${base ? 'is-base' : ''} ${s.picking ? 'pickable' : ''} ${s.benched === i ? 'benched' : ''}"
+                data-i="${i}" style="--c:${r.hex};--ink-on:${inkOn(r.hex)}">
+                <button class="face" draggable="true" data-act="pick" title="edit this color">
+                  <span class="ord" style="color:${inkOn(r.hex)}">${i + 1}</span>
+                </button>
+                <button class="kill" data-act="remove" data-i="${i}" title="remove">${icon('x', 11, 2.6)}</button>
+                <div class="hex mono">${r.hex}</div>
+                <button class="role ${r.pinned ? 'pinned' : ''} ${s.menuFor === i ? 'open' : ''}"
+                  data-role="${i}" data-roleanchor="${i}" title="${r.pinned ? `pinned to ${r.role}` : `cast as ${r.role}`}">
+                  ${base ? 'base' : r.role}<span class="caret">${icon('chevDown', 8, 3)}</span>
+                </button>
+              </li>`;
+          }).join('')}
+        </ul>
+        ${inventedHTML(s)}
+        ${addFieldHTML()}
+      </div>
+      ${tailHTML(s)}
+    </div>` + footHTML();
+}
+
+/* ================= controller ================= */
+class Panel {
+  constructor(root, fn) {
+    this.root = root; this.fn = fn; this.s = newState(); this.pending = null;
+    this.render(); this.bind();
+  }
+  vars() {
+    this.root.style.setProperty('--pal-primary', this.s.rows[0] ? this.s.rows[0].hex : '#7aa2f7');
+    this.root.style.setProperty('--pal-accent', inventedFor(this.s)[0][1]);
+  }
+  itemRects() {
+    const m = new Map();
+    this.root.querySelectorAll('[data-list] > *').forEach((el) => {
+      const r = el.getBoundingClientRect();
+      m.set(el.dataset.i, { x: r.left, y: r.top });
+    });
+    return m;
+  }
+  render() {
+    if (this.s.baseIdx != null && !this.s.rows[this.s.baseIdx]) { this.s.baseIdx = null; this.s.locked = false; }
+    if (this.s.menuFor != null && !this.s.rows[this.s.menuFor]) this.s.menuFor = null;
+    const before = this.itemRects();
+    this.root.innerHTML = this.fn(this.s);
+    this.vars();
+    this.placePop();
+    this.flip(before);
+    if (this.pending) { const f = this.pending; this.pending = null; f.call(this); }
+  }
+  /* the popover is a child of .panel, NOT of the scrolling body — this is
+     the portal the real thing needs so overflow can't clip it. */
+  placePop() {
+    if (this.s.menuFor == null) return;
+    const anchor = this.root.querySelector(`[data-roleanchor="${this.s.menuFor}"]`);
+    if (!anchor) return;
+    this.root.insertAdjacentHTML('beforeend', popHTML(this.s));
+    const pop = this.root.querySelector('[data-pop]');
+    const pr = this.root.getBoundingClientRect();
+    const ar = anchor.getBoundingClientRect();
+    const w = 244;
+    let left = ar.right - pr.left - w;
+    left = Math.max(8, Math.min(left, pr.width - w - 8));
+    let top = ar.bottom - pr.top + 6;
+    const h = pop.offsetHeight;
+    // flip above the anchor when there's no room below
+    if (top + h > pr.height - 8) {
+      top = Math.max(8, ar.top - pr.top - h - 6);
+      pop.style.setProperty('--origin', 'bottom right');
+    }
+    pop.style.left = `${left}px`;
+    pop.style.top = `${top}px`;
+  }
+  flip(before) {
+    const d = dur(200);
+    if (!d || !before.size) return;
+    this.root.querySelectorAll('[data-list] > *').forEach((el) => {
+      const p = before.get(el.dataset.i);
+      if (!p) return;
+      const r = el.getBoundingClientRect();
+      const dx = p.x - r.left, dy = p.y - r.top;
+      if (!dx && !dy) return;
+      el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }],
+        { duration: d, easing: 'cubic-bezier(.2,.8,.3,1)' });
+    });
+  }
+  swapCaption() {
+    const cap = this.root.querySelector('[data-cap]');
+    if (!cap) return;
+    const span = cap.querySelector('span'), text = CAPTION(this.s.fidelity, this.s.locked);
+    if (span.textContent === text) return;
+    const d = dur(120);
+    if (!d) { span.textContent = text; return; }
+    cap.classList.add('swapping');
+    setTimeout(() => { span.textContent = text; cap.classList.remove('swapping'); }, d);
+  }
+  /* PIN — the seat transfer is shown, not just asserted */
+  pin(i, target) {
+    const r = this.s.rows[i];
+    if (target === '__unpin') {
+      r.pinned = false; r.role = r.auto;
+    } else {
+      const holder = this.s.rows.findIndex((x, j) => j !== i && x.role === target);
+      if (holder >= 0 && target !== 'chart') {
+        this.s.rows[holder].role = 'unused';
+        this.s.rows[holder].pinned = false;
+        this.s.benched = holder;
+      }
+      r.role = target; r.pinned = true;
+    }
+    this.s.menuFor = null;
+    this.render();
+    if (this.s.benched != null) {
+      const b = this.s.benched;
+      this.s.benched = null;
+      setTimeout(() => {
+        const el = this.root.querySelector(`[data-list] > [data-i="${b}"]`);
+        if (el && !motionOff()) el.classList.remove('benched');
+      }, dur(560) || 0);
+    }
+  }
+  riff() {
+    this.s.seed++;
+    this.pending = function () {
+      const die = this.root.querySelector('[data-riffdie]');
+      if (die && dur(340)) die.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(180deg)' }],
+        { duration: dur(340), easing: 'cubic-bezier(.34,1.4,.64,1)' });
+      this.root.querySelectorAll('.inv, .invented-item').forEach((el, k) => {
+        if (motionOff()) return;
+        el.style.animationDelay = `${k * 55 * SPEED}ms`;
+        el.classList.add('riffing');
+      });
+    };
+    this.render();
+  }
+  /* the invented chip flies into the stack and solidifies */
+  promote(name) {
+    const pair = inventedFor(this.s).find(([n]) => n === name);
+    if (!pair) return;
+    const [role, hex] = pair;
+    const src = this.root.querySelector(`[data-inv="${name}"]`);
+    const from = src ? src.getBoundingClientRect() : null;
+    const idx = this.s.rows.length;
+    const seat = role === 'accent' ? 'accent' : role === 'danger' ? 'danger' : 'warning';
+    this.s.rows.push({ hex, role: seat, auto: seat, pinned: true });
+    this.pending = function () {
+      const el = this.root.querySelector(`[data-list] > [data-i="${idx}"]`);
+      const d = dur(340);
+      if (!el || !from || !d) return;
+      const to = el.getBoundingClientRect();
+      el.animate([
+        { transform: `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width}, ${from.height / to.height})`, opacity: .55, offset: 0 },
+        { transform: 'none', opacity: 1, offset: 1 },
+      ], { duration: d, easing: 'cubic-bezier(.34,1.4,.64,1)' });
+    };
+    this.render();
+  }
+  remove(i) {
+    const el = this.root.querySelector(`[data-list] > [data-i="${i}"]`);
+    const d = dur(200);
+    const commit = () => {
+      this.s.rows.splice(i, 1);
+      this.s.baseIdx = this.s.baseIdx == null || this.s.baseIdx === i ? null
+        : this.s.baseIdx > i ? this.s.baseIdx - 1 : this.s.baseIdx;
+      if (this.s.baseIdx == null) this.s.locked = false;
+      this.s.menuFor = null;
+      this.render();
+    };
+    if (el && d) {
+      el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(.85)' }],
+        { duration: d, easing: 'cubic-bezier(.2,.8,.3,1)', fill: 'forwards' }).finished.then(commit);
+    } else commit();
+  }
+  bind() {
+    const R = this.root;
+    R.addEventListener('click', (e) => {
+      const t = e.target.closest('[data-act], [data-inv], [data-role], [data-pin]');
+
+      if (this.s.picking) {
+        const item = e.target.closest('[data-list] > *');
+        if (item) {
+          e.preventDefault(); e.stopPropagation();
+          this.s.baseIdx = +item.dataset.i; this.s.locked = true; this.s.picking = false;
+          this.render(); this.swapCaption(); return;
+        }
+      }
+      if (!t) {
+        if (this.s.menuFor != null && !e.target.closest('[data-pop]')) { this.s.menuFor = null; this.render(); }
+        return;
+      }
+      if (t.dataset.pin != null) { this.pin(+t.dataset.i, t.dataset.pin); return; }
+      if (t.dataset.role != null) {
+        const i = +t.dataset.role;
+        this.s.menuFor = this.s.menuFor === i ? null : i;
+        this.render(); return;
+      }
+      if (t.dataset.inv) { this.promote(t.dataset.inv); return; }
+      switch (t.dataset.act) {
+        case 'riff': this.riff(); break;
+        case 'remove': this.remove(+t.dataset.i); break;
+        case 'split': this.s.split = !this.s.split; this.render(); break;
+        case 'pick': break; /* would open the color picker */
+        case 'lock':
+          if (this.s.picking) this.s.picking = false;
+          else if (this.s.locked) { this.s.locked = false; this.s.baseIdx = null; }
+          else this.s.picking = true;
+          this.render(); this.swapCaption(); break;
+        case 'startover': this.s = newState(); this.render(); break;
+        case 'add': {
+          const inp = R.querySelector('.hexfield input');
+          const v = (inp.value || '').trim();
+          const hex = /^#[0-9a-f]{6}$/i.test(v) ? v : '#e0629a';
+          this.s.rows.push({ hex, role: 'unused', auto: 'unused', pinned: false });
+          this.render(); break;
+        }
+      }
+    });
+    R.addEventListener('input', (e) => {
+      if (!e.target.matches('[data-fid]')) return;
+      this.s.fidelity = parseFloat(e.target.value);
+      const b = R.querySelector('[data-bubble]');
+      if (b) { b.style.left = `${this.s.fidelity * 100}%`; b.textContent = this.s.fidelity.toFixed(2); }
+      this.swapCaption();
+    });
+    let from = null;
+    R.addEventListener('dragstart', (e) => {
+      const item = e.target.closest('[data-list] > *');
+      if (!item) return;
+      from = +item.dataset.i;
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(from));
+    });
+    R.addEventListener('dragover', (e) => { if (from != null) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } });
+    R.addEventListener('drop', (e) => {
+      const item = e.target.closest('[data-list] > *');
+      if (!item || from == null) return;
+      e.preventDefault();
+      const to = +item.dataset.i;
+      if (to !== from) {
+        const [m] = this.s.rows.splice(from, 1);
+        this.s.rows.splice(to, 0, m);
+        this.s.menuFor = null;
+        this.render();
+      }
+      from = null;
+    });
+    R.addEventListener('dragend', () => {
+      from = null;
+      R.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging'));
+    });
+  }
+}
+
+const panels = [
+  new Panel(document.getElementById('p0'), render0),
+  new Panel(document.getElementById('p1'), render1),
+  new Panel(document.getElementById('p2'), render2),
+];
+document.getElementById('slowmo').addEventListener('click', (e) => {
+  const on = e.currentTarget.getAttribute('aria-pressed') === 'true';
+  e.currentTarget.setAttribute('aria-pressed', String(!on));
+  SPEED = on ? 1 : 4;
+  document.documentElement.style.setProperty('--t', SPEED);
+});
+document.getElementById('nomotion').addEventListener('click', (e) => {
+  const on = e.currentTarget.getAttribute('aria-pressed') === 'true';
+  e.currentTarget.setAttribute('aria-pressed', String(!on));
+  document.body.classList.toggle('no-motion', !on);
+});
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  panels.forEach((p) => {
+    if (p.s.picking || p.s.menuFor != null) { p.s.picking = false; p.s.menuFor = null; p.render(); }
+  });
+});
+</script>
+</body>
+</html>

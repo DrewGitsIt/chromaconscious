@@ -43,4 +43,21 @@
   --gap-m: 8px;
   --pad-card: 10px;
   --pad-side: 16px; /* sidebar padding + section rhythm */
+
+  /* inks that were one-off hexes in App.css */
+  --ink-bright: #c0caf5; /* slider thumb, active pane indicator */
+  --accent-cool: #8fa7dd; /* the dial's engine-judgment end */
+  --accent-warm: #cf9a66; /* the dial's raw-colours end */
+  --accent-quiet: #7a86b8; /* ghost links at rest */
+  --accent-quiet-hi: #a5b3e8; /* ghost links on hover */
+
+  /* motion. Tunable here rather than sprinkled through component files.
+     styles/motion.css zeroes the three durations under prefers-reduced-motion,
+     which is how one media query disables the whole chrome's animation. */
+  --d-fast: 120ms; /* hovers, menu open, caption cross-fade */
+  --d-base: 200ms; /* state changes: reorder, remove, toast in */
+  --d-slow: 340ms; /* the ones that carry meaning: riff, first-paint stagger */
+  --ease: cubic-bezier(0.2, 0.8, 0.3, 1); /* default: quick out, soft landing */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* entrances — decelerate hard */
+  --ease-back: cubic-bezier(0.34, 1.4, 0.64, 1); /* overshoot, for lifts */
 }

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import type { TokenAncestor } from './types'
 import { candidatesFromList, generateTheme, jobsSummary, parseColor, tokenAncestry } from './index'
 import { brandAncestry, resolveBrand } from './adapters'
-import { locateTokens } from './locate'
+import { locateTokens, sameAncestor } from './locate'
 
 // Locate mode's contract: every token classifies to an ancestor candidate (or
 // null = synthesized), descendants render verbatim, everything else goes to a
@@ -41,14 +42,15 @@ describe('token ancestry', () => {
 })
 
 describe('locateTokens', () => {
+  const ACCENT: TokenAncestor = { kind: 'role', role: 'accent' }
+
   it('keeps descendants verbatim and mutes everything else to near-gray', () => {
     const result = picnic()
-    const ancestry = tokenAncestry(result, 'light')
-    const accentIndex = result.assignments.find((a) => a.role === 'accent')!.candidateIndex!
+    const ancestry = result.light.ancestry
     const base = result.light.tokens
-    const located = locateTokens(base, ancestry, accentIndex, base['background'])
+    const located = locateTokens(base, ancestry, ACCENT, base['background'])
     for (const [name, hex] of Object.entries(base)) {
-      if (ancestry[name] === accentIndex) {
+      if (sameAncestor(ancestry[name], ACCENT)) {
         expect(located[name], `${name} should stay verbatim`).toBe(hex)
       } else {
         // hex round-trip adds ~0.001 chroma error over the 0.005 mute cap
@@ -60,15 +62,44 @@ describe('locateTokens', () => {
   it('muting preserves the lightness role so layout stays readable', () => {
     const result = picnic()
     const base = result.light.tokens
-    const located = locateTokens(
-      base,
-      tokenAncestry(result, 'light'),
-      result.assignments.find((a) => a.role === 'accent')!.candidateIndex!,
-      base['background'],
-    )
+    const located = locateTokens(base, result.light.ancestry, ACCENT, base['background'])
     // a dark text token stays dark, a light background stays light
     expect(parseColor(located['foreground'])!.l).toBeLessThan(0.45)
     expect(parseColor(located['card'])!.l).toBeGreaterThan(0.8)
+  })
+
+  /**
+   * The reason locate is keyed on the ancestor rather than on a candidate.
+   * One color in means every role but primary is synthesized — and a derived
+   * neutral still owns the backgrounds, the text and the borders. Keying on
+   * candidates made all of that unreachable, because there was no candidate
+   * to key on.
+   */
+  it('locates a DERIVED seat — no candidate behind it, but plenty of tokens', () => {
+    const solo = generateTheme({ candidates: candidatesFromList(['#7c3aed']) })
+    const neutral = solo.assignments.find((a) => a.role === 'neutral')!
+    expect(neutral.candidateIndex, 'neutral should be synthesized here').toBeNull()
+
+    const base = solo.light.tokens
+    const target: TokenAncestor = { kind: 'role', role: 'neutral' }
+    const located = locateTokens(base, solo.light.ancestry, target, base['background'])
+
+    const lit = Object.keys(base).filter((n) => located[n] === base[n])
+    expect(lit).toEqual(expect.arrayContaining(['background', 'foreground', 'card', 'border']))
+    expect(lit.length).toBeGreaterThan(10)
+    // and the primary, which is NOT the neutral's, is muted
+    expect(parseColor(located['primary'])!.c).toBeLessThanOrEqual(0.01)
+  })
+
+  it('locates one chart slot without lighting its neighbours', () => {
+    const result = picnic()
+    const base = result.light.tokens
+    const slot: TokenAncestor = { kind: 'chart', slot: 0 }
+    const located = locateTokens(base, result.light.ancestry, slot, base['background'])
+    const litCharts = ['chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5'].filter(
+      (n) => located[n] === base[n],
+    )
+    expect(litCharts.length).toBe(1)
   })
 })
 

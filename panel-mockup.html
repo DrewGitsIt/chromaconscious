@@ -1,0 +1,1558 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>themesmith — config panel redesign mockup</title>
+<style>
+  /* ============================================================
+     Live mockup. All three panels are driven by the SAME JS, so the
+     only difference you're judging is design + motion.
+       · current  — as shipped: no transitions anywhere (that's the point)
+       · A        — conservative: same bones, fixed rhythm, one icon set, motion
+       · B        — restructured: header/body/footer, labeled sections, artsy
+     Use the SLOW-MO toggle up top to actually see the timings.
+     ============================================================ */
+
+  :root {
+    /* surfaces, dark → light (mirrors src/styles/tokens.css) */
+    --surface-0: #14151a;
+    --surface-1: #17181c;
+    --surface-2: #1c1e24;
+    --surface-3: #1f2127;
+    --surface-4: #262932;
+    --surface-active: #3b4252;
+
+    --line-card: #2a2c33;
+    --line-ctl: #33363f;
+    --line-active: #4c566a;
+
+    --ink: #e6e7ea;
+    --ink-muted: #9a9daa;
+    --ink-faint: #6a6e7a;
+
+    --accent: #7aa2f7;
+    --ok: #9ece6a;
+    --warn: #e0af68;
+    --fail: #ff8a8a;
+
+    /* PROPOSED additions — the six one-off hexes in App.css, tokenised */
+    --ink-bright: #c0caf5;
+    --accent-cool: #8fa7dd;
+    --accent-warm: #cf9a66;
+    --accent-quiet: #7a86b8;
+    --accent-quiet-hi: #a5b3e8;
+
+    --ctl-h: 32px;
+    --radius-ctl: 6px;
+    --radius-card: 10px;
+    --radius-pill: 999px;
+
+    --fs-xs: 10px;
+    --fs-s: 11px;
+    --fs-m: 12px;
+    --fs-h1: 20px;
+
+    --gap-s: 6px;
+    --gap-m: 8px;
+    --pad-card: 10px;
+    --pad-side: 16px;
+
+    /* motion. --t is the global slow-mo multiplier (1 → 4 → 0). */
+    --t: 1;
+    --d-fast: calc(120ms * var(--t));
+    --d-base: calc(200ms * var(--t));
+    --d-slow: calc(340ms * var(--t));
+    --ease: cubic-bezier(0.2, 0.8, 0.3, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-back: cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 28px 60px;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    background: #101116;
+    color: var(--ink);
+  }
+  code, .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+
+  /* ---------- sheet chrome ---------- */
+  .sheet-head {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    padding-bottom: 18px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid #22242b;
+  }
+  .sheet-head h1 { font-size: 15px; margin: 0; letter-spacing: -0.01em; }
+  .sheet-head .sub { font-size: var(--fs-m); color: var(--ink-faint); margin-right: auto; }
+  .tog {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--surface-3); border: 1px solid var(--line-ctl); color: var(--ink-muted);
+    border-radius: var(--radius-pill); padding: 5px 12px;
+    font-size: var(--fs-s); font-family: inherit; cursor: pointer;
+    transition: all var(--d-fast) var(--ease);
+  }
+  .tog:hover { background: var(--surface-4); color: var(--ink); }
+  .tog[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+    color: var(--accent);
+  }
+  .tog .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+    opacity: 0.35; transition: opacity var(--d-fast) var(--ease);
+  }
+  .tog[aria-pressed="true"] .dot { opacity: 1; }
+
+  .sheet { display: flex; gap: 30px; align-items: flex-start; }
+  .col-title {
+    font-size: var(--fs-s); text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--ink-faint); margin: 0 0 10px;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .col-title b { color: var(--ink-muted); font-weight: 600; letter-spacing: 0.14em; }
+  .col-note { font-size: var(--fs-xs); letter-spacing: 0; text-transform: none; color: #4e525c; }
+
+  /* ============================================================
+     SHARED PANEL SKIN
+     ============================================================ */
+  .panel {
+    width: 320px; flex-shrink: 0;
+    background: var(--surface-1);
+    border: 1px solid var(--line-card);
+    border-radius: var(--radius-card);
+    padding: var(--pad-side);
+    position: relative;
+    overflow: hidden;
+  }
+  .panel h1 { font-size: var(--fs-h1); margin: 0; letter-spacing: -0.015em; }
+  .tagline { color: var(--ink-muted); font-size: var(--fs-m); margin: 2px 0 var(--pad-side); }
+  .panel section { margin-bottom: var(--pad-side); }
+  .panel section:last-child { margin-bottom: 0; }
+  .divider { border: 0; border-top: 1px solid var(--line-card); margin: var(--pad-side) calc(-1 * var(--pad-side)); }
+
+  .panel :where(button, select, input:not([type="range"])) {
+    height: var(--ctl-h); padding: 0 10px;
+    background: var(--surface-3); border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-ctl); color: var(--ink);
+    font: inherit; font-size: var(--fs-m);
+  }
+  .panel :where(select, input:not([type="range"])) { padding: 0 8px; }
+  .panel :where(button) { cursor: pointer; transition: background var(--d-fast) var(--ease), border-color var(--d-fast) var(--ease), color var(--d-fast) var(--ease); }
+  .panel :where(button):hover { background: var(--surface-4); }
+  .panel :where(button):disabled { opacity: 0.35; cursor: default; }
+  .panel :where(button):focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .icon-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: var(--ctl-h); padding: 0; flex-shrink: 0;
+  }
+  .row { display: flex; align-items: center; gap: var(--gap-s); }
+  .grow { flex: 1; min-width: 0; }
+  .faint { color: var(--ink-faint); }
+  .muted { color: var(--ink-muted); }
+  svg { display: block; flex-shrink: 0; }
+
+  /* ---------- menus (shared) ---------- */
+  .menu {
+    position: absolute; z-index: 40;
+    background: var(--surface-2); border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-card); box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+    padding: 4px; min-width: 150px; overflow: hidden;
+  }
+  .menu .item {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; height: auto; text-align: left; padding: 7px 10px;
+    border-radius: var(--radius-ctl); background: transparent; border: 0;
+    font-size: var(--fs-m); color: var(--ink);
+  }
+  .menu .item:hover, .menu .item.sel { background: var(--surface-4); }
+  .menu-cap {
+    font-size: var(--fs-xs); color: var(--ink-faint); line-height: 1.5;
+    padding: 7px 10px 4px; border-top: 1px solid var(--line-card); margin-top: 4px;
+  }
+  .preset-dots { display: inline-flex; gap: 3px; flex-shrink: 0; }
+  .preset-dots i {
+    display: block; width: 12px; height: 12px; border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+
+  /* menu enter/exit — grows from its anchor corner */
+  .menu[data-anim] {
+    animation: menu-in var(--d-fast) var(--ease-out) both;
+    transform-origin: var(--origin, top left);
+  }
+  @keyframes menu-in {
+    from { opacity: 0; transform: scale(0.94) translateY(-4px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* the two-page start-over menu: pages SLIDE, honouring the "›" */
+  .menu-viewport { position: relative; overflow: hidden; }
+  .menu-page { transition: transform var(--d-base) var(--ease), opacity var(--d-fast) linear; }
+  .menu-page.is-out-left  { transform: translateX(-14px); opacity: 0; position: absolute; inset: 0; pointer-events: none; }
+  .menu-page.is-out-right { transform: translateX(14px);  opacity: 0; position: absolute; inset: 0; pointer-events: none; }
+
+  /* ---------- candidate strip (shared) ---------- */
+  .strip { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--gap-s); }
+  .strip li {
+    display: flex; align-items: center; gap: var(--gap-m);
+    background: var(--surface-2); border: 1px solid var(--line-card);
+    border-radius: var(--radius-ctl); padding: 6px;
+    transition: border-color var(--d-fast) var(--ease), background var(--d-fast) var(--ease),
+                box-shadow var(--d-base) var(--ease), opacity var(--d-fast) linear;
+  }
+  .strip li:hover { border-color: var(--line-ctl); }
+  .strip li.dragging { opacity: 0.35; }
+  .strip li.is-base { border-color: var(--line-active); background: var(--surface-3); }
+  .grip { color: #565a66; cursor: grab; display: flex; padding: 0 1px; }
+  .grip:active { cursor: grabbing; }
+  .sw {
+    width: 26px; height: 26px; border-radius: var(--radius-ctl);
+    border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; cursor: pointer;
+    transition: background var(--d-slow) var(--ease), box-shadow var(--d-base) var(--ease), transform var(--d-fast) var(--ease);
+  }
+  .meta { flex: 1; min-width: 0; }
+  .meta code { font-size: var(--fs-s); color: var(--ink); }
+  .badge {
+    font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 3px 7px; border-radius: var(--radius-pill);
+    background: #2c3040; color: #aab2cc; flex-shrink: 0; border: 1px solid transparent;
+    height: auto; cursor: pointer;
+    transition: background var(--d-fast) var(--ease), color var(--d-fast) var(--ease), border-color var(--d-fast) var(--ease);
+  }
+  .b-primary { background: #2d4a75; color: #bcd6ff; }
+  .b-accent  { background: #4a3a75; color: #d6ccff; }
+  .b-neutral { background: #3a3d45; color: #c8ccd6; }
+  .b-success { background: #2b4a35; color: #bdf0cc; }
+  .b-chart   { background: #23484d; color: #a5e6ee; }
+  .b-unused  { opacity: 0.5; }
+  .row-x {
+    width: 22px; height: 22px; padding: 0; display: inline-flex;
+    align-items: center; justify-content: center;
+    background: transparent; border: 0; color: var(--ink-faint);
+  }
+  .row-x:hover { background: var(--surface-4); color: var(--fail); }
+
+  /* seat-transfer pulse: the row that LOST and the row that GAINED */
+  @keyframes seat-lost {
+    0%, 100% { box-shadow: 0 0 0 0 transparent; }
+    35%      { box-shadow: 0 0 0 2px color-mix(in srgb, var(--fail) 55%, transparent); }
+  }
+  @keyframes seat-gained {
+    0%, 100% { box-shadow: 0 0 0 0 transparent; }
+    35%      { box-shadow: 0 0 0 2px color-mix(in srgb, var(--ok) 60%, transparent); }
+  }
+  .strip li.seat-lost   { animation: seat-lost   calc(var(--d-slow) * 2) var(--ease) both; }
+  .strip li.seat-gained { animation: seat-gained calc(var(--d-slow) * 2) var(--ease) both; animation-delay: var(--d-base); }
+
+  /* pick mode: rows become targets */
+  .strip li.pickable { cursor: pointer; }
+  .strip li.pickable:hover { border-color: var(--accent); background: var(--surface-3); }
+  @keyframes pick-breathe {
+    0%, 100% { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 0%, transparent); }
+    50%      { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
+  }
+  .strip li.pickable { animation: pick-breathe calc(var(--d-slow) * 5) ease-in-out infinite; }
+
+  /* ---------- invented row (shared) ---------- */
+  .invented-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: var(--gap-s); }
+  .invented-cap { font-size: var(--fs-xs); color: var(--ink-faint); }
+  .invented-item {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: auto; padding: 3px 8px; font-size: var(--fs-xs); color: var(--ink-muted);
+    background: var(--surface-3); border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-pill); cursor: pointer;
+  }
+  .invented-item:hover { border-color: var(--line-active); color: var(--ink); }
+  .invented-sw {
+    display: block; width: 10px; height: 10px; border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.2);
+    transition: background var(--d-slow) var(--ease);
+  }
+  /* RIFF: invented chips lift + recolour while pinned rows hold still */
+  @keyframes riff-lift {
+    0%   { transform: translateY(0) scale(1); }
+    40%  { transform: translateY(-3px) scale(1.05); }
+    100% { transform: translateY(0) scale(1); }
+  }
+  .invented-item.riffing { animation: riff-lift var(--d-slow) var(--ease-back) both; }
+
+  /* ---------- add field ---------- */
+  .add-row {
+    display: flex; gap: var(--gap-s); margin-top: var(--gap-s);
+    border: 1px dashed var(--line-ctl); border-radius: var(--radius-ctl); padding: 4px;
+    transition: border-color var(--d-fast) var(--ease), background var(--d-fast) var(--ease);
+  }
+  .add-row:focus-within { border-color: var(--line-active); border-style: solid; }
+  .hexfield {
+    display: flex; align-items: center; gap: var(--gap-s); flex: 1; min-width: 0;
+    height: var(--ctl-h); background: transparent; border: 1px solid transparent;
+    border-radius: var(--radius-ctl); padding: 0 6px;
+  }
+  .hexfield .sw { width: 20px; height: 20px; }
+  .hexfield input {
+    flex: 1; min-width: 0; height: auto; background: transparent;
+    border: 0; outline: 0; padding: 0; font-size: var(--fs-m); color: var(--ink);
+  }
+
+  /* ---------- fidelity ---------- */
+  .fid-labels { display: flex; align-items: center; justify-content: space-between; font-size: var(--fs-s); }
+  .fid-left { color: var(--accent-cool); }
+  .fid-right { color: var(--accent-warm); }
+  .chip {
+    font-size: var(--fs-xs); background: var(--surface-4); border-radius: var(--radius-ctl);
+    padding: 1px 6px; color: var(--ink-muted);
+  }
+  .fid-slider {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 6px;
+    border-radius: 3px; outline: none; margin: 10px 0 2px;
+    background: linear-gradient(90deg, #5b7fc7, var(--line-card) 55%, #b8743a);
+  }
+  .fid-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--ink-bright); border: 2px solid var(--surface-1); cursor: pointer;
+    transition: transform var(--d-fast) var(--ease), box-shadow var(--d-fast) var(--ease);
+  }
+  .fid-slider:active::-webkit-slider-thumb { transform: scale(1.15); }
+  .fid-caption {
+    font-size: var(--fs-s); color: var(--ink-faint); text-align: center;
+    margin-top: var(--gap-s); min-height: 15px;
+  }
+  /* caption cross-fades instead of rewriting (kills the layout-shift band-aid) */
+  .fid-caption span { display: block; transition: opacity var(--d-fast) linear; }
+  .fid-caption.swapping span { opacity: 0; }
+
+  /* ---------- status chip ---------- */
+  .status-chip {
+    width: 100%; display: flex; align-items: center; gap: var(--gap-m);
+    margin-top: 12px; font-size: var(--fs-s); text-align: left;
+    background: color-mix(in srgb, var(--ok) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ok) 25%, transparent);
+    color: var(--ok);
+  }
+  .status-chip:hover { background: color-mix(in srgb, var(--ok) 14%, transparent); }
+  .status-chip.warn {
+    background: color-mix(in srgb, var(--warn) 8%, transparent);
+    border-color: color-mix(in srgb, var(--warn) 30%, transparent);
+    color: var(--warn);
+  }
+  .status-chip.warn:hover { background: color-mix(in srgb, var(--warn) 14%, transparent); }
+  .status-more { margin-left: auto; opacity: 0.7; flex-shrink: 0; }
+
+  /* ---------- export ---------- */
+  .export-row { position: relative; display: flex; gap: var(--gap-s); }
+  .export-main { flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+  .export-main.copied { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+
+  /* ---------- toast ---------- */
+  .toast-dock { position: relative; height: 0; }
+  .toast {
+    position: absolute; left: 0; right: 0; bottom: 6px; z-index: 70;
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface-2); border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-ctl); padding: 8px 12px;
+    font-size: var(--fs-s); box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    overflow: hidden;
+    animation: toast-in var(--d-base) var(--ease-out) both;
+  }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .toast.leaving { animation: toast-out var(--d-fast) var(--ease) both; }
+  @keyframes toast-out {
+    to { opacity: 0; transform: translateY(6px); }
+  }
+  .toast-text { flex: 1; min-width: 0; color: var(--ink-muted); }
+  .toast-undo {
+    background: transparent; border: 0; padding: 0; height: auto;
+    color: var(--accent); font: inherit; font-size: var(--fs-s); font-weight: 600; cursor: pointer;
+  }
+  .toast-undo:hover { text-decoration: underline; background: transparent; }
+  /* the 8s undo window becomes VISIBLE instead of a silent guillotine */
+  .toast-drain {
+    position: absolute; left: 0; bottom: 0; height: 2px;
+    background: color-mix(in srgb, var(--accent) 70%, transparent);
+    width: 100%; transform-origin: left center;
+  }
+
+  /* ============================================================
+     "current" — deliberately motionless. Same markup, same JS.
+     ============================================================ */
+  .p-current { --d-fast: 0ms; --d-base: 0ms; --d-slow: 0ms; }
+  .p-current .menu[data-anim] { animation: none; }
+  .p-current .toast { animation: none; }
+  .p-current .toast-drain { display: none; }
+  .p-current .strip li.pickable { animation: none; }
+  .p-current .strip li.seat-lost,
+  .p-current .strip li.seat-gained { animation: none; }
+  .p-current .invented-item.riffing { animation: none; }
+  /* current's real quirks, reproduced honestly */
+  .p-current .strip-actions { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--gap-s); }
+  .p-current .glyph { font-size: var(--fs-m); line-height: 1; }
+  .p-current .glyph-lg { font-size: 18px; line-height: 1; }
+  .p-current .ghost {
+    height: auto; border: 0; background: transparent; padding: 0;
+    color: #7a86b8; font-size: var(--fs-xs); cursor: pointer;
+  }
+  .p-current .ghost:hover { color: #a5b3e8; text-decoration: underline; background: transparent; }
+
+  /* ============================================================
+     A — CONSERVATIVE. Same bones. Fixed rhythm, one icon set, motion.
+     ============================================================ */
+  .p-a .frame-row,
+  .p-a .startover-row,
+  .p-a .strip li,
+  .p-a .add-row,
+  .p-a .export-row { --rail: 8px; }
+  /* one consistent left rail: every row's first glyph centre lands on 8px */
+  .p-a .strip li { padding-left: 6px; }
+  .p-a .section-lead { display: flex; align-items: center; gap: var(--gap-s); margin-bottom: var(--gap-s); }
+  .p-a .section-lead .spacer { flex: 1; }
+  .p-a .lock-btn { display: inline-flex; align-items: center; gap: 7px; }
+  .p-a .lock-btn.locked { border-color: var(--line-active); background: var(--surface-4); }
+  .p-a .lock-btn.picking { border-color: var(--accent); color: var(--accent); }
+  .p-a .lock-sw {
+    width: 15px; height: 15px; border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.25);
+    transition: background var(--d-base) var(--ease);
+  }
+  .p-a .ghost {
+    height: auto; border: 0; background: transparent; padding: 0;
+    color: var(--accent-quiet); font-size: var(--fs-xs); cursor: pointer;
+  }
+  .p-a .ghost:hover { color: var(--accent-quiet-hi); text-decoration: underline; background: transparent; }
+  .p-a .riff-cluster { margin-left: auto; display: inline-flex; align-items: center; gap: var(--gap-s); }
+  .p-a .riff-btn { background: transparent; color: var(--ink-muted); font-size: var(--fs-s); display: inline-flex; align-items: center; gap: 6px; }
+  .p-a .riff-chip { font-size: var(--fs-xs); color: var(--ink-faint); white-space: nowrap; }
+  .p-a .startover-btn { background: transparent; color: var(--ink-muted); font-size: var(--fs-s); display: inline-flex; align-items: center; gap: 6px; }
+
+  /* ============================================================
+     B — RESTRUCTURED. header / body / footer, labeled sections,
+     palette-reactive chrome, promoted dial.
+     ============================================================ */
+  .p-b {
+    padding: 0;
+    display: flex; flex-direction: column;
+    height: 720px;
+    /* the panel WEARS the palette it's forging — a whisper, not a shout */
+    background:
+      radial-gradient(120% 60% at 0% 0%, color-mix(in srgb, var(--pal-primary) 13%, transparent), transparent 70%),
+      radial-gradient(90% 50% at 100% 100%, color-mix(in srgb, var(--pal-accent) 9%, transparent), transparent 65%),
+      var(--surface-1);
+    transition: background var(--d-slow) var(--ease);
+  }
+  .p-b .b-head {
+    padding: var(--pad-side) var(--pad-side) 12px;
+    flex-shrink: 0; position: relative; z-index: 2;
+  }
+  .p-b .b-wordmark {
+    font-size: var(--fs-h1); margin: 0; letter-spacing: -0.02em; font-weight: 650;
+    background: linear-gradient(96deg, var(--pal-primary) 0%, var(--pal-accent) 55%, var(--ink) 105%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    transition: background var(--d-slow) var(--ease);
+    width: fit-content;
+  }
+  .p-b .b-tagline { color: var(--ink-faint); font-size: var(--fs-s); margin: 3px 0 0; }
+
+  .p-b .b-body {
+    flex: 1; min-height: 0; overflow-y: auto;
+    padding: 4px var(--pad-side) var(--pad-side);
+    scrollbar-width: thin; scrollbar-color: var(--line-ctl) transparent;
+  }
+  .p-b .b-foot {
+    flex-shrink: 0; padding: 12px var(--pad-side) var(--pad-side);
+    border-top: 1px solid var(--line-card);
+    background: color-mix(in srgb, var(--surface-0) 55%, transparent);
+    backdrop-filter: blur(6px);
+    position: relative;
+  }
+  /* footer lifts off the body only once there IS something above it */
+  .p-b .b-foot::before {
+    content: ''; position: absolute; left: 0; right: 0; top: -18px; height: 18px;
+    background: linear-gradient(to top, rgba(10,11,14,0.5), transparent);
+    pointer-events: none; opacity: 0; transition: opacity var(--d-base) var(--ease);
+  }
+  .p-b.scrolled .b-foot::before { opacity: 1; }
+
+  /* labeled micro-headers — the language .frame-indicator already speaks */
+  .p-b .sec { margin: 0 0 18px; }
+  .p-b .sec-head {
+    display: flex; align-items: center; gap: var(--gap-m);
+    margin: 0 0 9px; min-height: 22px;
+  }
+  .p-b .sec-label {
+    font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.16em;
+    color: var(--ink-faint); white-space: nowrap; font-weight: 600;
+  }
+  .p-b .sec-rule {
+    flex: 1; height: 1px; min-width: 8px;
+    background: linear-gradient(90deg, var(--line-card), transparent);
+  }
+  .p-b .sec-act { display: inline-flex; align-items: center; gap: var(--gap-s); flex-shrink: 0; }
+  .p-b .mini {
+    height: 22px; padding: 0 8px; font-size: var(--fs-xs);
+    background: transparent; border: 1px solid transparent; color: var(--ink-faint);
+    border-radius: var(--radius-pill); display: inline-flex; align-items: center; gap: 5px;
+  }
+  .p-b .mini:hover { background: var(--surface-3); border-color: var(--line-ctl); color: var(--ink-muted); }
+  .p-b .mini.on {
+    background: color-mix(in srgb, var(--pal-primary) 20%, transparent);
+    border-color: color-mix(in srgb, var(--pal-primary) 45%, transparent);
+    color: var(--ink);
+  }
+  .p-b .mini.picking { border-color: var(--accent); color: var(--accent); }
+  .p-b .mini-sw {
+    width: 11px; height: 11px; border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.28);
+    transition: background var(--d-base) var(--ease);
+  }
+
+  /* frame card — the canvas selector reads as a thing, not a toolbar */
+  .p-b .frame-card {
+    background: var(--surface-2); border: 1px solid var(--line-card);
+    border-radius: var(--radius-ctl); padding: 6px; display: flex; align-items: center; gap: var(--gap-s);
+    transition: border-color var(--d-fast) var(--ease);
+  }
+  .p-b .frame-card:hover { border-color: var(--line-ctl); }
+  .p-b .frame-dot {
+    width: 26px; height: 26px; border-radius: var(--radius-ctl); padding: 0; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: var(--fs-s); font-weight: 700;
+    background: color-mix(in srgb, var(--pal-primary) 22%, var(--surface-4));
+    border: 1px solid color-mix(in srgb, var(--pal-primary) 40%, transparent);
+    color: var(--ink);
+  }
+  .p-b .frame-card select { flex: 1; min-width: 0; height: 26px; background: transparent; border-color: transparent; font-size: var(--fs-s); }
+  .p-b .frame-card select:hover { background: var(--surface-3); }
+  .p-b .frame-card .icon-btn { width: 26px; height: 26px; background: transparent; border-color: transparent; color: var(--ink-faint); }
+  .p-b .frame-card .icon-btn:hover { background: var(--surface-3); color: var(--ink); }
+
+  /* THE PALETTE OBJECT: strip + invented + add read as one continuous body,
+     with a spine sampled from the user's own colors. */
+  .p-b .palette-obj {
+    position: relative;
+    background: var(--surface-2);
+    border: 1px solid var(--line-card);
+    border-radius: var(--radius-card);
+    padding: 8px 8px 8px 14px;
+    overflow: hidden;
+  }
+  .p-b .spine {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--spine, var(--line-card));
+    transition: background var(--d-slow) var(--ease);
+  }
+  .p-b .palette-obj .strip li {
+    background: transparent; border-color: transparent; border-radius: var(--radius-ctl);
+    padding: 5px 6px;
+  }
+  .p-b .palette-obj .strip li:hover { background: var(--surface-3); border-color: var(--line-card); }
+  .p-b .palette-obj .strip li.is-base { background: var(--surface-3); border-color: var(--line-active); }
+  .p-b .palette-obj .sw { width: 28px; height: 28px; }
+  .p-b .palette-obj .strip li:hover .sw { box-shadow: 0 0 0 3px color-mix(in srgb, var(--row-color) 22%, transparent); }
+  .p-b .obj-rule { border: 0; border-top: 1px dashed var(--line-card); margin: 8px 2px; }
+  .p-b .add-row { border: 0; padding: 0; margin-top: 0; }
+  .p-b .add-row .hexfield { border-color: var(--line-card); background: var(--surface-3); }
+  .p-b .add-row .hexfield:focus-within { border-color: color-mix(in srgb, var(--pal-primary) 55%, transparent); }
+  .p-b .invented-row { margin: 0 2px 8px; }
+
+  /* THE DIAL — the marquee control, finally dressed like one */
+  .p-b .dial { padding: 2px 2px 0; }
+  .p-b .dial-ends { display: flex; justify-content: space-between; font-size: var(--fs-s); margin-bottom: 14px; }
+  .p-b .dial-track-wrap { position: relative; height: 26px; }
+  .p-b .dial-ticks {
+    position: absolute; inset: auto 8px 3px; height: 4px;
+    display: flex; justify-content: space-between; pointer-events: none;
+  }
+  .p-b .dial-ticks i { width: 1px; height: 4px; background: var(--line-ctl); display: block; }
+  .p-b .dial-slider {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 8px;
+    border-radius: var(--radius-pill); outline: none; margin: 0; position: absolute; top: 4px;
+    background: linear-gradient(90deg, var(--accent-cool) 0%, #3a3f4d 48%, #4a4034 62%, var(--accent-warm) 100%);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+  }
+  .p-b .dial-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--ink-bright); border: 3px solid var(--surface-1); cursor: grab;
+    box-shadow: 0 0 0 1px var(--line-active), 0 2px 8px rgba(0,0,0,0.55);
+    transition: transform var(--d-fast) var(--ease-back), box-shadow var(--d-fast) var(--ease);
+  }
+  .p-b .dial-slider:hover::-webkit-slider-thumb { transform: scale(1.1); }
+  .p-b .dial-slider:active::-webkit-slider-thumb {
+    cursor: grabbing; transform: scale(1.22);
+    box-shadow: 0 0 0 1px var(--line-active), 0 0 0 7px color-mix(in srgb, var(--ink-bright) 12%, transparent);
+  }
+  /* the readout TRAVELS with the thumb instead of sitting in a corner */
+  .p-b .dial-bubble {
+    position: absolute; top: -20px; transform: translateX(-50%);
+    font-size: var(--fs-xs); font-variant-numeric: tabular-nums;
+    background: var(--surface-4); color: var(--ink); border: 1px solid var(--line-ctl);
+    padding: 2px 7px; border-radius: var(--radius-pill); pointer-events: none;
+    transition: left var(--d-fast) var(--ease), background var(--d-fast) var(--ease);
+  }
+  .p-b .dial-caption {
+    font-size: var(--fs-s); color: var(--ink-faint); text-align: center;
+    margin-top: 12px; min-height: 15px;
+  }
+  .p-b .dial-caption span { display: block; transition: opacity var(--d-fast) linear; }
+  .p-b .dial-caption.swapping span { opacity: 0; }
+
+  .p-b .status-chip { border-radius: var(--radius-ctl); margin-top: 0; }
+  .p-b .export-main {
+    background: linear-gradient(180deg, var(--surface-4), var(--surface-3));
+    border-color: color-mix(in srgb, var(--pal-primary) 32%, var(--line-ctl));
+    font-weight: 550;
+  }
+  .p-b .export-main:hover { border-color: color-mix(in srgb, var(--pal-primary) 55%, var(--line-ctl)); }
+  .p-b .foot-stack { display: flex; flex-direction: column; gap: var(--gap-m); }
+
+  /* first-paint stagger: the panel ASSEMBLES rather than blinking into being */
+  .stagger > * { animation: sec-in var(--d-slow) var(--ease-out) both; }
+  @keyframes sec-in {
+    from { opacity: 0; transform: translateY(7px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .p-current .stagger > * { animation: none !important; }
+
+  /* ---------- notes column ---------- */
+  .notes { max-width: 400px; font-size: 13px; line-height: 1.6; }
+  .notes h3 {
+    font-size: var(--fs-m); text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--ink-muted); margin: 26px 0 8px;
+  }
+  .notes h3:first-child { margin-top: 0; }
+  .notes p { margin: 0 0 11px; color: #c8ccd6; }
+  .notes b { color: var(--ink); }
+  .notes .try {
+    display: inline-block; font-size: var(--fs-xs); text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border-radius: 3px; padding: 1px 5px; margin-right: 6px;
+  }
+  .notes table { width: 100%; border-collapse: collapse; font-size: var(--fs-m); margin-top: 4px; }
+  .notes td { padding: 6px 8px 6px 0; border-bottom: 1px solid #22242b; vertical-align: top; color: #c8ccd6; }
+  .notes td:first-child { color: var(--ink); white-space: nowrap; width: 96px; }
+  .notes td:last-child { color: var(--ink-faint); white-space: nowrap; width: 60px; text-align: right; }
+  .notes ul { margin: 0 0 11px; padding-left: 18px; color: #c8ccd6; }
+  .notes li { margin-bottom: 5px; }
+  .swatch-line { display: flex; gap: 5px; margin: 8px 0 14px; }
+  .swatch-line i {
+    width: 30px; height: 22px; border-radius: 4px; display: block;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root { --t: 0.001; }
+    .stagger > * { animation: none; }
+  }
+  body.no-motion { --t: 0.001; }
+  body.no-motion .stagger > * { animation: none !important; }
+  body.no-motion .menu[data-anim] { animation: none !important; }
+</style>
+</head>
+<body>
+
+<div class="sheet-head">
+  <h1>themesmith — config panel</h1>
+  <span class="sub">all three panels run the same JS. only the design and the motion differ.</span>
+  <button class="tog" id="slowmo" aria-pressed="false"><span class="dot"></span> slow-mo 4×</button>
+  <button class="tog" id="nomotion" aria-pressed="false"><span class="dot"></span> reduced motion</button>
+  <button class="tog" id="replay"><span class="dot"></span> replay entrance</button>
+</div>
+
+<div class="sheet">
+
+  <!-- ===================== CURRENT ===================== -->
+  <div>
+    <p class="col-title"><b>current</b> <span class="col-note">as shipped — no transitions anywhere</span></p>
+    <div class="panel p-current" id="pCurrent" data-motion="off"></div>
+  </div>
+
+  <!-- ===================== A ===================== -->
+  <div>
+    <p class="col-title"><b>A · conservative</b> <span class="col-note">same bones, fixed rhythm + motion</span></p>
+    <div class="panel p-a" id="pA"></div>
+  </div>
+
+  <!-- ===================== B ===================== -->
+  <div>
+    <p class="col-title"><b>B · restructured</b> <span class="col-note">header/body/footer, labeled, artsy</span></p>
+    <div class="panel p-b" id="pB"></div>
+  </div>
+
+  <!-- ===================== NOTES ===================== -->
+  <div class="notes">
+    <h3>how to read this sheet</h3>
+    <p>Every panel is wired to the same state machine — riff, lock, drag-reorder,
+      remove/undo, the two-page start-over menu, the dial, export. Click through
+      <b>current</b> first, then the same sequence in <b>A</b>. The markup barely
+      changed; what changed is that the app now <i>acknowledges</i> you.</p>
+    <p><span class="try">try</span>Turn on <b>slow-mo 4×</b> and hit
+      <b>riff</b> in each column. In current, three colors teleport. In A and B, the
+      three invented chips lift and cross-fade while your pinned rows visibly hold
+      still — the motion is <i>the explanation</i> that riff only touches invented
+      material. That's the one animation I'd fight for.</p>
+
+    <h3>A — conservative pass</h3>
+    <ul>
+      <li><b>One icon set.</b> Every <code>⧉ ✕ ▾ ↻ ⚄ ‹ ●</code> glyph → lucide at
+        a single 14px optical size. Biggest single credibility win, ~zero risk.</li>
+      <li><b>The padlock stops floating.</b> It joins a section lead row with
+        auto-assign, so <code>justify-content:space-between</code> always has two
+        children instead of one.</li>
+      <li><b>One left rail.</b> Grip, swatch, and every row's first glyph centre
+        now land on the same x.</li>
+      <li><b>Six stray hexes → tokens</b> (<code>--ink-bright</code>,
+        <code>--accent-cool</code>, <code>--accent-warm</code>,
+        <code>--accent-quiet</code>). The dead commented-out line in
+        <code>.ghost</code> goes.</li>
+      <li><b>Motion added, structure untouched.</b></li>
+    </ul>
+
+    <h3>B — restructured</h3>
+    <ul>
+      <li><b>Header / body / footer.</b> Export + status are pinned to the bottom
+        as a frosted footer — they're the terminal action, and today they float
+        mid-column above a huge void. Only the middle scrolls; the footer's top
+        shadow appears only once content is actually behind it.</li>
+      <li><b>Labeled sections replace all four <code>&lt;hr&gt;</code>s</b>, in the
+        uppercase/0.16em voice <code>.frame-indicator</code> already speaks. Free
+        hierarchy in a language the app owns.</li>
+      <li><b>The palette object.</b> Strip + invented + add-field merge into one
+        bordered body with a <b>spine</b> — a 3px gradient sampled from your actual
+        candidates. Three stacked things at three insets become one object.</li>
+      <li><b>The chrome wears your palette.</b> Wordmark gradient, frame dot, spine,
+        focus edges, and the panel's corner wash all derive from the colors you fed
+        it. A color tool whose own UI is stone grey is a missed argument — and it
+        re-tints on every edit, which is its own quiet feedback channel.</li>
+      <li><b>The dial.</b> Promoted to the marquee control it is: 8px gradient
+        track, ticks, a grabbable glowing thumb, and a readout that <i>travels</i>
+        with it instead of sitting in a corner chip.</li>
+    </ul>
+
+    <h3>motion inventory</h3>
+    <p class="faint" style="font-size:12px;margin-bottom:2px">every one carries information — none is decoration.</p>
+    <table>
+      <tr><td>riff</td><td>invented chips lift + cross-fade; pinned rows hold still</td><td>340ms</td></tr>
+      <tr><td>seat transfer</td><td>losing row pulses red, gaining row pulses green, in sequence</td><td>2×340</td></tr>
+      <tr><td>menu open</td><td>scale .94 + fade from anchor corner</td><td>120ms</td></tr>
+      <tr><td>preset page</td><td>slides horizontally — honours its own “›”</td><td>200ms</td></tr>
+      <tr><td>reorder</td><td>FLIP; rows glide to their new seats</td><td>200ms</td></tr>
+      <tr><td>remove</td><td>height collapse + fade; undo replays it backwards</td><td>200ms</td></tr>
+      <tr><td>toast</td><td>rise + fade, with a bar draining the undo window</td><td>8s</td></tr>
+      <tr><td>caption</td><td>cross-fade, killing the <code>min-height</code> band-aid</td><td>120ms</td></tr>
+      <tr><td>lock pick</td><td>rows breathe while they're targets</td><td>1.7s loop</td></tr>
+      <tr><td>first paint</td><td>sections stagger in 45ms apart</td><td>340ms</td></tr>
+    </table>
+    <p style="margin-top:12px">All of it sits behind <code>prefers-reduced-motion</code>
+      — flip the toggle up top to confirm the panel stays fully usable at zero
+      motion (it degrades to <b>current</b>'s snap, which is the correct floor).</p>
+
+    <h3>new tokens this needs</h3>
+    <div class="swatch-line">
+      <i style="background:#c0caf5" title="--ink-bright"></i>
+      <i style="background:#8fa7dd" title="--accent-cool"></i>
+      <i style="background:#cf9a66" title="--accent-warm"></i>
+      <i style="background:#7a86b8" title="--accent-quiet"></i>
+      <i style="background:#a5b3e8" title="--accent-quiet-hi"></i>
+    </div>
+    <p>Plus a duration/easing set — <code>--d-fast 120ms</code>,
+      <code>--d-base 200ms</code>, <code>--d-slow 340ms</code>,
+      <code>--ease cubic-bezier(.2,.8,.3,1)</code> — so timing is tunable in
+      <code>tokens.css</code> rather than sprinkled through component files. B also
+      needs three live <code>--pal-*</code> vars written from the candidate list.</p>
+
+    <h3>open questions</h3>
+    <ul>
+      <li>B is 720px tall by design (fixed footer). On short viewports the body
+        scrolls — acceptable, or should the footer un-pin below some height?</li>
+      <li>The palette-tinted chrome is the boldest move here. It's also the one
+        that could fight a garish palette. Want a strength cap, or is a whisper
+        at 13% safe enough?</li>
+      <li>Does the <b>spine</b> read as meaningful, or as decoration? It's the
+        one element I'm least sure earns its place.</li>
+      <li><b>Implementation snag found while building this:</b> B's section-header
+        menus live inside the scrolling body, and <code>overflow-y:auto</code>
+        clips them. They fit today, but in React these should portal out (or the
+        body needs <code>overflow:visible</code> with the scroll moved to a
+        wrapper). Worth deciding before it's built.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+/* =================================================================
+   ICONS — lucide geometry, inlined (no external requests)
+   ================================================================= */
+const ICON = {
+  lock:      '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  unlock:    '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+  moon:      '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  sun:       '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>',
+  copy:      '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  x:         '<path d="M18 6 6 18M6 6l12 12"/>',
+  chevDown:  '<path d="m6 9 6 6 6-6"/>',
+  chevLeft:  '<path d="m15 18-6-6 6-6"/>',
+  chevRight: '<path d="m9 18 6-6-6-6"/>',
+  rotate:    '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+  dice:      '<rect width="12" height="12" x="2" y="10" rx="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01M10 14h.01"/>',
+  grip:      '<circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/>',
+  check:     '<path d="M20 6 9 17l-5-5"/>',
+  alert:     '<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/>',
+  image:     '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
+  palette:   '<circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2a10 10 0 0 0 0 20 2.5 2.5 0 0 0 1.8-4.2A2.5 2.5 0 0 1 15.5 14H18a4 4 0 0 0 4-4 10 10 0 0 0-10-8Z"/>',
+  eraser:    '<path d="m7 21-4.3-4.3a1 1 0 0 1 0-1.4L15 3a1 1 0 0 1 1.4 0L21 7.6a1 1 0 0 1 0 1.4L12 18"/><path d="M22 21H7"/>',
+  layers:    '<path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',
+};
+const icon = (name, size = 14, sw = 1.7) =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${ICON[name]}</svg>`;
+
+/* =================================================================
+   STATE — one store per panel, so the three columns are independent
+   ================================================================= */
+const REPERTOIRE = [
+  { accent: '#e0629a', danger: '#e5484d', warning: '#f5a623' },
+  { accent: '#c964d8', danger: '#f05252', warning: '#e8b923' },
+  { accent: '#5ec8d8', danger: '#dc4b52', warning: '#f0994a' },
+  { accent: '#f0776a', danger: '#e33b48', warning: '#d9b038' },
+  { accent: '#9d7ff0', danger: '#ef4f5f', warning: '#f2a93b' },
+];
+const PRESETS = [
+  { name: 'Coastal', colors: ['#e63946', '#f1faee', '#457b9d'] },
+  { name: 'Orchard', colors: ['#606c38', '#dda15e', '#bc6c25'] },
+  { name: 'Graphite', colors: ['#22223b', '#9a8c98', '#c9ada7'] },
+];
+
+const newState = () => ({
+  rows: [
+    { hex: '#7832c3', role: 'primary', pinned: true },
+    { hex: '#79f77a', role: 'success', pinned: false },
+    { hex: '#316264', role: 'neutral', pinned: false },
+  ],
+  seed: 0,
+  fidelity: 0.5,
+  locked: false, baseIdx: null, picking: false,
+  menu: null,          // 'startover' | 'presets' | 'export' | null
+  toast: null,         // { text, undo }
+  copied: false,
+  warn: false,
+});
+
+const CAPTION = (f, locked) =>
+  locked ? 'mono — varying lightness only · avg shift ΔL 0.06'
+  : f >= 0.99 ? 'colors kept exactly · 1 clash reported'
+  : f <= 0.15 ? 'reworking your colors · avg shift ΔE 0.19'
+  : f <= 0.35 ? 'reworking your colors · avg shift ΔE 0.11'
+  : f >= 0.8  ? 'your colors already sit well — nothing to tune'
+  : 'gently tuning your colors · avg shift ΔE 0.04';
+
+/* motion helpers — respect per-panel motion:off and the global slow-mo */
+let SPEED = 1;
+const motionOff = (root) => root.dataset.motion === 'off' || document.body.classList.contains('no-motion');
+const dur = (root, ms) => (motionOff(root) ? 0 : ms * SPEED);
+
+/* =================================================================
+   RENDER
+   ================================================================= */
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  const cl = (v) => Math.max(0, Math.min(255, v));
+  const r = cl((n >> 16) + amt), g = cl(((n >> 8) & 255) + amt), b = cl((n & 255) + amt);
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+function inventedFor(s) {
+  const r = REPERTOIRE[s.seed % REPERTOIRE.length];
+  return [['accent', r.accent], ['danger', r.danger], ['warning', r.warning]];
+}
+
+function rowsHTML(s, root) {
+  return s.rows.map((r, i) => {
+    const isBase = s.locked && s.baseIdx === i;
+    const cls = [isBase ? 'is-base' : '', s.picking ? 'pickable' : ''].join(' ');
+    const badge = isBase
+      ? `<span class="badge" style="background:${r.hex};color:${r.hex === '#79f77a' ? 'rgba(0,0,0,.78)' : 'rgba(255,255,255,.92)'}">base</span>`
+      : `<button class="badge b-${r.role}" data-act="badge" data-i="${i}">${r.role} ${icon('chevDown', 9, 2.4)}</button>`;
+    return `
+      <li class="${cls}" data-i="${i}" draggable="true" style="--row-color:${r.hex}">
+        <span class="grip" data-act="grip">${icon('grip', 14)}</span>
+        <span class="sw" style="background:${r.hex}"></span>
+        <div class="meta"><code>${r.hex}</code></div>
+        ${badge}
+        <button class="row-x" data-act="remove" data-i="${i}" title="remove">${icon('x', 12, 2.2)}</button>
+      </li>`;
+  }).join('');
+}
+
+function inventedHTML(s) {
+  return `<span class="invented-cap">invented</span>` + inventedFor(s).map(([name, hex]) =>
+    `<button class="invented-item" data-inv="${name}" title="keep as your color">
+       <i class="invented-sw" style="background:${hex}"></i>${name}
+     </button>`).join('');
+}
+
+function addRowHTML() {
+  return `<div class="add-row">
+      <label class="hexfield">
+        <span class="sw" style="background:#4a4f5c"></span>
+        <input placeholder="add a color — #e63946, oklch(…)" />
+      </label>
+      <button data-act="add">Add</button>
+    </div>`;
+}
+
+function startoverMenuHTML(s) {
+  const root = `
+    <div class="menu-page" data-page="root">
+      <button class="item" data-act="noop">${icon('image', 13)} from an image…</button>
+      <button class="item" data-act="presets">${icon('palette', 13)} from a preset ${icon('chevRight', 12)}</button>
+      <button class="item" data-act="noop">${icon('eraser', 13)} start empty</button>
+      <div class="menu-cap">each of these replaces your current 3 colors — undo is one click</div>
+    </div>`;
+  const presets = `
+    <div class="menu-page" data-page="presets">
+      <button class="item" data-act="back">${icon('chevLeft', 12)} back</button>
+      ${PRESETS.map(p => `<button class="item" data-act="preset" data-name="${p.name}">
+        <span class="preset-dots">${p.colors.map(c => `<i style="background:${c}"></i>`).join('')}</span>${p.name}
+      </button>`).join('')}
+    </div>`;
+  return `<div class="menu" data-anim data-menu="startover" style="--origin:top left">
+      <div class="menu-viewport">${root}${presets}</div>
+    </div>`;
+}
+
+function exportMenuHTML() {
+  return `<div class="menu" data-anim data-menu="export" style="--origin:bottom right;bottom:calc(100% + 4px);right:0;width:190px">
+      <button class="item sel" data-act="fmt">${icon('check', 12)} CSS variables</button>
+      <button class="item" data-act="fmt" style="padding-left:30px">Tailwind v4 CSS</button>
+      <button class="item" data-act="fmt" style="padding-left:30px">Design tokens JSON</button>
+    </div>`;
+}
+
+function statusHTML(s) {
+  return s.warn
+    ? `<button class="status-chip warn" data-act="status">${icon('alert', 13)} 2 issues · 1 clash, 1 low-contrast pair<span class="status-more">report ›</span></button>`
+    : `<button class="status-chip" data-act="status">${icon('check', 13)} all 40 checks pass<span class="status-more">report ›</span></button>`;
+}
+
+function toastHTML(s) {
+  if (!s.toast) return '';
+  return `<div class="toast-dock"><div class="toast">
+      <span class="toast-text">${s.toast.text}</span>
+      ${s.toast.undo ? '<button class="toast-undo" data-act="undo">undo</button>' : ''}
+      <span class="toast-drain"></span>
+    </div></div>`;
+}
+
+/* ---------- CURRENT: reproduces the shipped panel, glyphs and all ---------- */
+function renderCurrent(s) {
+  return `
+    <h1>themesmith</h1>
+    <p class="tagline">any colors in, working theme out</p>
+    <div class="stagger">
+      <section>
+        <div class="row" style="margin-bottom:6px">
+          <button style="width:44px;padding:0 4px;background:var(--surface-active);border-color:var(--line-active)">● A</button>
+          <select class="grow" style="font-size:11px"><option>App dashboard</option><option>Brand board</option></select>
+          <button class="icon-btn">${icon('moon', 13)}</button>
+          <button class="icon-btn"><span class="glyph">⧉</span></button>
+        </div>
+      </section>
+      <section>
+        <div class="row" style="position:relative">
+          <button class="ghost" data-act="startover" style="font-size:11px;color:var(--ink-muted)">↻ start over</button>
+          <span style="margin-left:auto"></span>
+          ${s.seed > 0 ? `<button class="ghost" data-act="riffback" style="font-size:11px;color:var(--ink-muted)">‹</button>
+            <span style="font-size:10px;color:var(--ink-faint)">riff ${s.seed}</span>` : ''}
+          <button class="ghost" data-act="riff" style="font-size:11px;color:var(--ink-muted)">⚄ riff</button>
+          ${s.menu === 'startover' || s.menu === 'presets' ? startoverMenuHTML(s).replace('style="--origin:top left"', 'style="top:calc(100% + 4px);left:0;width:230px"') : ''}
+        </div>
+      </section>
+      <hr class="divider" />
+      <section>
+        <div class="strip-actions">
+          <button class="lock-btn${s.locked ? ' locked' : ''}${s.picking ? ' picking' : ''}" data-act="lock"
+            style="display:inline-flex;align-items:center;gap:7px">
+            ${icon(s.locked ? 'lock' : 'unlock', 13)}
+            ${s.locked && s.baseIdx != null ? `<span class="lock-sw" style="width:15px;height:15px;border-radius:4px;border:1px solid rgba(255,255,255,.25);background:${s.rows[s.baseIdx].hex}"></span><code style="font-size:11px">${s.rows[s.baseIdx].hex}</code>` : ''}
+          </button>
+        </div>
+        ${s.picking ? '<div style="font-size:10px;color:var(--accent);margin:-2px 0 6px 2px">click a color to lock its hue · esc to cancel</div>' : ''}
+        <ul class="strip" data-strip>${rowsHTML(s)}</ul>
+        <div class="invented-row" data-invented>${inventedHTML(s)}</div>
+        ${addRowHTML()}
+      </section>
+      <hr class="divider" />
+      <section>
+        <div class="fid-labels">
+          <span class="fid-left">smith's taste</span>
+          <span class="chip">${s.fidelity.toFixed(2)}</span>
+          <span class="fid-right">raw colors</span>
+        </div>
+        <input type="range" class="fid-slider" data-fid min="0" max="1" step="0.05" value="${s.fidelity}" />
+        <div class="fid-caption" data-cap><span>${CAPTION(s.fidelity, s.locked)}</span></div>
+        ${statusHTML(s)}
+      </section>
+      <hr class="divider" />
+      <section>
+        <div class="export-row">
+          <button class="export-main${s.copied ? ' copied' : ''}" data-act="copy">
+            <span class="glyph">⧉</span> ${s.copied ? 'CSS variables copied ✓' : 'Copy CSS variables'}
+          </button>
+          <button class="icon-btn" data-act="exportmenu"><span class="glyph-lg">▾</span></button>
+          ${s.menu === 'export' ? exportMenuHTML() : ''}
+        </div>
+      </section>
+      ${toastHTML(s)}
+    </div>`;
+}
+
+/* ---------- A: conservative ---------- */
+function renderA(s) {
+  return `
+    <h1>themesmith</h1>
+    <p class="tagline">any colors in, working theme out</p>
+    <div class="stagger">
+      <section>
+        <div class="row" style="margin-bottom:6px">
+          <button style="width:44px;padding:0 4px;background:var(--surface-active);border-color:var(--line-active)">● A</button>
+          <select class="grow" style="font-size:11px"><option>App dashboard</option><option>Brand board</option></select>
+          <button class="icon-btn" title="switch to dark">${icon('moon', 14)}</button>
+          <button class="icon-btn" title="duplicate">${icon('copy', 14)}</button>
+        </div>
+      </section>
+      <section>
+        <div class="row" style="position:relative">
+          <button class="startover-btn" data-act="startover">${icon('rotate', 13)} start over</button>
+          <span class="riff-cluster">
+            ${s.seed > 0 ? `<button class="icon-btn" data-act="riffback" style="width:24px;height:24px" title="back one riff">${icon('chevLeft', 13)}</button>
+              <span class="riff-chip">riff ${s.seed}</span>` : ''}
+            <button class="riff-btn" data-act="riff" title="re-imagine the invented colors">
+              <span data-riffdie style="display:inline-flex">${icon('dice', 13)}</span> riff
+            </button>
+          </span>
+          ${s.menu === 'startover' || s.menu === 'presets' ? startoverMenuHTML(s).replace('style="--origin:top left"', 'style="--origin:top left;top:calc(100% + 4px);left:0;width:236px"') : ''}
+        </div>
+      </section>
+      <hr class="divider" />
+      <section>
+        <div class="section-lead">
+          <button class="lock-btn${s.locked ? ' locked' : ''}${s.picking ? ' picking' : ''}" data-act="lock"
+            title="lock the theme to one color's hue">
+            ${icon(s.locked ? 'lock' : 'unlock', 14)}
+            ${s.locked && s.baseIdx != null
+              ? `<span class="lock-sw" style="background:${s.rows[s.baseIdx].hex}"></span><code style="font-size:11px">${s.rows[s.baseIdx].hex}</code>`
+              : '<span style="font-size:11px;color:var(--ink-muted)">mono</span>'}
+          </button>
+          <span class="spacer"></span>
+          <button class="ghost" data-act="autoassign" style="display:inline-flex;align-items:center;gap:5px">${icon('rotate', 11, 2)} auto-assign colors</button>
+        </div>
+        ${s.picking ? '<div style="font-size:10px;color:var(--accent);margin:-2px 0 6px 2px">click a color to lock its hue · esc to cancel</div>' : ''}
+        <ul class="strip" data-strip>${rowsHTML(s)}</ul>
+        <div class="invented-row" data-invented>${inventedHTML(s)}</div>
+        ${addRowHTML()}
+      </section>
+      <hr class="divider" />
+      <section>
+        <div class="fid-labels">
+          <span class="fid-left">smith's taste</span>
+          <span class="chip">${s.fidelity.toFixed(2)}</span>
+          <span class="fid-right">raw colors</span>
+        </div>
+        <input type="range" class="fid-slider" data-fid min="0" max="1" step="0.05" value="${s.fidelity}" />
+        <div class="fid-caption" data-cap><span>${CAPTION(s.fidelity, s.locked)}</span></div>
+        ${statusHTML(s)}
+      </section>
+      <hr class="divider" />
+      <section>
+        <div class="export-row">
+          <button class="export-main${s.copied ? ' copied' : ''}" data-act="copy">
+            ${icon('copy', 14)} ${s.copied ? 'CSS variables copied ✓' : 'Copy CSS variables'}
+          </button>
+          <button class="icon-btn" data-act="exportmenu">${icon('chevDown', 14)}</button>
+          ${s.menu === 'export' ? exportMenuHTML() : ''}
+        </div>
+      </section>
+      ${toastHTML(s)}
+    </div>`;
+}
+
+/* ---------- B: restructured ---------- */
+function renderB(s) {
+  const spine = `linear-gradient(180deg, ${s.rows.map(r => r.hex).join(', ')})`;
+  return `
+    <div class="b-head">
+      <div class="b-wordmark">themesmith</div>
+      <p class="b-tagline">any colors in, working theme out</p>
+    </div>
+    <div class="b-body" data-scroll>
+      <div class="stagger">
+        <div class="sec">
+          <div class="sec-head">
+            <span class="sec-label">canvas</span>
+            <span class="sec-rule"></span>
+            <span class="sec-act"><button class="mini" title="add a second frame">${icon('layers', 12)} split</button></span>
+          </div>
+          <div class="frame-card">
+            <span class="frame-dot">A</span>
+            <select><option>App dashboard</option><option>Brand board</option></select>
+            <button class="icon-btn" title="switch to dark">${icon('moon', 13)}</button>
+            <button class="icon-btn" title="duplicate">${icon('copy', 13)}</button>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head">
+            <span class="sec-label">colors</span>
+            <span class="sec-rule"></span>
+            <span class="sec-act" style="position:relative">
+              <button class="mini${s.locked ? ' on' : ''}${s.picking ? ' picking' : ''}" data-act="lock" title="lock the theme to one hue">
+                ${icon(s.locked ? 'lock' : 'unlock', 12)}
+                ${s.locked && s.baseIdx != null ? `<span class="mini-sw" style="background:${s.rows[s.baseIdx].hex}"></span>` : 'mono'}
+              </button>
+              <button class="mini" data-act="startover" title="start over">${icon('rotate', 12)}</button>
+              <button class="mini" data-act="riff" title="re-imagine the invented colors">
+                <span data-riffdie style="display:inline-flex">${icon('dice', 12)}</span>${s.seed > 0 ? ` ${s.seed}` : ''}
+              </button>
+              ${s.menu === 'startover' || s.menu === 'presets' ? startoverMenuHTML(s).replace('style="--origin:top left"', 'style="--origin:top right;top:calc(100% + 6px);right:0;width:236px"') : ''}
+            </span>
+          </div>
+          ${s.picking ? '<div style="font-size:10px;color:var(--accent);margin:-2px 0 7px 2px">click a color to lock its hue · esc to cancel</div>' : ''}
+          <div class="palette-obj">
+            <span class="spine" style="--spine:${spine}"></span>
+            <ul class="strip" data-strip>${rowsHTML(s)}</ul>
+            <hr class="obj-rule" />
+            <div class="invented-row" data-invented>${inventedHTML(s)}</div>
+            ${addRowHTML()}
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head">
+            <span class="sec-label">tuning</span>
+            <span class="sec-rule"></span>
+          </div>
+          <div class="dial">
+            <div class="dial-ends">
+              <span class="fid-left">smith's taste</span>
+              <span class="fid-right">raw colors</span>
+            </div>
+            <div class="dial-track-wrap">
+              <span class="dial-bubble" data-bubble style="left:${s.fidelity * 100}%">${s.fidelity.toFixed(2)}</span>
+              <input type="range" class="dial-slider" data-fid min="0" max="1" step="0.05" value="${s.fidelity}" />
+              <span class="dial-ticks">${'<i></i>'.repeat(11)}</span>
+            </div>
+            <div class="dial-caption" data-cap><span>${CAPTION(s.fidelity, s.locked)}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="b-foot">
+      <div class="foot-stack">
+        ${statusHTML(s)}
+        <div class="export-row">
+          <button class="export-main${s.copied ? ' copied' : ''}" data-act="copy">
+            ${icon('copy', 14)} ${s.copied ? 'CSS variables copied ✓' : 'Copy CSS variables'}
+          </button>
+          <button class="icon-btn" data-act="exportmenu">${icon('chevDown', 14)}</button>
+          ${s.menu === 'export' ? exportMenuHTML() : ''}
+        </div>
+      </div>
+      ${toastHTML(s)}
+    </div>`;
+}
+
+/* =================================================================
+   PANEL CONTROLLER
+   ================================================================= */
+class Panel {
+  constructor(root, renderFn) {
+    this.root = root;
+    this.renderFn = renderFn;
+    this.s = newState();
+    this.pending = null;      // effects to run after the next paint
+    this.toastTimer = null;
+    this.render();
+    this.bind();
+  }
+
+  paletteVars() {
+    const [p, a, n] = this.s.rows;
+    this.root.style.setProperty('--pal-primary', p ? p.hex : '#7aa2f7');
+    this.root.style.setProperty('--pal-accent', inventedFor(this.s)[0][1]);
+    this.root.style.setProperty('--pal-neutral', n ? n.hex : '#316264');
+  }
+
+  render() {
+    // a base index can never outlive the row it names
+    if (this.s.baseIdx != null && !this.s.rows[this.s.baseIdx]) {
+      this.s.baseIdx = null; this.s.locked = false;
+    }
+    // FLIP: measure row positions before the DOM is replaced
+    const before = this.rowRects();
+    this.root.innerHTML = this.renderFn(this.s);
+    this.paletteVars();
+    this.flip(before);
+    this.runPending();
+    this.bindScroll();
+  }
+
+  rowRects() {
+    const m = new Map();
+    this.root.querySelectorAll('[data-strip] li').forEach((li) => {
+      m.set(li.dataset.i, li.getBoundingClientRect().top);
+    });
+    return m;
+  }
+
+  /* rows glide to their new seats instead of teleporting */
+  flip(before) {
+    const d = dur(this.root, 200);
+    if (!d || !before.size) return;
+    this.root.querySelectorAll('[data-strip] li').forEach((li) => {
+      const prev = before.get(li.dataset.i);
+      if (prev == null) return;
+      const delta = prev - li.getBoundingClientRect().top;
+      if (!delta) return;
+      li.animate(
+        [{ transform: `translateY(${delta}px)` }, { transform: 'none' }],
+        { duration: d, easing: 'cubic-bezier(.2,.8,.3,1)' }
+      );
+    });
+  }
+
+  runPending() {
+    if (!this.pending) return;
+    const fx = this.pending;
+    this.pending = null;
+    fx.call(this);
+  }
+
+  bindScroll() {
+    const body = this.root.querySelector('[data-scroll]');
+    if (!body) return;
+    body.addEventListener('scroll', () => {
+      this.root.classList.toggle('scrolled', body.scrollTop > 4);
+    });
+  }
+
+  toast(text, undo) {
+    clearTimeout(this.toastTimer);
+    this.s.toast = { text, undo };
+    this.pending = function () {
+      const drain = this.root.querySelector('.toast-drain');
+      const d = dur(this.root, 8000);
+      if (drain && d) {
+        drain.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }],
+          { duration: d, easing: 'linear', fill: 'forwards' });
+      }
+    };
+    this.toastTimer = setTimeout(() => this.dismissToast(), motionOff(this.root) ? 8000 : 8000 * SPEED);
+  }
+
+  dismissToast() {
+    const el = this.root.querySelector('.toast');
+    const d = dur(this.root, 120);
+    if (el && d) {
+      el.classList.add('leaving');
+      setTimeout(() => { this.s.toast = null; this.render(); }, d);
+    } else {
+      this.s.toast = null; this.render();
+    }
+  }
+
+  /* the dial caption cross-fades rather than snapping mid-drag */
+  swapCaption() {
+    const cap = this.root.querySelector('[data-cap]');
+    if (!cap) return;
+    const text = CAPTION(this.s.fidelity, this.s.locked);
+    const span = cap.querySelector('span');
+    if (span.textContent === text) return;
+    const d = dur(this.root, 120);
+    if (!d) { span.textContent = text; return; }
+    cap.classList.add('swapping');
+    setTimeout(() => { span.textContent = text; cap.classList.remove('swapping'); }, d);
+  }
+
+  /* RIFF — the one animation that carries real information */
+  riff(delta) {
+    this.s.seed = Math.max(0, this.s.seed + delta);
+    this.pending = function () {
+      const die = this.root.querySelector('[data-riffdie]');
+      const d = dur(this.root, 340);
+      if (die && d) {
+        die.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(180deg)' }],
+          { duration: d, easing: 'cubic-bezier(.34,1.4,.64,1)' });
+      }
+      // stagger the chips so you can SEE that only invented material moved
+      this.root.querySelectorAll('.invented-item').forEach((el, k) => {
+        if (motionOff(this.root)) return;
+        el.style.animationDelay = `${k * 55 * SPEED}ms`;
+        el.classList.add('riffing');
+      });
+    };
+    this.render();
+  }
+
+  /* removing a row is a seat transfer — say so, and show it */
+  remove(i) {
+    const gone = this.s.rows[i];
+    const prev = this.s.rows.slice();
+    const li = this.root.querySelector(`[data-strip] li[data-i="${i}"]`);
+    const d = dur(this.root, 200);
+    const commit = () => {
+      this.s.rows.splice(i, 1);
+      // the next row inherits the vacated seat
+      if (this.s.rows[i]) {
+        const heir = this.s.rows[i];
+        const inherited = gone.role;
+        this.pending = function () {
+          const el = this.root.querySelector(`[data-strip] li[data-i="${i}"]`);
+          if (el && !motionOff(this.root)) el.classList.add('seat-gained');
+        };
+        heir.role = inherited;
+        this.toast(`${heir.hex} took ${inherited} from ${gone.hex}`, prev);
+      } else {
+        this.toast(`removed ${gone.hex}`, prev);
+      }
+      // the mono base is an INDEX — keep it pointing at the same color
+      // (this is App.tsx's remapAfterRemove; forget it and the panel throws)
+      this.s.baseIdx = this.s.baseIdx == null || this.s.baseIdx === i
+        ? null
+        : this.s.baseIdx > i ? this.s.baseIdx - 1 : this.s.baseIdx;
+      if (this.s.baseIdx == null) this.s.locked = false;
+      this.render();
+    };
+    if (li && d) {
+      li.classList.add('seat-lost');
+      li.animate(
+        [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(-10px)' }],
+        { duration: d, easing: 'cubic-bezier(.2,.8,.3,1)', fill: 'forwards' }
+      ).finished.then(commit);
+    } else commit();
+  }
+
+  bind() {
+    const R = this.root;
+
+    R.addEventListener('click', (e) => {
+      const t = e.target.closest('[data-act], [data-i], [data-inv]');
+      const act = t && t.dataset.act;
+
+      // pick mode swallows every click in the strip
+      if (this.s.picking) {
+        const li = e.target.closest('[data-strip] li');
+        if (li) {
+          e.preventDefault(); e.stopPropagation();
+          this.s.baseIdx = +li.dataset.i; this.s.locked = true; this.s.picking = false;
+          this.render(); this.swapCaption();
+          return;
+        }
+      }
+
+      switch (act) {
+        case 'riff':      this.riff(1); break;
+        case 'riffback':  this.riff(-1); break;
+        case 'remove':    this.remove(+t.dataset.i); break;
+        case 'lock':
+          if (this.s.picking) this.s.picking = false;
+          else if (this.s.locked) { this.s.locked = false; this.s.baseIdx = null; }
+          else this.s.picking = true;
+          this.render(); this.swapCaption();
+          break;
+        case 'startover':
+          this.s.menu = this.s.menu ? null : 'startover';
+          this.render(); break;
+        case 'presets':   this.slideMenu('presets'); break;
+        case 'back':      this.slideMenu('root'); break;
+        case 'preset': {
+          const p = PRESETS.find((x) => x.name === t.dataset.name);
+          const prev = this.s.rows.slice();
+          this.s.rows = p.colors.map((hex, k) => ({ hex, role: ['primary', 'neutral', 'accent'][k], pinned: false }));
+          this.s.menu = null; this.s.baseIdx = null; this.s.locked = false; this.s.seed = 0;
+          this.render();
+          this.toast(`started over with ${p.name}`, prev);
+          this.render();
+          break;
+        }
+        case 'exportmenu': this.s.menu = this.s.menu === 'export' ? null : 'export'; this.render(); break;
+        case 'fmt':        this.s.menu = null; this.copy(); break;
+        case 'copy':       this.copy(); break;
+        case 'status':     this.s.warn = !this.s.warn; this.render(); break;
+        case 'autoassign': this.s.rows.forEach((r) => (r.pinned = false)); this.render(); break;
+        case 'undo':
+          if (this.s.toast && this.s.toast.undo) {
+            this.s.rows = this.s.toast.undo;
+            clearTimeout(this.toastTimer);
+            this.s.toast = null;
+            this.render();
+          }
+          break;
+        case 'add': {
+          const input = R.querySelector('.add-row input');
+          const hex = (input.value || '').trim() || '#e0629a';
+          this.s.rows.push({ hex: /^#[0-9a-f]{6}$/i.test(hex) ? hex : '#e0629a', role: 'chart', pinned: false });
+          input.value = '';
+          this.render();
+          break;
+        }
+        case 'noop': this.s.menu = null; this.render(); break;
+      }
+
+      if (t && t.dataset.inv != null) {
+        // "keep as your color" — invented material becomes a real candidate
+        const [name, hex] = inventedFor(this.s).find(([n]) => n === t.dataset.inv);
+        this.s.rows.push({ hex, role: name === 'accent' ? 'accent' : 'chart', pinned: true });
+        this.render();
+        this.toast(`kept ${hex} as your ${name}`, null);
+        this.render();
+      }
+
+      // dismiss menus on outside click
+      if (!act && this.s.menu && !e.target.closest('.menu')) {
+        this.s.menu = null; this.render();
+      }
+    });
+
+    R.addEventListener('input', (e) => {
+      if (!e.target.matches('[data-fid]')) return;
+      this.s.fidelity = parseFloat(e.target.value);
+      const chip = R.querySelector('.chip');
+      if (chip) chip.textContent = this.s.fidelity.toFixed(2);
+      const bubble = R.querySelector('[data-bubble]');
+      if (bubble) {
+        bubble.style.left = `${this.s.fidelity * 100}%`;
+        bubble.textContent = this.s.fidelity.toFixed(2);
+      }
+      this.swapCaption();
+    });
+
+    // drag-reorder → FLIP on drop
+    let dragI = null;
+    R.addEventListener('dragstart', (e) => {
+      const li = e.target.closest('[data-strip] li');
+      if (!li) return;
+      dragI = +li.dataset.i;
+      li.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(dragI));
+    });
+    R.addEventListener('dragover', (e) => {
+      if (dragI == null) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    R.addEventListener('drop', (e) => {
+      const li = e.target.closest('[data-strip] li');
+      if (li == null || dragI == null) return;
+      e.preventDefault();
+      const to = +li.dataset.i;
+      if (to !== dragI) {
+        const [moved] = this.s.rows.splice(dragI, 1);
+        this.s.rows.splice(to, 0, moved);
+        this.render();               // flip() animates the glide
+      }
+      dragI = null;
+    });
+    R.addEventListener('dragend', () => {
+      dragI = null;
+      R.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging'));
+    });
+  }
+
+  /* the two-page start-over menu actually navigates */
+  slideMenu(to) {
+    const menu = this.root.querySelector('[data-menu="startover"]');
+    if (!menu) return;
+    const root = menu.querySelector('[data-page="root"]');
+    const presets = menu.querySelector('[data-page="presets"]');
+    const d = dur(this.root, 200);
+    const vp = menu.querySelector('.menu-viewport');
+    if (d) vp.style.height = `${vp.getBoundingClientRect().height}px`;
+
+    if (to === 'presets') {
+      root.classList.add('is-out-left');
+      presets.classList.remove('is-out-right');
+    } else {
+      presets.classList.add('is-out-right');
+      root.classList.remove('is-out-left');
+    }
+    this.s.menu = to === 'presets' ? 'presets' : 'startover';
+    if (d) {
+      const target = to === 'presets' ? presets : root;
+      requestAnimationFrame(() => {
+        vp.style.transition = `height ${d}ms cubic-bezier(.2,.8,.3,1)`;
+        vp.style.height = `${target.scrollHeight}px`;
+      });
+    }
+  }
+
+  copy() {
+    this.s.copied = true;
+    this.render();
+    setTimeout(() => { this.s.copied = false; this.render(); }, 1400);
+  }
+
+  replay() {
+    const els = [...this.root.querySelectorAll('.stagger > *')];
+    els.forEach((el, k) => {
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = '';
+      el.style.animationDelay = `${k * 45 * SPEED}ms`;
+    });
+  }
+}
+
+/* the start-over menu's initial page state */
+const style = document.createElement('style');
+style.textContent = `.menu-page[data-page="presets"] { transform: translateX(14px); opacity: 0; position: absolute; inset: 0; pointer-events: none; }
+  .menu-page[data-page="presets"]:not(.is-out-right) { transform: none; opacity: 1; position: relative; inset: auto; pointer-events: auto; }
+  .menu-page[data-page="root"].is-out-left { position: absolute; }`;
+document.head.appendChild(style);
+
+/* =================================================================
+   BOOT
+   ================================================================= */
+const panels = [
+  new Panel(document.getElementById('pCurrent'), renderCurrent),
+  new Panel(document.getElementById('pA'), renderA),
+  new Panel(document.getElementById('pB'), renderB),
+];
+
+// stagger delays on first paint
+panels.forEach((p) => p.replay());
+
+document.getElementById('slowmo').addEventListener('click', (e) => {
+  const on = e.currentTarget.getAttribute('aria-pressed') === 'true';
+  e.currentTarget.setAttribute('aria-pressed', String(!on));
+  SPEED = on ? 1 : 4;
+  document.documentElement.style.setProperty('--t', SPEED);
+});
+document.getElementById('nomotion').addEventListener('click', (e) => {
+  const on = e.currentTarget.getAttribute('aria-pressed') === 'true';
+  e.currentTarget.setAttribute('aria-pressed', String(!on));
+  document.body.classList.toggle('no-motion', !on);
+});
+document.getElementById('replay').addEventListener('click', () => {
+  panels.forEach((p) => { p.render(); p.replay(); });
+});
+
+// esc cancels pick mode everywhere, like the real app
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  panels.forEach((p) => {
+    if (p.s.picking || p.s.menu) { p.s.picking = false; p.s.menu = null; p.render(); }
+  });
+});
+</script>
+</body>
+</html>

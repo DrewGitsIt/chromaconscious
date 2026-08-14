@@ -27,9 +27,21 @@ const computed = (page: Page, selector: string, prop: string) =>
     .first()
     .evaluate((el, p) => getComputedStyle(el).getPropertyValue(p), prop)
 
+/**
+ * The project table moved off the dashboard: its activity tab now carries an
+ * event feed, and the table (with its links) lives on the Projects page. The
+ * link treatment is what these tests are about, so go find it rather than
+ * asserting against whatever happens to be on the landing view.
+ */
+const gotoProjects = async (page: Page) => {
+  await page.locator('.preview-root .nav-item', { hasText: 'Projects' }).click()
+  await expect(page.locator('.preview-root .project-link').first()).toBeVisible()
+}
+
 test.describe('accent jobs in the app dashboard', () => {
   test('project links render in the solved accent link color', async ({ page }) => {
     await bootPastel(page)
+    await gotoProjects(page)
     const link = await previewVar(page, '--link')
     expect(link).toMatch(/^#[0-9a-f]{6}$/)
     const anchor = page.locator('.preview-root .project-link').first()
@@ -84,14 +96,16 @@ test.describe('accent jobs in the app dashboard', () => {
   test('dark mode re-solves the accent jobs against the dark surfaces', async ({ page }) => {
     await bootPastel(page)
     const lightLink = await previewVar(page, '--link')
-    await page.getByRole('button', { name: 'switch A to dark' }).click()
+    await page.getByRole('button', { name: 'switch frame A to dark' }).click()
     await expect(page.locator('.preview-root.dark')).toBeVisible()
     const darkLink = await previewVar(page, '--link')
     const darkStrong = await previewVar(page, '--accent-strong')
     expect(darkLink).not.toBe(lightLink)
-    expect(await computed(page, '.preview-root .project-link', 'color')).toBe(hexToRgb(darkLink))
+    // the tab indicator lives on the dashboard, the project links a page over
     expect(await computed(page, '.preview-root .tab-accent-indicator', 'background-color')).toBe(
       hexToRgb(darkStrong),
     )
+    await gotoProjects(page)
+    expect(await computed(page, '.preview-root .project-link', 'color')).toBe(hexToRgb(darkLink))
   })
 })

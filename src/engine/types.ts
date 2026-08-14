@@ -15,9 +15,75 @@ export interface ColorCandidate {
   share?: number
   /** User explicitly assigned this candidate to a role (or to the chart series). */
   pin?: Role | 'chart'
+  /**
+   * User parked this color: it is skipped by every seat and lands in
+   * `unusedCandidateIndexes`. Distinct from merely losing — unpinning alone
+   * can't free a seat, because the engine would re-cast the same color into
+   * the same seat on the next pass.
+   */
+  benched?: boolean
+  /**
+   * Set when the color was promoted from a seed the engine invented ("keep as
+   * your color"). Behaviorally identical to a user color — riff never moves
+   * either — but the board says "kept" rather than "yours".
+   */
+  origin?: 'invented'
   source: 'manual' | 'image'
   /** Original input string (hex etc.) for display/reporting. */
   raw: string
+}
+
+/**
+ * How hard the surface stack works to separate itself.
+ *
+ * `layered` is the zero point: it reproduces the ladder the engine has always
+ * emitted, byte for byte, so an existing theme is unchanged by this control
+ * existing. `flat` pays for separation with hairlines and almost no shadow;
+ * `lifted` pays with shadow and lets the surfaces themselves converge.
+ *
+ * Deliberately lightness-only. A `tint` sibling was designed and dropped: the
+ * neutral's chroma is already fidelity-controlled upstream (see ramp.ts), and
+ * two dials over one number is what made `weight` confusing enough to remove.
+ */
+export type Separation = 'flat' | 'layered' | 'lifted'
+
+export const SEPARATIONS: Separation[] = ['flat', 'layered', 'lifted']
+
+/**
+ * One shadow layer, kept STRUCTURED rather than pre-serialized. CSS wants
+ * `0 8px 20px -6px rgb(…)`; DTCG wants `{offsetY, blur, spread, color}` under
+ * `$type: 'shadow'`. Those two cannot be satisfied by one stored string, so
+ * the engine stores neither and each exporter renders what its format needs.
+ */
+export interface ShadowLayer {
+  offsetX: number
+  offsetY: number
+  blur: number
+  spread: number
+  /** Hex, tinted by the neutral's hue — a pure black shadow reads dirty. */
+  color: string
+  /** 0..1, applied to `color` at serialization time. */
+  alpha: number
+  /**
+   * Inset highlights are how DARK mode elevates: near-black has no luminance
+   * room below the page for a shadow to occupy, so a lit top edge does the
+   * work a drop shadow does in light mode.
+   */
+  inset?: boolean
+}
+
+/**
+ * The non-colour output of a mode. Held apart from `tokens` on purpose: every
+ * value in `tokens` is an opaque colour, and `locate.ts`, `buildReport` and
+ * the Tailwind bridge all rely on that. Putting a shadow — or a scrim, which
+ * carries alpha — in there would make each of those quietly wrong instead of
+ * loudly wrong.
+ */
+export interface ThemeEffects {
+  /** Low to high. Level 1 may be empty when `flat` pays with borders instead. */
+  elevation: { 1: ShadowLayer[]; 2: ShadowLayer[]; 3: ShadowLayer[] }
+  /** The wash behind a modal. Carries alpha, so it is not a token. */
+  scrim: { color: string; alpha: number }
 }
 
 export interface GenerateOptions {
@@ -40,6 +106,8 @@ export interface GenerateOptions {
    * Only synthesized role seeds vary — user-cast colors never move with it.
    */
   seed?: number
+  /** Surface separation. Defaults to `layered`, which is the historical output. */
+  separation?: Separation
 }
 
 /** Radix-style 12-step ramp. Index 0 = step 1 (app bg) ... index 11 = step 12 (high-contrast text). */
@@ -109,12 +177,14 @@ export interface ContrastReport {
 export type TokenAncestor = { kind: 'role'; role: Role } | { kind: 'chart'; slot: number }
 
 export interface ThemeMode {
-  /** shadcn-style token name -> hex color */
+  /** shadcn-style token name -> hex color. Opaque colours only — see ThemeEffects. */
   tokens: Record<string, string>
   ramps: Record<Role, Ramp>
   report: ContrastReport[]
   /** Per-token ancestry, parallel to `tokens` — every token is classified. */
   ancestry: Record<string, TokenAncestor | null>
+  /** Shadows and the scrim: derived from the neutral, but not colours. */
+  effects: ThemeEffects
 }
 
 /** Input to the palette judge: the six role seeds, plus context it scores in. */
@@ -157,6 +227,8 @@ export interface ThemeResult {
   fidelity: number
   /** Candidate index of the mono-lock base, or null when the lock is off. */
   monoBase: number | null
+  /** The surface separation this theme was built at. */
+  separation: Separation
   /** The riff seed this theme was generated with (0 = canonical cookbook). */
   seed: number
   /**

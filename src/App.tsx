@@ -1,28 +1,60 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Lock, LockOpen, Moon, Sun } from 'lucide-react'
-import type { ColorCandidate, Oklch, Role, ThemeResult } from './engine'
+import type { CSSProperties } from 'react'
 import {
-  assignRoles,
+  Ban,
+  Columns2,
+  Dices,
+  Image as ImageIcon,
+  Lock,
+  LockOpen,
+  Palette,
+  RotateCcw,
+  X,
+} from 'lucide-react'
+import type { ColorCandidate, Role, Separation, ThemeResult, TokenAncestor } from './engine'
+import {
   candidatesFromList,
   generateTheme,
-  jobsSummary,
   parseColor,
-  pinConsequence,
   ROLES,
   themeTailwind,
   themeTokensJson,
   toHex,
-  tokenAncestry,
-  whyLines,
 } from './engine'
+import type { BoardView, DragPayload } from './board'
+import {
+  benchCandidate,
+  deriveRole,
+  describePlacement,
+  dropCandidate,
+  hasDerivedSeats,
+  keepRole,
+  placeInRole,
+  placeInSeries,
+  readBoard,
+  remapAfterRemove,
+  resetPlacements,
+  wouldTakeOver,
+} from './board'
+import { GLOSS, jobsForRole } from './roleCopy'
+import type { Seat } from './roleCopy'
 import type { ExportFormat } from './components/Preview'
-import { CandidateStrip } from './components/CandidateStrip'
+import { Bench } from './components/Bench'
 import { ColorAddField } from './components/ColorAddField'
+import { Dial } from './components/Dial'
+import { ExportRow } from './components/ExportRow'
+import { FrameCard } from './components/FrameCard'
 import { fileToCandidates } from './components/ImageDrop'
 import { PresetDots } from './components/PresetDots'
 import { PreviewBoundary } from './components/PreviewBoundary'
 import { ReportPanel } from './components/ReportPanel'
+import { RoleBoard } from './components/RoleBoard'
+import { AssignPopover, RoleTooltip } from './components/RolePopover'
+import { SeparationControl } from './components/SeparationControl'
+import { SeriesTray } from './components/SeriesTray'
+import { Section, SidebarShell } from './components/SidebarShell'
 import { StartHero } from './components/StartHero'
+import { StatusChip } from './components/StatusChip'
 import type { MockupProps } from './mockups'
 import { MOCKUPS, mockupById } from './mockups'
 import { PRESETS } from './presets'
@@ -45,8 +77,10 @@ interface FrameState {
   monoBase: number | null
   /** Last base after unlocking — one click re-locks it. */
   monoParked: number | null
-  /** Riff seed for the engine's invented colors; 0 = canonical cookbook. */
+  /** Riff seed for the engine's derived colors; 0 = canonical cookbook. */
   seed: number
+  /** How hard the surface stack separates itself. `layered` = historical output. */
+  separation: Separation
 }
 
 /** What "start over" replaces — and what undo brings back. */
@@ -57,6 +91,9 @@ interface Toast {
   undo: { frameIndex: number; prev: StartOverState } | null
 }
 
+/** Which popover is open, and off which element. */
+type SeatMenu = { kind: 'explain' | 'assign'; seat: Seat; anchor: HTMLElement }
+
 const FRAME_LABEL = ['A', 'B'] as const
 
 const FORMAT_LABEL: Record<ExportFormat, string> = {
@@ -64,6 +101,10 @@ const FORMAT_LABEL: Record<ExportFormat, string> = {
   tailwind: 'Tailwind v4 CSS',
   json: 'Design tokens JSON',
 }
+const EXPORT_FORMATS = (Object.keys(FORMAT_LABEL) as ExportFormat[]).map((id) => ({
+  id,
+  label: FORMAT_LABEL[id],
+}))
 
 const emptyFrameState = (): FrameState => ({
   candidates: [],
@@ -74,64 +115,13 @@ const emptyFrameState = (): FrameState => ({
   monoBase: null,
   monoParked: null,
   seed: 0,
+  separation: 'layered',
 })
 
 const cloneFrame = (f: FrameState): FrameState => ({
   ...f,
   candidates: f.candidates.map((c) => ({ ...c })),
 })
-
-// ---- role-transfer detection --------------------------------------------
-// When an edit moves a seat between two colors that exist on BOTH sides of
-// the edit, the app says so. A newly added color claiming a seat is not news,
-// and start-over has its own toast. If several seats moved, announce the most
-// important one.
-const SEAT_PRIORITY: Array<Role | 'chart'> = [...ROLES, 'chart']
-
-interface SeatTransfer {
-  role: Role | 'chart'
-  fromHex: string
-  toHex: string
-}
-
-function findSeatTransfer(
-  before: Pick<FrameState, 'candidates' | 'fidelity' | 'monoBase'>,
-  after: Pick<FrameState, 'candidates' | 'fidelity' | 'monoBase'>,
-): SeatTransfer | null {
-  if (before.candidates.length === 0 || after.candidates.length === 0) return null
-  const seats = (f: typeof before) => {
-    const cast = assignRoles(f.candidates, f.fidelity, f.monoBase)
-    const byRole = new Map<Role, string>()
-    for (const a of cast.assignments) {
-      if (a.candidateIndex != null) byRole.set(a.role, toHex(f.candidates[a.candidateIndex].color))
-    }
-    return { byRole, chart: cast.chartCandidateIndexes.map((i) => toHex(f.candidates[i].color)) }
-  }
-  const b = seats(before)
-  const a = seats(after)
-  const beforeHexes = new Set(before.candidates.map((c) => toHex(c.color)))
-  const afterHexes = new Set(after.candidates.map((c) => toHex(c.color)))
-  const onBothSides = (hex: string) => beforeHexes.has(hex) && afterHexes.has(hex)
-
-  for (const role of SEAT_PRIORITY) {
-    if (role === 'chart') {
-      // Chart is a pooled seat set: pair a color that lost its series slot
-      // with one that gained a slot.
-      const lost = b.chart.filter((h) => !a.chart.includes(h) && onBothSides(h))
-      const gained = a.chart.filter((h) => !b.chart.includes(h) && onBothSides(h))
-      if (lost.length > 0 && gained.length > 0) {
-        return { role: 'chart', fromHex: lost[0], toHex: gained[0] }
-      }
-      continue
-    }
-    const fromHex = b.byRole.get(role)
-    const toHex_ = a.byRole.get(role)
-    if (fromHex && toHex_ && fromHex !== toHex_ && onBothSides(fromHex) && onBothSides(toHex_)) {
-      return { role, fromHex, toHex: toHex_ }
-    }
-  }
-  return null
-}
 
 /** Proper component wrapper so each mockup's hooks stay its own. */
 function FrameMockup({ mockup, ...props }: { mockup: string } & MockupProps) {
@@ -148,6 +138,7 @@ function useThemeResult(f: FrameState | undefined) {
         fidelity: f.fidelity,
         monoBase: f.monoBase ?? undefined,
         seed: f.seed,
+        separation: f.separation,
       })
     } catch (err) {
       console.error(err)
@@ -157,13 +148,13 @@ function useThemeResult(f: FrameState | undefined) {
 }
 
 export default function App() {
-  // One or two independent frames. All toolbar edits target the active one;
+  // One or two independent frames. All sidebar edits target the active one;
   // the canvas splits when a second frame exists. Frames boot empty — the
   // first move belongs to the user, made in the stage's start hero.
   const [frames, setFrames] = useState<FrameState[]>(() => [emptyFrameState()])
   const [active, setActive] = useState(0)
   const [reportOpen, setReportOpen] = useState(false)
-  // Mono-lock pick mode: the padlock was clicked, the strip is the menu.
+  // Mono lock pick mode: the padlock was clicked, the board is the menu.
   const [picking, setPicking] = useState(false)
   // The start-over menu: one door for everything that replaces the set.
   const [startOverOpen, setStartOverOpen] = useState(false)
@@ -175,10 +166,13 @@ export default function App() {
   const [dragOver, setDragOver] = useState(false)
   const [toast, setToast] = useState<Toast | null>(null)
   const [exportFormat, setExportFormat] = useState<ExportFormat>('css')
-  const [exportMenuOpen, setExportMenuOpen] = useState(false)
-  const [exportMsg, setExportMsg] = useState<string | null>(null)
-  const exportRef = useRef<HTMLDivElement>(null)
-  useDismiss(exportRef, exportMenuOpen, () => setExportMenuOpen(false))
+  const [copied, setCopied] = useState(false)
+  // Board chrome: which popover is open, whether the bench is expanded, and
+  // which seats just re-rolled (so they bounce once, then stop).
+  const [seatMenu, setSeatMenu] = useState<SeatMenu | null>(null)
+  const [benchOpen, setBenchOpen] = useState(false)
+  const [benchFlash, setBenchFlash] = useState(false)
+  const [rerolled, setRerolled] = useState<Role[]>([])
 
   const frame = frames[active]
   const updateFrame = (i: number, patch: Partial<FrameState>) => {
@@ -188,6 +182,12 @@ export default function App() {
 
   const results = [useThemeResult(frames[0]), useThemeResult(frames[1])]
   const result = results[active]
+
+  // The board is a pure read of the engine's result — see src/board.ts.
+  const view: BoardView | null = useMemo(
+    () => (result ? readBoard(result, frame.candidates, frame.mode) : null),
+    [result, frame.candidates, frame.mode],
+  )
 
   const toggleMode = (i: number) => {
     setFrames((prev) =>
@@ -208,7 +208,6 @@ export default function App() {
       setFrames([frames[0], cloneFrame(frames[0])])
       setActive(1)
     } else {
-      // "copy → X": overwrite the other frame with a copy of this one.
       const other = 1 - i
       setFrames((prev) => prev.map((f, j) => (j === other ? cloneFrame(prev[i]) : f)))
       setActive(other)
@@ -232,44 +231,21 @@ export default function App() {
     } catch {
       // clipboard unavailable (permissions, insecure context)
     }
-    setExportMsg(ok ? `${FORMAT_LABEL[format]} copied ✓` : 'copy failed')
-    setTimeout(() => setExportMsg(null), 2000)
-  }
-
-  // ---- seat-transfer aware candidate edits --------------------------------
-  // Every additive/editing verb funnels through here: if the edit moved a
-  // seat between two colors present before AND after, a toast says so, with
-  // undo restoring the pre-edit frame (same snapshot shape as start over).
-  const editCandidatesAt = (i: number, patch: Partial<FrameState> & Pick<FrameState, 'candidates'>) => {
-    const prev = frames[i]
-    if (!prev) return
-    const transfer = findSeatTransfer(prev, {
-      candidates: patch.candidates,
-      fidelity: prev.fidelity,
-      monoBase: patch.monoBase !== undefined ? patch.monoBase : prev.monoBase,
-    })
-    updateFrame(i, patch)
-    if (transfer) {
-      setToast({
-        text: `${transfer.toHex} took ${transfer.role} from ${transfer.fromHex}`,
-        undo: {
-          frameIndex: i,
-          prev: {
-            candidates: prev.candidates,
-            preset: prev.preset,
-            monoBase: prev.monoBase,
-            monoParked: prev.monoParked,
-            seed: prev.seed,
-          },
-        },
-      })
+    if (ok) {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1600)
+    } else {
+      setToast({ text: 'copy failed', undo: null })
     }
   }
 
-  // ---- the additive verb: grow frame i's candidate list -------------------
-  const addCandidatesAt = (i: number, inputs: string[]) => {
-    const f = frames[i]
-    if (!f) return
+  // ---- candidate edits ----------------------------------------------------
+  // Placement is explicit now, so an edit needs no seat-transfer detective
+  // work: the board shows the consequence in the seat you just changed.
+  const setCandidates = (next: ColorCandidate[]) =>
+    updateActive({ candidates: next, preset: null })
+
+  const addCandidates = (inputs: string[]) => {
     const parsed = inputs
       .map((raw) => ({ raw, color: parseColor(raw) }))
       .filter((x): x is { raw: string; color: NonNullable<ReturnType<typeof parseColor>> } => !!x.color)
@@ -279,9 +255,15 @@ export default function App() {
       source: 'manual',
       raw: x.raw,
     }))
-    editCandidatesAt(i, { candidates: [...f.candidates, ...added], preset: null })
+    const next = [...frame.candidates, ...added]
+    setCandidates(next)
+    // A colour that lands on a collapsed bench would vanish silently.
+    const before = view
+    if (before && !hasDerivedSeats(before)) {
+      setBenchFlash(true)
+      setTimeout(() => setBenchFlash(false), 1000)
+    }
   }
-  const addCandidates = (inputs: string[]) => addCandidatesAt(active, inputs)
   const inList = (hex: string) => {
     const c = parseColor(hex)
     return c != null && frame.candidates.some((x) => toHex(x.color) === toHex(c))
@@ -297,6 +279,7 @@ export default function App() {
     const prev = frames[i]
     updateFrame(i, { candidates, preset, monoBase: null, monoParked: null, seed: 0 })
     setPicking(false)
+    setSeatMenu(null)
     if (prev.candidates.length > 0) {
       setToast({
         text: label,
@@ -339,129 +322,143 @@ export default function App() {
     return () => clearTimeout(t)
   }, [toast])
 
-  const updateCandidate = (i: number, patch: Partial<ColorCandidate>) => {
-    editCandidatesAt(active, {
-      candidates: frame.candidates.map((c, j) => (j === i ? { ...c, ...patch } : c)),
-      preset: null,
-    })
+  // ---- riff ---------------------------------------------------------------
+  // Only derived seats move. Capture which ones so they bounce, then clear the
+  // flag so the next riff can replay it.
+  const riff = () => {
+    if (!view) return
+    const derivedBefore = view.slots.filter((s) => s.provenance === 'derived').map((s) => s.role)
+    updateActive({ seed: frame.seed + 1 })
+    setSeatMenu(null)
+    setRerolled(derivedBefore)
+    setTimeout(() => setRerolled([]), 700)
   }
-  // The mono base/parked fields are candidate indexes; keep them pointing at
-  // the same color when the list shifts underneath them.
-  const remapAfterRemove = (idx: number | null, removed: number) =>
-    idx == null || idx === removed ? null : idx > removed ? idx - 1 : idx
-  const remapAfterMove = (idx: number | null, from: number, to: number) =>
-    idx == null
-      ? null
-      : idx === from
-        ? to
-        : from < idx && idx <= to
-          ? idx - 1
-          : to <= idx && idx < from
-            ? idx + 1
-            : idx
-
-  const removeCandidate = (i: number) =>
-    editCandidatesAt(active, {
-      candidates: frame.candidates.filter((_, j) => j !== i),
-      preset: null,
-      monoBase: remapAfterRemove(frame.monoBase, i),
-      monoParked: remapAfterRemove(frame.monoParked, i),
-    })
-  const reorderCandidate = (from: number, to: number) => {
-    if (from === to) return
-    // Position is the engine's order prior: dragging a color up strengthens
-    // its claim on every role.
-    const next = [...frame.candidates]
-    const [moved] = next.splice(from, 1)
-    next.splice(to, 0, moved)
-    editCandidatesAt(active, {
-      candidates: next,
-      preset: null,
-      monoBase: remapAfterMove(frame.monoBase, from, to),
-      monoParked: remapAfterMove(frame.monoParked, from, to),
-    })
+  const riffBack = () => {
+    updateActive({ seed: Math.max(0, frame.seed - 1) })
+    setSeatMenu(null)
   }
 
-  const roleByCandidate = useMemo(() => {
-    const map = new Map<number, Role | 'chart' | 'unused'>()
-    if (!result) return map
-    for (const a of result.assignments) {
-      if (a.candidateIndex != null) map.set(a.candidateIndex, a.role)
+  // ---- board verbs --------------------------------------------------------
+  const applyDrop = (payload: DragPayload, target: { kind: 'role'; role: Role } | { kind: 'series' } | { kind: 'bench' }) => {
+    if (!view) return
+    // Resolve the dragged thing to a candidate index. A derived seat has no
+    // candidate behind it, so it cannot be dragged anywhere.
+    let idx: number | null = null
+    if (payload.kind === 'bench') idx = payload.candidateIndex
+    else if (payload.kind === 'slot') {
+      idx = view.slots.find((s) => s.role === payload.role)?.candidateIndex ?? null
+    } else {
+      idx = view.series.find((s) => s.slot === payload.slot)?.candidateIndex ?? null
     }
-    for (const i of result.chartCandidateIndexes) map.set(i, 'chart')
-    for (const i of result.unusedCandidateIndexes) map.set(i, 'unused')
-    return map
-  }, [result])
-
-  // The chip menu's content: why-lines and pin consequences, both derived
-  // from the engine's casting report — never canned strings.
-  const explainCandidate = (i: number) =>
-    result ? whyLines(i, result.casting, frame.candidates) : []
-  const pinHintFor = (i: number, target: Role | 'chart' | null) =>
-    result ? pinConsequence(i, target, result.casting, frame.candidates) : ''
-
-  // Riff: walk the invented material through the seeded repertoire. Linear
-  // and non-destructive — back is the undo, seed 0 the canonical cookbook.
-  const riff = (delta: number) => updateActive({ seed: Math.max(0, frame.seed + delta) })
-
-  // The engine's invented roles (no candidate behind them). "keep as your
-  // color" promotes a synthesized seed to a real candidate pinned to its
-  // role — it stops being invented, so it survives future riffs.
-  const invented = result ? result.assignments.filter((a) => a.candidateIndex == null) : []
-  const keepInvented = (role: Role, color: Oklch) => {
-    const hex = toHex(color)
-    const parsed = parseColor(hex)
-    if (!parsed) return
-    editCandidatesAt(active, {
-      candidates: [...frame.candidates, { color: parsed, source: 'manual', raw: hex, pin: role }],
-      preset: null,
-    })
+    if (idx == null) return
+    if (target.kind === 'role') setCandidates(placeInRole(frame.candidates, idx, target.role, view))
+    else if (target.kind === 'series') setCandidates(placeInSeries(frame.candidates, idx))
+    else setCandidates(benchCandidate(frame.candidates, idx))
   }
 
-  // Locate mode: hovering a row lights only that candidate's descendants in
-  // the active frame's mockup (token substitution — see engine/locate.ts).
-  // Enter is debounced so casual mouse travel doesn't strobe; leave restores
-  // instantly. Any candidate edit clears it — indexes may have shifted.
-  const [locating, setLocating] = useState<number | null>(null)
+  const keepSeat = (role: Role) => {
+    if (!view) return
+    const slot = view.slots.find((s) => s.role === role)
+    if (!slot || slot.provenance !== 'derived') return
+    const parsed = parseColor(slot.hex)
+    if (!parsed) return
+    setCandidates(keepRole(frame.candidates, role, parsed, slot.hex))
+  }
+
+  const freeSeat = (role: Role) => {
+    if (!view) return
+    setCandidates(deriveRole(frame.candidates, role, view))
+    setSeatMenu(null)
+  }
+
+  // ---- the assign popover's options and their consequences ----------------
+  const assignOptions = useMemo(() => {
+    if (!view || !result || !seatMenu || seatMenu.kind !== 'assign') return []
+    const role = seatMenu.seat as Role
+    const here = view.slots.find((s) => s.role === role)?.candidateIndex ?? null
+    const regen = (next: ColorCandidate[]) =>
+      generateTheme({
+        candidates: next,
+        fidelity: frame.fidelity,
+        monoBase: frame.monoBase ?? undefined,
+        seed: frame.seed,
+      })
+    const seen = new Set<number>()
+    const out: Array<{ candidateIndex: number; hex: string; hint: string }> = []
+    const add = (candidateIndex: number, hex: string) => {
+      if (seen.has(candidateIndex) || candidateIndex === here) return
+      seen.add(candidateIndex)
+      // Probe the engine rather than predict from the current casting — see
+      // describePlacement. Each probe is one sub-millisecond solve.
+      out.push({ candidateIndex, hex, hint: describePlacement(frame.candidates, candidateIndex, role, view, regen) })
+    }
+    for (const b of view.bench) add(b.candidateIndex, b.hex)
+    for (const s of view.slots) if (s.candidateIndex != null) add(s.candidateIndex, s.hex)
+    // A colour parked in the chart tray is still yours to seat. Use the
+    // CANDIDATE's own hex, not the series entry's: `series[].hex` is the
+    // chart-adjusted token value, so offering it would name a colour that
+    // isn't the one you'd actually be seating.
+    for (const s of view.series) {
+      if (s.candidateIndex == null) continue
+      const c = frame.candidates[s.candidateIndex]
+      if (c) add(s.candidateIndex, toHex(c.color))
+    }
+    return out
+  }, [view, result, seatMenu, frame.candidates, frame.fidelity, frame.monoBase, frame.seed])
+
+  // What would step in if this seat's holder left — so the popover names the
+  // successor instead of promising a derived result it can't guarantee.
+  const takeOver = useMemo(() => {
+    if (!view || !seatMenu || seatMenu.kind !== 'assign') return null
+    return wouldTakeOver(frame.candidates, seatMenu.seat as Role, view, (next) =>
+      generateTheme({
+        candidates: next,
+        fidelity: frame.fidelity,
+        monoBase: frame.monoBase ?? undefined,
+        seed: frame.seed,
+      }),
+    )
+  }, [view, seatMenu, frame.candidates, frame.fidelity, frame.monoBase, frame.seed])
+
+  // ---- locate mode --------------------------------------------------------
+  // Hovering a seat lights that seat's colour in the mockup. Debounced so
+  // casual mouse travel doesn't strobe.
+  //
+  // Keyed by ROLE, not by candidate. A derived seat has no candidate behind
+  // it, but it still owns tokens — a derived neutral drives the backgrounds,
+  // text and borders — and "where does this colour show up?" is worth
+  // answering whether or not the colour was yours. Locating used to bail out
+  // on derived seats for a provenance reason that has nothing to do with the
+  // question being asked.
+  const [locating, setLocating] = useState<TokenAncestor | null>(null)
   const locateTimer = useRef<number | null>(null)
-  const onLocate = (i: number | null) => {
+  const onLocateSeat = (role: Role | null) => {
     if (locateTimer.current != null) window.clearTimeout(locateTimer.current)
     locateTimer.current = null
-    if (i == null) {
+    if (role == null || !view) {
       setLocating(null)
       return
     }
-    locateTimer.current = window.setTimeout(() => setLocating(i), 150)
+    locateTimer.current = window.setTimeout(() => setLocating({ kind: 'role', role }), 150)
   }
   useEffect(() => {
     setLocating(null)
   }, [frame.candidates])
-  const jobsFor = (i: number) => (result ? jobsSummary(tokenAncestry(result, frame.mode), i) : '')
 
-  const hasPins = frame.candidates.some((c) => c.pin)
-
-  // Mono lock. The padlock cycles unlocked → locked (via pick, memory, or the
-  // single candidate) → unlocked-with-memory; the base itself is frame state.
+  // ---- mono lock ----------------------------------------------------------
   const locked = frame.monoBase != null && frame.candidates[frame.monoBase] != null
-  const baseColor = locked ? frame.candidates[frame.monoBase!].color : null
+  const anchorRole = useMemo(() => {
+    if (!locked || !view) return null
+    return view.slots.find((s) => s.candidateIndex === frame.monoBase)?.role ?? null
+  }, [locked, view, frame.monoBase])
   const parkedColor =
     frame.monoParked != null ? (frame.candidates[frame.monoParked]?.color ?? null) : null
   const lockClick = () => {
-    if (picking) {
-      setPicking(false)
-    } else if (locked) {
-      updateActive({ monoBase: null, monoParked: frame.monoBase })
-    } else if (parkedColor != null) {
-      updateActive({ monoBase: frame.monoParked, monoParked: null })
-    } else if (frame.candidates.length === 1) {
-      updateActive({ monoBase: 0, monoParked: null })
-    } else if (frame.candidates.length > 1) {
-      setPicking(true)
-    }
-  }
-  const pickBase = (i: number) => {
-    updateActive({ monoBase: i, monoParked: null })
-    setPicking(false)
+    if (picking) setPicking(false)
+    else if (locked) updateActive({ monoBase: null, monoParked: frame.monoBase })
+    else if (parkedColor != null) updateActive({ monoBase: frame.monoParked, monoParked: null })
+    else if (frame.candidates.length === 1) updateActive({ monoBase: 0, monoParked: null })
+    else if (frame.candidates.length > 1) setPicking(true)
   }
   useEffect(() => {
     if (!picking) return
@@ -470,8 +467,7 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [picking])
 
-  // How far the engine moved the user's colors — the slider's live caption.
-  // Under the mono lock the only axis left is lightness, so it speaks in ΔL.
+  // ---- the dial's live caption -------------------------------------------
   const drift = useMemo(() => {
     if (!result) return { dE: 0, dL: 0 }
     const assigned = result.assignments.filter((a) => a.candidateIndex != null)
@@ -499,7 +495,6 @@ export default function App() {
           ? 'your colors already sit well — nothing to tune'
           : `${drift.dE >= 0.08 ? 'reworking' : 'gently tuning'} your colors · avg shift ΔE ${drift.dE.toFixed(2)}`
 
-  // Audit status: report rows across both modes plus unresolved pairings.
   const checkStats = useMemo(() => {
     if (!result) return null
     const rows = [...result.light.report, ...result.dark.report]
@@ -508,8 +503,8 @@ export default function App() {
   }, [result, clashes])
   const chipText = checkStats
     ? checkStats.issues === 0
-      ? `✓ all ${checkStats.total} checks pass`
-      : `⚠ ${checkStats.issues} issue${checkStats.issues > 1 ? 's' : ''} · ${[
+      ? `all ${checkStats.total} checks pass`
+      : `${checkStats.issues} issue${checkStats.issues > 1 ? 's' : ''} · ${[
           clashes ? `${clashes} clash${clashes > 1 ? 'es' : ''}` : '',
           checkStats.fails
             ? `${checkStats.fails} low-contrast pair${checkStats.fails > 1 ? 's' : ''}`
@@ -522,14 +517,38 @@ export default function App() {
   const split = frames.length === 2
   const emptyFrame = frame.candidates.length === 0
   const nColors = `${frame.candidates.length} color${frame.candidates.length === 1 ? '' : 's'}`
+  const hasPlacements = frame.candidates.some((c) => c.pin || c.benched)
+
+  // The chrome wears the palette it is forging.
+  const palVars = useMemo(() => {
+    if (!view) return undefined
+    const primary = view.slots.find((s) => s.role === 'primary')?.hex
+    const accent = view.slots.find((s) => s.role === 'accent')?.hex
+    return { '--pal-primary': primary, '--pal-accent': accent } as CSSProperties
+  }, [view])
 
   const hero = (i: number) => (
     <StartHero
-      onAddColors={(inputs) => addCandidatesAt(i, inputs)}
+      onAddColors={(inputs) => {
+        const f = frames[i]
+        const parsed = inputs
+          .map((raw) => ({ raw, color: parseColor(raw) }))
+          .filter((x): x is { raw: string; color: NonNullable<ReturnType<typeof parseColor>> } => !!x.color)
+        updateFrame(i, {
+          candidates: [
+            ...f.candidates,
+            ...parsed.map((x) => ({ color: x.color, source: 'manual' as const, raw: x.raw })),
+          ],
+          preset: null,
+        })
+      }}
       onImage={(candidates) => startOverAt(i, candidates, null, 'extracted colors')}
       onPreset={(p) => startOverAt(i, candidatesFromList(p.colors), p.name, `started with ${p.name}`)}
     />
   )
+
+  const seatOf = (seat: Seat) =>
+    seat === 'chart' ? null : (view?.slots.find((s) => s.role === seat) ?? null)
 
   return (
     <div
@@ -541,267 +560,226 @@ export default function App() {
         }
       }}
     >
-      <aside className="controls">
-        <h1>themesmith</h1>
-        <p className="tagline">any colors in, working theme out</p>
-
-        {(!emptyFrame || split) && (
-          <section>
-            {frames.map((f, i) => (
-              <div key={i} className={`frame-row ${active === i ? 'active' : ''}`}>
-                <button
-                  className={`frame-chip ${active === i ? 'active' : ''}`}
-                  aria-label={`select ${FRAME_LABEL[i]}`}
-                  onClick={() => setActive(i)}
-                >
-                  {active === i ? '●' : '○'} {FRAME_LABEL[i]}
-                </button>
-                <select
-                  className="mockup-select"
-                  aria-label={`mockup for ${FRAME_LABEL[i]}`}
-                  value={f.mockup}
-                  onChange={(e) => setMockup(i, e.target.value)}
-                >
-                  {MOCKUPS.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  className="icon-btn"
-                  aria-label={`switch ${FRAME_LABEL[i]} to ${f.mode === 'light' ? 'dark' : 'light'}`}
-                  title={
-                    mockupById(f.mockup).supportsDark
-                      ? `switch ${FRAME_LABEL[i]} to ${f.mode === 'light' ? 'dark' : 'light'}`
-                      : `${mockupById(f.mockup).name} has no dark mode`
-                  }
-                  disabled={!mockupById(f.mockup).supportsDark}
-                  onClick={() => toggleMode(i)}
-                >
-                  {f.mode === 'light' ? <Moon size={13} /> : <Sun size={13} />}
-                </button>
-                <button
-                  className="icon-btn"
-                  aria-label={split ? `copy → ${FRAME_LABEL[1 - i]}` : 'duplicate'}
-                  title={split ? `copy → ${FRAME_LABEL[1 - i]}` : 'duplicate'}
-                  onClick={() => duplicateFrame(i)}
-                >
-                  ⧉
-                </button>
-                {split && (
-                  <button
-                    className="icon-btn"
-                    aria-label={`close ${FRAME_LABEL[i]}`}
-                    title={`close ${FRAME_LABEL[i]}`}
-                    onClick={() => closeFrame(i)}
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            ))}
-          </section>
-        )}
-
-        {!emptyFrame && (
-          <>
-            <section>
-              <div className="startover-row" ref={startOverRef}>
-                <button
-                  className="startover-btn"
-                  aria-label="start over"
-                  onClick={() => {
-                    setStartOverPage('root')
-                    setStartOverOpen((o) => !o)
-                  }}
-                >
-                  ↻ start over
-                </button>
-                {frame.preset && <span className="startover-preset">{frame.preset}</span>}
-                {result && (
-                  <span className="riff-cluster">
-                    {frame.seed > 0 && (
-                      <>
-                        <button
-                          className="riff-back"
-                          aria-label="previous riff"
-                          title="back one riff"
-                          onClick={() => riff(-1)}
-                        >
-                          ‹
-                        </button>
-                        <span className="riff-chip">riff {frame.seed}</span>
-                      </>
-                    )}
-                    <button
-                      className="riff-btn"
-                      title="re-imagine the colors the engine invented"
-                      onClick={() => riff(1)}
-                    >
-                      ⚄ riff
-                    </button>
-                  </span>
-                )}
-                {startOverOpen && (
-                  <div className="menu startover-menu">
-                    {startOverPage === 'root' ? (
-                      <>
-                        <button className="item" onClick={() => fileInputRef.current?.click()}>
-                          from an image…
-                        </button>
-                        <button className="item" onClick={() => setStartOverPage('presets')}>
-                          from a preset ›
-                        </button>
-                        <button
-                          className="item"
-                          onClick={() => {
-                            setStartOverOpen(false)
-                            startOverAt(active, [], null, `cleared ${nColors}`)
-                          }}
-                        >
-                          start empty
-                        </button>
-                        <div className="menu-cap">
-                          each of these replaces your current {nColors} — undo is one click
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <button className="item" onClick={() => setStartOverPage('root')}>
-                          ‹ back
-                        </button>
-                        {PRESETS.map((p) => (
-                          <button
-                            key={p.name}
-                            className={`item preset-item ${frame.preset === p.name ? 'sel' : ''}`}
-                            onClick={() => {
-                              setStartOverOpen(false)
-                              startOverAt(
-                                active,
-                                candidatesFromList(p.colors),
-                                p.name,
-                                `started over with ${p.name}`,
-                              )
-                            }}
-                          >
-                            <PresetDots colors={p.colors} /> {p.name}
-                          </button>
-                        ))}
-                      </>
-                    )}
-                  </div>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,.heic,.heif"
-                  hidden
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    setStartOverOpen(false)
-                    if (file) void imageStartOver(active, file)
-                    e.target.value = ''
-                  }}
+      <SidebarShell
+        title="themesmith"
+        tagline="any colors in, working theme out"
+        footer={
+          emptyFrame && !split ? null : (
+            <div className="foot-stack" style={palVars}>
+              {checkStats && (
+                <StatusChip
+                  ok={checkStats.issues === 0}
+                  text={chipText}
+                  onOpenReport={() => setReportOpen((o) => !o)}
                 />
-              </div>
-            </section>
-
-            <hr className="divider" />
-
-            <section>
-              <div className="strip-actions">
+              )}
+              <ExportRow
+                formats={EXPORT_FORMATS}
+                current={exportFormat}
+                copied={copied}
+                disabled={!result}
+                onCopy={(id) => void doExport(id as ExportFormat)}
+                onChangeFormat={(id) => {
+                  setExportFormat(id as ExportFormat)
+                  void doExport(id as ExportFormat)
+                }}
+              />
+            </div>
+          )
+        }
+      >
+        <div style={palVars}>
+          {(!emptyFrame || split) && (
+            <Section
+              label="canvas"
+              actions={
                 <button
-                  className={`lock-btn${locked ? ' locked' : ''}${picking ? ' picking' : ''}`}
-                  aria-label={
-                    picking
-                      ? 'cancel pick'
-                      : locked
-                        ? 'unlock mono'
-                        : parkedColor
-                          ? `re-lock ${toHex(parkedColor)}`
-                          : 'lock the theme to one color'
-                  }
-                  title={
-                    locked
-                      ? 'unlock — back to the full-palette engine'
-                      : parkedColor
-                        ? `re-lock ${toHex(parkedColor)}`
-                        : "lock the theme to one color's hue"
-                  }
-                  onClick={lockClick}
+                  className="mini"
+                  onClick={() => (split ? closeFrame(1) : duplicateFrame(active))}
+                  title={split ? 'close frame B' : 'compare two frames'}
                 >
-                  {locked ? <Lock size={13} /> : <LockOpen size={13} />}
-                  {locked && baseColor && (
-                    <>
-                      <span
-                        className="lock-sw"
-                        style={{ background: toHex(baseColor) }}
-                        title="pick a different base"
-                        onClick={(e) => {
-                          if (frame.candidates.length > 1) {
-                            e.stopPropagation()
-                            setPicking(true)
-                          }
-                        }}
-                      />
-                      <code>{toHex(baseColor)}</code>
-                    </>
-                  )}
-                  {!locked && parkedColor && (
-                    <span className="lock-sw parked" style={{ background: toHex(parkedColor) }} />
-                  )}
+                  {split ? <X size={11} strokeWidth={2.2} /> : <Columns2 size={11} strokeWidth={1.75} />}
+                  {split ? 'close B' : 'compare'}
                 </button>
-                {hasPins && (
+              }
+            >
+              <div className="frame-stack">
+                {frames.map((f, i) => (
+                  <FrameCard
+                    key={i}
+                    label={FRAME_LABEL[i]}
+                    active={active === i}
+                    mockups={MOCKUPS.map((m) => ({ id: m.id, name: m.name }))}
+                    mockup={f.mockup}
+                    mode={f.mode}
+                    supportsDark={mockupById(f.mockup).supportsDark}
+                    copyTarget={split ? FRAME_LABEL[1 - i] : null}
+                    onSelect={() => setActive(i)}
+                    onChangeMockup={(id) => setMockup(i, id)}
+                    onToggleMode={() => toggleMode(i)}
+                    onCopyTo={() => duplicateFrame(i)}
+                  />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {!emptyFrame && view && (
+            <Section
+              label="colors"
+              actions={
+                <span className="sec-tools" ref={startOverRef}>
                   <button
-                    className="ghost"
-                    onClick={() =>
-                      updateActive({
-                        candidates: frame.candidates.map((c) => ({ ...c, pin: undefined })),
-                        preset: null,
-                      })
+                    className={`mini${locked ? ' on' : ''}${picking ? ' picking' : ''}`}
+                    onClick={lockClick}
+                    title={
+                      locked
+                        ? 'unlock — back to the full-palette engine'
+                        : "lock the theme to one color's hue"
                     }
                   >
-                    ↺ auto-assign colors
+                    {locked ? <Lock size={11} strokeWidth={1.75} /> : <LockOpen size={11} strokeWidth={1.75} />}
+                    {locked && anchorRole ? anchorRole : 'mono'}
                   </button>
-                )}
-              </div>
-              {picking && (
-                <div className="lock-cap hint">click a color to lock its hue · esc to cancel</div>
-              )}
-              {locked && !picking && <div className="lock-cap">mono — engine invents no new hues</div>}
-              <CandidateStrip
-                candidates={frame.candidates}
-                roleByCandidate={roleByCandidate}
-                explain={explainCandidate}
-                pinHint={pinHintFor}
-                jobs={jobsFor}
-                onLocate={onLocate}
-                locatingIndex={locating}
-                baseIndex={locked ? frame.monoBase : null}
-                picking={picking}
-                onPickBase={pickBase}
-                onUpdate={updateCandidate}
-                onRemove={removeCandidate}
-                onReorder={reorderCandidate}
-              />
-              {invented.length > 0 && (
-                <div className="invented-row">
-                  <span className="invented-cap">invented</span>
-                  {invented.map((a) => (
+                  {hasPlacements && (
                     <button
-                      key={a.role}
-                      className="invented-item"
-                      title="keep as your color"
-                      aria-label={`keep ${a.role} as your color`}
-                      onClick={() => keepInvented(a.role, a.seed)}
+                      className="mini"
+                      onClick={() => setCandidates(resetPlacements(frame.candidates))}
+                      title="clear your placements — back to the engine's own casting"
                     >
-                      <i className="invented-sw" style={{ background: toHex(a.seed) }} />
-                      {a.role}
+                      <RotateCcw size={11} strokeWidth={1.75} />
+                      reset
                     </button>
-                  ))}
-                </div>
+                  )}
+                  <button
+                    className="mini"
+                    onClick={() => {
+                      setStartOverPage('root')
+                      setStartOverOpen((o) => !o)
+                    }}
+                    title="start over"
+                  >
+                    <Palette size={11} strokeWidth={1.75} />
+                  </button>
+                  <button
+                    className="mini"
+                    onClick={riff}
+                    disabled={!hasDerivedSeats(view)}
+                    title={
+                      hasDerivedSeats(view)
+                        ? 're-roll the seats the smith derived'
+                        : 'nothing to riff — every seat is yours'
+                    }
+                  >
+                    <Dices size={11} strokeWidth={1.75} />
+                    {frame.seed > 0 ? frame.seed : ''}
+                  </button>
+                  {frame.seed > 0 && (
+                    <button className="mini" onClick={riffBack} title="back one riff">
+                      <RotateCcw size={11} strokeWidth={1.75} />
+                    </button>
+                  )}
+                  {startOverOpen && (
+                    <div className="menu startover-menu">
+                      {startOverPage === 'root' ? (
+                        <>
+                          <button className="item" onClick={() => fileInputRef.current?.click()}>
+                            <ImageIcon size={13} strokeWidth={1.75} /> from an image…
+                          </button>
+                          <button className="item" onClick={() => setStartOverPage('presets')}>
+                            <Palette size={13} strokeWidth={1.75} /> from a preset…
+                          </button>
+                          <button
+                            className="item"
+                            onClick={() => {
+                              setStartOverOpen(false)
+                              startOverAt(active, [], null, `cleared ${nColors}`)
+                            }}
+                          >
+                            <Ban size={13} strokeWidth={1.75} /> start empty
+                          </button>
+                          <div className="menu-cap">
+                            each of these replaces your current {nColors} — undo is one click
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <button className="item" onClick={() => setStartOverPage('root')}>
+                            ‹ back
+                          </button>
+                          {PRESETS.map((p) => (
+                            <button
+                              key={p.name}
+                              className={`item preset-item ${frame.preset === p.name ? 'sel' : ''}`}
+                              onClick={() => {
+                                setStartOverOpen(false)
+                                startOverAt(
+                                  active,
+                                  candidatesFromList(p.colors),
+                                  p.name,
+                                  `started over with ${p.name}`,
+                                )
+                              }}
+                            >
+                              <PresetDots colors={p.colors} /> {p.name}
+                            </button>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </span>
+              }
+            >
+              {picking && (
+                <div className="pick-hint">click a seat to lock its hue · esc to cancel</div>
               )}
+              <RoleBoard
+                view={view}
+                openRole={seatMenu && seatMenu.seat !== 'chart' ? (seatMenu.seat as Role) : null}
+                anchorRole={anchorRole}
+                rerolled={rerolled}
+                picking={picking}
+                onPick={(role) => {
+                  const idx = view.slots.find((s) => s.role === role)?.candidateIndex ?? null
+                  // a derived seat has no colour of yours to lock onto
+                  if (idx != null) updateActive({ monoBase: idx, monoParked: null })
+                  setPicking(false)
+                }}
+                onAssign={(role, anchor) => setSeatMenu({ kind: 'assign', seat: role, anchor })}
+                onExplain={(role, anchor) => setSeatMenu({ kind: 'explain', seat: role, anchor })}
+                onKeep={keepSeat}
+                onDropInRole={(payload, role) => applyDrop(payload, { kind: 'role', role })}
+                onDragStartSlot={() => setSeatMenu(null)}
+                onLocate={onLocateSeat}
+              />
+
+              <SeriesTray
+                series={view.series}
+                onDropInSeries={(payload) => applyDrop(payload, { kind: 'series' })}
+                onDragStartSeries={() => setSeatMenu(null)}
+                onExplain={(anchor) => setSeatMenu({ kind: 'explain', seat: 'chart', anchor })}
+              />
+
+              <Bench
+                entries={view.bench}
+                open={benchOpen}
+                flash={benchFlash}
+                onToggle={() => setBenchOpen((o) => !o)}
+                onDropToBench={(payload) => applyDrop(payload, { kind: 'bench' })}
+                onDragStartBench={() => setSeatMenu(null)}
+                onRemove={(i) =>
+                  // The mono base is an INDEX — it must be remapped with the
+                  // splice or the lock silently re-points at another color.
+                  updateActive({
+                    candidates: dropCandidate(frame.candidates, i),
+                    preset: null,
+                    monoBase: remapAfterRemove(frame.monoBase, i),
+                    monoParked: remapAfterRemove(frame.monoParked, i),
+                  })
+                }
+              />
+
               <div className="add-row">
                 <ColorAddField
                   placeholder="add a color — #e63946, oklch(…)"
@@ -809,85 +787,71 @@ export default function App() {
                   onAdd={addCandidates}
                 />
               </div>
-            </section>
+            </Section>
+          )}
 
-            <hr className="divider" />
-
-            <section>
-              <div className="fid-labels">
-                <span className="fid-left">smith's taste</span>
-                <span className="chip">{frame.fidelity.toFixed(2)}</span>
-                <span className="fid-right">raw colors</span>
-              </div>
-              <input
-                type="range"
-                className="fid-slider"
-                aria-label="fidelity"
-                min={0}
-                max={1}
-                step={0.05}
+          {!emptyFrame && (
+            <Section label="tuning">
+              <Dial
                 value={frame.fidelity}
-                onChange={(e) => updateActive({ fidelity: parseFloat(e.target.value) })}
+                caption={caption}
+                onChange={(v) => updateActive({ fidelity: v })}
               />
-              <div className="fid-caption">{caption}</div>
-              {checkStats && (
-                <button
-                  className={`status-chip ${checkStats.issues ? 'warn' : 'ok'}`}
-                  onClick={() => setReportOpen((o) => !o)}
-                >
-                  {chipText}
-                  <span className="status-more">report ›</span>
-                </button>
-              )}
-            </section>
+              {/* Per-frame, like fidelity/mode/seed: two frames side by side at
+                  different settings is how the trade reads clearest. */}
+              <SeparationControl
+                value={frame.separation}
+                onChange={(s) => updateActive({ separation: s })}
+              />
+            </Section>
+          )}
 
-            <hr className="divider" />
+          {emptyFrame && !split && (
+            <p className="controls-empty">controls appear once you have colors</p>
+          )}
+        </div>
 
-            <section>
-              <div className="export-row" ref={exportRef}>
-                <button
-                  className="export-main"
-                  disabled={!result}
-                  title={split ? `copies frame ${FRAME_LABEL[active]}` : undefined}
-                  onClick={() => void doExport(exportFormat)}
-                >
-                  ⧉ Copy {FORMAT_LABEL[exportFormat]}
-                </button>
-                <button
-                  className="export-icon"
-                  aria-label="choose export format"
-                  disabled={!result}
-                  onClick={() => setExportMenuOpen((o) => !o)}
-                >
-                  ▾
-                </button>
-                {exportMenuOpen && (
-                  <div className="menu export-menu">
-                    {(Object.keys(FORMAT_LABEL) as ExportFormat[]).map((f) => (
-                      <button
-                        key={f}
-                        className={`item ${f === exportFormat ? 'sel' : ''}`}
-                        onClick={() => {
-                          setExportFormat(f)
-                          setExportMenuOpen(false)
-                          void doExport(f)
-                        }}
-                      >
-                        {FORMAT_LABEL[f]}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {exportMsg && <div className="export-msg">{exportMsg}</div>}
-            </section>
-          </>
-        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,.heic,.heif"
+          hidden
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            setStartOverOpen(false)
+            if (file) void imageStartOver(active, file)
+            e.target.value = ''
+          }}
+        />
+      </SidebarShell>
 
-        {emptyFrame && !split && (
-          <p className="controls-empty">controls appear once you have colors</p>
-        )}
-      </aside>
+      {/* ---- popovers: fixed-positioned, so no ancestor overflow clips them ---- */}
+      {seatMenu?.kind === 'explain' && result && (
+        <RoleTooltip
+          role={seatMenu.seat}
+          gloss={GLOSS[seatMenu.seat]}
+          jobs={jobsForRole(result, frame.mode, seatMenu.seat)}
+          anchor={seatMenu.anchor}
+          onClose={() => setSeatMenu(null)}
+        />
+      )}
+      {seatMenu?.kind === 'assign' && seatMenu.seat !== 'chart' && seatOf(seatMenu.seat) && (
+        <AssignPopover
+          role={seatMenu.seat as Role}
+          hex={seatOf(seatMenu.seat)!.hex}
+          provenance={seatOf(seatMenu.seat)!.provenance}
+          options={assignOptions}
+          takeOver={takeOver}
+          anchor={seatMenu.anchor}
+          onPick={(idx) => {
+            if (!view) return
+            setCandidates(placeInRole(frame.candidates, idx, seatMenu.seat as Role, view))
+            setSeatMenu(null)
+          }}
+          onFree={() => freeSeat(seatMenu.seat as Role)}
+          onClose={() => setSeatMenu(null)}
+        />
+      )}
 
       <main className="stage">
         {split ? (
@@ -909,7 +873,7 @@ export default function App() {
                       result={results[i]!}
                       mode={f.mode}
                       uid={FRAME_LABEL[i].toLowerCase()}
-                      locateIndex={active === i ? locating : null}
+                      locateTarget={active === i ? locating : null}
                     />
                   </PreviewBoundary>
                 ) : (
@@ -925,7 +889,7 @@ export default function App() {
               result={result}
               mode={frame.mode}
               uid="a"
-              locateIndex={locating}
+              locateTarget={locating}
             />
           </PreviewBoundary>
         ) : (
@@ -940,7 +904,7 @@ export default function App() {
                 aria-label="close report"
                 onClick={() => setReportOpen(false)}
               >
-                ✕
+                <X size={13} strokeWidth={2} />
               </button>
             </div>
             <ReportPanel result={result} candidates={frame.candidates} />
@@ -988,3 +952,5 @@ export default function App() {
     </div>
   )
 }
+
+export { ROLES }

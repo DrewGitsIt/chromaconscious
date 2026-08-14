@@ -176,11 +176,17 @@
     align-items: stretch;
     flex-wrap: wrap;
   }
+  /* The one elevated thing on the sheet. A business card is a depicted object
+     lying on the paper, not a stacked surface — figure on ground, which is the
+     board's own grammar. Level 1 and nothing above it; under `flat` this
+     resolves to `none` and the cards still read as objects (brand fill in
+     front, hairline behind). */
   .bb-bizcard {
     flex: 1;
     min-width: 150px;
     aspect-ratio: 7 / 4;
     border-radius: 6px;
+    box-shadow: var(--elevation-1, none);
     padding: 14px;
     display: flex;
     flex-direction: column;

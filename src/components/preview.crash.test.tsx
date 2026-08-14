@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 
 afterEach(cleanup)
 import { Preview } from './Preview'
-import { candidatesFromList, generateTheme } from '../engine'
+import { candidatesFromList, effectVars, generateTheme } from '../engine'
 
 // Base UI needs a few APIs jsdom lacks.
 class RO {
@@ -27,13 +27,16 @@ if (!window.matchMedia) {
 }
 Element.prototype.scrollIntoView = Element.prototype.scrollIntoView ?? (() => {})
 
-const tokens = generateTheme({
+const light = generateTheme({
   candidates: candidatesFromList(['#e63946', '#f1faee', '#457b9d']),
-}).light.tokens
+}).light
+const tokens = light.tokens
+/** Serialized the same way `mockups.tsx` does — Preview requires them. */
+const effects = effectVars(light.effects)
 
 describe('Preview interactions', () => {
   it('renders and opens the Export dropdown without crashing', () => {
-    render(<Preview tokens={tokens} uid="test" mode="light" />)
+    render(<Preview tokens={tokens} uid="test" mode="light" effects={effects} />)
     const trigger = screen.getByText('Export')
     fireEvent.pointerDown(trigger)
     fireEvent.mouseDown(trigger)
@@ -43,7 +46,7 @@ describe('Preview interactions', () => {
   })
 
   it('opens the New project dialog without crashing', () => {
-    render(<Preview tokens={tokens} uid="test" mode="light" />)
+    render(<Preview tokens={tokens} uid="test" mode="light" effects={effects} />)
     const trigger = screen.getByText('New project')
     fireEvent.pointerDown(trigger)
     fireEvent.mouseDown(trigger)

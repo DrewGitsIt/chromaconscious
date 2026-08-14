@@ -1,4 +1,4 @@
-import type { Role, ThemeMode, ThemeResult } from './types'
+import type { Role, ThemeMode, ThemeResult, TokenAncestor } from './types'
 import { compliantSolid, popBudget } from './tokens'
 
 /**
@@ -77,6 +77,20 @@ export function brandAncestry(result: ThemeResult): Record<BrandColorName, numbe
   const out = {} as Record<BrandColorName, number | null>
   for (const [name, role] of Object.entries(BRAND_ANCESTRY) as Array<[BrandColorName, Role]>) {
     out[name] = byRole.get(role) ?? null
+  }
+  return out
+}
+
+/**
+ * Brand-name → ancestor, the shape locate mode wants. Unlike `brandAncestry`
+ * this never collapses to null for a synthesized role: the brand board can
+ * locate a derived seat because the ROLE is what a token descends from,
+ * whether or not a candidate of the user's happens to fill it.
+ */
+export function brandAncestors(): Record<BrandColorName, TokenAncestor> {
+  const out = {} as Record<BrandColorName, TokenAncestor>
+  for (const [name, role] of Object.entries(BRAND_ANCESTRY) as Array<[BrandColorName, Role]>) {
+    out[name] = { kind: 'role', role }
   }
   return out
 }

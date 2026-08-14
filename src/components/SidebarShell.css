@@ -1,0 +1,136 @@
+/* The sidebar frame: fixed header, scrolling body, pinned frosted footer,
+   plus the labelled section header that replaced the four <hr> dividers. */
+@layer chrome-base, chrome;
+
+@layer chrome {
+  .sidebar-shell {
+    display: flex;
+    flex-direction: column;
+    width: 320px;
+    flex-shrink: 0;
+    height: 100vh;
+    max-height: 100vh;
+    position: sticky;
+    top: 0;
+    border-right: 1px solid var(--line-card);
+    background: var(--surface-1);
+    overflow: hidden; /* the footer's frost must not bleed past the edge */
+  }
+
+  /* ---------- header: fixed, never scrolls away ---------- */
+  .sb-head {
+    flex-shrink: 0;
+    padding: var(--pad-side) var(--pad-side) 12px;
+    position: relative;
+    z-index: 2;
+  }
+  .sb-wordmark {
+    margin: 0;
+    font-size: var(--fs-h1);
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    width: fit-content;
+  }
+  .sb-tagline {
+    margin: 3px 0 0;
+    font-size: var(--fs-s);
+    color: var(--ink-faint);
+  }
+
+  /* ---------- body: the only thing that scrolls ---------- */
+  .sb-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 4px var(--pad-side) var(--pad-side);
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-ctl) transparent;
+  }
+  .sb-body::-webkit-scrollbar {
+    width: 8px;
+  }
+  .sb-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .sb-body::-webkit-scrollbar-thumb {
+    background: var(--line-ctl);
+    border-radius: var(--radius-pill);
+  }
+  .sb-body::-webkit-scrollbar-thumb:hover {
+    background: var(--line-active);
+  }
+
+  /* ---------- footer: pinned, frosted, shadowed only when earned ---------- */
+  .sb-foot {
+    flex-shrink: 0;
+    padding: 12px var(--pad-side) var(--pad-side);
+    border-top: 1px solid var(--line-card);
+    background: color-mix(in srgb, var(--surface-0) 55%, transparent);
+    backdrop-filter: blur(6px);
+    position: relative;
+    z-index: 2;
+  }
+  /* The lift-off gradient. Held at zero until content is genuinely behind the
+     footer, so the shadow reports scroll state instead of faking depth. */
+  .sb-foot::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -18px;
+    height: 18px;
+    background: linear-gradient(to top, rgba(10, 11, 14, 0.5), transparent);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--d-base) var(--ease);
+  }
+  .sidebar-shell.scrolled .sb-foot::before {
+    opacity: 1;
+  }
+
+  /* ---------- sections ---------- */
+  .sec {
+    margin: 0 0 18px;
+  }
+  .sec:last-child {
+    margin-bottom: 0;
+  }
+  .sec-head {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-m);
+    margin: 0 0 9px;
+    min-height: 22px;
+  }
+  .sec-label {
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+  /* The hairline fades out rather than ruling the full width: it points at the
+     label, it doesn't divide the panel. */
+  .sec-rule {
+    flex: 1;
+    min-width: 8px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--line-card), transparent);
+  }
+  .sec-act {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--gap-s);
+    flex-shrink: 0;
+  }
+
+  /* Belt and braces: the durations are already zeroed globally by
+     styles/motion.css, this kills the transition outright. */
+  @media (prefers-reduced-motion: reduce) {
+    .sb-foot::before {
+      transition: none;
+    }
+  }
+}

@@ -140,7 +140,7 @@ export function whyLines(
  * display order. Derived captions only ever name groups whose tokens actually
  * descend from the hovered candidate, so the line is never canned.
  */
-const JOB_TOKENS: Record<string, string[]> = {
+export const JOB_TOKENS: Record<string, string[]> = {
   backgrounds: ['background', 'card', 'popover', 'secondary', 'muted', 'sidebar'],
   text: [
     'foreground',
