@@ -2,25 +2,23 @@
 
 /* SEPARATION — the border↔shadow balance, as one object.
 
-   A segmented control rather than three buttons: the settings are three stops
-   on a single axis (left = the hairline carries it, right = the shadow does),
-   so what the user should read is a POSITION. That is why the indicator is one
-   thumb that slides between the segments instead of a per-button "on" style.
+   Three tiles rather than three buttons: the settings are three stops on a
+   single axis (left = the hairline carries it, right = the shadow does), so
+   what the user should read is a POSITION. That is why the selection is one
+   ring that slides between the tiles instead of a per-tile "on" style.
 
-   The thumb borrows --pal-primary, like .frame-dot and .mini.on, so the control
-   belongs to the palette being forged. Every colour here is a chrome token. */
+   Achromatic: the ring is drawn in ink, like every engaged state in the
+   chrome. Every colour here is a chrome token. */
 @layer chrome {
   .sep {
-    margin-top: 18px;
-    padding: 0 2px;
+    margin-top: 20px;
   }
 
-  /* names the control — "tuning" now holds two of them, and the dial's own
-     end labels are the only naming it needs */
+  /* names the control, in the same voice as the dial's "taste" */
   .sep-name {
     display: block;
-    font-size: var(--fs-s);
-    color: var(--ink-faint);
+    font-size: var(--fs-m);
+    color: var(--ink);
     margin-bottom: 8px;
   }
 
@@ -28,66 +26,96 @@
     position: relative;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    padding: 3px;
-    background: var(--surface-3);
-    border: 1px solid var(--line-card);
-    border-radius: var(--radius-ctl);
+    gap: var(--gap-s);
   }
 
-  /* one segment wide, translated by its index — the whole reading of the
-     control is where this sits */
+  /* one tile wide, translated by its index plus the gaps it crosses — the
+     whole reading of the control is where this sits */
   .sep-thumb {
     position: absolute;
-    top: 3px;
-    bottom: 3px;
-    left: 3px;
-    width: calc((100% - 6px) / 3);
-    border-radius: calc(var(--radius-ctl) - 2px);
-    background: color-mix(in srgb, var(--pal-primary, var(--accent)) 20%, var(--surface-4));
-    border: 1px solid color-mix(in srgb, var(--pal-primary, var(--accent)) 45%, transparent);
-    transform: translateX(calc(var(--sep-i) * 100%));
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: calc((100% - 2 * var(--gap-s)) / 3);
+    border-radius: 9px;
+    border: 1px solid var(--ink);
+    background: var(--surface-4);
+    transform: translateX(calc(var(--sep-i) * (100% + var(--gap-s))));
     pointer-events: none;
-    transition:
-      transform var(--d-base) var(--ease),
-      background var(--d-base) var(--ease),
-      border-color var(--d-base) var(--ease);
+    transition: transform var(--d-base) var(--ease);
   }
 
   .sep-opt {
     position: relative; /* above the thumb */
     z-index: 1;
-    display: inline-flex;
+    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: 7px;
     min-width: 0;
-    height: 26px;
+    height: 54px;
     padding: 0 4px;
     background: transparent;
-    border: 0;
-    border-radius: calc(var(--radius-ctl) - 2px);
+    border: 1px solid var(--line-ctl);
+    border-radius: 9px;
     font: inherit;
     font-size: var(--fs-s);
     color: var(--ink-faint);
     cursor: pointer;
-    transition: color var(--d-fast) var(--ease);
+    transition:
+      color var(--d-fast) var(--ease),
+      border-color var(--d-fast) var(--ease);
   }
   .sep-opt:hover {
-    color: var(--ink-muted);
+    color: var(--ink);
+    border-color: var(--line-active);
   }
   .sep-opt.on {
-    color: var(--ink-bright);
-  }
-  .sep-opt svg {
-    flex-shrink: 0;
+    color: var(--ink);
+    border-color: transparent;
   }
   .sep-opt-label {
     overflow: hidden;
     text-overflow: ellipsis;
   }
   .sep-opt:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent);
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  /* The pictogram: a page (the box) with a card (the <i>) sitting on it.
+     flat — the card is the page's own colour, told apart by a hairline only.
+     layered — a step lighter, hairline plus a small shadow.
+     lifted — lighter again, no hairline, a real shadow. */
+  .sep-pict {
+    position: relative;
+    width: 30px;
+    height: 18px;
+    border-radius: 3px;
+    background: var(--surface-active);
+    overflow: hidden;
+  }
+  .sep-pict i {
+    position: absolute;
+    inset: 4px 5px 0;
+    border-radius: 3px 3px 0 0;
+  }
+  .sep-pict-flat i {
+    background: var(--surface-active);
+    box-shadow: inset 0 0 0 1px var(--ink-faint);
+  }
+  .sep-pict-layered i {
+    background: color-mix(in srgb, var(--ink) 14%, var(--surface-active));
+    box-shadow:
+      inset 0 0 0 1px var(--ink-faint),
+      0 1px 2px rgb(0 0 0 / 0.6);
+  }
+  .sep-pict-lifted i {
+    inset: 3px 5px 2px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--ink) 26%, var(--surface-active));
+    box-shadow: 0 3px 5px rgb(0 0 0 / 0.8);
   }
 
   /* the sentence under the control: what the CURRENT (or hovered) setting
@@ -97,7 +125,7 @@
     margin: 10px 0 0;
     font-size: var(--fs-s);
     line-height: 1.55;
-    color: var(--ink-faint);
+    color: var(--ink-muted);
     min-height: calc(var(--fs-s) * 1.55 * 2);
   }
   .sep-caption span {

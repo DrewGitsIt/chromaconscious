@@ -1,13 +1,14 @@
 @layer chrome-base, chrome;
 
 /* The chart series tray: a pooled seat set, so a wide card of swatches rather
-   than a single slot. Dashed swatch = the smith computed it. */
+   than a single slot, laid out as one continuous strip. Dashed inner edge =
+   the smith computed it; the colour itself is always shown at full strength. */
 @layer chrome {
   .tray {
     border: 1px solid var(--line-card);
     border-radius: 9px;
-    padding: 7px 8px 8px;
-    background: var(--surface-2);
+    padding: 8px 10px 10px;
+    background: var(--surface-3);
     transition: box-shadow var(--d-fast) var(--ease);
   }
   .tray.drop-ok {
@@ -18,7 +19,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    margin-bottom: 7px;
+    margin-bottom: 8px;
   }
 
   /* the label is the teacher — its own target, separate from the colours */
@@ -32,11 +33,9 @@
     border: 0;
     border-radius: var(--radius-pill);
     background: transparent;
-    color: var(--ink-faint);
-    font-size: 9px;
-    font-weight: 650;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: var(--fs-s);
     cursor: pointer;
     transition:
       background var(--d-fast) var(--ease),
@@ -44,7 +43,7 @@
   }
   .tray-name:hover {
     background: var(--surface-4);
-    color: var(--ink-muted);
+    color: var(--ink);
   }
   .tray-name:focus-visible {
     outline: 2px solid var(--accent);
@@ -59,25 +58,24 @@
 
   .tray-cap {
     margin-left: auto;
-    font-size: 8px;
-    letter-spacing: 0.08em;
+    font-family: var(--font-code);
+    font-size: var(--fs-xs);
     color: var(--ink-faint);
   }
 
   .tray-set {
     display: flex;
     align-items: center;
-    gap: 5px;
-    flex-wrap: wrap;
+    gap: 3px;
   }
 
   /* ---- a series swatch ---- */
   .series {
     position: relative;
-    width: 34px;
-    height: 30px;
-    border-radius: 7px;
-    flex-shrink: 0;
+    flex: 1;
+    min-width: 0;
+    height: 28px;
+    border-radius: 5px;
     cursor: grab;
     background: var(--c);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
@@ -95,28 +93,70 @@
     opacity: 0.35;
   }
 
+  /* the lock badge — centred, because a strip swatch has no corner big enough
+     to hit. Dark-on-colour is safe here: chartAdjust clamps a series colour's
+     lightness into [0.45, 0.8], so none of them is ever near-black. */
+  .series-lock {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    cursor: pointer;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7);
+    transition:
+      opacity var(--d-fast) var(--ease),
+      transform var(--d-fast) var(--ease-back);
+  }
+  /* a LOCKED swatch states it unhovered — that is the whole point of the mark */
+  .series:hover .series-lock,
+  .series-lock[data-locked='true'],
+  .series-lock:focus-visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  .series-lock:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .series.is-locked {
+    box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.55);
+  }
+
   /* derived: the smith's, and therefore provisional — dashed, colour pooled
      behind it rather than stated flat. Same language the slots use. */
-  .series.derived {
-    background: color-mix(in srgb, var(--c) 20%, var(--surface-3));
-    box-shadow: none;
-  }
   .series.derived::after {
     content: '';
     position: absolute;
-    inset: 0;
-    border-radius: 7px;
-    border: 1px dashed color-mix(in srgb, var(--c) 70%, var(--line-ctl));
+    inset: 3px;
+    border-radius: 3px;
+    border: 1px dashed rgb(0 0 0 / 0.45);
+    pointer-events: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .tray,
     .tray-name,
-    .series {
+    .series,
+    .series-lock {
       transition: none;
     }
     .series:hover {
       transform: none;
+    }
+    .series-lock,
+    .series:hover .series-lock,
+    .series-lock[data-locked='true'] {
+      transform: translate(-50%, -50%);
     }
   }
 }

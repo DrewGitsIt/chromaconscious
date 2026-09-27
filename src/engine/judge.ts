@@ -6,9 +6,12 @@ import { STATUS_HUE } from './roles'
  * Judge v1: a pure scorer over a set of role seeds (plus chart seeds when
  * present). Color-compatibility features in the O'Donovan lineage, hand-tuned
  * weights: every feature normalizes to [0,1] and the score is their weighted
- * sum. Deterministic — no randomness, seeds in, number out. The best-of-K
- * sampler in index.ts draws variants per riff seed and keeps the argmax;
- * judging touches seeds only, never ramps, so K variants stay trivially cheap.
+ * sum. Deterministic — no randomness, seeds in, number out.
+ *
+ * The riff walk (walk.ts) calls this to choose between the neighbours each hop
+ * proposes, and to decide when it has walked into a wall. Judging touches seeds
+ * only, never ramps, which is what makes tasting a pool per hop cheap enough to
+ * do on every keystroke.
  */
 
 const smoothstep = (x: number, lo: number, hi: number) => {

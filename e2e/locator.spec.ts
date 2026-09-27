@@ -8,9 +8,17 @@ test.beforeEach(async ({ page }) => {
 /** One labelled seat on the board. */
 const seat = (page: Page, role: string) => page.locator(`.rb-slot[data-role="${role}"]`)
 
+/**
+ * Match a seat by the colour it CAME FROM. A seat's chip shows the seed the
+ * engine resolved, which below fidelity 1 is not the string you typed; the
+ * input is disclosed in the body tooltip as "from #…".
+ */
+const seatFrom = (page: Page, role: string, hex: string) =>
+  expect(seat(page, role).locator('.rb-body')).toHaveAttribute('title', new RegExp(hex))
+
 const bootPicnic = async (page: Page) => {
   await page.getByRole('button', { name: 'Pastel picnic' }).click()
-  await expect(seat(page, 'accent').locator('.rb-hex')).toHaveText('#a0c4ff')
+  await seatFrom(page, 'accent', '#a0c4ff')
 }
 
 const rgbOf = async (page: Page, selector: string, prop = 'color') =>

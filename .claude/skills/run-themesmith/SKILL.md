@@ -42,8 +42,8 @@ screenshot /tmp/shots/01-hero.png
 click role=button:Coastal starter
 wait-for .role-board
 screenshot /tmp/shots/02-theme.png full
-click .sec-act .mini[title*="re-roll"]
-wait-for .sec-act .mini[title*="back one riff"]
+click .ctl-row .ctl[title*="walk the palette"]
+wait-for .ctl-row .ctl[title*="back one riff"]
 screenshot /tmp/shots/03-riff.png full
 click .rb-slot[data-role="danger"] .rb-body
 wait-for .rp-asg
@@ -87,7 +87,7 @@ follows a `hover`/`click` immediately shows the state *before* it landed. Put
 
 ### Choosing which mockup a frame renders
 
-Each frame card carries a `<select class="frame-mockup">`. The option values are
+The frame controls live on the **stage, not the sidebar**: each frame (`.artboard`) has a label row (`.frame-card`) above it — pane letter (`role=button:edit frame A`), a `<select class="frame-mockup">`, the light/dark toggle (`role=button:switch frame A to dark`), and a right-justified `.board-btn` that is `compare` (title `compare two frames`) or, once split, `close A`/`close B`. The mockup scrolls inside `.frame`, never the page — so raw `page.mouse` clicks on anything below the frame's fold need a `scrollIntoViewIfNeeded()` first. The option values are
 the ids in `src/mockups.tsx`: `app`, `analytics`, `marketing`, `brand`.
 
 ```
@@ -113,11 +113,13 @@ The sidebar is `.sidebar-shell`, a stack of `.sec` bands (`.sec-label` names eac
 | its color + provenance | `.rb-hex`, `.rb-tag` — literal text `yours`, `kept`, or `derived` |
 | teach me this role | `.rb-name` → tooltip `.rp-tip` (`.rp-tip-name`, `.rp-tip-gloss`, `.rp-tip-job`) |
 | change what fills it | `.rb-body` → popover `.rp-asg` (`.rp-asg-q`, `.rp-opt`, `.rp-opt-hint`, `.rp-free`) |
-| keep a derived color | `.rb-keep` (the pin — only on `derived` seats) |
+| lock a seat (riff may not move it) | `.rb-lock`, `data-locked="true\|false"` — on **every** seat |
+| keep a derived color | `.rb-keep` — the same button on a `derived` seat |
+| lock a chart swatch | `.tray-set .series-lock`, `data-locked` (absent on invented fills) |
 | chart series | `.tray-top`, `.tray-name`, `.tray-cap` ("N of 5"), `.tray-set` |
 | colors not in play | `.bench-bar` (collapsed by default) → `.bench-drawer`, `.benched`, `.bench-empty` |
 | section tools | `.sec-act .mini[title*="…"]` — see the gotcha below |
-| the rest | `.dial-slider`, `.status-chip`, `.export-row`, `.report-drawer`, `.toast`, `.stage`, `.preview-root` |
+| the rest | `.dial-slider` (readout `.dial-value`), `.status-chip`, `.export-row`, `.report-drawer`, `.toast`, `.stage`, `.artboard`, `.frame`, `.preview-root` |
 
 ## Run (human path)
 
@@ -136,5 +138,7 @@ npm run e2e      # Playwright e2e — spins up its own dev server on :5199
 
 - **The driver must resolve `@playwright/test` from the repo's `node_modules`.** Node's ESM resolver walks up from the *script's own* directory, not `cwd` — since `driver.mjs` lives under `themesmith/.claude/skills/run-themesmith/`, it finds `themesmith/node_modules` automatically. Don't copy the driver out to `/tmp` and run it there; it'll throw `ERR_MODULE_NOT_FOUND`.
 - **A single preset click is enough to prove the app works.** Clicking a preset (e.g. `role=button:Coastal starter`) replaces the entire hero with a live dashboard mockup styled from the generated theme, a six-seat role board with a chart tray and a bench under it, and a contrast report ("all 40 checks pass"). If that mockup doesn't render, something's actually broken — it's not a slow-load flake.
-- **Every glyph is a lucide icon now, so the section tools have no text to match.** `⚄ riff`, `↻ start over` and friends are gone; the tools in `.sec-act` are icon-only `.mini` buttons, and the only stable handle is their `title`: `.sec-act .mini[title*="re-roll"]` (riff), `[title*="back one riff"]`, `[title="start over"]`, `[title*="lock the theme"]` / `[title*="unlock"]` (mono lock), `[title*="clear your placements"]` (reset), `[title*="compare two frames"]` / `[title*="close frame B"]`. Don't reach for `role=button:…` here — a button with no text takes its accessible name from `title`, but the riff button grows a seed count ("1", "2") the moment you use it and the name changes under you.
-- **`riff` needs the theme forged first, and something left to derive.** The riff button only exists once a theme exists (click a preset or `Add` a color first), and it re-rolls *only* the seats tagged `derived`. Supply enough colors to fill all six seats and the five chart slots and it goes disabled with `title="nothing to riff — every seat is yours"` — that's correct behavior, not a broken click. Pin a derived seat with `.rb-keep` and it flips to `kept`, same hex, riff-proof from then on.
+- **Every glyph is a lucide icon now, so the section tools have no text to match.** `⚄ riff`, `↻ start over` and friends are gone; the tools in `.sec-act` are icon-only `.mini` buttons, and the only stable handle is their `title`: `.ctl-row .ctl[title*="walk the palette"]` (riff), `.ctl-row .ctl[title*="back one riff"]`, `[title="start over"]`, `[title*="lock the theme"]` / `[title*="unlock"]` (mono lock), `[title*="clear your placements"]` (reset), `[title*="compare two frames"]` / `[title*="close frame B"]`. Don't reach for `role=button:…` here — a button with no text takes its accessible name from `title`, but the riff button grows a seed count ("1", "2") the moment you use it and the name changes under you.
+- **`riff` walks the whole palette; a lock is the only thing that stops it.** The riff button only exists once a theme exists (click a preset or `Add` a color first). Every hop moves every seat — including colors you supplied — except the ones carrying `.rb-lock[data-locked="true"]`. It goes disabled with `title="nothing to riff — every seat is locked"` only when all six seats *and* every chart color of yours are locked.
+- **Locking freezes the color you can see, not the one you typed.** Lock a seat three hops along and it holds at the walked hex; unlock and the walk resumes to exactly where it would have been. Your input is never lost — it stays in the seat's body tooltip as `… — yours, from #xxxxxx`. The seat chip shows the *seed*, so below fidelity 1 it never equals the string you typed; read `sourceHex` out of that tooltip instead of assuming they match. On a `derived` seat the same control is also `.rb-keep`, which materializes the derived color as a candidate first so there is something to hang the lock on.
+- **Riff is a hop count, not an opaque seed.** Cost is linear in it, and `back one riff` (`n-1`) is exact — hop 0 is bit-identical to the un-riffed theme.

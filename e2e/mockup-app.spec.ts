@@ -478,10 +478,10 @@ test.describe('focus', () => {
 test.describe('split view', () => {
   test('the two panes keep independent state and unique element ids', async ({ page }) => {
     await boot(page)
-    await page.locator('.sec-act .mini[title*="compare two frames"]').click()
+    await page.locator('.board-btn[title*="compare two frames"]').click()
     await expect(page.locator('.preview-root')).toHaveCount(2)
-    const a = page.locator('.split-pane').nth(0)
-    const b = page.locator('.split-pane').nth(1)
+    const a = page.locator('.artboard').nth(0)
+    const b = page.locator('.artboard').nth(1)
 
     await a.locator('.nav-item:nth-child(2)').click()
     await a.getByRole('checkbox', { name: 'Select marketing-site' }).click()
@@ -727,7 +727,7 @@ test.describe('elevation', () => {
 
   test('the two split panes each define their own effects', async ({ page }) => {
     await boot(page)
-    await page.locator('.sec-act .mini[title*="compare two frames"]').click()
+    await page.locator('.board-btn[title*="compare two frames"]').click()
     await expect(page.locator('.preview-root')).toHaveCount(2)
     const shadows = await page
       .locator('.preview-root .stat-tile')

@@ -1,30 +1,43 @@
 /* Design tokens for the playground chrome. Every visual decision the chrome
    makes pulls one of these levers — tweak here, not in component files.
-   (The mockups are themed by the engine's generated variables, not these.) */
+   (The mockups are themed by the engine's generated variables, not these.)
+
+   The chrome is ACHROMATIC on purpose: every surface, line and ink here is a
+   zero-chroma grey, so the only colour on screen is the user's. The one
+   exception is pass/warn/fail, which have to read at a glance. (These used to
+   be Tokyo Night's palette, and its blue fought whatever primary was being
+   forged.) */
 :root {
   /* surfaces, dark → light */
-  --surface-0: #14151a; /* report drawer */
-  --surface-1: #17181c; /* app background, sidebar */
-  --surface-2: #1c1e24; /* cards: start card, candidate rows, popovers */
-  --surface-3: #1f2127; /* controls at rest */
-  --surface-4: #262932; /* control hover, value chips */
-  --surface-active: #3b4252;
+  --surface-0: #0d0d0e; /* report drawer */
+  --surface-1: #111112; /* sidebar */
+  --surface-2: #151517; /* cards, popovers */
+  --surface-3: #18181a; /* controls at rest */
+  --surface-4: #202023; /* control hover, value chips */
+  --surface-active: #2e2e33; /* engaged controls */
+
+  /* the stage the frames sit on: a drafting table, never a palette colour.
+     Evenly ruled edge to edge — no vignette. */
+  --stage: #09090a;
+  --stage-rule: rgb(255 255 255 / 0.05);
+  --stage-rule-step: 24px;
 
   /* borders */
-  --line-card: #2a2c33; /* containers and dividers */
-  --line-ctl: #33363f; /* control edges */
-  --line-active: #4c566a; /* selected / focused */
+  --line-card: #232326; /* containers and dividers */
+  --line-ctl: #2e2e32; /* control edges */
+  --line-active: #6e6e75; /* selected / focused */
 
   /* ink */
-  --ink: #e6e7ea;
-  --ink-muted: #9a9daa;
-  --ink-faint: #6a6e7a;
+  --ink: #ededee;
+  --ink-muted: #a3a3a8;
+  --ink-faint: #6e6e74;
 
-  /* accents */
-  --accent: #7aa2f7;
-  --ok: #9ece6a;
-  --warn: #e0af68;
-  --fail: #ff8a8a;
+  /* accents. --accent is a light grey, not a hue: selection and focus are
+     drawn in ink. */
+  --accent: #d4d4d8;
+  --ok: #7fd6a4;
+  --warn: #e3c07a;
+  --fail: #f08c8c;
 
   /* dimensions */
   --ctl-h: 32px; /* every standard control */
@@ -32,24 +45,28 @@
   --radius-card: 10px; /* containers, popovers */
   --radius-pill: 999px;
 
+  /* type. Named -ui/-code, not -sans/-mono: Tailwind's theme in index.css
+     already owns --font-sans for the mockup world. */
+  --font-ui: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-code: 'Geist Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
+
   /* type scale */
-  --fs-xs: 10px; /* badges, chips, fine print */
-  --fs-s: 11px; /* captions, hex codes, dense controls */
-  --fs-m: 12px; /* default control text */
-  --fs-h1: 20px;
+  --fs-xs: 11px; /* micro-labels, tags, fine print */
+  --fs-s: 12px; /* captions, hex codes, dense controls */
+  --fs-m: 13px; /* default control text */
+  --fs-h1: 16px; /* the wordmark */
+  --fs-read: 20px; /* numeric readouts */
 
   /* rhythm */
   --gap-s: 6px;
   --gap-m: 8px;
   --pad-card: 10px;
-  --pad-side: 16px; /* sidebar padding + section rhythm */
+  --pad-side: 20px; /* sidebar padding + section rhythm */
 
   /* inks that were one-off hexes in App.css */
-  --ink-bright: #c0caf5; /* slider thumb, active pane indicator */
-  --accent-cool: #8fa7dd; /* the dial's engine-judgment end */
-  --accent-warm: #cf9a66; /* the dial's raw-colours end */
-  --accent-quiet: #7a86b8; /* ghost links at rest */
-  --accent-quiet-hi: #a5b3e8; /* ghost links on hover */
+  --ink-bright: #ffffff; /* slider thumb, active pane indicator */
+  --accent-quiet: #8a8a90; /* ghost links at rest */
+  --accent-quiet-hi: #d4d4d8; /* ghost links on hover */
 
   /* motion. Tunable here rather than sprinkled through component files.
      styles/motion.css zeroes the three durations under prefers-reduced-motion,

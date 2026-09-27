@@ -1,0 +1,1495 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>themesmith — the colors-section controls, four ways</title>
+<style>
+  /* ============================================================
+     The complaint: the cluster in the "colors" section header is
+     "on the small side and not super legible". Column 1 is that
+     cluster reproduced from src/App.tsx + src/App.css — same
+     22px .mini pills, same size={11} lucide glyphs, same
+     conditional rendering. Columns 2-4 are three different ways
+     out. Everything is driven by one board state so each
+     direction has to answer for its disabled cases.
+     Tokens below are copied verbatim from src/styles/tokens.css.
+     ============================================================ */
+  :root {
+    --surface-0:#14151a; --surface-1:#17181c; --surface-2:#1c1e24;
+    --surface-3:#1f2127; --surface-4:#262932; --surface-active:#3b4252;
+    --line-card:#2a2c33; --line-ctl:#33363f; --line-active:#4c566a;
+    --ink:#e6e7ea; --ink-muted:#9a9daa; --ink-faint:#6a6e7a;
+    --accent:#7aa2f7; --ok:#9ece6a; --warn:#e0af68; --fail:#ff8a8a;
+    --ctl-h:32px; --radius-ctl:6px; --radius-card:10px; --radius-pill:999px;
+    --fs-xs:10px; --fs-s:11px; --fs-m:12px; --fs-h1:20px;
+    --gap-s:6px; --gap-m:8px; --pad-card:10px; --pad-side:16px;
+    --ink-bright:#c0caf5; --accent-cool:#8fa7dd; --accent-warm:#cf9a66;
+    --accent-quiet:#7a86b8; --accent-quiet-hi:#a5b3e8;
+    --d-fast:120ms; --d-base:200ms; --d-slow:340ms;
+    --ease:cubic-bezier(.2,.8,.3,1); --ease-out:cubic-bezier(.16,1,.3,1);
+    --ease-back:cubic-bezier(.34,1.4,.64,1);
+    /* the palette this sheet is pretending to hold */
+    --pal-primary:#5b7cfa;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; padding:24px 28px 80px; background:#101116; color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;
+  }
+  code,.mono { font-family:ui-monospace,'SF Mono',Menlo,monospace; }
+
+  /* ---------------- sheet chrome (same voice as surfaces-mockup) ---------- */
+  .sheet-head {
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+    padding-bottom:16px; margin-bottom:20px; border-bottom:1px solid #22242b;
+  }
+  .sheet-head h1 { font-size:15px; margin:0; }
+  .sheet-head .sub { font-size:var(--fs-m); color:var(--ink-faint); margin-right:auto; }
+  .ctl { display:flex; align-items:center; gap:8px; }
+  .ctl-key { font-size:9px; text-transform:uppercase; letter-spacing:.12em; color:var(--ink-faint); }
+  .seg { display:flex; background:var(--surface-3); border:1px solid var(--line-card);
+         border-radius:var(--radius-pill); padding:2px; gap:2px; }
+  .seg button {
+    height:22px; padding:0 11px; border:0; border-radius:var(--radius-pill);
+    background:transparent; color:var(--ink-faint); font:inherit; font-size:9px;
+    text-transform:uppercase; letter-spacing:.08em; cursor:pointer;
+    transition:background var(--d-fast) var(--ease), color var(--d-fast) var(--ease);
+  }
+  .seg button:hover { background:var(--surface-4); color:var(--ink-muted); }
+  .seg button.on { background:#3d4a6d; color:#fff; font-weight:650; }
+
+  .state-line {
+    font-size:var(--fs-m); color:var(--ink-muted); margin:-8px 0 18px;
+    display:flex; gap:14px; flex-wrap:wrap; align-items:center;
+  }
+  .state-line .flag {
+    font-size:9px; letter-spacing:.1em; text-transform:uppercase;
+    padding:2px 7px; border-radius:var(--radius-pill); border:1px solid var(--line-ctl);
+    color:var(--ink-faint);
+  }
+  .state-line .flag.off { color:#4e525c; opacity:.6; }
+  .state-line .flag.on { color:var(--ok); border-color:color-mix(in srgb,var(--ok) 40%,transparent); }
+  .state-line .flag.no { color:var(--fail); border-color:color-mix(in srgb,var(--fail) 40%,transparent); }
+
+  .rail { display:flex; gap:24px; align-items:flex-start; overflow-x:auto; padding-bottom:14px; }
+  .col { width:320px; flex-shrink:0; }
+  .col-title {
+    font-size:var(--fs-s); text-transform:uppercase; letter-spacing:.14em;
+    color:var(--ink-faint); margin:0 0 10px; display:flex; align-items:baseline; gap:8px;
+  }
+  .col-title b { color:var(--ink-muted); font-weight:600; }
+  .col-note { font-size:var(--fs-xs); letter-spacing:0; text-transform:none; color:#4e525c; }
+  .trade { font-size:var(--fs-m); line-height:1.55; color:#c8ccd6; margin:12px 0 0; }
+  .trade b { color:var(--ink); }
+  /* the mark is coloured, not the sentence — a whole green paragraph is louder
+     than the judgement it is carrying */
+  .trade .plus, .trade .minus {
+    display:block; margin-top:6px; padding-left:15px; position:relative; color:#c8ccd6;
+  }
+  .trade .plus::before, .trade .minus::before {
+    position:absolute; left:0; top:0; font-weight:700; font-size:12px;
+  }
+  .trade .plus::before { content:'+'; color:var(--ok); }
+  .trade .minus::before { content:'−'; color:var(--warn); }
+  .a11y {
+    margin:10px 0 0; padding:9px 10px; border-left:2px solid var(--line-ctl);
+    font-size:var(--fs-s); line-height:1.5; color:var(--ink-faint);
+  }
+  .a11y b { color:var(--ink-muted); font-weight:600; }
+
+  .measure {
+    margin-top:10px; font-family:ui-monospace,monospace; font-size:9px; line-height:1.6;
+    color:#5b606c;
+  }
+  .measure .bad { color:var(--fail); }
+  .measure .good { color:var(--ok); }
+
+  /* ============================================================
+     THE SIDEBAR SLICE — rules below are lifted from
+     SidebarShell.css / App.css / RoleBoard.css / SeriesTray.css /
+     Bench.css / base.css so the baseline is the real thing.
+     ============================================================ */
+  .sb {
+    width:320px; background:var(--surface-1); border:1px solid var(--line-card);
+    border-radius:10px; overflow:visible; position:relative;
+  }
+  .sb-head { padding:var(--pad-side) var(--pad-side) 12px; }
+  .sb-wordmark { margin:0; font-size:var(--fs-h1); font-weight:650; letter-spacing:-.02em; }
+  .sb-tagline { margin:3px 0 0; font-size:var(--fs-s); color:var(--ink-faint); }
+  .sb-body { padding:4px var(--pad-side) var(--pad-side); }
+
+  .sec { margin:0 0 18px; }
+  .sec:last-child { margin-bottom:0; }
+  .sec-head { display:flex; align-items:center; gap:var(--gap-m); margin:0 0 9px; min-height:22px; }
+  .sec-label {
+    font-size:var(--fs-xs); font-weight:600; text-transform:uppercase;
+    letter-spacing:.16em; color:var(--ink-faint); white-space:nowrap;
+  }
+  .sec-rule { flex:1; min-width:8px; height:1px;
+              background:linear-gradient(90deg,var(--line-card),transparent); }
+  .sec-act { display:inline-flex; align-items:center; gap:var(--gap-s); flex-shrink:0; }
+  .sec-tools { position:relative; display:inline-flex; align-items:center; gap:4px; }
+
+  /* the control skin from base.css, for anything not wearing .mini */
+  .sb :where(button,input) {
+    height:var(--ctl-h); padding:0 10px; background:var(--surface-3);
+    border:1px solid var(--line-ctl); border-radius:var(--radius-ctl);
+    color:var(--ink); font:inherit; font-size:var(--fs-m);
+  }
+  .sb :where(button) { cursor:pointer; }
+  .sb :where(button):hover { background:var(--surface-4); }
+  .sb :where(button):disabled { opacity:.35; cursor:default; }
+
+  /* ---- .mini — App.css, verbatim ---- */
+  .mini {
+    height:22px; padding:0 8px; font-size:var(--fs-xs); background:transparent;
+    border:1px solid transparent; color:var(--ink-faint); border-radius:var(--radius-pill);
+    display:inline-flex; align-items:center; gap:5px; cursor:pointer;
+    transition:background var(--d-fast) var(--ease), border-color var(--d-fast) var(--ease),
+               color var(--d-fast) var(--ease);
+  }
+  .mini:hover:not(:disabled) { background:var(--surface-3); border-color:var(--line-ctl); color:var(--ink-muted); }
+  .mini:disabled { opacity:.4; cursor:default; }
+  .mini.on {
+    background:color-mix(in srgb,var(--pal-primary) 20%,transparent);
+    border-color:color-mix(in srgb,var(--pal-primary) 45%,transparent);
+    color:var(--ink);
+  }
+
+  /* ---- the role board — RoleBoard.css ---- */
+  .role-board { display:grid; grid-template-columns:1fr 1fr; gap:var(--gap-m); }
+  .rb-slot {
+    position:relative; height:60px; border-radius:9px; padding:7px 8px 6px;
+    display:flex; flex-direction:column; justify-content:space-between;
+  }
+  .rb-slot.rb-yours, .rb-slot.rb-kept {
+    background:var(--c); color:var(--ink-on); border:1px solid transparent;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.1), 0 1px 3px rgba(0,0,0,.4); cursor:grab;
+  }
+  .rb-slot.rb-derived {
+    border:1px dashed color-mix(in srgb,var(--c) 60%,var(--line-ctl));
+    background:color-mix(in srgb,var(--c) 20%,var(--surface-2)); color:var(--ink);
+  }
+  .rb-slot.is-anchored.rb-yours, .rb-slot.is-anchored.rb-kept {
+    box-shadow:inset 0 0 0 2px var(--ink-on), 0 1px 3px rgba(0,0,0,.4);
+  }
+  .rb-slot.is-locked { outline:1px solid color-mix(in srgb,var(--ink-on,var(--line-active)) 55%,transparent); outline-offset:-3px; }
+  .rb-top { display:flex; align-items:center; gap:4px; }
+  .rb-name {
+    display:inline-flex; align-items:center; gap:4px; height:17px; padding:0 5px 0 4px;
+    margin-left:-4px; border-radius:var(--radius-pill); font-size:9px; font-weight:650;
+    line-height:1; text-transform:uppercase; letter-spacing:.13em; background:transparent;
+    border:0; color:inherit; opacity:.75;
+  }
+  .rb-hex { font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:var(--fs-s); font-weight:550; letter-spacing:-.01em; }
+  .rb-derived .rb-hex { color:var(--ink-muted); }
+  .rb-body { display:flex; align-items:flex-end; gap:5px; width:100%; padding:0;
+             background:transparent; border:0; color:inherit; font:inherit; text-align:left; }
+  .rb-tag { display:inline-flex; margin-left:auto; font-size:8px; text-transform:uppercase;
+            letter-spacing:.1em; opacity:.6; }
+  .rb-lock {
+    position:absolute; right:5px; top:5px; width:18px; height:18px; padding:0;
+    display:inline-flex; align-items:center; justify-content:center; border:0;
+    border-radius:50%; background:var(--surface-4); color:var(--ink); cursor:pointer;
+    opacity:0; transform:scale(.7);
+    transition:opacity var(--d-fast) var(--ease), transform var(--d-fast) var(--ease-back);
+  }
+  .rb-slot .rb-lock[data-locked='true'], .rb-slot:hover .rb-lock, .rb-lock:focus-visible {
+    opacity:1; transform:scale(1);
+  }
+  .rb-slot .rb-lock[data-locked='true'] { background:var(--ink-on,var(--ink)); color:var(--c); }
+  .rb-slot.is-rerolling { animation:rb-reroll var(--d-slow) var(--ease-back) both; }
+  @keyframes rb-reroll {
+    0% { transform:translateY(0) scale(1); }
+    40% { transform:translateY(-4px) scale(1.04); }
+    100% { transform:translateY(0) scale(1); }
+  }
+
+  /* ---- the series tray — SeriesTray.css ---- */
+  .tray { border:1px solid var(--line-card); border-radius:9px; padding:7px 8px 8px;
+          background:var(--surface-2); margin-top:var(--gap-m); }
+  .tray-top { display:flex; align-items:center; gap:4px; margin-bottom:7px; }
+  .tray-name { font-size:9px; font-weight:650; letter-spacing:.13em; text-transform:uppercase;
+               color:var(--ink-faint); }
+  .tray-cap { margin-left:auto; font-size:8px; letter-spacing:.08em; color:var(--ink-faint); }
+  .tray-set { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+  .series { position:relative; width:34px; height:30px; border-radius:7px; background:var(--c);
+            box-shadow:inset 0 0 0 1px rgba(255,255,255,.12); }
+  .series.is-locked { box-shadow:inset 0 0 0 2px rgba(0,0,0,.55); }
+  .series-lock {
+    position:absolute; left:50%; top:50%; width:16px; height:16px; border:0; border-radius:50%;
+    background:rgba(0,0,0,.6); color:#fff; display:inline-flex; align-items:center;
+    justify-content:center; opacity:0; transform:translate(-50%,-50%) scale(.7); padding:0;
+  }
+  .series-lock[data-locked='true'], .series:hover .series-lock {
+    opacity:1; transform:translate(-50%,-50%) scale(1);
+  }
+
+  /* ---- the bench bar — Bench.css ---- */
+  .bench { margin-top:10px; }
+  .bench-bar {
+    display:flex; align-items:center; gap:7px; width:100%; height:30px; padding:0 9px;
+    background:transparent; border:1px solid var(--line-card); border-radius:var(--radius-pill);
+    color:var(--ink-faint); font-size:var(--fs-xs); text-align:left; cursor:pointer;
+    transition:background var(--d-fast) var(--ease), color var(--d-fast) var(--ease),
+               border-color var(--d-fast) var(--ease);
+  }
+  .bench-bar:hover { background:var(--surface-3); border-color:var(--line-ctl); color:var(--ink-muted); }
+  .bench-dots { display:inline-flex; gap:3px; margin-left:auto; }
+  .bench-dots i { width:12px; height:12px; border-radius:3px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.2); }
+  /* the one shared fix all three directions take: 32px tall, 11px label, real ink,
+     and a count that reads as a count */
+  .bench-bar.v2 { height:32px; font-size:var(--fs-s); color:var(--ink-muted); }
+  .bench-bar.v2 .bcount {
+    font-size:9px; font-weight:650; background:var(--surface-4); color:var(--ink-muted);
+    border-radius:var(--radius-pill); padding:1px 6px; margin-left:2px;
+  }
+
+  /* ---- the add row — App.css ---- */
+  .add-row { display:flex; gap:var(--gap-s); margin-top:10px; }
+  .hexfield {
+    display:flex; align-items:center; gap:var(--gap-s); flex:1; min-width:0; height:var(--ctl-h);
+    background:var(--surface-3); border:1px solid var(--line-card); border-radius:var(--radius-ctl);
+    padding:0 6px;
+  }
+  .hexfield input { flex:1; min-width:0; height:auto; background:transparent; border:0;
+                    outline:0; padding:0; font-size:var(--fs-m); color:var(--ink); }
+  .swatch-btn--sm { width:20px; height:20px; padding:0; border:1px solid rgba(255,255,255,.2);
+                    border-radius:var(--radius-ctl); flex-shrink:0; }
+
+  /* ---- popovers / menus — base.css .menu ---- */
+  .menu {
+    position:absolute; z-index:40; background:var(--surface-2); border:1px solid var(--line-ctl);
+    border-radius:var(--radius-card); box-shadow:0 8px 24px rgba(0,0,0,.5); padding:4px; min-width:150px;
+  }
+  .menu .item {
+    display:flex; align-items:center; gap:8px; width:100%; height:auto; text-align:left;
+    padding:6px 10px; border-radius:var(--radius-ctl); background:transparent; border:0;
+    font-size:var(--fs-m); color:var(--ink);
+  }
+  .menu .item:hover { background:var(--surface-4); }
+  .menu .item .kbd { margin-left:auto; font-size:9px; color:var(--ink-faint); font-family:ui-monospace,monospace; }
+  .menu .menu-cap { font-size:var(--fs-xs); color:var(--ink-faint); line-height:1.5;
+                    padding:7px 10px 4px; border-top:1px solid var(--line-card); margin-top:4px; }
+
+  /* ============================================================
+     DIRECTION 1 — spell it out
+     ============================================================ */
+  .d1-row { display:flex; gap:5px; margin:0 0 9px; }
+  .d1 {
+    height:26px; padding:0 9px 0 7px; display:inline-flex; align-items:center; gap:5px;
+    background:var(--surface-3); border:1px solid var(--line-card); border-radius:var(--radius-pill);
+    color:var(--ink-muted); font-size:var(--fs-s); cursor:pointer;
+    transition:background var(--d-fast) var(--ease), border-color var(--d-fast) var(--ease),
+               color var(--d-fast) var(--ease);
+  }
+  .d1:hover:not([aria-disabled='true']) { background:var(--surface-4); border-color:var(--line-ctl); color:var(--ink); }
+  .d1[aria-disabled='true'] { opacity:.42; cursor:default; }
+  .d1 .hop {
+    font-size:9px; font-weight:650; background:var(--surface-active); color:var(--ink);
+    border-radius:var(--radius-pill); padding:1px 5px; margin-left:1px;
+  }
+  .d1.on {
+    background:color-mix(in srgb,var(--pal-primary) 20%,transparent);
+    border-color:color-mix(in srgb,var(--pal-primary) 45%,transparent); color:var(--ink);
+  }
+  .d1 .basesw { width:12px; height:12px; border-radius:3px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.25); }
+  /* the header's one survivor. 24px, not 22 — it has to clear the target floor
+     the rest of the direction is claiming. */
+  .d1-head { height:24px; padding:0 8px; font-size:var(--fs-s); }
+
+  /* ============================================================
+     DIRECTION 2 — one object: the walk
+     ============================================================ */
+  .d2-group { display:inline-flex; align-items:stretch; }
+  .d2-group > button {
+    height:24px; background:var(--surface-3); border:1px solid var(--line-ctl); color:var(--ink-muted);
+    font-size:var(--fs-s); display:inline-flex; align-items:center; gap:5px; padding:0 9px;
+    cursor:pointer; border-radius:0;
+    transition:background var(--d-fast) var(--ease), color var(--d-fast) var(--ease);
+  }
+  .d2-group > button:first-child { border-radius:var(--radius-pill) 0 0 var(--radius-pill); padding:0 6px 0 8px; }
+  .d2-group > button:last-child { border-radius:0 var(--radius-pill) var(--radius-pill) 0; border-left:0; }
+  .d2-group > button:only-child { border-radius:var(--radius-pill); }
+  .d2-group > button:hover:not(:disabled) { background:var(--surface-4); color:var(--ink); }
+  .d2-group > button:disabled { opacity:.4; cursor:default; }
+  .d2-group .hop { font-size:9px; font-weight:650; color:var(--ink); background:var(--surface-active);
+                   border-radius:var(--radius-pill); padding:1px 5px; }
+  .d2-chip {
+    height:24px; padding:0 8px 0 5px; display:inline-flex; align-items:center; gap:5px;
+    background:var(--surface-3); border:1px solid var(--line-ctl); border-radius:var(--radius-pill);
+    color:var(--ink-muted); font-size:var(--fs-s); cursor:pointer;
+  }
+  .d2-chip:hover { background:var(--surface-4); color:var(--ink); }
+  .d2-chip.on { background:color-mix(in srgb,var(--pal-primary) 22%,transparent);
+                border-color:color-mix(in srgb,var(--pal-primary) 50%,transparent); color:var(--ink); }
+  .d2-chip .basesw { width:14px; height:14px; border-radius:4px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.25); }
+  .d2-more {
+    width:26px; height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center;
+    background:transparent; border:1px solid transparent; border-radius:var(--radius-pill);
+    color:var(--ink-faint); cursor:pointer;
+  }
+  .d2-more:hover, .d2-more[aria-expanded='true'] { background:var(--surface-3); border-color:var(--line-ctl); color:var(--ink-muted); }
+
+  /* ============================================================
+     DIRECTION 3 — one big verb, everything else in a menu
+     ============================================================ */
+  .d3-menu-btn {
+    height:24px; padding:0 8px; display:inline-flex; align-items:center; gap:5px;
+    background:transparent; border:1px solid var(--line-card); border-radius:var(--radius-pill);
+    color:var(--ink-muted); font-size:var(--fs-s); cursor:pointer;
+  }
+  .d3-menu-btn:hover, .d3-menu-btn[aria-expanded='true'] { background:var(--surface-3); border-color:var(--line-ctl); color:var(--ink); }
+  .d3-mono {
+    display:inline-flex; align-items:center; gap:5px; height:20px; padding:0 7px 0 4px;
+    border-radius:var(--radius-pill); font-size:9px; letter-spacing:.08em; text-transform:uppercase;
+    background:color-mix(in srgb,var(--pal-primary) 22%,transparent);
+    border:1px solid color-mix(in srgb,var(--pal-primary) 45%,transparent); color:var(--ink);
+  }
+  .d3-mono i { width:12px; height:12px; border-radius:3px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.25); }
+  .d3-riff { display:flex; margin-top:10px; }
+  .d3-riff > button {
+    height:32px; background:var(--surface-3); border:1px solid var(--line-ctl); color:var(--ink);
+    font-size:var(--fs-m); display:inline-flex; align-items:center; justify-content:center; gap:7px;
+    cursor:pointer; border-radius:0;
+    transition:background var(--d-fast) var(--ease), border-color var(--d-fast) var(--ease);
+  }
+  .d3-riff .go { flex:1; border-radius:var(--radius-ctl) 0 0 var(--radius-ctl); font-weight:550; }
+  .d3-riff .go:hover:not(:disabled) { background:var(--surface-4); border-color:var(--line-active); }
+  .d3-riff .go.solo { border-radius:var(--radius-ctl); }
+  .d3-riff .go .hop { font-size:9px; font-weight:650; color:var(--ink); background:var(--surface-active);
+                      border-radius:var(--radius-pill); padding:1px 6px; }
+  .d3-riff .back { width:38px; border-radius:0 var(--radius-ctl) var(--radius-ctl) 0; border-left:0;
+                   color:var(--ink-muted); }
+  .d3-riff .back:hover:not(:disabled) { background:var(--surface-4); color:var(--ink); }
+  .d3-riff > button:disabled { opacity:1; background:transparent; border-style:dashed;
+                               color:var(--ink-faint); cursor:default; font-size:var(--fs-s); }
+
+  /* the "+ swatch" add control, used by directions 2 and 3 and specced below */
+  .addsw {
+    width:32px; height:32px; padding:0; flex-shrink:0; display:inline-flex; align-items:center;
+    justify-content:center; background:transparent; border:1px dashed var(--line-ctl);
+    border-radius:var(--radius-ctl); color:var(--ink-faint); cursor:pointer;
+    transition:border-color var(--d-fast) var(--ease), color var(--d-fast) var(--ease),
+               background var(--d-fast) var(--ease);
+  }
+  .addsw:hover, .addsw[aria-expanded='true'] {
+    border-color:var(--accent); color:var(--accent); border-style:solid;
+    background:color-mix(in srgb,var(--accent) 10%,transparent);
+  }
+  .addsw-row { display:flex; align-items:center; gap:var(--gap-s); margin-top:10px; }
+  .addsw-lab { font-size:var(--fs-s); color:var(--ink-faint); }
+
+  /* ============================================================
+     THE PICKER POPOVER
+     ============================================================ */
+  .pk-anchor { position:relative; display:inline-flex; }
+  .pk-pop {
+    position:absolute; z-index:50; top:calc(100% + 6px); left:0; width:236px;
+    background:var(--surface-2); border:1px solid var(--line-ctl); border-radius:var(--radius-card);
+    box-shadow:0 8px 24px rgba(0,0,0,.5); padding:var(--pad-card);
+    display:flex; flex-direction:column; gap:var(--gap-m);
+  }
+  .pk-pop[hidden] { display:none; }
+  /* Opens UPWARD in the sidebar. `.sidebar-shell` is overflow:hidden and
+     `.sb-body` is overflow-y:auto, so a popover anchored to the last row of the
+     colors section and dropping downward is clipped by two boxes at once. */
+  .pk-pop.up { top:auto; bottom:calc(100% + 6px); }
+  .pk-sv { position:relative; height:132px; border-radius:var(--radius-ctl); cursor:crosshair;
+           box-shadow:inset 0 0 0 1px rgba(255,255,255,.12); touch-action:none; }
+  .pk-sv .thumb {
+    position:absolute; width:14px; height:14px; border-radius:50%; border:2px solid #fff;
+    box-shadow:0 0 0 1px rgba(0,0,0,.5); transform:translate(-50%,-50%); pointer-events:none;
+  }
+  .pk-hue { position:relative; height:14px; border-radius:var(--radius-pill); cursor:pointer;
+            touch-action:none;
+            background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);
+            box-shadow:inset 0 0 0 1px rgba(255,255,255,.12); }
+  .pk-hue .thumb {
+    position:absolute; top:50%; width:14px; height:14px; border-radius:50%; border:2px solid #fff;
+    box-shadow:0 0 0 1px rgba(0,0,0,.5); transform:translate(-50%,-50%); pointer-events:none;
+  }
+  .pk-row { display:flex; gap:var(--gap-s); }
+  .pk-field {
+    display:flex; align-items:center; gap:var(--gap-s); flex:1; min-width:0; height:var(--ctl-h);
+    background:var(--surface-3); border:1px solid var(--line-card); border-radius:var(--radius-ctl);
+    padding:0 6px; transition:border-color var(--d-fast) var(--ease);
+  }
+  .pk-field:focus-within { border-color:color-mix(in srgb,var(--pal-primary) 55%,transparent); }
+  .pk-field.bad { border-color:var(--fail); }
+  .pk-field input { flex:1; min-width:0; background:transparent; border:0; outline:0; padding:0;
+                    height:auto; color:var(--ink); font-size:var(--fs-m);
+                    font-family:ui-monospace,'SF Mono',Menlo,monospace; }
+  .pk-prev { width:20px; height:20px; border-radius:4px; flex-shrink:0;
+             box-shadow:inset 0 0 0 1px rgba(255,255,255,.25); }
+  .pk-prev.multi { display:flex; overflow:hidden; box-shadow:inset 0 0 0 1px rgba(255,255,255,.25); }
+  .pk-prev.multi i { flex:1; height:100%; display:block; }
+  .pk-eye {
+    width:32px; height:32px; padding:0; flex-shrink:0; display:inline-flex; align-items:center;
+    justify-content:center; background:var(--surface-3); border:1px solid var(--line-ctl);
+    border-radius:var(--radius-ctl); color:var(--ink-muted); cursor:pointer;
+  }
+  .pk-eye:hover { background:var(--surface-4); color:var(--ink); }
+  .pk-msg { font-size:var(--fs-s); line-height:1.45; color:var(--ink-faint); min-height:16px; }
+  .pk-msg.bad { color:var(--fail); }
+  .pk-add {
+    height:var(--ctl-h); width:100%; border-radius:var(--radius-ctl); border:1px solid var(--line-active);
+    background:var(--surface-4); color:var(--ink); font-size:var(--fs-m); font-weight:550; cursor:pointer;
+  }
+  .pk-add:hover:not(:disabled) { background:var(--surface-active); }
+  .pk-add:disabled { opacity:.35; cursor:default; }
+  .pk-recent { display:flex; gap:5px; flex-wrap:wrap; }
+  .pk-recent button { width:22px; height:22px; padding:0; border-radius:5px; border:0;
+                      box-shadow:inset 0 0 0 1px rgba(255,255,255,.22); cursor:pointer; }
+
+  /* ---------------- add-control spec panels ---------------- */
+  .panels { display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; margin-top:6px; }
+  .panel {
+    width:320px; background:var(--surface-1); border:1px solid var(--line-card);
+    border-radius:10px; padding:var(--pad-side); position:relative;
+  }
+  .panel.tall { min-height:392px; }
+  .panel-cap { font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:.12em;
+               color:var(--ink-faint); margin:0 0 10px; }
+
+  /* ---------------- hit-target audit ---------------- */
+  body.audit .rail button, body.audit .panels button { position:relative; }
+  body.audit .t-bad { outline:1px dashed var(--fail); outline-offset:1px; }
+  body.audit .t-ok  { outline:1px dashed color-mix(in srgb,var(--ok) 55%,transparent); outline-offset:1px; }
+  .audit-key { display:flex; gap:14px; font-size:9px; color:var(--ink-faint); margin:10px 0 0; }
+  .audit-key span::before { content:''; display:inline-block; width:10px; height:10px; margin-right:5px;
+                            vertical-align:-1px; border:1px dashed currentColor; }
+  .audit-key .bad { color:var(--fail); } .audit-key .ok { color:var(--ok); }
+
+  /* ---------------- notes ---------------- */
+  .notes { max-width:760px; font-size:13px; line-height:1.6; margin-top:34px; }
+  .notes h3 { font-size:var(--fs-m); text-transform:uppercase; letter-spacing:.12em;
+              color:var(--ink-muted); margin:26px 0 8px; }
+  .notes h3:first-child { margin-top:0; }
+  .notes p { margin:0 0 11px; color:#c8ccd6; }
+  .notes b { color:var(--ink); }
+  .notes ul { margin:0 0 11px; padding-left:18px; color:#c8ccd6; }
+  .notes li { margin-bottom:6px; }
+  .notes code { font-size:11.5px; background:var(--surface-2); border:1px solid var(--line-card);
+                border-radius:4px; padding:1px 4px; color:var(--ink-muted); }
+  .notes table { border-collapse:collapse; width:100%; margin:0 0 12px; font-size:12px; }
+  .notes td, .notes th { border-top:1px solid var(--line-card); padding:6px 10px 6px 0;
+                         vertical-align:top; color:#c8ccd6; text-align:left; }
+  .notes th { color:var(--ink-faint); font-size:9px; text-transform:uppercase; letter-spacing:.12em;
+              font-weight:600; border-top:0; }
+  .notes td:first-child { color:var(--ink); white-space:nowrap; width:150px; }
+  .rule-box { border-left:2px solid var(--accent); padding:8px 12px; margin:0 0 12px;
+              background:rgba(122,162,247,.06); font-size:12px; line-height:1.7; color:#c8ccd6; }
+  .verdict { border:1px solid color-mix(in srgb,var(--ok) 35%,transparent);
+             background:color-mix(in srgb,var(--ok) 7%,transparent);
+             border-radius:var(--radius-card); padding:12px 14px; margin:0 0 12px; }
+  .verdict b { color:var(--ok); }
+  .sec-label-lg { font-size:var(--fs-s); text-transform:uppercase; letter-spacing:.14em;
+                  color:var(--ink-faint); margin:34px 0 12px; padding-top:16px;
+                  border-top:1px solid #22242b; }
+</style>
+</head>
+<body>
+
+<div class="sheet-head">
+  <h1>themesmith — the colors-section controls, four ways</h1>
+  <span class="sub">column 1 reproduced from App.tsx / App.css · 2–4 are proposals · sidebar is 320px, always</span>
+  <span class="ctl"><span class="ctl-key">board state</span><span class="seg" id="segState"></span></span>
+  <span class="ctl"><span class="ctl-key">hit targets</span><span class="seg" id="segAudit"></span></span>
+</div>
+
+<div class="state-line" id="stateLine"></div>
+
+<div class="rail" id="rail"></div>
+
+<div class="audit-key">
+  <span class="ok">≥ 24 × 24 css px</span>
+  <span class="bad">below 24 in either axis</span>
+  <span>measured live from the rendered boxes — turn the switch above on. The seat lock
+    (13×11) and series lock (11×11) fail in every column: out of scope, shown for
+    honesty.</span>
+</div>
+
+<p class="sec-label-lg">the add control — an empty swatch that opens a picker</p>
+<div class="panels" id="panels"></div>
+
+<div class="notes" id="notes">
+<h3>what is actually wrong today</h3>
+<p>Not "the icons are small" on its own. Four separate things stack up in the
+  <code>.sec-act</code> slot, and each makes the next one worse:</p>
+<ul>
+  <li><b>22px pills, 11px glyphs, <code>--ink-faint</code> ink.</b> <code>.mini</code> is
+    <code>height:22px</code> and its resting colour is <code>#6a6e7a</code> on
+    <code>#17181c</code> — about 2.3:1. It is legible only on hover, when it finally
+    gets a border and <code>--ink-muted</code>. A control that is invisible until you
+    touch it cannot be discovered by looking.</li>
+  <li><b>Two of the five carry no word at all.</b> start-over is a lone palette glyph;
+    back-one-riff is a lone <code>RotateCcw</code> — the <i>same glyph</i> reset uses,
+    two pills away, meaning something else. Reset says "reset"; back says nothing.</li>
+  <li><b>The cluster changes shape underneath the pointer.</b> reset and back are
+    conditionally rendered, not disabled, so riff moves horizontally the moment you
+    press it (back appears to its right) and again when you clear placements. Press
+    riff twice quickly and the second click can land on the button that just appeared.</li>
+  <li><b>It does not fit.</b> Measured live under column 1: the header can give the
+    tools about <b>213px</b>, and the shipped cluster wants <b>233px</b> mid-session and
+    <b>242px</b> with mono engaged. <code>.sec-rule</code> is already collapsed to its
+    8px minimum in both, so the row is over budget with nothing left to give.</li>
+</ul>
+
+<h3>the three directions, and what each is buying</h3>
+<table>
+  <tr><th>direction</th><th>optimises</th><th>costs</th></tr>
+  <tr><td>1 · spell it out</td>
+      <td>legibility and stability — every verb has a word, nothing is ever added or
+        removed, so no target ever moves.</td>
+      <td>~35px of sidebar height, and five equal pills means nothing reads as the
+        primary action.</td></tr>
+  <tr><td>2 · one object</td>
+      <td>says which controls belong together: back and riff become one segmented
+        walk widget, so "3" reads as a position on a path rather than a badge.</td>
+      <td>reset and start-over go behind an overflow, and that overflow is itself an
+        icon-only button — the very thing being fixed, kept on purpose in one place.</td></tr>
+  <tr><td>3 · one big verb</td>
+      <td>the action pressed twenty times a session gets a 32px full-width target and
+        room to explain itself when disabled.</td>
+      <td>another full-width element under the board, and three verbs one click deeper.</td></tr>
+</table>
+
+<h3>recommendation</h3>
+<div class="verdict">
+  <p style="margin:0 0 8px"><b>Direction 3, with direction 2's walk group inside it.</b></p>
+  <p style="margin:0">riff is the only control here that gets pressed repeatedly, and the
+  only one whose disabled state needs a sentence rather than a tooltip — both of those
+  argue for width, and width is exactly what the header slot cannot give. Promote riff
+  (with back welded to its right edge, the segmented idea from direction 2) to a
+  full-width control under the board; drop mono, reset and start-over into one labelled
+  <code>palette ▾</code> menu, where they can carry full sentences and destructive
+  wording. That leaves the section header holding one labelled button instead of five
+  glyphs, which is the only version that still fits at 320px in every state.</p>
+</div>
+<p>The concession direction 3 has to make is that an engaged mono is a mode, and a mode
+  hidden in a menu is a mode you forget you are in — so it surfaces as a small swatch
+  chip beside the section label whenever it is on (visible in the <i>mono on</i> state).
+  Direction 1 is the safe fallback if the extra full-width control is judged too heavy;
+  it fixes legibility without moving anything.</p>
+
+<h3>disabled, per direction</h3>
+<table>
+  <tr><th>control</th><th>when it goes away</th><th>today</th><th>proposed</th></tr>
+  <tr><td>riff</td><td>every seat <i>and</i> every series locked</td>
+      <td><code>disabled</code>, 40% opacity, reason only in <code>title</code></td>
+      <td>1 &amp; 2: <code>aria-disabled</code> + reason in the tooltip. 3: the button keeps
+        its width and reads <i>"every seat is locked — nothing to riff"</i> in place.</td></tr>
+  <tr><td>back one riff</td><td>hop = 0</td>
+      <td>not rendered — the cluster reflows</td>
+      <td>always present, disabled at hop 0, so riff never moves. The one exception is
+        direction 3 at <i>all locked</i>: the whole walk control collapses to its reason,
+        back included, because a hop back is equally inert when nothing may move.</td></tr>
+  <tr><td>reset</td><td>no placements</td>
+      <td>not rendered — the cluster reflows</td>
+      <td>1: present and dim. 2 &amp; 3: a menu item, dim, with the reason as its
+        subtitle</td></tr>
+  <tr><td>mono</td><td>never disabled; it is a toggle</td>
+      <td>reads "mono" off, the anchor's <i>role name</i> on</td>
+      <td>reads "mono" off; on, it shows the base <b>colour</b> as a swatch and stays
+        clickable to re-pick</td></tr>
+</table>
+
+<h3>accessibility, stated per direction</h3>
+<ul>
+  <li><b>Every control gets a real accessible name.</b> Today four of the five rely on
+    <code>title</code> alone for their name — which works in most screen readers but is
+    not a name, it is a tooltip, and it is not exposed to touch or to speech control at
+    all. All three directions carry a visible word or an explicit
+    <code>aria-label</code>, and <code>title</code> is demoted to the explanation
+    ("walk the palette one hop; locked seats hold still").</li>
+  <li><b>24px minimum hit target even where the glyph is 11–13px.</b> Turn on the
+    switch at the top: every button in the sheet is measured live and outlined by whether
+    it clears 24×24. Today's <code>.mini</code> is 22px tall and the icon-only ones are
+    ~27px wide, so they fail the height on every one. The directions run 26px (1),
+    24px + generous padding (2) and 32px (3).</li>
+  <li><b>Focus.</b> <code>.mini</code> defines no <code>:focus-visible</code> rule
+    anywhere — it inherits the UA ring, on a pill whose border is transparent. The
+    directions use the same 2px <code>--accent</code> ring the board seats already
+    define, so keyboard focus looks like the rest of the app.</li>
+  <li><b>Disabled vs aria-disabled.</b> A real <code>disabled</code> button is removed
+    from the tab order and its <code>title</code> is never announced, so "why can't I
+    riff?" is unanswerable by keyboard. Directions 1 and 2 use
+    <code>aria-disabled="true"</code> and keep the button focusable; direction 3 does not
+    need the trick because the reason is written on the control.</li>
+</ul>
+
+<h3>the quiet-control problem (and what it means for the seat lock)</h3>
+<p>The seat padlock is out of scope, but it has the same disease as this cluster: it is
+  <code>opacity:0</code> until the seat is hovered, so a first-time user has no way to
+  learn that locking exists. Direction 3 has a clean answer that does not touch
+  <code>.rb-lock</code> at all — <b>the primary control names the mechanic</b>. When riff
+  is a full-width button reading <i>"riff — one hop · locked seats hold still"</i>, and
+  it goes flat with <i>"every seat is locked"</i>, the word <i>locked</i> is on screen at
+  full size before the user has hovered anything. The padlock then only has to be
+  <i>findable</i>, not <i>explanatory</i>. The cheapest complement is the one direction 1
+  already implies: on a board where nothing is locked yet, keep one padlock visible at
+  rest rather than all six or none.</p>
+
+<h3>what the real CSS constrains harder than expected</h3>
+<ul>
+  <li><b>286px, not 320.</b> <code>.sidebar-shell</code> is <code>width:320px</code> and
+    <code>.sb-body</code> adds <code>padding: 4px var(--pad-side)</code> plus a thin
+    scrollbar, so the content box measures 286px. The header spends the label ("colors" =
+    49px), two 8px gaps and the rule's 8px minimum before the tools get anything — a hard
+    ceiling of <b>213px</b> for the whole cluster. Every column reports its own number
+    live, under the trade-off note.</li>
+  <li><b>An over-wide header does not spill, it scrolls.</b> <code>.sb-body</code> is
+    <code>overflow-y:auto</code>, which forces <code>overflow-x</code> to compute to
+    <code>auto</code> too — so today's over-budget cluster buys a horizontal scrollbar
+    across the whole sidebar body rather than a visible overhang. That is why the problem
+    has been easy to miss: it shows up as the panel feeling slightly loose, not as a
+    button hanging off the edge.</li>
+  <li><b><code>.sec-act</code> is <code>flex-shrink:0</code> and <code>.sec-label</code>
+    is <code>white-space:nowrap</code>.</b> Nothing in that row can give, so an
+    over-wide cluster does not wrap or truncate — it pushes. Any direction that wants to
+    live in the header must budget for the <i>worst</i> state (mono engaged + reset +
+    start over + riff with a two-digit hop + back), not the empty one.</li>
+  <li><b>The mono pill's width is data-dependent.</b> <code>.mini.on</code> renders the
+    <i>anchor role name</i> — <code>primary</code>, <code>warning</code>,
+    <code>success</code> — so engaging mono can widen the cluster by ~25px depending on
+    which seat you picked. A swatch is a fixed 12–14px and removes that variance
+    entirely, which is a second reason the user's "show the colour" instinct is right.</li>
+  <li><b>The riff hop count sits inside the button.</b> <code>{frame.seed > 0 ? frame.seed : ''}</code>
+    means the button silently grows a character at hop 1 and again at hop 10, shifting
+    everything to its right. Any hop display should be a fixed-width slot.</li>
+  <li><b>The bench bar is already full width and still quiet.</b> Its problem is not
+    size, it is <code>font-size:var(--fs-xs)</code> (10px) in <code>--ink-faint</code>.
+    All three directions apply the same one-line fix — 32px tall, 11px label, muted ink,
+    count in a real badge — because it is not the axis these directions differ on.</li>
+  <li><b>A popover on the add row is clipped by two boxes.</b>
+    <code>.sidebar-shell</code> is <code>overflow:hidden</code> (deliberately — "the
+    footer's frost must not bleed past the edge") and <code>.sb-body</code> is
+    <code>overflow-y:auto</code>, which also clips. The shipped
+    <code>.picker-pop</code> opens with <code>top: calc(100% + 6px)</code> from a control
+    that sits at the <i>bottom</i> of its section, so it can only ever be scrolled into
+    view, never shown in place. The <code>+</code> swatch here opens
+    <b>upward</b> (<code>bottom: calc(100% + 6px)</code>) in the sidebar columns and
+    downward in the isolated panels — click one of each to see the difference. A real
+    implementation should flip on available space, or portal out of the shell.</li>
+  <li><b>The add row is two controls doing one job.</b> <code>.hexfield</code> already
+    embeds a 20px <code>ColorSwatchPicker</code> that opens its own popover, and then
+    there is a separate <code>Add</code> button — so the swatch and the button both
+    "add", by different routes, with different results. That is the real reason
+    <i>Add</i> is the only control the user reads as working: it is the only one that is
+    a word.</li>
+</ul>
+
+<h3>two bugs found while reproducing this</h3>
+<div class="rule-box">
+  <b>1 — the placeholder promises a syntax the field cannot accept.</b><br>
+  <code>ColorAddField.commit()</code> does <code>text.split(/[\s,]+/)</code> before
+  parsing, so <code>oklch(0.7 0.12 250)</code> — the example printed in the
+  placeholder — is shredded into <code>oklch(0.7</code>, <code>0.12</code>,
+  <code>250)</code> and every fragment fails <code>parseColor</code>. Same for
+  <code>rgb(91, 124, 250)</code>. Only comma-free, space-free tokens survive.
+</div>
+<div class="rule-box">
+  <b>2 — invalid input is answered with silence.</b><br>
+  <code>addCandidates</code> filters unparseable tokens and returns early when nothing
+  survives: <code>if (parsed.length === 0) return</code>. Type junk, press Enter, and
+  the field does not clear, nothing is added, nothing is said. The popover below fixes
+  both — it tokenises at paren depth 0, and it says what it could not read.
+</div>
+
+<h3>what the popover does on invalid input</h3>
+<ul>
+  <li>The field border turns <code>--fail</code> and the caption names the failure —
+    <i>"can't read <code>#gg12</code> — try #e63946, rebeccapurple, oklch(70% .12 250)"</i>.
+    It never silently drops a token.</li>
+  <li><b>Add is disabled, not destructive.</b> Enter does nothing while the text is
+    unreadable, and nothing is committed or cleared, so the typo is still there to fix.</li>
+  <li><b>The swatch holds the last valid colour.</b> The picker does not flash to black
+    or to white on a bad keystroke, because a picker that jumps while you type is a
+    picker you stop trusting.</li>
+  <li>Partial input is <i>partially</i> valid: paste <code>#e63946 nope #3fa06a</code>
+    and it offers <i>"add 2 colors · 1 unreadable"</i> with the bad token underlined,
+    rather than an all-or-nothing refusal.</li>
+  <li>An already-present colour is not an error — it reads <i>"already on the board"</i>
+    and Add stays available (it re-adds nothing), matching the existing <code>has()</code>
+    dedup.</li>
+</ul>
+</div>
+
+<script>
+/* ================================================================
+   icons — lucide node data, copied out of node_modules/lucide-react
+   so this file makes no network requests
+   ================================================================ */
+const ICON = {
+  lock:      '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  lockOpen:  '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+  rotateCcw: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+  palette:   '<path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>',
+  dices:     '<rect width="12" height="12" x="2" y="10" rx="2" ry="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/><path d="M15 6h.01"/><path d="M18 9h.01"/>',
+  x:         '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  chevDown:  '<path d="m6 9 6 6 6-6"/>',
+  chevRight: '<path d="m9 18 6-6-6-6"/>',
+  plus:      '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  pipette:   '<path d="m12 9-8.414 8.414A2 2 0 0 0 3 18.828v1.344a2 2 0 0 1-.586 1.414A2 2 0 0 1 3.828 21h1.344a2 2 0 0 0 1.414-.586L15 12"/><path d="m18 9 .4.4a1 1 0 1 1-3 3l-3.8-3.8a1 1 0 1 1 3-3l.4.4 3.4-3.4a1 1 0 1 1 3 3z"/><path d="m2 22 .414-.414"/>',
+  image:     '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+  ban:       '<circle cx="12" cy="12" r="10"/><path d="M4.929 4.929 19.07 19.071"/>',
+  undo2:     '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>',
+  ellipsis:  '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+  help:      '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+  check:     '<path d="M20 6 9 17l-5-5"/>',
+}
+function ic(name, size = 13, sw = 1.75) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+    style="flex-shrink:0">${ICON[name]}</svg>`
+}
+
+/* ================================================================
+   colour helpers
+   ================================================================ */
+const clamp = (n, a, b) => Math.min(b, Math.max(a, n))
+function hexToRgb(h) {
+  h = h.replace('#', '')
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('')
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
+}
+const toHex2 = (n) => clamp(Math.round(n), 0, 255).toString(16).padStart(2, '0')
+const rgbToHex = (r, g, b) => '#' + toHex2(r) + toHex2(g) + toHex2(b)
+function hsvToRgb(h, s, v) {
+  h = ((h % 360) + 360) % 360
+  const c = v * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = v - c
+  const t = [[c,x,0],[x,c,0],[0,c,x],[0,x,c],[x,0,c],[c,0,x]][Math.floor(h / 60) % 6]
+  return t.map((n) => (n + m) * 255)
+}
+function rgbToHsv(r, g, b) {
+  r /= 255; g /= 255; b /= 255
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn
+  let h = 0
+  if (d) {
+    if (mx === r) h = 60 * (((g - b) / d) % 6)
+    else if (mx === g) h = 60 * ((b - r) / d + 2)
+    else h = 60 * ((r - g) / d + 4)
+  }
+  return [((h % 360) + 360) % 360, mx ? d / mx : 0, mx]
+}
+/** rough relative luminance — enough to choose ink on a seat */
+function readableInk(hex) {
+  const [r, g, b] = hexToRgb(hex).map((v) => {
+    v /= 255
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.32 ? '#101116' : '#ffffff'
+}
+/** Ask the browser to parse any CSS colour — named, hex, rgb(), oklch(). */
+const probe = document.createElement('span')
+probe.style.position = 'fixed'; probe.style.opacity = '0'; probe.style.pointerEvents = 'none'
+document.body.appendChild(probe)
+const rasterCanvas = document.createElement('canvas')
+rasterCanvas.width = rasterCanvas.height = 1
+const raster = rasterCanvas.getContext('2d', { willReadFrequently: true })
+function parseCssColor(raw) {
+  const v = raw.trim()
+  if (!v) return null
+  probe.style.color = ''
+  probe.style.color = v
+  if (!probe.style.color) return null   // the browser refused the syntax
+  const c = getComputedStyle(probe).color
+  const m = c.match(/rgba?\(([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/)
+  if (m) return rgbToHex(+m[1], +m[2], +m[3])
+  // Modern engines keep `oklch()` / `lab()` / `color()` un-serialised in the
+  // computed value, so string-matching is not enough — paint one pixel and read
+  // it back. This is also exactly the sRGB gamut-mapped answer the engine's
+  // `toHex()` would give.
+  try {
+    raster.clearRect(0, 0, 1, 1)
+    raster.fillStyle = c
+    raster.fillRect(0, 0, 1, 1)
+    const d = raster.getImageData(0, 0, 1, 1).data
+    return rgbToHex(d[0], d[1], d[2])
+  } catch (e) { return null }
+}
+/** Split on commas + whitespace, but never inside parens — the fix for oklch(). */
+function tokenize(s) {
+  const out = []
+  let depth = 0, cur = ''
+  for (const ch of s) {
+    if (ch === '(') depth++
+    if (ch === ')') depth--
+    if (depth === 0 && (ch === ',' || /\s/.test(ch))) {
+      if (cur.trim()) { out.push(cur.trim()); cur = '' }
+    } else cur += ch
+  }
+  if (cur.trim()) out.push(cur.trim())
+  return out
+}
+
+/* ================================================================
+   the board this sheet is pretending to hold
+   ================================================================ */
+const SEATS = [
+  { role:'primary', hex:'#5b7cfa', prov:'yours'   },
+  { role:'accent',  hex:'#e9a23b', prov:'yours'   },
+  { role:'neutral', hex:'#8a8f9c', prov:'derived' },
+  { role:'danger',  hex:'#e5484d', prov:'derived' },
+  { role:'success', hex:'#3fa06a', prov:'kept'    },
+  { role:'warning', hex:'#d9a441', prov:'derived' },
+]
+const SERIES = ['#5b7cfa', '#e9a23b', '#3fa06a', '#e5484d', '#9a6cf0']
+const BENCHED = ['#22303f', '#f4e7c3']
+const ALL_ROLES = SEATS.map((s) => s.role)
+
+const STATES = {
+  fresh: {
+    key:'fresh', label:'fresh', hop:0, placements:false, locks:[], seriesLocked:false, mono:null,
+    say:'a preset just loaded — no hops taken, nothing placed by hand, nothing locked',
+  },
+  working: {
+    key:'working', label:'mid-session', hop:3, placements:true, locks:['accent'], seriesLocked:false, mono:null,
+    say:'three hops in, one seat locked, two colors placed by hand — every control is live',
+  },
+  mono: {
+    key:'mono', label:'mono on', hop:1, placements:true, locks:['primary'], seriesLocked:false, mono:'primary',
+    say:'the theme is locked to one hue; the base is a color, so the control shows a swatch',
+  },
+  locked: {
+    key:'locked', label:'all locked', hop:5, placements:true, locks:ALL_ROLES, seriesLocked:true, mono:null,
+    say:'every seat and every series is locked — riff has nothing left it may move',
+  },
+}
+let state = STATES.working
+let openMenu = null    // id of the open menu/popover in the rail
+
+const canRiff = (s) => !(s.locks.length === ALL_ROLES.length && s.seriesLocked)
+const monoHex = (s) => (s.mono ? SEATS.find((x) => x.role === s.mono).hex : null)
+
+/* ================================================================
+   the sidebar slice — shared by all four columns
+   ================================================================ */
+function seatsHtml(s) {
+  return `<div class="role-board">${SEATS.map((seat) => {
+    const solid = seat.prov !== 'derived'
+    const locked = s.locks.includes(seat.role)
+    const anchored = s.mono === seat.role
+    const ink = solid ? readableInk(seat.hex) : ''
+    const style = `--c:${seat.hex}${solid ? `;--ink-on:${ink}` : ''}`
+    const cls = ['rb-slot', `rb-${seat.prov}`, locked ? 'is-locked' : '', anchored ? 'is-anchored' : '']
+      .filter(Boolean).join(' ')
+    return `<div class="${cls}" style="${style}">
+      <div class="rb-top"><span class="rb-name">${seat.role}${ic('help', 10)}</span></div>
+      <span class="rb-body"><span class="rb-hex">${seat.hex}</span><span class="rb-tag">${seat.prov}</span></span>
+      <button class="rb-lock" data-locked="${locked}"
+        aria-label="${locked ? 'unlock' : 'lock'} ${seat.role}"
+        title="${locked ? 'locked — riff will not move this' : 'unlocked — riff may move this'}"
+        >${ic(locked ? 'lock' : 'lockOpen', 10)}</button>
+    </div>`
+  }).join('')}</div>`
+}
+function trayHtml(s) {
+  return `<div class="tray">
+    <div class="tray-top"><span class="tray-name">chart series</span>
+      <span class="tray-cap">5 · pooled</span></div>
+    <div class="tray-set">${SERIES.map((c) => `
+      <div class="series ${s.seriesLocked ? 'is-locked' : ''}" style="--c:${c}">
+        <button class="series-lock" data-locked="${s.seriesLocked}" aria-label="lock series color ${c}"
+          >${ic(s.seriesLocked ? 'lock' : 'lockOpen', 9)}</button>
+      </div>`).join('')}</div>
+  </div>`
+}
+function benchHtml(v2) {
+  return `<div class="bench"><button class="bench-bar ${v2 ? 'v2' : ''}" aria-expanded="false">
+    ${ic('chevDown', 13)}
+    <span class="bench-label">${v2 ? 'bench — not in play' : 'bench · 2 colors not in play'}</span>
+    ${v2 ? `<span class="bcount">2</span>` : ''}
+    <span class="bench-dots">${BENCHED.map((c) => `<i style="background:${c}"></i>`).join('')}</span>
+  </button></div>`
+}
+
+/* ---------------- column 1: today, verbatim ---------------- */
+function todayActions(s) {
+  const on = s.mono != null
+  const riffOk = canRiff(s)
+  return `<span class="sec-tools">
+    <button class="mini${on ? ' on' : ''}" title="${on ? 'unlock — back to the full-palette engine' : "lock the theme to one color's hue"}">
+      ${ic(on ? 'lock' : 'lockOpen', 11)}${on ? s.mono : 'mono'}</button>
+    ${s.placements ? `<button class="mini" title="clear your placements — back to the engine's own casting">
+      ${ic('rotateCcw', 11)}reset</button>` : ''}
+    <button class="mini" title="start over">${ic('palette', 11)}</button>
+    <button class="mini" ${riffOk ? '' : 'disabled'}
+      title="${riffOk ? 'riff — walk the palette one hop; locked seats hold still' : 'nothing to riff — every seat is locked'}"
+      >${ic('dices', 11)}${s.hop > 0 ? s.hop : ''}</button>
+    ${s.hop > 0 ? `<button class="mini" title="back one riff">${ic('rotateCcw', 11)}</button>` : ''}
+  </span>`
+}
+
+/* ---------------- column 2: direction 1, spell it out ---------------- */
+function d1Body(s) {
+  const riffOk = canRiff(s)
+  const base = monoHex(s)
+  return `<div class="d1-row">
+    <button class="d1${s.mono ? ' on' : ''}" data-act="d1mono"
+      title="${s.mono ? `mono is on — the theme is built from ${base}. Click to pick a different base; the label is the base color itself.` : "lock the theme to one color's hue"}">
+      ${s.mono ? `<span class="basesw" style="background:${base}"></span>` : ic('lockOpen', 12)}mono</button>
+    <button class="d1" ${s.placements ? '' : 'aria-disabled="true"'}
+      title="${s.placements ? "clear your placements — back to the engine's own casting" : 'nothing to reset — you have not placed a color by hand yet'}">
+      ${ic('rotateCcw', 12)}reset</button>
+    <button class="d1" ${riffOk ? '' : 'aria-disabled="true"'}
+      title="${riffOk ? 'riff — walk the palette one hop; locked seats hold still' : 'nothing to riff — every seat is locked'}">
+      ${ic('dices', 12)}riff${s.hop > 0 ? `<span class="hop">${s.hop}</span>` : ''}</button>
+    <button class="d1" ${s.hop > 0 ? '' : 'aria-disabled="true"'}
+      aria-label="back one riff" title="${s.hop > 0 ? 'back one riff' : 'no hops to step back through'}">
+      ${ic('undo2', 12)}back</button>
+  </div>`
+}
+function d1Actions() {
+  return `<span class="sec-tools">
+    <button class="d1 d1-head" data-act="d1start" aria-expanded="${openMenu === 'd1start'}"
+      title="replace every color — from an image, a preset, or empty">
+      ${ic('palette', 12)}start over${ic('chevDown', 11)}</button>
+    ${openMenu === 'd1start' ? startOverMenu() : ''}
+  </span>`
+}
+
+/* ---------------- column 3: direction 2, one object ---------------- */
+function d2Actions(s) {
+  const riffOk = canRiff(s)
+  const base = monoHex(s)
+  return `<span class="sec-tools">
+    <button class="d2-chip${s.mono ? ' on' : ''}" data-act="d2mono"
+      title="${s.mono ? `mono on — base ${base}. Click to re-pick the base.` : "mono — lock the theme to one color's hue"}">
+      ${s.mono ? `<span class="basesw" style="background:${base}"></span>` : ic('lockOpen', 12)}mono</button>
+    <span class="d2-group">
+      <button ${s.hop > 0 ? '' : 'disabled'} aria-label="back one riff"
+        title="${s.hop > 0 ? 'back one riff' : 'no hops to step back through'}">${ic('undo2', 12)}</button>
+      <button ${riffOk ? '' : 'disabled'}
+        title="${riffOk ? 'riff — walk the palette one hop; locked seats hold still' : 'nothing to riff — every seat is locked'}">
+        riff${s.hop > 0 ? `<span class="hop">${s.hop}</span>` : ''}</button>
+    </span>
+    <button class="d2-more" data-act="d2more" aria-label="more palette actions"
+      aria-expanded="${openMenu === 'd2more'}" title="reset, start over…">${ic('ellipsis', 15)}</button>
+    ${openMenu === 'd2more' ? d2Menu(s) : ''}
+  </span>`
+}
+function d2Menu(s) {
+  return `<div class="menu" style="top:calc(100% + 6px);right:0;width:230px">
+    <button class="item" ${s.placements ? '' : 'style="opacity:.4"'}>${ic('rotateCcw', 13)} reset placements
+      <span class="kbd">${s.placements ? '2' : '—'}</span></button>
+    <button class="item">${ic('image', 13)} start over from an image…</button>
+    <button class="item">${ic('palette', 13)} start over from a preset…</button>
+    <button class="item">${ic('ban', 13)} start empty</button>
+    <div class="menu-cap">the last three replace all 8 of your colors — undo is one click</div>
+  </div>`
+}
+
+/* ---------------- column 4: direction 3, one big verb ---------------- */
+function d3Actions(s) {
+  const base = monoHex(s)
+  return `<span class="sec-tools">
+    ${s.mono ? `<span class="d3-mono" title="mono is on — the theme is built from ${base}">
+      <i style="background:${base}"></i>mono</span>` : ''}
+    <button class="d3-menu-btn" data-act="d3menu" aria-expanded="${openMenu === 'd3menu'}"
+      title="mono, reset, and start over">${ic('palette', 12)}palette${ic('chevDown', 11)}</button>
+    ${openMenu === 'd3menu' ? d3Menu(s) : ''}
+  </span>`
+}
+function d3Menu(s) {
+  const base = monoHex(s)
+  return `<div class="menu" style="top:calc(100% + 6px);right:0;width:246px">
+    <button class="item" data-act="d3mono">
+      ${s.mono ? `<span class="basesw" style="width:14px;height:14px;border-radius:4px;background:${base};box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)"></span>`
+               : ic('lockOpen', 13)}
+      ${s.mono ? 'mono — re-pick the base' : 'mono — build from one color'}
+      <span class="kbd">${s.mono ? 'on' : 'off'}</span></button>
+    <button class="item" ${s.placements ? '' : 'style="opacity:.4"'}>${ic('rotateCcw', 13)} reset my placements
+      <span class="kbd">${s.placements ? '2' : 'none'}</span></button>
+    <div class="menu-cap" style="border:0;margin:0;padding:2px 10px 6px">
+      ${s.placements ? 'puts the 2 seats you cast back in the engine’s hands' : 'you have not cast a seat by hand yet'}
+    </div>
+    <button class="item">${ic('image', 13)} start over from an image…</button>
+    <button class="item">${ic('palette', 13)} start over from a preset…</button>
+    <button class="item">${ic('ban', 13)} start empty</button>
+    <div class="menu-cap">the last three replace all 8 of your colors — undo is one click</div>
+  </div>`
+}
+function d3Riff(s) {
+  const riffOk = canRiff(s)
+  if (!riffOk) {
+    return `<div class="d3-riff"><button class="go solo" disabled
+      title="lock fewer seats to riff again">${ic('dices', 13)} every seat is locked — nothing to riff</button></div>`
+  }
+  return `<div class="d3-riff">
+    <button class="go" title="riff — walk the palette one hop; locked seats hold still">
+      ${ic('dices', 14)} riff — one hop${s.hop > 0 ? `<span class="hop">${s.hop}</span>` : ''}</button>
+    <button class="back" ${s.hop > 0 ? '' : 'disabled'} aria-label="back one riff"
+      title="${s.hop > 0 ? 'back one riff' : 'no hops to step back through'}">${ic('undo2', 14)}</button>
+  </div>`
+}
+
+function startOverMenu() {
+  return `<div class="menu" style="top:calc(100% + 6px);right:0;width:236px">
+    <button class="item">${ic('image', 13)} from an image…</button>
+    <button class="item">${ic('palette', 13)} from a preset…</button>
+    <button class="item">${ic('ban', 13)} start empty</button>
+    <div class="menu-cap">each of these replaces your current 8 — undo is one click</div>
+  </div>`
+}
+
+/* ================================================================
+   columns
+   ================================================================ */
+const COLUMNS = [
+  {
+    id:'today', title:'today', note:'as shipped',
+    build(s) {
+      return `<div class="sec">
+        <div class="sec-head" data-head="today">
+          <span class="sec-label">colors</span><span class="sec-rule"></span>
+          <div class="sec-act">${todayActions(s)}</div>
+        </div>
+        ${seatsHtml(s)}${trayHtml(s)}${benchHtml(false)}
+        <div class="add-row">
+          <div class="hexfield">
+            <button class="swatch-btn--sm" style="background:#7aa2f7" title="Pick a color"></button>
+            <input value="" placeholder="add a color — #e63946, oklch(…)" readonly>
+          </div>
+          <button>Add</button>
+        </div>
+      </div>`
+    },
+    trade:`<b>the baseline.</b> Five controls, two of them wordless, two of them
+      conditionally rendered. <span class="minus">The only one the user reads as working
+      is <i>Add</i> — the only one that is a word at full size.</span>`,
+    a11y:`<b>names</b> four of five come from <code>title</code> only ·
+      <b>targets</b> 22px tall, icon-only ones 29×22 · <b>focus</b> no
+      <code>:focus-visible</code> rule anywhere on <code>.mini</code> ·
+      <b>also failing</b> the seat lock (13×11) and the series lock (11×11) — out of
+      scope here, and identical in all four columns`,
+  },
+  {
+    id:'d1', title:'direction 1 · spell it out', note:'labelled row under the header',
+    build(s) {
+      return `<div class="sec">
+        <div class="sec-head" data-head="d1">
+          <span class="sec-label">colors</span><span class="sec-rule"></span>
+          <div class="sec-act">${d1Actions(s)}</div>
+        </div>
+        ${d1Body(s)}
+        ${seatsHtml(s)}${trayHtml(s)}${benchHtml(true)}
+        <div class="add-row">
+          <div class="hexfield">
+            <button class="swatch-btn--sm" style="background:#7aa2f7" title="Pick a color"></button>
+            <input value="" placeholder="#e63946, rebeccapurple…" readonly>
+          </div>
+          <button>Add</button>
+        </div>
+      </div>`
+    },
+    trade:`<b>Every verb keeps its word; nothing appears or disappears.</b>
+      <span class="plus">Optimises legibility and stability — disabled controls stay in
+      place, so riff never moves under the pointer, and start-over is the one
+      section-level verb left in the header where section verbs live.</span>
+      <span class="minus">Costs ~35px of sidebar height, and four equally-weighted pills
+      means nothing reads as the primary action.</span>`,
+    a11y:`<b>names</b> visible words; <code>back</code> also carries
+      <code>aria-label="back one riff"</code> · <b>targets</b> 26px tall, 52–74px wide;
+      the header's <code>start over</code> raised 22→24px · <b>disabled</b>
+      <code>aria-disabled</code>, still focusable, reason in the tooltip ·
+      <b>inherits</b> the add row unchanged, so the 20×20 embedded swatch still fails —
+      the <code>+</code> swatch below fixes that separately`,
+  },
+  {
+    id:'d2', title:'direction 2 · one object', note:'the walk is one segmented control',
+    build(s) {
+      return `<div class="sec">
+        <div class="sec-head" data-head="d2">
+          <span class="sec-label">colors</span><span class="sec-rule"></span>
+          <div class="sec-act">${d2Actions(s)}</div>
+        </div>
+        ${seatsHtml(s)}${trayHtml(s)}${benchHtml(true)}
+        <div class="addsw-row">
+          <span class="pk-anchor" data-pk="d2"></span>
+          <span class="addsw-lab">add a color</span>
+        </div>
+      </div>`
+    },
+    trade:`<b>back and riff weld into one widget, so the hop count reads as a position
+      on a walk.</b> <span class="plus">Optimises grouping and header width — the whole
+      cluster measures ~178px against a 213px budget, so it still fits beside the label
+      in every state — including mono engaged.</span>
+      <span class="minus">Costs an overflow: reset and start-over are a click deeper, and
+      the overflow trigger is itself an icon-only button — kept deliberately, in exactly
+      one place, at 26×24.</span>`,
+    a11y:`<b>names</b> riff and mono carry words; <code>⋯</code> and <code>back</code>
+      carry <code>aria-label</code> · <b>targets</b> 24px tall (26–34 wide) — the
+      segmented caps share one 24px row · <b>menu</b> spells every hidden verb out in
+      full sentences`,
+  },
+  {
+    id:'d3', title:'direction 3 · one big verb', note:'primary action + one quiet menu',
+    build(s) {
+      return `<div class="sec">
+        <div class="sec-head" data-head="d3">
+          <span class="sec-label">colors</span><span class="sec-rule"></span>
+          <div class="sec-act">${d3Actions(s)}</div>
+        </div>
+        ${seatsHtml(s)}
+        ${d3Riff(s)}
+        ${trayHtml(s)}${benchHtml(true)}
+        <div class="addsw-row">
+          <span class="pk-anchor" data-pk="d3"></span>
+          <span class="addsw-lab">add a color</span>
+        </div>
+      </div>`
+    },
+    trade:`<b>riff gets the width its press-count deserves; everything else goes quiet.</b>
+      <span class="plus">Optimises the repeated action and — uniquely — the disabled
+      case: only a full-width control has room to say <i>why</i> it is off, in place,
+      without a tooltip.</span>
+      <span class="minus">Costs a permanent 32px band under the board, and puts three
+      verbs behind one menu, so an engaged mono has to be surfaced separately (the swatch
+      chip by the label).</span>`,
+    a11y:`<b>names</b> riff, palette and every menu item are words; only
+      <code>back</code> is a glyph, with <code>aria-label</code> · <b>targets</b> 32px
+      riff / 38×32 back / 24px menu trigger · <b>disabled</b> the reason is on the
+      control, so no <code>aria-disabled</code> trick is needed`,
+  },
+]
+
+/* ================================================================
+   render
+   ================================================================ */
+function renderRail() {
+  const rail = document.getElementById('rail')
+  rail.innerHTML = COLUMNS.map((c) => `
+    <div class="col" data-col="${c.id}">
+      <p class="col-title"><b>${c.title}</b> <span class="col-note">${c.note}</span></p>
+      <div class="sb">
+        <div class="sb-head">
+          <h1 class="sb-wordmark">themesmith</h1>
+          <p class="sb-tagline">any colors in, working theme out</p>
+        </div>
+        <div class="sb-body">${c.build(state)}</div>
+      </div>
+      <p class="trade">${c.trade}</p>
+      <div class="a11y">${c.a11y}</div>
+      <div class="measure"></div>
+    </div>`).join('')
+  // In the sidebar the picker opens upward — see the note on the two clipping boxes.
+  document.querySelectorAll('[data-pk]').forEach((el) => mountPicker(el, { up: true }))
+  measure()
+  if (document.body.classList.contains('audit')) auditTargets()
+}
+
+function renderState() {
+  const s = state
+  document.getElementById('stateLine').innerHTML = `
+    <span>${s.say}</span>
+    <span class="flag ${s.hop > 0 ? 'on' : 'off'}">hop ${s.hop}</span>
+    <span class="flag ${s.placements ? 'on' : 'off'}">${s.placements ? '2 placements' : 'no placements'}</span>
+    <span class="flag ${s.locks.length ? 'on' : 'off'}">${s.locks.length} of 6 seats locked${s.seriesLocked ? ' + series' : ''}</span>
+    <span class="flag ${canRiff(s) ? 'on' : 'no'}">riff ${canRiff(s) ? 'available' : 'disabled'}</span>
+    <span class="flag ${s.mono ? 'on' : 'off'}">mono ${s.mono ? 'on · ' + monoHex(s) : 'off'}</span>`
+}
+
+/** Live proof of what each header cluster costs, measured off the real boxes. */
+function measure() {
+  COLUMNS.forEach((c) => {
+    const el = document.querySelector(`[data-col="${c.id}"] .measure`)
+    const head = document.querySelector(`[data-head="${c.id}"]`)
+    if (!el || !head) return
+    const box = head.getBoundingClientRect().width
+    const lw = head.querySelector('.sec-label').getBoundingClientRect().width
+    const rw = head.querySelector('.sec-rule').getBoundingClientRect().width
+    const aw = head.querySelector('.sec-act').getBoundingClientRect().width
+    const budget = box - lw - 16 - 8   // label + two 8px gaps + the rule's 8px floor
+    const over = aw > budget - 1
+    const verdict = over
+      ? `<span class="bad">OVER by ${(aw - budget).toFixed(0)}px — the rule is pinned at its 8px floor and the row pushes past the padding.
+         In the app <code>.sb-body</code> is <code>overflow-y:auto</code>, so overflow-x computes to auto: this becomes a horizontal scrollbar under the sidebar, not a visible spill.</span>`
+      : `<span class="good">fits — ${(budget - aw).toFixed(0)}px of rule left over</span>`
+    el.innerHTML = c.id === 'today'
+      ? `header content box <b>${box.toFixed(0)}px</b> (320 sidebar − 32 padding)<br>
+         label ${lw.toFixed(0)} + gaps 16 + rule ${rw.toFixed(0)} + tools <b>${aw.toFixed(0)}</b><br>
+         budget for tools ≈ ${budget.toFixed(0)}px — ${verdict}`
+      : `tools <b>${aw.toFixed(0)}px</b> of a ${budget.toFixed(0)}px budget — ${verdict}`
+  })
+}
+
+/** Measure every button in the sheet against the 24px floor. */
+function auditTargets() {
+  document.querySelectorAll('.rail button, .panels button').forEach((b) => {
+    b.classList.remove('t-bad', 't-ok')
+    const r = b.getBoundingClientRect()
+    if (!r.width) return
+    b.classList.add(r.height >= 24 && r.width >= 24 ? 't-ok' : 't-bad')
+  })
+}
+
+/* segmented controls */
+function buildSeg(id, items, get, set) {
+  const el = document.getElementById(id)
+  el.innerHTML = items.map((i) => `<button data-v="${i.v}" class="${get() === i.v ? 'on' : ''}">${i.t}</button>`).join('')
+  el.onclick = (e) => {
+    const b = e.target.closest('button')
+    if (!b) return
+    set(b.dataset.v)
+    el.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.v === get()))
+  }
+}
+buildSeg('segState',
+  Object.values(STATES).map((s) => ({ v:s.key, t:s.label })),
+  () => state.key,
+  (v) => { state = STATES[v]; openMenu = null; renderState(); renderRail() })
+
+let auditOn = false
+buildSeg('segAudit', [{ v:'off', t:'off' }, { v:'on', t:'outline' }],
+  () => (auditOn ? 'on' : 'off'),
+  (v) => {
+    auditOn = v === 'on'
+    document.body.classList.toggle('audit', auditOn)
+    if (auditOn) auditTargets()
+    else document.querySelectorAll('.t-bad,.t-ok').forEach((b) => b.classList.remove('t-bad', 't-ok'))
+  })
+
+/* menu + toggle wiring inside the rail */
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-act]')
+  if (btn) {
+    const act = btn.dataset.act
+    if (act === 'd1mono' || act === 'd2mono' || act === 'd3mono') {
+      // the mono toggle: off → on with primary as base; on → off. Re-picking
+      // would open the seat-picking mode, which is out of scope here.
+      state = { ...state, mono: state.mono ? null : 'primary' }
+      openMenu = null
+      renderState(); renderRail()
+      return
+    }
+    openMenu = openMenu === act ? null : act
+    renderRail()
+    return
+  }
+  if (!e.target.closest('.menu')) {
+    if (openMenu) { openMenu = null; renderRail() }
+  }
+})
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && openMenu) { openMenu = null; renderRail() }
+})
+
+/* ================================================================
+   THE PICKER — the user's own suggestion, built
+   ================================================================ */
+const RECENT = ['#e63946', '#457b9d', '#a8dadc', '#f4a261', '#2a9d8f']
+let pickerSeq = 0
+
+function mountPicker(anchor, opts = {}) {
+  const id = 'pk' + (pickerSeq++)
+  const st = {
+    hsv: rgbToHsv(...hexToRgb(opts.start || '#7aa2f7')),
+    text: opts.text != null ? opts.text : (opts.start || '#7aa2f7'),
+    open: !!opts.open,
+    lastValid: opts.start || '#7aa2f7',
+    added: [],
+  }
+  anchor.innerHTML = `
+    <button class="addsw" aria-label="add a color" aria-expanded="${st.open}"
+      title="add a color — opens a picker">${ic('plus', 16, 2)}</button>
+    <div class="pk-pop${opts.up ? ' up' : ''}" ${st.open ? '' : 'hidden'} role="dialog" aria-label="add a color">
+      <div class="pk-sv"><div class="thumb"></div></div>
+      <div class="pk-hue"><div class="thumb"></div></div>
+      <div class="pk-row">
+        <label class="pk-field">
+          <span class="pk-prev"></span>
+          <input aria-label="color value — hex, a css name, rgb() or oklch()" spellcheck="false">
+        </label>
+        <button class="pk-eye" aria-label="sample a color from anywhere on screen"
+          title="sample a color from anywhere on screen">${ic('pipette', 14)}</button>
+      </div>
+      <div class="pk-msg"></div>
+      <div class="pk-recent">${RECENT.map((c) => `<button style="background:${c}" aria-label="use ${c}" title="${c}"></button>`).join('')}</div>
+      <button class="pk-add">add color</button>
+    </div>`
+
+  const btn = anchor.querySelector('.addsw')
+  const pop = anchor.querySelector('.pk-pop')
+  const sv = anchor.querySelector('.pk-sv')
+  const svThumb = sv.querySelector('.thumb')
+  const hue = anchor.querySelector('.pk-hue')
+  const hueThumb = hue.querySelector('.thumb')
+  const field = anchor.querySelector('.pk-field')
+  const input = anchor.querySelector('.pk-field input')
+  const prev = anchor.querySelector('.pk-prev')
+  const msg = anchor.querySelector('.pk-msg')
+  const addBtn = anchor.querySelector('.pk-add')
+
+  const curHex = () => rgbToHex(...hsvToRgb(st.hsv[0], st.hsv[1], st.hsv[2]))
+
+  function paint(fromInput) {
+    const [h, s, v] = st.hsv
+    sv.style.background =
+      `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, hsl(${h} 100% 50%))`
+    svThumb.style.left = s * 100 + '%'
+    svThumb.style.top = (1 - v) * 100 + '%'
+    hueThumb.style.left = (h / 360) * 100 + '%'
+    if (!fromInput) { st.text = curHex(); input.value = st.text }
+
+    // ---- the read: tokenise at paren depth 0 so oklch() survives ----
+    const tokens = tokenize(st.text)
+    const reads = tokens.map((t) => ({ t, hex: parseCssColor(t) }))
+    const good = reads.filter((r) => r.hex)
+    const bad = reads.filter((r) => !r.hex)
+
+    if (good.length) st.lastValid = good[good.length - 1].hex
+    prev.classList.toggle('multi', good.length > 1)
+    prev.innerHTML = good.length > 1 ? good.map((g) => `<i style="background:${g.hex}"></i>`).join('') : ''
+    prev.style.background = good.length > 1 ? 'transparent' : (good[0] ? good[0].hex : st.lastValid)
+
+    const dup = good.length === 1 && SEATS.some((x) => x.hex === good[0].hex)
+    field.classList.toggle('bad', bad.length > 0 && good.length === 0)
+    msg.classList.toggle('bad', bad.length > 0)
+
+    if (!tokens.length) {
+      msg.textContent = 'pick above, or type a hex, a css name, rgb() or oklch()'
+      addBtn.disabled = false
+      addBtn.textContent = 'add ' + curHex()
+    } else if (bad.length && !good.length) {
+      msg.innerHTML = `can’t read <code>${esc(bad[0].t)}</code> — try #e63946, rebeccapurple, oklch(70% .12 250)`
+      addBtn.disabled = true
+      addBtn.textContent = 'add color'
+    } else if (bad.length) {
+      msg.innerHTML = `add ${good.length} — <u>${esc(bad[0].t)}</u> is not a color and will be left in the field`
+      addBtn.disabled = false
+      addBtn.textContent = `add ${good.length} colors`
+    } else if (dup) {
+      msg.textContent = 'already on the board — adding again changes nothing'
+      addBtn.disabled = false
+      addBtn.textContent = 'add ' + good[0].hex
+    } else {
+      msg.textContent = good.length > 1 ? `${good.length} colors read` : 'reads as ' + good[0].hex
+      addBtn.disabled = false
+      addBtn.textContent = good.length > 1 ? `add ${good.length} colors` : 'add ' + good[0].hex
+    }
+    btn.style.background = st.open ? '' : ''
+  }
+  const esc = (s) => s.replace(/[<>&]/g, (c) => ({ '<':'&lt;', '>':'&gt;', '&':'&amp;' }[c]))
+
+  function setOpen(v) {
+    st.open = v
+    pop.hidden = !v
+    btn.setAttribute('aria-expanded', String(v))
+    if (v) { paint(true); input.focus(); input.select() }
+    if (auditOn) auditTargets()
+  }
+  btn.addEventListener('click', (e) => { e.stopPropagation(); setOpen(!st.open) })
+  pop.addEventListener('click', (e) => e.stopPropagation())
+  document.addEventListener('click', () => { if (st.open && !opts.pinned) setOpen(false) })
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && st.open && !opts.pinned) setOpen(false) })
+
+  function drag(el, move) {
+    const run = (e) => { const r = el.getBoundingClientRect(); move(e, r) }
+    el.addEventListener('pointerdown', (e) => {
+      el.setPointerCapture(e.pointerId); run(e)
+      const mv = (ev) => run(ev)
+      const up = () => { el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up) }
+      el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up)
+    })
+  }
+  drag(sv, (e, r) => {
+    st.hsv[1] = clamp((e.clientX - r.left) / r.width, 0, 1)
+    st.hsv[2] = 1 - clamp((e.clientY - r.top) / r.height, 0, 1)
+    paint(false)
+  })
+  drag(hue, (e, r) => { st.hsv[0] = clamp((e.clientX - r.left) / r.width, 0, 1) * 360; paint(false) })
+
+  input.addEventListener('input', () => {
+    st.text = input.value
+    const tok = tokenize(st.text)
+    const hex = tok.length === 1 ? parseCssColor(tok[0]) : null
+    if (hex) st.hsv = rgbToHsv(...hexToRgb(hex))
+    paint(true)
+  })
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !addBtn.disabled) addBtn.click()
+    // Enter on unreadable text does nothing at all — the typo stays put.
+  })
+  anchor.querySelectorAll('.pk-recent button').forEach((b, i) => {
+    b.addEventListener('click', () => {
+      st.hsv = rgbToHsv(...hexToRgb(RECENT[i]))
+      paint(false)
+    })
+  })
+  addBtn.addEventListener('click', () => {
+    const good = tokenize(st.text).map(parseCssColor).filter(Boolean)
+    const list = good.length ? good : [curHex()]
+    if (opts.onAdd) opts.onAdd(list)
+    if (!opts.pinned) setOpen(false)
+  })
+
+  input.value = st.text
+  paint(true)
+  return { paint, setOpen }
+}
+
+/* ================================================================
+   the three add-control panels
+   ================================================================ */
+function renderPanels() {
+  const host = document.getElementById('panels')
+  host.innerHTML = `
+    <div class="panel">
+      <p class="panel-cap">closed — the whole add row</p>
+      <div class="addsw-row" style="margin-top:0">
+        <span class="pk-anchor" id="pkClosed"></span>
+        <span class="addsw-lab">add a color</span>
+      </div>
+      <p class="trade" style="margin-top:14px">A 32×32 dashed empty swatch with a <code>+</code>.
+        It replaces the field, the 20px embedded picker <i>and</i> the Add button — three
+        controls that all meant "add", by three different routes. Hover / focus fills the
+        dash in <code>--accent</code>. Accessible name
+        <code>aria-label="add a color"</code>; the word beside it is not the button, so it
+        gets <code>aria-hidden</code> or is folded into the label.</p>
+      <div class="a11y"><b>why the word stays</b> the swatch alone is discoverable only by
+        shape; the standing label costs one line and makes the control readable at a
+        glance — the same fix the bench bar gets.</div>
+    </div>
+
+    <div class="panel tall">
+      <p class="panel-cap">open — valid</p>
+      <div class="addsw-row" style="margin-top:0">
+        <span class="pk-anchor" id="pkOpen"></span>
+        <span class="addsw-lab">add a color</span>
+      </div>
+      <div style="height:330px"></div>
+      <p class="trade" style="margin-top:0">Drag the square or the hue rail, or type. The
+        field is <b>free text</b>, not a hex mask — it keeps everything the old field
+        accepted (a css name, <code>rgb()</code>, <code>oklch()</code>) and everything it
+        only pretended to (multi-paste), because it tokenises at paren depth 0. The button
+        states the colour it will add.</p>
+    </div>
+
+    <div class="panel tall">
+      <p class="panel-cap">open — unreadable input</p>
+      <div class="addsw-row" style="margin-top:0">
+        <span class="pk-anchor" id="pkBad"></span>
+        <span class="addsw-lab">add a color</span>
+      </div>
+      <div style="height:330px"></div>
+      <p class="trade" style="margin-top:0">Border goes <code>--fail</code>, the caption
+        names the token it could not read, <b>Add is disabled</b> and Enter does nothing —
+        the typo stays in the field. The swatch holds the last colour that parsed rather
+        than flashing to black. Today the same input is answered with total silence
+        (<code>if (parsed.length === 0) return</code>).</p>
+    </div>`
+
+  mountPicker(document.getElementById('pkClosed'), { start:'#5b7cfa' })
+  mountPicker(document.getElementById('pkOpen'), { start:'#3fa06a', open:true, pinned:true })
+  mountPicker(document.getElementById('pkBad'), { start:'#e9a23b', open:true, pinned:true, text:'#gg12' })
+}
+
+renderState()
+renderRail()
+renderPanels()
+window.addEventListener('resize', () => { measure(); if (auditOn) auditTargets() })
+</script>
+</body>
+</html>

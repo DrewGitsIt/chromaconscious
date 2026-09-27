@@ -1,13 +1,23 @@
 @layer chrome-base, chrome;
 
-/* The export split button. The main half commits the format you already
-   chose; the caret half opens the alternatives UPWARD, because this row
-   sits at the foot of the panel. */
+/* The export split button — the one solid object in the panel, because it is
+   the one thing you came here to do. The main half commits the format you
+   already chose; the caret half opens the alternatives UPWARD, because this
+   row sits at the foot of the panel. Ink on ink, no gradient. */
 @layer chrome {
   .export-row {
     position: relative;
     display: flex;
-    gap: var(--gap-s);
+    height: 38px;
+    border-radius: 9px;
+    background: var(--ink);
+    transition: background var(--d-base) var(--ease);
+  }
+  .export-row:has(.export-main.copied) {
+    background: var(--ok);
+  }
+  .export-row:has(.export-main:disabled) {
+    opacity: 0.35;
   }
 
   .export-main {
@@ -16,25 +26,23 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 7px;
-    height: var(--ctl-h);
+    gap: 8px;
+    height: 100%;
     padding: 0 10px;
-    background: linear-gradient(180deg, var(--surface-4), var(--surface-3));
-    border: 1px solid var(--line-ctl);
-    border-radius: var(--radius-ctl);
-    color: var(--ink);
+    background: transparent;
+    border: 0;
+    border-radius: 9px 0 0 9px;
+    color: var(--stage);
     font: inherit;
     font-size: var(--fs-m);
+    font-weight: 600;
     cursor: pointer;
-    transition:
-      border-color var(--d-fast) var(--ease),
-      color var(--d-fast) var(--ease);
+    transition: background var(--d-fast) var(--ease);
   }
   .export-main:hover:not(:disabled) {
-    border-color: var(--line-active);
+    background: rgb(0 0 0 / 0.08);
   }
   .export-main:disabled {
-    opacity: 0.35;
     cursor: default;
   }
   .export-main-label {
@@ -43,11 +51,8 @@
     white-space: nowrap;
   }
 
-  /* the confirmation is a state of the same button, not a stray line of text */
-  .export-main.copied {
-    color: var(--ok);
-    border-color: color-mix(in srgb, var(--ok) 40%, transparent);
-  }
+  /* the confirmation is a state of the same button, not a stray line of
+     text — the whole row turns --ok (see .export-row:has above) */
   .export-check {
     animation: export-check-in var(--d-base) var(--ease-back) both;
   }
@@ -66,25 +71,22 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: var(--ctl-h);
-    height: var(--ctl-h);
+    width: 38px;
+    height: 100%;
     padding: 0;
     flex-shrink: 0;
-    background: var(--surface-3);
-    border: 1px solid var(--line-ctl);
-    border-radius: var(--radius-ctl);
-    color: var(--ink-muted);
+    background: transparent;
+    border: 0;
+    border-left: 1px solid rgb(0 0 0 / 0.14);
+    border-radius: 0 9px 9px 0;
+    color: var(--stage);
     cursor: pointer;
-    transition:
-      background var(--d-fast) var(--ease),
-      color var(--d-fast) var(--ease);
+    transition: background var(--d-fast) var(--ease);
   }
   .export-caret:hover:not(:disabled) {
-    background: var(--surface-4);
-    color: var(--ink);
+    background: rgb(0 0 0 / 0.08);
   }
   .export-caret:disabled {
-    opacity: 0.35;
     cursor: default;
   }
 

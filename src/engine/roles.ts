@@ -97,27 +97,27 @@ function harmonize(color: Oklch, towardHue: number): Oklch {
  * base (c ≈ 0) therefore yields a pure value scale. Semantics that hue
  * normally carries (danger = red…) fall to iconography; the user can layer
  * real colors on top at any time, which bypass synthesis entirely.
- * The riff seed varies lightness/chroma placement only (repertoire.ts).
+ * Riffing a mono theme moves lightness only, in walk.ts.
  */
-function monoSynthesize(role: Role, base: Oklch, seed: number): Oklch {
-  return monoRepertoire(role, base, seed)
+function monoSynthesize(role: Role, base: Oklch): Oklch {
+  return monoRepertoire(role, base)
 }
 
-// Invented seeds come from the seeded repertoire; seed 0 is the canonical
-// cookbook (accent = primary + 60°, neutral tinted toward primary, statuses
-// on their fixed anchors), bit-identical to the pre-riff engine.
-function synthesize(role: Role, primary: Oklch, seed: number): Oklch {
+// Invented seeds come from the cookbook: accent = primary + 60°, neutral
+// tinted toward primary, statuses on their anchors. Casting is riff-independent
+// — the walk moves these seeds afterwards, it never changes who sits where.
+function synthesize(role: Role, primary: Oklch): Oklch {
   switch (role) {
     case 'primary':
       return { l: 0.55, c: 0.15, h: 250 } // no usable input at all: default blue
     case 'neutral':
-      return neutralRepertoire(primary, seed)
+      return neutralRepertoire(primary)
     case 'accent':
-      return accentRepertoire(primary, seed)
+      return accentRepertoire(primary)
     case 'danger':
     case 'success':
     case 'warning':
-      return harmonize(statusRepertoire(role, seed), primary.h)
+      return harmonize(statusRepertoire(role), primary.h)
   }
 }
 
@@ -180,7 +180,6 @@ export function assignRoles(
   candidates: ColorCandidate[],
   fidelity: number,
   monoBase: number | null = null,
-  seed = 0,
 ): AssignmentResult {
   const taken = new Set<number>()
   const roleSeeds = new Map<Role, { index: number | null; input: Oklch | null }>()
@@ -197,19 +196,15 @@ export function assignRoles(
     }
   })
 
-  // 0. Mono lock: the base is crowned primary — unless the user pinned another
-  // color there. A pin is the user's strongest word and outranks the lock (the
-  // lock constrains what the engine invents, never what the user hands it), so
-  // pinning navy primary inside salmon-tinted chrome is a supported design.
-  // Either way the base donates its hue to every invented role (monoSynthesize).
+  // 0. Mono lock: the base donates its hue to the whole theme from wherever it
+  // already sits. It used to be crowned primary as well, which reshuffled the
+  // board under the user — pick the accent as your base and your accent colour
+  // silently became the primary and displaced whatever was there. Casting is
+  // left alone; the lock now says what the colours ARE, never where they sit.
   const baseInput =
     monoBase != null && candidates[monoBase] && !benched.has(monoBase)
       ? candidates[monoBase].color
       : null
-  if (baseInput && !candidates.some((c, i) => i !== monoBase && c.pin === 'primary')) {
-    roleSeeds.set('primary', { index: monoBase, input: baseInput })
-    taken.add(monoBase!)
-  }
 
   // 1. Pins win outright. A chart pin claims a chart seat directly: the
   // candidate skips role scoring entirely and bypasses the leftover chroma
@@ -308,30 +303,63 @@ export function assignRoles(
   })
 
   // 3. Resolve seeds: fidelity-adjust assigned inputs, synthesize the rest.
+  //
+  // A locked colour skips the adjustment entirely. "Locked" has to mean the
+  // exact colour the user is looking at, or the promise is worthless: locking
+  // a seat at low fidelity would otherwise normalize the very colour being
+  // frozen, and the swatch would change under the click that froze it. This is
+  // the first of three stages a lock exempts a seed from — the walk and the
+  // repair pass are the others.
+  /** The frozen seed of a locked candidate, or null when it is free to move. */
+  const frozen = (i: number | null): Oklch | null =>
+    i != null && candidates[i].locked === true ? (candidates[i].lockedColor ?? candidates[i].color) : null
+
   const primaryInput = roleSeeds.get('primary')!
   const baseIsPrimary = baseInput != null && primaryInput.index === monoBase
   const primarySeed =
     primaryInput.input != null
-      ? fidelityAdjust(primaryInput.input, 'primary', fidelity, baseIsPrimary)
-      : synthesize('primary', { l: 0.55, c: 0.15, h: 250 }, seed)
-  // The donor every invented role inherits hue + chroma from. Usually the
-  // primary seed itself; when a pin took primary, the base still donates.
+      ? (frozen(primaryInput.index) ??
+        fidelityAdjust(primaryInput.input, 'primary', fidelity, baseIsPrimary))
+      : synthesize('primary', { l: 0.55, c: 0.15, h: 250 })
+  // The donor every mono'd role inherits hue + chroma from: the base's own
+  // colour, adjusted once, wherever on the board it happens to sit.
   const monoDonor = baseInput
     ? baseIsPrimary
       ? primarySeed
       : fidelityAdjust(baseInput, 'primary', fidelity, true)
     : null
 
+  /**
+   * Under the mono lock, an UNLOCKED seat is treated as derived — the base's
+   * hue at this role's own lightness — whether or not a colour of yours is
+   * holding it. A colour that keeps its own hue here would defeat the lock:
+   * with four of six seats filled by the user, "mono" previously coerced two
+   * and the result was not monochrome in any sense the word carries.
+   *
+   * The lock is the ONE exemption, exactly as it is for riff. Not even the
+   * base is spared: it donates hue and chroma and then takes its seat's rung
+   * like everything else. Exempting it was tried and it collided — the base
+   * keeps whatever lightness it happened to have, which lands on another
+   * role's rung often enough to clash in 45 of 126 sampled mono themes, almost
+   * all primary-against-accent. It was also a second, undocumented freeze
+   * sitting beside the real one. If you want the base verbatim, lock it.
+   */
+  const monoOverride = (role: Role, index: number | null): Oklch | null =>
+    monoDonor && frozen(index) == null ? monoSynthesize(role, monoDonor) : null
+
   const assignments: RoleAssignment[] = ASSIGN_ORDER.map((role) => {
     const entry = roleSeeds.get(role)!
     if (entry.input != null) {
-      const seed = role === 'primary' ? primarySeed : fidelityAdjust(entry.input, role, fidelity)
+      const seed =
+        frozen(entry.index) ??
+        monoOverride(role, entry.index) ??
+        (role === 'primary' ? primarySeed : fidelityAdjust(entry.input, role, fidelity))
       return { role, candidateIndex: entry.index, seed, deltaE: deltaEok(entry.input, seed) }
     }
     return {
       role,
       candidateIndex: null,
-      seed: monoDonor ? monoSynthesize(role, monoDonor, seed) : synthesize(role, primarySeed, seed),
+      seed: monoDonor ? monoSynthesize(role, monoDonor) : synthesize(role, primarySeed),
       deltaE: 0,
     }
   })

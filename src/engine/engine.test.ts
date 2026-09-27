@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { ThemeResult } from './index'
 import { candidatesFromList, generateTheme, parseColor, resolveBrand, wcagRatio } from './index'
 import { deltaEok, hueDistance } from './color'
 import { extractCandidates } from './extract'
@@ -138,25 +139,48 @@ describe('mono lock', () => {
     }
   })
 
-  it('colors the user layers on top keep their own hue', () => {
+  it('colors the user layers on top are coerced to the base hue too', () => {
+    // The lock used to exempt anything the user supplied, which meant a board
+    // the user had filled came out barely monochrome at all — four of six
+    // seats keeping their own hue is not a mono theme. An unlocked seat is now
+    // treated as derived, whoever is holding it.
     const result = generateTheme({
       candidates: candidatesFromList(['#fa8072', '#4fc9a4']),
       monoBase: 0,
     })
-    const aqua = parseColor('#4fc9a4')!
+    const base = parseColor('#fa8072')!
     const layered = result.assignments.find((a) => a.candidateIndex === 1)
-    expect(layered, 'aquamarine should claim a role').toBeTruthy()
-    expect(hueDistance(layered!.seed.h, aqua.h)).toBeLessThan(20)
+    expect(layered, 'aquamarine should still claim a role').toBeTruthy()
+    expect(hueDistance(layered!.seed.h, base.h), 'aqua must take the base hue').toBeLessThan(2)
   })
 
-  it('the base is crowned primary even when scoring would pick another color', () => {
-    // gray scores terribly for primary; the lock overrides scoring entirely
-    const result = generateTheme({
-      candidates: candidatesFromList(['#e63946', '#808080']),
-      monoBase: 1,
-    })
-    const primary = result.assignments.find((a) => a.role === 'primary')!
-    expect(primary.candidateIndex).toBe(1)
+  it('a lock is the one way to keep your own hue under the mono lock', () => {
+    const candidates = candidatesFromList(['#fa8072', '#4fc9a4'])
+    candidates[1].locked = true
+    const result = generateTheme({ candidates, monoBase: 0 })
+    const aqua = parseColor('#4fc9a4')!
+    const layered = result.assignments.find((a) => a.candidateIndex === 1)!
+    expect(layered.seed).toEqual(aqua)
+  })
+
+  it('engaging the lock moves no colour between seats', () => {
+    // Crowning the base primary reshuffled the board under the user: picking
+    // the accent as your base silently made that colour the primary and
+    // displaced whatever was there, so the pick read as having been ignored.
+    // The lock says what the colours ARE, never where they sit.
+    const candidates = candidatesFromList(['#e63946', '#3a7ca5'])
+    const seatOf = (r: ThemeResult, i: number) =>
+      r.assignments.find((a) => a.candidateIndex === i)?.role ?? null
+    const free = generateTheme({ candidates })
+    const locked = generateTheme({ candidates, monoBase: 1 })
+
+    expect(seatOf(locked, 1), 'the base sits where scoring put it').toBe(seatOf(free, 1))
+    expect(seatOf(locked, 0), 'and nobody else was displaced').toBe(seatOf(free, 0))
+    // every chromatic seat now speaks in the base's hue, the base's seat too
+    const base = parseColor('#3a7ca5')!
+    for (const a of locked.assignments) {
+      if (a.seed.c > 0.01) expect(hueDistance(a.seed.h, base.h), a.role).toBeLessThan(2)
+    }
   })
 
   it('a primary pin outranks the lock; the base still donates its hue', () => {
@@ -193,14 +217,52 @@ describe('mono lock', () => {
     expect(primary.seed.c).toBeLessThan(0.001)
   })
 
-  it('at fidelity 1 the base survives verbatim', () => {
-    const result = generateTheme({
-      candidates: candidatesFromList(['#808080']),
-      monoBase: 0,
-      fidelity: 1,
-    })
-    const primary = result.assignments.find((a) => a.role === 'primary')!
-    expect(primary.deltaE).toBeLessThan(0.001)
+  it('the mono ladder owns every chart slot, not just the invented ones', () => {
+    // The defect this pins: the ladder used to fill only the slots no colour
+    // of yours reached, so a chart colour you supplied kept its own hue and
+    // sat outside the very palette the lock exists to unify — visibly the one
+    // thing left off-hue on the page.
+    const set = ['#436398', '#8ea3c5', '#234173', '#6681ad', '#a9c5f5', '#c9c96a', '#5ec8d0']
+    const candidates = candidatesFromList(set)
+    const result = generateTheme({ candidates, monoBase: 0 })
+    expect(result.chartCandidateIndexes.length, 'the tray must hold colours of yours').toBeGreaterThan(0)
+    const base = result.assignments.find((a) => a.candidateIndex === 0)!.seed
+    for (const mode of ['light', 'dark'] as const) {
+      for (let k = 1; k <= 5; k++) {
+        const t = parseColor(result[mode].tokens[`chart-${k}`])!
+        expect(hueDistance(t.h, base.h), `${mode} chart-${k}`).toBeLessThan(3)
+      }
+    }
+  })
+
+  it('a locked chart colour is the one thing the ladder steps around', () => {
+    const set = ['#436398', '#8ea3c5', '#234173', '#6681ad', '#a9c5f5', '#c9c96a', '#5ec8d0']
+    const candidates = candidatesFromList(set)
+    const free = generateTheme({ candidates, monoBase: 0 })
+    const target = free.chartCandidateIndexes[0]
+    const locked = candidates.map((c, i) => (i === target ? { ...c, locked: true } : c))
+    const held = generateTheme({ candidates: locked, monoBase: 0 })
+    // it keeps its exact colour where the ladder would otherwise have spoken
+    expect(held.light.tokens['chart-1']).toBe(set[target])
+    expect(held.light.tokens['chart-1']).not.toBe(free.light.tokens['chart-1'])
+  })
+
+  it('fidelity does not exempt the base; a lock does', () => {
+    // Mono and fidelity are independent axes, the same way riff and fidelity
+    // are. Fidelity says how faithfully a colour the engine is FREE to move
+    // gets treated; the lock says which colours it may not move at all. So at
+    // verbatim fidelity the base still takes its rung on the mono ladder —
+    // exempting it there would put a second, silent freeze beside the real one.
+    const base = candidatesFromList(['#808080'])
+    const free = generateTheme({ candidates: base, monoBase: 0, fidelity: 1 })
+    expect(free.assignments.find((a) => a.role === 'primary')!.deltaE).toBeGreaterThan(0.01)
+
+    const locked = candidatesFromList(['#808080'])
+    locked[0].locked = true
+    const held = generateTheme({ candidates: locked, monoBase: 0, fidelity: 1 })
+    expect(held.assignments.find((a) => a.candidateIndex === 0)!.seed).toEqual(
+      parseColor('#808080'),
+    )
   })
 })
 

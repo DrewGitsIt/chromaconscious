@@ -1,9 +1,9 @@
 import type { ColorCandidate, GenerateOptions, JudgeInput, Oklch, Role, ThemeResult } from './types'
 import { deltaEok, lerp, parseColor } from './color'
-import type { AssignmentResult } from './roles'
 import { assignRoles, chartAdjust } from './roles'
 import { judgePalette } from './judge'
-import { subSeed } from './random'
+import type { WalkSubject } from './walk'
+import { chartEnvelope, envelopeFor, travelFor, walkPalette } from './walk'
 import type { RepairEdge, RepairNode } from './repair'
 import { repairSeeds } from './repair'
 import { buildMode } from './tokens'
@@ -45,15 +45,24 @@ const PAIR_MIN = {
  * ΔE drift allowance for the repair pass. User colors harden as fidelity
  * rises — to *zero* at verbatim, so repair routes around them entirely;
  * pins are doubly stiff. Synthesized seeds are clay.
+ *
+ * A lock is absolute here too. Honouring it in the walk alone was not enough:
+ * repair runs afterwards, and a locked seat's *neighbours* move, so the pass
+ * would nudge the locked colour by a different amount at every hop — a colour
+ * the user froze visibly wandering, by up to 0.046 ΔE at fidelity 0.5. The
+ * pairwise minimums are still met; they are simply paid for by whoever is
+ * free to move, which is what a lock means.
  */
-function repairBudget(candidateIndex: number | null, pinned: boolean, fidelity: number): number {
+function repairBudget(
+  candidateIndex: number | null,
+  pinned: boolean,
+  fidelity: number,
+  locked: boolean,
+): number {
+  if (locked) return 0
   if (candidateIndex == null) return 0.25
   return (pinned ? 0.5 : 1) * lerp(0.12, 0, fidelity)
 }
-
-// How many repertoire variants the palate tastes per riff seed before the
-// pipeline runs. The cook generates many plates; the judge rejects the bad ones.
-const RIFF_POOL = 8
 
 export function generateTheme(options: GenerateOptions): ThemeResult {
   const fidelity = options.fidelity ?? 0.5
@@ -61,53 +70,80 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
   const monoBase =
     options.monoBase != null && options.candidates[options.monoBase] ? options.monoBase : null
 
-  // Best-of-K riff sampling. Seed 0 bypasses sampling entirely — it IS the
-  // canonical cookbook, bit-identical. For seed s > 0, draw K variant
-  // seed-sets keyed by (s, k) (subSeed avalanches, so the sub-draws never
-  // disturb any other keyed decision), judge each on seeds alone — casting
-  // is seed-independent, so only synthesized seeds differ and no ramps are
-  // ever built per variant — and keep the argmax; ties keep the lowest k.
-  // The judge sees the full context: user-cast seeds and chart seeds
-  // participate in the features, since harmony is relational.
-  const judgeInput = (r: AssignmentResult): JudgeInput => ({
-    seeds: Object.fromEntries(r.assignments.map((a) => [a.role, a.seed])) as Record<Role, Oklch>,
-    synthesized: r.assignments.filter((a) => a.candidateIndex == null).map((a) => a.role),
-    chartSeeds: r.chartCandidateIndexes.map((ci) =>
-      chartAdjust(options.candidates[ci].color, fidelity),
-    ),
-  })
-  const taste = (variantSeed: number) => {
-    const cast = assignRoles(options.candidates, fidelity, monoBase, variantSeed)
-    return { cast, judge: judgePalette(judgeInput(cast)) }
-  }
-  let winner = taste(seed === 0 ? 0 : subSeed(seed, 'variant 0'))
-  if (seed > 0) {
-    for (let k = 1; k < RIFF_POOL; k++) {
-      const variant = taste(subSeed(seed, `variant ${k}`))
-      if (variant.judge.score > winner.judge.score) winner = variant
-    }
-  }
-  const { assignments, chartCandidateIndexes, unusedCandidateIndexes, casting } = winner.cast
+  // Casting is seed-independent: who sits in which seat is decided by the
+  // user's colors and the order they gave them, never by the riff. The riff
+  // walks the seeds those seats resolved to — which is why it can move a
+  // color you supplied without ever re-shuffling the board underneath you.
+  const cast = assignRoles(options.candidates, fidelity, monoBase)
+  const { assignments, chartCandidateIndexes, unusedCandidateIndexes, casting } = cast
+  const synthesized = assignments.filter((a) => a.candidateIndex == null).map((a) => a.role)
 
-  // Pairwise repair over the resolved seeds: build the contrast graph, then
+  // The lock is the whole rule, and it is the only rule. Everything else walks:
+  // derived seats and colors you supplied alike, at any fidelity. A derived
+  // seat has no candidate to carry a lock, so it is always riffable — locking
+  // one means keeping it first, which materializes it as a candidate.
+  const isLocked = (candidateIndex: number | null) =>
+    candidateIndex != null && options.candidates[candidateIndex].locked === true
+
+  const subjects: WalkSubject[] = [
+    ...assignments.map((a) => ({
+      id: a.role,
+      color: a.seed,
+      envelope: envelopeFor(a.role),
+      locked: isLocked(a.candidateIndex),
+      // Under the mono lock the base and everything synthesized from it may
+      // only move in lightness — the same rule the repair pass below obeys.
+      lightnessOnly: monoBase != null && (a.candidateIndex == null || a.candidateIndex === monoBase),
+      travel: travelFor(a.role),
+    })),
+    ...chartCandidateIndexes.map((ci, k) => ({
+      id: `chart-${k + 1}`,
+      // Locked series colors skip the readability clamp for the same reason
+      // locked role seeds skip fidelityAdjust: the lock names an exact color.
+      color: isLocked(ci)
+        ? (options.candidates[ci].lockedColor ?? options.candidates[ci].color)
+        : chartAdjust(options.candidates[ci].color, fidelity),
+      envelope: chartEnvelope(),
+      locked: isLocked(ci),
+      lightnessOnly: monoBase != null,
+      travel: 1,
+    })),
+  ]
+
+  // The judge sees the whole palette every hop: user-held seats and chart
+  // seeds participate in the features, since harmony is relational.
+  const judgeOf = (colors: Map<string, Oklch>): JudgeInput => ({
+    seeds: Object.fromEntries(assignments.map((a) => [a.role, colors.get(a.role)!])) as Record<
+      Role,
+      Oklch
+    >,
+    synthesized,
+    chartSeeds: chartCandidateIndexes.map((_, k) => colors.get(`chart-${k + 1}`)!),
+  })
+  const walked = walkPalette(subjects, seed, (colors) => judgePalette(judgeOf(colors)).score)
+  const judge = judgePalette(judgeOf(walked))
+  const walkedAssignments = assignments.map((a) => ({ ...a, seed: walked.get(a.role)! }))
+
+  // Pairwise repair over the walked seeds: build the contrast graph, then
   // nudge whoever has budget until every pair keeps its minimum distance.
   // Under the mono lock the base and everything synthesized from it may only
   // move in lightness; colors the user layered on top keep the full move set.
-  const nodes: RepairNode[] = assignments.map((a) => ({
+  const nodes: RepairNode[] = walkedAssignments.map((a) => ({
     id: a.role,
     color: a.seed,
     budget: repairBudget(
       a.candidateIndex,
       a.candidateIndex != null && options.candidates[a.candidateIndex].pin === a.role,
       fidelity,
+      isLocked(a.candidateIndex),
     ),
     lightnessOnly: monoBase != null && (a.candidateIndex == null || a.candidateIndex === monoBase),
   }))
   chartCandidateIndexes.forEach((ci, k) => {
     nodes.push({
       id: `chart-${k + 1}`,
-      color: chartAdjust(options.candidates[ci].color, fidelity),
-      budget: repairBudget(ci, options.candidates[ci].pin === 'chart', fidelity),
+      color: walked.get(`chart-${k + 1}`)!,
+      budget: repairBudget(ci, options.candidates[ci].pin === 'chart', fidelity, isLocked(ci)),
     })
   })
 
@@ -148,14 +184,16 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
   const { colors: repaired, residuals } = repairSeeds(nodes, edges)
 
   const seeds = {} as Record<Role, Oklch>
-  const finalAssignments = assignments.map((a) => {
+  // deltaE is measured against the color the user actually handed us, so a
+  // walked seat reports how far the riff has carried it — not zero.
+  const finalAssignments = walkedAssignments.map((a) => {
     const seed = repaired.get(a.role) ?? a.seed
     seeds[a.role] = seed
     const input = a.candidateIndex != null ? options.candidates[a.candidateIndex].color : null
     return { ...a, seed, deltaE: input ? deltaEok(input, seed) : 0 }
   })
   const chartSeeds = chartCandidateIndexes.map(
-    (ci, k) => repaired.get(`chart-${k + 1}`) ?? chartAdjust(options.candidates[ci].color, fidelity),
+    (_, k) => repaired.get(`chart-${k + 1}`) ?? walked.get(`chart-${k + 1}`)!,
   )
 
   // The mono donor for buildMode's invented fills: the base's final seed if it
@@ -166,8 +204,11 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
         options.candidates[monoBase].color)
       : null
   const separation = options.separation ?? 'layered'
-  const light = buildMode(seeds, chartSeeds, 'light', fidelity, monoSeed, separation)
-  const dark = buildMode(seeds, chartSeeds, 'dark', fidelity, monoSeed, separation)
+  // Which series colours the user locked, so the mono ladder can step around
+  // them — parallel to chartSeeds by construction.
+  const chartLocked = chartCandidateIndexes.map((ci) => isLocked(ci))
+  const light = buildMode(seeds, chartSeeds, 'light', fidelity, monoSeed, separation, chartLocked)
+  const dark = buildMode(seeds, chartSeeds, 'dark', fidelity, monoSeed, separation, chartLocked)
 
   return {
     light,
@@ -181,7 +222,7 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
     monoBase,
     separation,
     seed,
-    judge: winner.judge,
+    judge,
     css: emitCss(light, dark),
   }
 }

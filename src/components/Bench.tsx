@@ -204,9 +204,7 @@ export function Bench({
                 </span>
               ))}
             </div>
-          ) : (
-            <div className="bench-empty">every color you added is in play</div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

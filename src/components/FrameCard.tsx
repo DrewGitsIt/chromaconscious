@@ -1,5 +1,5 @@
-import type { ReactElement } from 'react'
-import { Copy, Moon, Sun } from 'lucide-react'
+import type { ReactElement, ReactNode } from 'react'
+import { ChevronDown, Copy, Moon, Sun } from 'lucide-react'
 import './FrameCard.css'
 
 export interface FrameCardProps {
@@ -11,6 +11,8 @@ export interface FrameCardProps {
   supportsDark: boolean
   /** only rendered when a second frame exists */
   copyTarget: 'A' | 'B' | null
+  /** Right-justified: how many frames exist — `compare`, or `close` once split. */
+  actions?: ReactNode
   onSelect: () => void
   onChangeMockup: (id: string) => void
   onToggleMode: () => void
@@ -18,10 +20,11 @@ export interface FrameCardProps {
 }
 
 /**
- * One frame, as a thing rather than a toolbar row. One verb per level: the
- * section header owns how many frames exist, this card owns what THIS frame
- * is — which mockup, which mode, and (only when a sibling exists) copying
- * itself over that sibling.
+ * A frame's label row, sitting on the stage above the frame like an artboard
+ * name — outside the frame, so it can never be mistaken for the mockup's own
+ * UI. Left: what THIS frame is (which mockup, which mode, copying itself over
+ * a sibling). Right: `actions`, which owns how many frames exist. Nothing here
+ * is a readout; every item is a control.
  */
 export function FrameCard({
   label,
@@ -31,6 +34,7 @@ export function FrameCard({
   mode,
   supportsDark,
   copyTarget,
+  actions,
   onSelect,
   onChangeMockup,
   onToggleMode,
@@ -48,18 +52,21 @@ export function FrameCard({
       >
         {label}
       </button>
-      <select
-        className="frame-mockup"
-        aria-label={`mockup for frame ${label}`}
-        value={mockup}
-        onChange={(e) => onChangeMockup(e.target.value)}
-      >
-        {mockups.map((m) => (
-          <option key={m.id} value={m.id}>
-            {m.name}
-          </option>
-        ))}
-      </select>
+      <span className="frame-pick">
+        <select
+          className="frame-mockup"
+          aria-label={`mockup for frame ${label}`}
+          value={mockup}
+          onChange={(e) => onChangeMockup(e.target.value)}
+        >
+          {mockups.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}
+            </option>
+          ))}
+        </select>
+        <ChevronDown size={13} strokeWidth={1.75} aria-hidden />
+      </span>
       <button
         className="frame-icon"
         aria-label={`switch frame ${label} to ${next}`}
@@ -68,9 +75,9 @@ export function FrameCard({
         onClick={onToggleMode}
       >
         {mode === 'light' ? (
-          <Moon size={13} strokeWidth={1.75} aria-hidden />
+          <Moon size={14} strokeWidth={1.75} aria-hidden />
         ) : (
-          <Sun size={13} strokeWidth={1.75} aria-hidden />
+          <Sun size={14} strokeWidth={1.75} aria-hidden />
         )}
       </button>
       {copyTarget !== null && (
@@ -80,9 +87,10 @@ export function FrameCard({
           title={`copy ${label} → ${copyTarget}`}
           onClick={onCopyTo}
         >
-          <Copy size={13} strokeWidth={1.75} aria-hidden />
+          <Copy size={14} strokeWidth={1.75} aria-hidden />
         </button>
       )}
+      {actions == null ? null : <span className="frame-actions">{actions}</span>}
     </div>
   )
 }

@@ -1,0 +1,70 @@
+@layer chrome-base, chrome;
+
+/* The keyboard map, opened with shift+? or the row's own ? button.
+   Anchored to the control row rather than centred on the viewport: it
+   documents those buttons, so it should appear beside them. */
+@layer chrome {
+  .sc-flyout {
+    position: absolute;
+    z-index: 60;
+    top: calc(100% + 6px);
+    right: 0;
+    width: 244px;
+    padding: var(--pad-card);
+    background: var(--surface-2);
+    border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-card);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+  }
+
+  .sc-head {
+    font-size: var(--fs-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 8px;
+  }
+
+  .sc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .sc-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-m);
+    font-size: var(--fs-s);
+    color: var(--ink-muted);
+  }
+
+  /* Fixed width so the labels form a column instead of ragging off the keys. */
+  .sc-list kbd {
+    flex: none;
+    min-width: 46px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+    font: inherit;
+    font-size: var(--fs-xs);
+    color: var(--ink);
+    background: var(--surface-4);
+    border: 1px solid var(--line-ctl);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+  }
+
+  .sc-cap {
+    margin-top: 9px;
+    padding-top: 8px;
+    border-top: 1px solid var(--line-card);
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+  }
+}

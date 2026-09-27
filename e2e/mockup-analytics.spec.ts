@@ -196,7 +196,10 @@ test.describe('analytics console — every control is real', () => {
 
     // The wedge itself: a ring only responds where it is painted, so aim at a
     // point on the arc rather than at the bounding box's (empty) centre.
+    // A raw mouse click doesn't scroll, and the frame scrolls inside itself
+    // rather than the page, so bring the ring into view before aiming at it.
     const donut = page.locator('.an-donut')
+    await donut.scrollIntoViewIfNeeded()
     const box = await donut.boundingBox()
     if (!box) throw new Error('donut not laid out')
     await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.08)
@@ -333,13 +336,13 @@ test.describe('analytics console — dark mode and split view', () => {
     page,
   }) => {
     await boot(page)
-    await page.locator('.sec-act .mini[title*="compare two frames"]').click()
+    await page.locator('.board-btn[title*="compare two frames"]').click()
     await page.locator('.frame-mockup').nth(1).selectOption('analytics')
     await expect(page.locator('.an-console')).toHaveCount(2)
     await expect(page.locator('.an-panel')).toHaveCount(8)
 
-    const paneA = page.locator('.split-pane').nth(0)
-    const paneB = page.locator('.split-pane').nth(1)
+    const paneA = page.locator('.artboard').nth(0)
+    const paneB = page.locator('.artboard').nth(1)
 
     // Ids are the trap: two panes sharing a clipPath id means one pane clips
     // with the other's geometry.

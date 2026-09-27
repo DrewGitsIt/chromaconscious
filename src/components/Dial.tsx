@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { ReactElement } from 'react'
+import type { CSSProperties, ReactElement } from 'react'
 import './Dial.css'
 
 export interface DialProps {
@@ -8,8 +8,10 @@ export interface DialProps {
   onChange: (v: number) => void
 }
 
-/** Tick count under the track — one per 0.1 of the range, ends included. */
-const TICKS = Array.from({ length: 11 }, (_, i) => i)
+/** Ticks over the track — one per 0.05 step, ends included. Every fifth is a
+    major tick; the middle one is the detent, where the dial starts. */
+const TICKS = Array.from({ length: 21 }, (_, i) => i)
+const DETENT = 10
 
 /** Matches --d-fast: the caption fades out, swaps, fades back in. */
 const FADE_MS = 120
@@ -20,9 +22,10 @@ const prefersReducedMotion = () =>
   window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /**
- * The fidelity dial — the app's marquee control. Cool end is the smith's
- * judgment, warm end the user's raw colors; the readout travels with the
- * thumb and the caption cross-fades so dragging never snaps text.
+ * The fidelity dial — the app's marquee control, drawn as an instrument: a
+ * large numeric readout, a ruled scale with a detent at the default, and a
+ * hairline needle. Left is the smith's judgment, right the user's raw colors.
+ * The caption cross-fades so dragging never snaps text.
  */
 export function Dial({ value, caption, onChange }: DialProps): ReactElement {
   // `shown` lags `caption` by one fade so the text swaps while invisible.
@@ -45,13 +48,17 @@ export function Dial({ value, caption, onChange }: DialProps): ReactElement {
 
   return (
     <div className="dial">
-      <div className="dial-ends">
-        <span className="dial-end cool">smith&rsquo;s taste</span>
-        <span className="dial-end warm">raw colors</span>
-      </div>
-      <div className="dial-track-wrap">
-        <span className="dial-bubble" style={{ left: `${value * 100}%` }} aria-hidden>
+      <div className="dial-read">
+        <span className="dial-name">taste</span>
+        <span className="dial-value" aria-hidden>
           {value.toFixed(2)}
+        </span>
+      </div>
+      <div className="dial-track-wrap" style={{ '--v': `${value * 100}%` } as CSSProperties}>
+        <span className="dial-ticks" aria-hidden>
+          {TICKS.map((i) => (
+            <i key={i} className={i === DETENT ? 'detent' : i % 5 === 0 ? 'major' : undefined} />
+          ))}
         </span>
         <input
           type="range"
@@ -64,11 +71,10 @@ export function Dial({ value, caption, onChange }: DialProps): ReactElement {
           value={value}
           onChange={(e) => onChange(parseFloat(e.target.value))}
         />
-        <span className="dial-ticks" aria-hidden>
-          {TICKS.map((i) => (
-            <i key={i} />
-          ))}
-        </span>
+      </div>
+      <div className="dial-ends" aria-hidden>
+        <span>smith</span>
+        <span>raw</span>
       </div>
       <div className={`dial-caption${swapping ? ' swapping' : ''}`}>
         <span>{shown}</span>

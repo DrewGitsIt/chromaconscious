@@ -14,6 +14,9 @@ import { buildEffects } from './elevation'
 import { chartAdjust } from './roles'
 import { makeRamp } from './ramp'
 
+/** Chart series slots, matching the `chart-1`..`chart-5` tokens. */
+const SERIES_SLOTS = 5
+
 /**
  * Solid fills (buttons) must carry readable text (4.5:1) — always — and,
  * when a surface is given, should "pop" against it (3:1, WCAG 1.4.11
@@ -62,6 +65,12 @@ export function buildMode(
   monoSeed: Oklch | null = null,
   /** Surface separation: moves the neutral ladder and the shadow scale together. */
   separation: Separation = 'layered',
+  /**
+   * Which chart seeds the user locked, parallel to `chartSeeds`. Only the mono
+   * ladder consults it — a lock is the one thing that keeps a series colour out
+   * of the ladder, the same rule the six seats obey.
+   */
+  chartLocked: boolean[] = [],
 ): ThemeMode {
   const ramps = {} as Record<Role, Ramp>
   for (const role of Object.keys(seeds) as Role[]) {
@@ -91,31 +100,42 @@ export function buildMode(
   const seriesSeeds = accentClaimsChart1
     ? [chartAdjust(seeds.accent, fidelity), ...chartSeeds].slice(0, 5)
     : chartSeeds
-  const charts = seriesSeeds.map((c) =>
-    toHex(mode === 'dark' ? toGamut({ l: Math.max(c.l, 0.65), c: c.c * 0.85, h: c.h }) : c),
-  )
-  while (charts.length < 5) {
-    const k = charts.length
-    const base = seeds.primary
-    // Mono lock: no hue spins — series separate on a sequential lightness
-    // ladder over the base, like a print dataviz ramp.
-    charts.push(
-      toHex(
-        toGamut(
-          monoSeed
-            ? {
-                l: mode === 'dark' ? 0.35 + 0.115 * k : 0.78 - 0.115 * k,
-                c: Math.min(monoSeed.c, 0.12),
-                h: monoSeed.h,
-              }
-            : {
-                l: mode === 'dark' ? 0.72 : 0.6,
-                c: Math.max(base.c, 0.11),
-                h: (base.h + 45 * (k + 1)) % 360,
-              },
+
+  const base = seeds.primary
+  /** The mono ladder: one hue, five rungs, like a print dataviz ramp. */
+  const monoRung = (k: number): Oklch => ({
+    l: mode === 'dark' ? 0.35 + 0.115 * k : 0.78 - 0.115 * k,
+    c: Math.min(monoSeed!.c, 0.12),
+    h: monoSeed!.h,
+  })
+  /** No mono lock: invented fills separate by spinning the hue wheel. */
+  const spun = (k: number): Oklch => ({
+    l: mode === 'dark' ? 0.72 : 0.6,
+    c: Math.max(base.c, 0.11),
+    h: (base.h + 45 * (k + 1)) % 360,
+  })
+
+  const charts: string[] = []
+  for (let k = 0; k < SERIES_SLOTS; k++) {
+    const seed = seriesSeeds[k]
+    // Under the mono lock the ladder owns EVERY slot, not just the ones no
+    // colour of yours reached. It used to own only the leftovers, so a chart
+    // colour you supplied kept its own hue and sat outside the very palette
+    // the lock exists to unify — the one thing on screen still off-hue.
+    // A locked colour is the sole exception, exactly as for the six seats.
+    if (monoSeed && !(seed && chartLocked[k])) {
+      charts.push(toHex(toGamut(monoRung(k))))
+    } else if (seed) {
+      charts.push(
+        toHex(
+          mode === 'dark'
+            ? toGamut({ l: Math.max(seed.l, 0.65), c: seed.c * 0.85, h: seed.h })
+            : seed,
         ),
-      ),
-    )
+      )
+    } else {
+      charts.push(toHex(toGamut(spun(k))))
+    }
   }
 
   // Multi-surface solve: run the solver once per surface and keep the most
