@@ -1,38 +1,45 @@
 @layer chrome-base, chrome;
 
-/* THE DIAL — 8px gradient track, travelling readout, cross-fading caption.
-   The gradient's ends carry meaning: --accent-cool is the engine's judgment,
-   --accent-warm the user's raw colors, with a dark mid so the two poles read
-   as opposites rather than a rainbow. Every colour here is token-derived. */
+/* THE DIAL — an instrument, not a gradient: a numeric readout, a ruled scale
+   with a detent at the default, a 2px rail filled in ink up to the needle.
+   Achromatic like the rest of the chrome — the two ends are named, not
+   coloured, so the only hues on screen stay the user's. */
 @layer chrome {
   .dial {
-    padding: 2px 2px 0;
+    padding: 0;
   }
 
-  .dial-ends {
+  .dial-read {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
-    font-size: var(--fs-s);
-    margin-bottom: 14px;
+    margin-bottom: 4px;
   }
-  .dial-end.cool {
-    color: var(--accent-cool);
+  .dial-name {
+    font-size: var(--fs-m);
+    color: var(--ink);
   }
-  .dial-end.warm {
-    color: var(--accent-warm);
+  .dial-value {
+    font-family: var(--font-code);
+    font-size: var(--fs-read);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    color: var(--ink);
   }
 
   .dial-track-wrap {
     position: relative;
-    height: 26px;
+    height: 30px;
   }
 
-  /* ticks sit under the track, one per 0.1 */
+  /* the scale: minor ticks, a major every fifth, the detent tallest. Inset
+     by half the needle's width so tick 0 and tick 20 sit under the needle's
+     extremes. */
   .dial-ticks {
     position: absolute;
-    inset: auto 8px 3px;
-    height: 4px;
+    inset: 0 2px auto;
+    height: 14px;
     display: flex;
     justify-content: space-between;
     pointer-events: none;
@@ -40,126 +47,104 @@
   .dial-ticks i {
     display: block;
     width: 1px;
-    height: 4px;
+    height: 6px;
     background: var(--line-ctl);
+  }
+  .dial-ticks i.major {
+    height: 10px;
+    background: var(--line-active);
+  }
+  .dial-ticks i.detent {
+    height: 14px;
+    background: var(--ink-muted);
   }
 
   .dial-slider {
     -webkit-appearance: none;
     appearance: none;
     position: absolute;
-    top: 4px;
+    top: 8px;
     left: 0;
     width: 100%;
-    height: 8px;
+    height: 20px;
     margin: 0;
     padding: 0;
     border: 0;
-    border-radius: var(--radius-pill);
     outline: none;
+    background: transparent;
+    cursor: ew-resize;
+  }
+  /* the rail, filled in ink up to the needle (--v is set inline) */
+  .dial-slider::-webkit-slider-runnable-track {
+    height: 2px;
+    border-radius: 1px;
     background: linear-gradient(
       90deg,
-      var(--accent-cool) 0%,
-      color-mix(in srgb, var(--accent-cool) 20%, var(--surface-4)) 48%,
-      color-mix(in srgb, var(--accent-warm) 18%, var(--surface-4)) 62%,
-      var(--accent-warm) 100%
+      var(--ink) 0 var(--v),
+      var(--line-ctl) var(--v) 100%
     );
-    box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.5);
-  }
-
-  .dial-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--ink-bright);
-    border: 3px solid var(--surface-1);
-    cursor: grab;
-    box-shadow:
-      0 0 0 1px var(--line-active),
-      0 2px 8px rgb(0 0 0 / 0.55);
-    transition:
-      transform var(--d-fast) var(--ease-back),
-      box-shadow var(--d-fast) var(--ease);
-  }
-  .dial-slider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--ink-bright);
-    border: 3px solid var(--surface-1);
-    cursor: grab;
-    box-shadow:
-      0 0 0 1px var(--line-active),
-      0 2px 8px rgb(0 0 0 / 0.55);
-    transition:
-      transform var(--d-fast) var(--ease-back),
-      box-shadow var(--d-fast) var(--ease);
   }
   .dial-slider::-moz-range-track {
-    height: 8px;
-    border-radius: var(--radius-pill);
-    background: transparent;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--line-ctl);
+  }
+  .dial-slider::-moz-range-progress {
+    height: 2px;
+    border-radius: 1px;
+    background: var(--ink);
   }
 
-  .dial-slider:hover::-webkit-slider-thumb {
-    transform: scale(1.1);
+  /* the needle: a 4px bar, ringed in the panel colour so it cuts the rail */
+  .dial-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 4px;
+    height: 16px;
+    margin-top: -7px;
+    border-radius: 2px;
+    background: var(--ink-bright);
+    border: 0;
+    box-shadow: 0 0 0 3px var(--surface-1);
+    transition: box-shadow var(--d-fast) var(--ease);
   }
-  .dial-slider:hover::-moz-range-thumb {
-    transform: scale(1.1);
+  .dial-slider::-moz-range-thumb {
+    width: 4px;
+    height: 16px;
+    border-radius: 2px;
+    background: var(--ink-bright);
+    border: 0;
+    box-shadow: 0 0 0 3px var(--surface-1);
+    transition: box-shadow var(--d-fast) var(--ease);
   }
-
-  .dial-slider:active::-webkit-slider-thumb {
-    cursor: grabbing;
-    transform: scale(1.22);
-    box-shadow:
-      0 0 0 1px var(--line-active),
-      0 0 0 7px color-mix(in srgb, var(--ink-bright) 12%, transparent);
-  }
-  .dial-slider:active::-moz-range-thumb {
-    cursor: grabbing;
-    transform: scale(1.22);
-    box-shadow:
-      0 0 0 1px var(--line-active),
-      0 0 0 7px color-mix(in srgb, var(--ink-bright) 12%, transparent);
-  }
-
+  .dial-slider:active::-webkit-slider-thumb,
   .dial-slider:focus-visible::-webkit-slider-thumb {
     box-shadow:
-      0 0 0 1px var(--line-active),
+      0 0 0 3px var(--surface-1),
       0 0 0 5px color-mix(in srgb, var(--accent) 45%, transparent);
   }
+  .dial-slider:active::-moz-range-thumb,
   .dial-slider:focus-visible::-moz-range-thumb {
     box-shadow:
-      0 0 0 1px var(--line-active),
+      0 0 0 3px var(--surface-1),
       0 0 0 5px color-mix(in srgb, var(--accent) 45%, transparent);
   }
 
-  /* the readout TRAVELS with the thumb instead of parking in a corner */
-  .dial-bubble {
-    position: absolute;
-    top: -20px;
-    transform: translateX(-50%);
-    font-size: var(--fs-xs);
-    font-variant-numeric: tabular-nums;
-    background: var(--surface-4);
-    color: var(--ink-bright);
-    border: 1px solid var(--line-ctl);
-    padding: 2px 7px;
-    border-radius: var(--radius-pill);
-    pointer-events: none;
-    white-space: nowrap;
-    transition:
-      left var(--d-fast) var(--ease),
-      background var(--d-fast) var(--ease);
+  .dial-ends {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-code);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
   }
 
   /* the caption CROSS-FADES: no min-height band-aid, no mid-drag snapping */
   .dial-caption {
     font-size: var(--fs-s);
-    color: var(--ink-faint);
-    text-align: center;
-    margin-top: 12px;
+    line-height: 1.5;
+    color: var(--ink-muted);
+    margin-top: 10px;
   }
   .dial-caption span {
     display: block;
@@ -171,20 +156,11 @@
 
   @media (prefers-reduced-motion: reduce) {
     .dial-slider::-webkit-slider-thumb,
-    .dial-bubble,
     .dial-caption span {
       transition: none;
     }
     .dial-slider::-moz-range-thumb {
       transition: none;
-    }
-    .dial-slider:hover::-webkit-slider-thumb,
-    .dial-slider:active::-webkit-slider-thumb {
-      transform: none;
-    }
-    .dial-slider:hover::-moz-range-thumb,
-    .dial-slider:active::-moz-range-thumb {
-      transform: none;
     }
   }
 }

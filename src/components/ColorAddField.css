@@ -1,0 +1,273 @@
+/* ColorAddField-owned chrome: the sidebar's `+` swatch and the popover it
+   opens, plus the box around the hero's free-text field.
+
+   Both used to live in App.css as `.add-row` / `.hexfield`, from back when the
+   add control was a full-width row the page had to lay out. It lays itself out
+   now, so the rules travel with it — the same move the candidate strip, the
+   dial and the export row already made. */
+@layer chrome-base, chrome;
+
+@layer chrome {
+  /* ---------- closed: a swatch-sized invitation ---------- */
+  .addsw-row {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-s);
+    margin-top: 10px;
+  }
+  .addsw-lab {
+    font-size: var(--fs-s);
+    color: var(--ink-faint);
+  }
+  .addsw {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    /* Dashed: this square holds no colour yet. Every other swatch in the
+       sidebar is a solid edge around a colour that exists. */
+    border: 1px dashed var(--line-ctl);
+    border-radius: var(--radius-ctl);
+    color: var(--ink-faint);
+    cursor: pointer;
+    transition:
+      border-color var(--d-fast) var(--ease),
+      color var(--d-fast) var(--ease),
+      background var(--d-fast) var(--ease);
+  }
+  /* Open looks exactly like hover, deliberately: the trigger is the one thing
+     on screen the popover is attached to, so it stays lit while it's up. */
+  .addsw:hover,
+  .addsw[aria-expanded='true'] {
+    border-style: solid;
+    border-color: var(--accent);
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+
+  /* ---------- open: the popover ---------- */
+  .pk-anchor {
+    position: relative;
+    display: inline-flex;
+  }
+  /* FIXED and portalled to <body>, with left/top set inline by `usePlacement`
+     — see the long note there. `.sidebar-shell` is overflow:hidden and
+     `.sb-body` is overflow-y:auto, and at some scroll offsets there is room
+     for this popover on neither side of its trigger, so no absolutely
+     positioned placement survives. */
+  .pk-pop {
+    position: fixed;
+    z-index: 50;
+    width: 236px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-card);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    padding: var(--pad-card);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-m);
+  }
+
+  /* Portalled out of `.sidebar-shell`, so base.css's control skin no longer
+     reaches these — the popover has to dress its own. `:where()` keeps it at
+     zero specificity, exactly as the skin it stands in for does. */
+  .pk-pop :where(button, input) {
+    height: var(--ctl-h);
+    padding: 0 10px;
+    background: var(--surface-3);
+    border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-ctl);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--fs-m);
+  }
+  .pk-pop :where(button) {
+    cursor: pointer;
+  }
+  .pk-pop :where(button):hover {
+    background: var(--surface-4);
+  }
+  .pk-pop :where(button):disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .pk-row {
+    display: flex;
+    gap: var(--gap-s);
+  }
+  .pk-field {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-s);
+    flex: 1;
+    min-width: 0;
+    height: var(--ctl-h);
+    background: var(--surface-3);
+    border: 1px solid var(--line-card);
+    border-radius: var(--radius-ctl);
+    padding: 0 6px;
+    cursor: text;
+    transition: border-color var(--d-fast) var(--ease);
+  }
+  .pk-field:focus-within {
+    border-color: var(--line-active);
+  }
+  /* Only when NOTHING in the field reads as a colour. A typo sitting next to
+     three good hexes is the message's business, not the field's. */
+  .pk-field.bad {
+    border-color: var(--fail);
+  }
+  .pk-field input {
+    flex: 1;
+    min-width: 0;
+    height: auto;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    padding: 0;
+    font-size: var(--fs-m);
+    font-family: var(--font-code);
+  }
+  /* The field's own reading of itself: one colour, or a stripe per colour when
+     several are queued up. It is what tells you the paste landed. */
+  .pk-prev {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  }
+  .pk-prev.multi {
+    display: flex;
+    overflow: hidden;
+  }
+  .pk-prev.multi i {
+    flex: 1;
+    height: 100%;
+    display: block;
+  }
+  /* The eyedropper is ColorSwatchPicker's, squared off to sit beside the
+     field — it renders nothing at all where the EyeDropper API is missing. */
+  .pk-row .eyedrop-btn {
+    width: var(--ctl-h);
+    padding: 0;
+    color: var(--ink-muted);
+  }
+  .pk-row .eyedrop-btn:hover {
+    color: var(--ink);
+  }
+
+  /* Holds its height empty so the popover doesn't jump a row when the verdict
+     changes under the user's fingers. */
+  .pk-msg {
+    margin: 0;
+    min-height: 16px;
+    font-size: var(--fs-s);
+    line-height: 1.45;
+    color: var(--ink-faint);
+  }
+  .pk-msg.bad {
+    color: var(--fail);
+  }
+  .pk-add {
+    width: 100%;
+    height: var(--ctl-h);
+    border-radius: var(--radius-ctl);
+    border: 1px solid var(--line-active);
+    background: var(--surface-4);
+    color: var(--ink);
+    font-size: var(--fs-m);
+    font-weight: 550;
+    cursor: pointer;
+  }
+  .pk-add:hover:not(:disabled) {
+    background: var(--surface-active);
+  }
+
+  /* ---------- the hero's free-text field ---------- */
+  .hexfield {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-s);
+    flex: 1;
+    min-width: 0;
+    height: var(--ctl-h);
+    background: var(--surface-3);
+    border: 1px solid var(--line-card);
+    border-radius: var(--radius-ctl);
+    padding: 0 6px;
+    transition: border-color var(--d-fast) var(--ease);
+  }
+  .hexfield:focus-within {
+    border-color: var(--line-active);
+  }
+  .hexfield input {
+    flex: 1;
+    min-width: 0;
+    height: auto;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    padding: 0;
+    font-size: var(--fs-m);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .addsw,
+    .pk-field,
+    .hexfield {
+      transition: none;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------
+   react-colorful, resized to the spec — DELIBERATELY UNLAYERED.
+
+   react-colorful injects its stylesheet at runtime with no `@layer`, and
+   unlayered author declarations beat every layer regardless of specificity.
+   So the identical override in ColorSwatchPicker.css — `.picker-pop
+   .react-colorful { width: 184px; height: 150px }`, inside `@layer chrome` —
+   has never applied: that popover has always rendered at the library default
+   of 200x200. These rules sit outside the layers for that reason, and win on
+   specificity alone. Moving them into `@layer chrome` silently un-styles them.
+
+   The square and the rail are the library's because it already ships the drag
+   maths, pointer capture and arrow-key handling that hand-rolling them would
+   have to reinvent — the mockup's `.pk-sv`/`.pk-hue` are a look, not a widget.
+   ------------------------------------------------------------------ */
+.pk-pop .react-colorful {
+  width: 100%;
+  height: auto;
+  gap: var(--gap-m);
+}
+.pk-pop .react-colorful__saturation {
+  flex: none;
+  height: 132px;
+  border-bottom: 0;
+  border-radius: var(--radius-ctl);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.pk-pop .react-colorful__hue {
+  height: 14px;
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.pk-pop .react-colorful__pointer {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+/* The library sets `outline: none` on the drag surfaces, which leaves the
+   square and the rail invisible to a keyboard once they take focus. */
+.pk-pop .react-colorful__interactive:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

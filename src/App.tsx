@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
 import {
   Ban,
+  Blend,
   Columns2,
-  Dices,
+  Guitar,
   Image as ImageIcon,
-  Lock,
-  LockOpen,
   Palette,
   RotateCcw,
+  Undo2,
   X,
 } from 'lucide-react'
 import type { ColorCandidate, Role, Separation, ThemeResult, TokenAncestor } from './engine'
@@ -23,17 +22,23 @@ import {
 } from './engine'
 import type { BoardView, DragPayload } from './board'
 import {
+  adjustRole,
   benchCandidate,
   deriveRole,
   describePlacement,
   dropCandidate,
-  hasDerivedSeats,
+  hasRiffableSeats,
   keepRole,
+  lockRole,
+  lockSeries,
+  nameOf,
   placeInRole,
   placeInSeries,
   readBoard,
   remapAfterRemove,
   resetPlacements,
+  unlockRole,
+  unlockSeries,
   wouldTakeOver,
 } from './board'
 import { GLOSS, jobsForRole } from './roleCopy'
@@ -53,6 +58,8 @@ import { AssignPopover, RoleTooltip } from './components/RolePopover'
 import { SeparationControl } from './components/SeparationControl'
 import { SeriesTray } from './components/SeriesTray'
 import { Section, SidebarShell } from './components/SidebarShell'
+import { ShortcutsFlyout } from './components/Shortcuts'
+import { SHORTCUTS, isTypingTarget, withKey } from './shortcuts'
 import { StartHero } from './components/StartHero'
 import { StatusChip } from './components/StatusChip'
 import type { MockupProps } from './mockups'
@@ -75,16 +82,14 @@ interface FrameState {
   preset: string | null
   /** Mono lock: candidate index whose hue rules the theme, or null. */
   monoBase: number | null
-  /** Last base after unlocking — one click re-locks it. */
-  monoParked: number | null
-  /** Riff seed for the engine's derived colors; 0 = canonical cookbook. */
+  /** How many riff hops this frame stands from the cookbook; 0 = the cookbook. */
   seed: number
   /** How hard the surface stack separates itself. `layered` = historical output. */
   separation: Separation
 }
 
 /** What "start over" replaces — and what undo brings back. */
-type StartOverState = Pick<FrameState, 'candidates' | 'preset' | 'monoBase' | 'monoParked' | 'seed'>
+type StartOverState = Pick<FrameState, 'candidates' | 'preset' | 'monoBase' | 'seed'>
 
 interface Toast {
   text: string
@@ -109,14 +114,18 @@ const EXPORT_FORMATS = (Object.keys(FORMAT_LABEL) as ExportFormat[]).map((id) =>
 const emptyFrameState = (): FrameState => ({
   candidates: [],
   fidelity: 0.5,
-  mode: 'light',
+  mode: 'dark',
   mockup: 'app',
   preset: null,
   monoBase: null,
-  monoParked: null,
   seed: 0,
   separation: 'layered',
 })
+
+/** Every seat and every chart slot already holds a colour of yours. */
+const boardIsFull = (v: BoardView): boolean =>
+  v.slots.every((s) => s.provenance !== 'derived') &&
+  v.series.every((s) => s.provenance !== 'derived')
 
 const cloneFrame = (f: FrameState): FrameState => ({
   ...f,
@@ -173,6 +182,10 @@ export default function App() {
   const [benchOpen, setBenchOpen] = useState(false)
   const [benchFlash, setBenchFlash] = useState(false)
   const [rerolled, setRerolled] = useState<Role[]>([])
+  // The keyboard map's flyout, and the add popover — which a key can open, so
+  // its open state has to live out here rather than inside the control.
+  const [helpOpen, setHelpOpen] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
 
   const frame = frames[active]
   const updateFrame = (i: number, patch: Partial<FrameState>) => {
@@ -257,9 +270,12 @@ export default function App() {
     }))
     const next = [...frame.candidates, ...added]
     setCandidates(next)
-    // A colour that lands on a collapsed bench would vanish silently.
+    // A colour that lands on a collapsed bench would vanish silently, and with
+    // every seat already filled that is where it goes. Deliberately NOT
+    // `hasRiffableSeats` — this asks "is the board full", which is a question
+    // about seats, not about what riff may move.
     const before = view
-    if (before && !hasDerivedSeats(before)) {
+    if (before && boardIsFull(before)) {
       setBenchFlash(true)
       setTimeout(() => setBenchFlash(false), 1000)
     }
@@ -277,7 +293,7 @@ export default function App() {
     label: string,
   ) => {
     const prev = frames[i]
-    updateFrame(i, { candidates, preset, monoBase: null, monoParked: null, seed: 0 })
+    updateFrame(i, { candidates, preset, monoBase: null, seed: 0 })
     setPicking(false)
     setSeatMenu(null)
     if (prev.candidates.length > 0) {
@@ -289,7 +305,6 @@ export default function App() {
             candidates: prev.candidates,
             preset: prev.preset,
             monoBase: prev.monoBase,
-            monoParked: prev.monoParked,
             seed: prev.seed,
           },
         },
@@ -323,14 +338,16 @@ export default function App() {
   }, [toast])
 
   // ---- riff ---------------------------------------------------------------
-  // Only derived seats move. Capture which ones so they bounce, then clear the
-  // flag so the next riff can replay it.
+  // A hop walks every UNLOCKED seat — derived or yours alike. Capture which
+  // ones those are so they bounce, then clear the flag so the next hop replays
+  // it. (It used to capture the derived ones, back when those were the only
+  // seats that could move.)
   const riff = () => {
     if (!view) return
-    const derivedBefore = view.slots.filter((s) => s.provenance === 'derived').map((s) => s.role)
+    const moving = view.slots.filter((s) => !s.locked).map((s) => s.role)
     updateActive({ seed: frame.seed + 1 })
     setSeatMenu(null)
-    setRerolled(derivedBefore)
+    setRerolled(moving)
     setTimeout(() => setRerolled([]), 700)
   }
   const riffBack = () => {
@@ -356,13 +373,37 @@ export default function App() {
     else setCandidates(benchCandidate(frame.candidates, idx))
   }
 
-  const keepSeat = (role: Role) => {
+  /**
+   * The lock is the only thing that stops riff moving a colour, so this is the
+   * single control the board offers for it. Three cases, not two: a derived
+   * seat has no candidate to carry a lock, so locking it means keeping it
+   * first — that materialises one at exactly the colour on screen.
+   */
+  const toggleSeatLock = (role: Role) => {
     if (!view) return
     const slot = view.slots.find((s) => s.role === role)
-    if (!slot || slot.provenance !== 'derived') return
-    const parsed = parseColor(slot.hex)
-    if (!parsed) return
-    setCandidates(keepRole(frame.candidates, role, parsed, slot.hex))
+    if (!slot) return
+    if (slot.locked) {
+      setCandidates(unlockRole(frame.candidates, role, view))
+    } else if (slot.provenance === 'derived') {
+      const parsed = parseColor(slot.hex)
+      if (parsed) setCandidates(keepRole(frame.candidates, role, parsed, slot.hex))
+    } else {
+      setCandidates(lockRole(frame.candidates, role, view))
+    }
+  }
+
+  // A derived chart fill has no candidate behind it and no `keep` verb to
+  // materialise one, so the tray only offers the lock on slots of yours.
+  const toggleSeriesLock = (slot: number) => {
+    if (!view) return
+    const entry = view.series.find((s) => s.slot === slot)
+    if (!entry || entry.candidateIndex == null) return
+    setCandidates(
+      entry.locked
+        ? unlockSeries(frame.candidates, slot, view)
+        : lockSeries(frame.candidates, slot, view),
+    )
   }
 
   const freeSeat = (role: Role) => {
@@ -392,16 +433,16 @@ export default function App() {
       // describePlacement. Each probe is one sub-millisecond solve.
       out.push({ candidateIndex, hex, hint: describePlacement(frame.candidates, candidateIndex, role, view, regen) })
     }
+    // Every option names the CANDIDATE's own hex, never the hex the board shows
+    // for the seat it sits in — see nameOf. A seat displays the seed the engine
+    // resolved (fidelity, repair, riff hop) and a tray swatch the chart-adjusted
+    // token, so either would name a colour other than the one being seated.
     for (const b of view.bench) add(b.candidateIndex, b.hex)
-    for (const s of view.slots) if (s.candidateIndex != null) add(s.candidateIndex, s.hex)
-    // A colour parked in the chart tray is still yours to seat. Use the
-    // CANDIDATE's own hex, not the series entry's: `series[].hex` is the
-    // chart-adjusted token value, so offering it would name a colour that
-    // isn't the one you'd actually be seating.
-    for (const s of view.series) {
-      if (s.candidateIndex == null) continue
-      const c = frame.candidates[s.candidateIndex]
-      if (c) add(s.candidateIndex, toHex(c.color))
+    for (const group of [view.slots, view.series]) {
+      for (const s of group) {
+        const h = nameOf(frame.candidates, s.candidateIndex)
+        if (h != null && s.candidateIndex != null) add(s.candidateIndex, h)
+      }
     }
     return out
   }, [view, result, seatMenu, frame.candidates, frame.fidelity, frame.monoBase, frame.seed])
@@ -451,13 +492,19 @@ export default function App() {
     if (!locked || !view) return null
     return view.slots.find((s) => s.candidateIndex === frame.monoBase)?.role ?? null
   }, [locked, view, frame.monoBase])
-  const parkedColor =
-    frame.monoParked != null ? (frame.candidates[frame.monoParked]?.color ?? null) : null
+  /** The colour ruling the theme, named on the chip so the pick is visible. */
+  const baseHex =
+    frame.monoBase != null && frame.candidates[frame.monoBase]
+      ? toHex(frame.candidates[frame.monoBase].color)
+      : null
+  // Engaging the lock ALWAYS asks which colour, once there is more than one to
+  // choose. It used to remember the last base and silently restore it, which
+  // saved a click and cost the ability to ever change your mind — off, on, and
+  // you were back on the same base with no way to reach the picker again.
   const lockClick = () => {
     if (picking) setPicking(false)
-    else if (locked) updateActive({ monoBase: null, monoParked: frame.monoBase })
-    else if (parkedColor != null) updateActive({ monoBase: frame.monoParked, monoParked: null })
-    else if (frame.candidates.length === 1) updateActive({ monoBase: 0, monoParked: null })
+    else if (locked) updateActive({ monoBase: null })
+    else if (frame.candidates.length === 1) updateActive({ monoBase: 0 })
     else if (frame.candidates.length > 1) setPicking(true)
   }
   useEffect(() => {
@@ -466,6 +513,56 @@ export default function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [picking])
+
+  // ---- keyboard -----------------------------------------------------------
+  // One key per control in the row, read from the same table its tooltips and
+  // the flyout read (components/Shortcuts.tsx). Bare keys, so they are ignored
+  // while a field has focus and whenever a modifier is down — Ctrl+R still
+  // reloads the page, and typing a hex no longer riffs on its way past.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      if (isTypingTarget(e.target)) return
+      // `?` is shift+/ on a US layout and the browser hands us the mapped
+      // character — but only when the layout maps it that way, and automation
+      // hands us the raw `/` instead. Accept both rather than trusting either.
+      const pressed = e.key === '/' && e.shiftKey ? '?' : e.key.toLowerCase()
+      const hit = SHORTCUTS.find((s) => s.key === pressed)
+      if (!hit) return
+      // Every branch below needs a forged theme; only help works without one.
+      if (hit.id !== 'help' && (!view || emptyFrame)) return
+      e.preventDefault()
+      switch (hit.id) {
+        case 'help':
+          setHelpOpen((o) => !o)
+          break
+        case 'add':
+          setAddOpen((o) => !o)
+          break
+        case 'mono':
+          lockClick()
+          break
+        case 'riff':
+          if (hasRiffableSeats(view!)) riff()
+          break
+        case 'back':
+          if (frame.seed > 0) riffBack()
+          break
+        case 'reset':
+          if (hasPlacements) setCandidates(resetPlacements(frame.candidates))
+          break
+        case 'startOver':
+          setStartOverPage('root')
+          setStartOverOpen((o) => !o)
+          break
+        case 'bench':
+          setBenchOpen((o) => !o)
+          break
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
 
   // ---- the dial's live caption -------------------------------------------
   const drift = useMemo(() => {
@@ -519,14 +616,6 @@ export default function App() {
   const nColors = `${frame.candidates.length} color${frame.candidates.length === 1 ? '' : 's'}`
   const hasPlacements = frame.candidates.some((c) => c.pin || c.benched)
 
-  // The chrome wears the palette it is forging.
-  const palVars = useMemo(() => {
-    if (!view) return undefined
-    const primary = view.slots.find((s) => s.role === 'primary')?.hex
-    const accent = view.slots.find((s) => s.role === 'accent')?.hex
-    return { '--pal-primary': primary, '--pal-accent': accent } as CSSProperties
-  }, [view])
-
   const hero = (i: number) => (
     <StartHero
       onAddColors={(inputs) => {
@@ -565,7 +654,7 @@ export default function App() {
         tagline="any colors in, working theme out"
         footer={
           emptyFrame && !split ? null : (
-            <div className="foot-stack" style={palVars}>
+            <div className="foot-stack">
               {checkStats && (
                 <StatusChip
                   ok={checkStats.issues === 0}
@@ -588,97 +677,43 @@ export default function App() {
           )
         }
       >
-        <div style={palVars}>
-          {(!emptyFrame || split) && (
-            <Section
-              label="canvas"
-              actions={
-                <button
-                  className="mini"
-                  onClick={() => (split ? closeFrame(1) : duplicateFrame(active))}
-                  title={split ? 'close frame B' : 'compare two frames'}
-                >
-                  {split ? <X size={11} strokeWidth={2.2} /> : <Columns2 size={11} strokeWidth={1.75} />}
-                  {split ? 'close B' : 'compare'}
-                </button>
-              }
-            >
-              <div className="frame-stack">
-                {frames.map((f, i) => (
-                  <FrameCard
-                    key={i}
-                    label={FRAME_LABEL[i]}
-                    active={active === i}
-                    mockups={MOCKUPS.map((m) => ({ id: m.id, name: m.name }))}
-                    mockup={f.mockup}
-                    mode={f.mode}
-                    supportsDark={mockupById(f.mockup).supportsDark}
-                    copyTarget={split ? FRAME_LABEL[1 - i] : null}
-                    onSelect={() => setActive(i)}
-                    onChangeMockup={(id) => setMockup(i, id)}
-                    onToggleMode={() => toggleMode(i)}
-                    onCopyTo={() => duplicateFrame(i)}
-                  />
-                ))}
-              </div>
-            </Section>
-          )}
-
+        <div>
           {!emptyFrame && view && (
             <Section
               label="colors"
               actions={
                 <span className="sec-tools" ref={startOverRef}>
+                  {/* The header keeps exactly one verb. The other four moved to
+                      the row below: five controls plus a data-dependent mono
+                      label overran the header by 33px in the busiest state, and
+                      `.sec-rule` bottoming out at its 8px floor turned the
+                      overflow into a horizontal scrollbar under the sidebar
+                      rather than anything you could see. */}
                   <button
-                    className={`mini${locked ? ' on' : ''}${picking ? ' picking' : ''}`}
-                    onClick={lockClick}
-                    title={
-                      locked
-                        ? 'unlock — back to the full-palette engine'
-                        : "lock the theme to one color's hue"
-                    }
-                  >
-                    {locked ? <Lock size={11} strokeWidth={1.75} /> : <LockOpen size={11} strokeWidth={1.75} />}
-                    {locked && anchorRole ? anchorRole : 'mono'}
-                  </button>
-                  {hasPlacements && (
-                    <button
-                      className="mini"
-                      onClick={() => setCandidates(resetPlacements(frame.candidates))}
-                      title="clear your placements — back to the engine's own casting"
-                    >
-                      <RotateCcw size={11} strokeWidth={1.75} />
-                      reset
-                    </button>
-                  )}
-                  <button
-                    className="mini"
+                    className="mini ctl-head"
                     onClick={() => {
                       setStartOverPage('root')
                       setStartOverOpen((o) => !o)
                     }}
-                    title="start over"
+                    title={withKey('startOver', 'start over')}
                   >
-                    <Palette size={11} strokeWidth={1.75} />
+                    <Palette size={12} strokeWidth={1.75} />
+                    start over
                   </button>
+                  {/* The keyboard map lives up here rather than in the row it
+                      documents: the row runs 286px of a 287px box at its
+                      busiest, and flex shrank this button to 10px — well under
+                      the target floor everything else in the row now clears. */}
                   <button
-                    className="mini"
-                    onClick={riff}
-                    disabled={!hasDerivedSeats(view)}
-                    title={
-                      hasDerivedSeats(view)
-                        ? 're-roll the seats the smith derived'
-                        : 'nothing to riff — every seat is yours'
-                    }
+                    className="mini ctl-head ctl-help"
+                    onClick={() => setHelpOpen((o) => !o)}
+                    aria-expanded={helpOpen}
+                    aria-label="keyboard shortcuts"
+                    title={withKey('help', 'keyboard shortcuts')}
                   >
-                    <Dices size={11} strokeWidth={1.75} />
-                    {frame.seed > 0 ? frame.seed : ''}
+                    ?
                   </button>
-                  {frame.seed > 0 && (
-                    <button className="mini" onClick={riffBack} title="back one riff">
-                      <RotateCcw size={11} strokeWidth={1.75} />
-                    </button>
-                  )}
+                  {helpOpen && <ShortcutsFlyout onClose={() => setHelpOpen(false)} />}
                   {startOverOpen && (
                     <div className="menu startover-menu">
                       {startOverPage === 'root' ? (
@@ -731,6 +766,76 @@ export default function App() {
                 </span>
               }
             >
+              {/* The palette's four verbs, spelled out. Nothing here appears or
+                  disappears with state — `reset` and `back` grey out in place
+                  rather than unmounting, so `riff` never slides out from under
+                  a pointer that is about to press it again. */}
+              <div className="ctl-row">
+                <button
+                  className={`ctl${locked ? ' on' : ''}${picking ? ' picking' : ''}`}
+                  onClick={lockClick}
+                  title={withKey(
+                    'mono',
+                    locked
+                      ? `unlock — back to the full-palette engine (ruled by ${baseHex})`
+                      : "lock the theme to one color's hue",
+                  )}
+                >
+                  {/* Engaged, the glyph IS the base colour — it names the hue
+                      ruling the theme in the space the icon was using anyway.
+                      The label used to read the base's ROLE, which was always
+                      "primary" because the base was crowned, so it said nothing. */}
+                  {locked && baseHex ? (
+                    <i className="mono-dot" style={{ background: baseHex }} aria-hidden="true" />
+                  ) : (
+                    <Blend size={12} strokeWidth={1.75} aria-hidden="true" />
+                  )}
+                  mono
+                </button>
+                <button
+                  className="ctl"
+                  onClick={() => setCandidates(resetPlacements(frame.candidates))}
+                  disabled={!hasPlacements}
+                  title={withKey(
+                    'reset',
+                    hasPlacements
+                      ? "clear your placements — back to the engine's own casting"
+                      : 'nothing to reset — you have not placed a color by hand yet',
+                  )}
+                >
+                  <RotateCcw size={12} strokeWidth={1.75} aria-hidden="true" />
+                  reset
+                </button>
+                <button
+                  className="ctl"
+                  onClick={riff}
+                  disabled={!hasRiffableSeats(view)}
+                  title={withKey(
+                    'riff',
+                    hasRiffableSeats(view)
+                      ? // NB avoid the substring "unlock" — the mono control
+                        // beside this one is addressed by it in the e2e suite
+                        'riff — walk the palette one hop; locked seats hold still'
+                      : 'nothing to riff — every seat is locked',
+                  )}
+                >
+                  <Guitar size={12} strokeWidth={1.75} aria-hidden="true" />
+                  riff
+                  {frame.seed > 0 && <span className="ctl-hop">{frame.seed}</span>}
+                </button>
+                <button
+                  className="ctl"
+                  onClick={riffBack}
+                  disabled={frame.seed === 0}
+                  title={withKey(
+                    'back',
+                    frame.seed > 0 ? 'back one riff' : 'no hops to step back through',
+                  )}
+                >
+                  <Undo2 size={12} strokeWidth={1.75} aria-hidden="true" />
+                  back
+                </button>
+              </div>
               {picking && (
                 <div className="pick-hint">click a seat to lock its hue · esc to cancel</div>
               )}
@@ -743,12 +848,12 @@ export default function App() {
                 onPick={(role) => {
                   const idx = view.slots.find((s) => s.role === role)?.candidateIndex ?? null
                   // a derived seat has no colour of yours to lock onto
-                  if (idx != null) updateActive({ monoBase: idx, monoParked: null })
+                  if (idx != null) updateActive({ monoBase: idx })
                   setPicking(false)
                 }}
                 onAssign={(role, anchor) => setSeatMenu({ kind: 'assign', seat: role, anchor })}
                 onExplain={(role, anchor) => setSeatMenu({ kind: 'explain', seat: role, anchor })}
-                onKeep={keepSeat}
+                onToggleLock={toggleSeatLock}
                 onDropInRole={(payload, role) => applyDrop(payload, { kind: 'role', role })}
                 onDragStartSlot={() => setSeatMenu(null)}
                 onLocate={onLocateSeat}
@@ -758,6 +863,7 @@ export default function App() {
                 series={view.series}
                 onDropInSeries={(payload) => applyDrop(payload, { kind: 'series' })}
                 onDragStartSeries={() => setSeatMenu(null)}
+                onToggleLock={toggleSeriesLock}
                 onExplain={(anchor) => setSeatMenu({ kind: 'explain', seat: 'chart', anchor })}
               />
 
@@ -775,18 +881,19 @@ export default function App() {
                     candidates: dropCandidate(frame.candidates, i),
                     preset: null,
                     monoBase: remapAfterRemove(frame.monoBase, i),
-                    monoParked: remapAfterRemove(frame.monoParked, i),
                   })
                 }
               />
 
-              <div className="add-row">
-                <ColorAddField
-                  placeholder="add a color — #e63946, oklch(…)"
-                  has={inList}
-                  onAdd={addCandidates}
-                />
-              </div>
+              {/* No wrapper: the control lays out its own row now, and the
+                  `.add-row` box this sat in was a second, competing one. */}
+              <ColorAddField
+                placeholder="add a color — #e63946, oklch(…)"
+                has={inList}
+                onAdd={addCandidates}
+                open={addOpen}
+                onOpenChange={setAddOpen}
+              />
             </Section>
           )}
 
@@ -848,52 +955,85 @@ export default function App() {
             setCandidates(placeInRole(frame.candidates, idx, seatMenu.seat as Role, view))
             setSeatMenu(null)
           }}
+          onAdjust={(hex) => {
+            const parsed = parseColor(hex)
+            if (!view || !parsed) return
+            setCandidates(adjustRole(frame.candidates, seatMenu.seat as Role, parsed, hex, view))
+            setSeatMenu(null)
+          }}
           onFree={() => freeSeat(seatMenu.seat as Role)}
           onClose={() => setSeatMenu(null)}
         />
       )}
 
+      {/* The stage: a fixed, ruled drafting table the frames sit on. It is
+          never a palette colour, so the frame's edge holds whatever theme is
+          inside it — the sidebar and the frame used to share a surface, and
+          the boundary vanished on any dark palette near #17181c. */}
       <main className="stage">
-        {split ? (
-          <div className="split">
+        {emptyFrame && !split ? (
+          hero(active)
+        ) : (
+          <div className={`boards${split ? ' split' : ''}`}>
             {frames.map((f, i) => (
-              <div
+              <section
                 key={i}
-                className={`split-pane ${active === i ? 'active' : ''}`}
-                onClickCapture={() => setActive(i)}
+                className={`artboard${active === i ? ' active' : ''}`}
+                aria-label={`frame ${FRAME_LABEL[i]}`}
+                onClickCapture={split ? () => setActive(i) : undefined}
               >
-                <div className="frame-indicator">
-                  {FRAME_LABEL[i]} · {f.mode}
-                  {active === i ? ' · editing' : ''}
+                <FrameCard
+                  label={FRAME_LABEL[i]}
+                  active={active === i}
+                  mockups={MOCKUPS.map((m) => ({ id: m.id, name: m.name }))}
+                  mockup={f.mockup}
+                  mode={f.mode}
+                  supportsDark={mockupById(f.mockup).supportsDark}
+                  copyTarget={split ? FRAME_LABEL[1 - i] : null}
+                  onSelect={() => setActive(i)}
+                  onChangeMockup={(id) => setMockup(i, id)}
+                  onToggleMode={() => toggleMode(i)}
+                  onCopyTo={() => duplicateFrame(i)}
+                  actions={
+                    split ? (
+                      <button
+                        className="board-btn"
+                        onClick={() => closeFrame(i)}
+                        title={`close frame ${FRAME_LABEL[i]}`}
+                      >
+                        <X size={13} strokeWidth={2} aria-hidden />
+                        close {FRAME_LABEL[i]}
+                      </button>
+                    ) : (
+                      <button
+                        className="board-btn"
+                        onClick={() => duplicateFrame(active)}
+                        title="compare two frames"
+                      >
+                        <Columns2 size={13} strokeWidth={1.75} aria-hidden />
+                        compare
+                      </button>
+                    )
+                  }
+                />
+                <div className="frame">
+                  {results[i] ? (
+                    <PreviewBoundary>
+                      <FrameMockup
+                        mockup={f.mockup}
+                        result={results[i]!}
+                        mode={f.mode}
+                        uid={FRAME_LABEL[i].toLowerCase()}
+                        locateTarget={active === i ? locating : null}
+                      />
+                    </PreviewBoundary>
+                  ) : (
+                    hero(i)
+                  )}
                 </div>
-                {results[i] ? (
-                  <PreviewBoundary>
-                    <FrameMockup
-                      mockup={f.mockup}
-                      result={results[i]!}
-                      mode={f.mode}
-                      uid={FRAME_LABEL[i].toLowerCase()}
-                      locateTarget={active === i ? locating : null}
-                    />
-                  </PreviewBoundary>
-                ) : (
-                  hero(i)
-                )}
-              </div>
+              </section>
             ))}
           </div>
-        ) : result ? (
-          <PreviewBoundary>
-            <FrameMockup
-              mockup={frame.mockup}
-              result={result}
-              mode={frame.mode}
-              uid="a"
-              locateTarget={locating}
-            />
-          </PreviewBoundary>
-        ) : (
-          hero(active)
         )}
         {reportOpen && result && (
           <aside className="report-drawer">

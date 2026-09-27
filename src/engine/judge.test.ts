@@ -2,13 +2,12 @@ import { describe, expect, it } from 'vitest'
 import type { ColorCandidate, JudgeInput, Oklch, Role } from './index'
 import { candidatesFromList, generateTheme, judgePalette } from './index'
 import { assignRoles, chartAdjust } from './roles'
-import { subSeed } from './random'
 
 const PASTEL = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff']
 
-/** The same judge input generateTheme feeds the sampler: one raw repertoire draw. */
-function rawDraw(candidates: ColorCandidate[], seed: number, monoBase: number | null = null): JudgeInput {
-  const r = assignRoles(candidates, 0.5, monoBase, seed)
+/** The judge input at hop 0: the cookbook, before any riff walks away from it. */
+function cookbook(candidates: ColorCandidate[], monoBase: number | null = null): JudgeInput {
+  const r = assignRoles(candidates, 0.5, monoBase)
   return {
     seeds: Object.fromEntries(r.assignments.map((a) => [a.role, a.seed])) as Record<Role, Oklch>,
     synthesized: r.assignments.filter((a) => a.candidateIndex == null).map((a) => a.role),
@@ -16,14 +15,9 @@ function rawDraw(candidates: ColorCandidate[], seed: number, monoBase: number | 
   }
 }
 
-const median = (xs: number[]) => {
-  const s = [...xs].sort((a, b) => a - b)
-  return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2
-}
-
 describe('palette judge', () => {
   it('is deterministic: same seeds in, same verdict out', () => {
-    const input = rawDraw(candidatesFromList(['#7c3aed']), 4)
+    const input = cookbook(candidatesFromList(['#7c3aed']))
     expect(judgePalette(input)).toEqual(judgePalette(input))
     const a = generateTheme({ candidates: candidatesFromList(PASTEL), seed: 3 })
     const b = generateTheme({ candidates: candidatesFromList(PASTEL), seed: 3 })
@@ -33,10 +27,10 @@ describe('palette judge', () => {
   it('every feature and the score stay in [0,1] across varied inputs', () => {
     const inputs: JudgeInput[] = []
     for (const list of [['#7c3aed'], PASTEL, ['#837c6f', '#4e5c73', '#a2975c']]) {
-      for (const seed of [0, 1, 5, 9]) inputs.push(rawDraw(candidatesFromList(list), seed))
+      inputs.push(cookbook(candidatesFromList(list)))
     }
     // mono lock: the whole cast shares one hue — hue features must abstain, not blow up
-    inputs.push(rawDraw(candidatesFromList(['#fa8072']), 2, 0))
+    inputs.push(cookbook(candidatesFromList(['#fa8072']), 0))
     for (const input of inputs) {
       const { score, features } = judgePalette(input)
       expect(score).toBeGreaterThanOrEqual(0)
@@ -49,12 +43,12 @@ describe('palette judge', () => {
   })
 
   it('the canonical cookbook for a mid-chroma single color is a sane baseline', () => {
-    const verdict = judgePalette(rawDraw(candidatesFromList(['#7c3aed']), 0))
+    const verdict = judgePalette(cookbook(candidatesFromList(['#7c3aed'])))
     expect(verdict.score).toBeGreaterThanOrEqual(0.6)
   })
 
   it('a deliberately clashing set scores clearly below canonical', () => {
-    const canonical = rawDraw(candidatesFromList(['#7c3aed']), 0)
+    const canonical = cookbook(candidatesFromList(['#7c3aed']))
     const clash: JudgeInput = {
       ...canonical,
       seeds: {
@@ -68,26 +62,25 @@ describe('palette judge', () => {
     expect(judgePalette(clash).score).toBeLessThan(base - 0.2)
   })
 
-  it('best-of-K lifts every riff above the median raw draw', () => {
-    const candidates = candidatesFromList(['#7c3aed'])
-    const seeds = [1, 2, 3, 4, 5, 6, 7, 8]
-    const rawScores = seeds.map((s) => judgePalette(rawDraw(candidates, s)).score)
-    const bar = median(rawScores)
-    for (const s of seeds) {
-      const sampled = generateTheme({ candidates, seed: s }).judge.score
-      expect(sampled, `seed ${s}`).toBeGreaterThanOrEqual(bar)
+  it('no reachable seed falls through the quality floor', () => {
+    // Each hop keeps the argmax of its pool and bounces off a wall it cannot
+    // clear, so quality is defended at every step rather than only at the end.
+    // The guarantee is a floor — min(cookbook, 0.8) — not "never worse than
+    // the cookbook": a walk that may only improve could not travel at all,
+    // and travelling is the point.
+    for (const list of [['#7c3aed'], ['#c1663f'], ['#3a7ca5'], PASTEL]) {
+      const candidates = candidatesFromList(list)
+      const floor = Math.min(generateTheme({ candidates, seed: 0 }).judge.score, 0.8)
+      for (let seed = 1; seed <= 25; seed++) {
+        const { score } = generateTheme({ candidates, seed }).judge
+        expect(score, `${list.join(' ')} @ ${seed}`).toBeGreaterThanOrEqual(floor)
+      }
     }
   })
 
-  it('seed 0 bypasses sampling: judge reports the canonical draw itself', () => {
+  it('seed 0 is the cookbook itself, judged unwalked', () => {
     const candidates = candidatesFromList(['#7c3aed'])
     const result = generateTheme({ candidates, seed: 0 })
-    expect(result.judge).toEqual(judgePalette(rawDraw(candidates, 0)))
-    // and the winning variant at seed s is exactly one keyed sub-draw of s
-    const riffed = generateTheme({ candidates, seed: 2 })
-    const pool = [0, 1, 2, 3, 4, 5, 6, 7].map(
-      (k) => judgePalette(rawDraw(candidates, subSeed(2, `variant ${k}`))).score,
-    )
-    expect(riffed.judge.score).toBe(Math.max(...pool))
+    expect(result.judge).toEqual(judgePalette(cookbook(candidates)))
   })
 })

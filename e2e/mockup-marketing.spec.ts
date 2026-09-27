@@ -271,11 +271,11 @@ test.describe('the marketing page as a large-field brand test', () => {
 
   test('split panes keep independent state and uid-scoped ids', async ({ page }) => {
     await boot(page)
-    await page.locator('.sec-act .mini[title*="compare two frames"]').click()
+    await page.locator('.board-btn[title*="compare two frames"]').click()
     await expect(page.locator('.preview-root')).toHaveCount(2)
 
-    const a = page.locator('.split-pane').nth(0)
-    const b = page.locator('.split-pane').nth(1)
+    const a = page.locator('.artboard').nth(0)
+    const b = page.locator('.artboard').nth(1)
 
     // ids must differ or labels bind across panes
     await expect(a.locator('.mkt-email')).toHaveAttribute('id', 'mkt-email-a')
@@ -328,8 +328,8 @@ test.describe('the marketing page as a large-field brand test', () => {
     expect(shadowReach(popular)).toBeGreaterThan(shadowReach(tier))
 
     // the compact nav panel is summoned, so it sits at the menu's level
-    await page.locator('.sec-act .mini[title*="compare two frames"]').click()
-    const pane = page.locator('.split-pane').nth(0)
+    await page.locator('.board-btn[title*="compare two frames"]').click()
+    const pane = page.locator('.artboard').nth(0)
     await pane.locator('.mkt-nav-toggle').click()
     const panel = await pane
       .locator('.mkt-nav-panel')

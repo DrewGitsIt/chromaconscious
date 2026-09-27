@@ -4,19 +4,23 @@
  * Each seat carries TWO targets, because it answers two different questions:
  *   the LABEL teaches  — "what is accent?"      → onExplain
  *   the COLOUR assigns — "what fills accent?"   → onAssign
- * plus one hover action on derived seats: keep, which freezes the smith's
- * colour as yours so riff stops re-rolling it.
+ * plus one corner action on EVERY seat: the lock, which is the only thing that
+ * stops riff moving that colour. On a derived seat locking is `keep` — there is
+ * no candidate there to hang a lock on until one is materialised — so that one
+ * button wears `.rb-keep` as well, and App picks the verb.
  *
- * Provenance is the whole visual language — solid means riff can't touch it
- * (`yours`/`kept`), dashed-with-the-colour-pooled-behind means it will
- * (`derived`). No legend required.
+ * Two independent visual languages, because they answer different questions:
+ * solid vs dashed-with-the-colour-pooled-behind says where the colour came from
+ * (`yours`/`kept` vs `derived`); the lock badge says whether riff may move it.
+ * Locking used to be implied by the first, which is why a colour you dragged
+ * into a seat silently stopped being riffable.
  *
  * NOTE the slot element itself is `draggable`; there is deliberately no
  * inset:0 drag overlay, because an overlay swallows clicks on the two buttons
  * underneath it — a real bug caught in the mockup.
  */
 import { useState, type CSSProperties, type DragEvent, type ReactElement } from 'react'
-import { Anchor, HelpCircle, Pin } from 'lucide-react'
+import { Anchor, HelpCircle, Lock, LockOpen } from 'lucide-react'
 import type { Role } from '../engine'
 import { ROLES } from '../engine'
 import type { BoardSlot, BoardView } from '../board'
@@ -33,7 +37,7 @@ export interface RoleBoardProps {
   openRole: Role | null
   /** Mono-lock base, gets an anchor badge. */
   anchorRole: Role | null
-  /** Seats that just riffed — they play the bounce, staggered. */
+  /** Seats that just moved on a riff hop — they play the bounce, staggered. */
   rerolled?: Role[]
   /**
    * Mono-lock pick mode: the WHOLE seat becomes one target. The hint says
@@ -44,7 +48,12 @@ export interface RoleBoardProps {
   onPick?: (role: Role) => void
   onAssign: (role: Role, anchor: HTMLElement) => void
   onExplain: (role: Role, anchor: HTMLElement) => void
-  onKeep: (role: Role) => void
+  /**
+   * Flip whether riff may move this seat. One handler for three cases —
+   * unlock, lock, and lock-a-derived-seat (which has to keep it first) — since
+   * only App knows which candidate, if any, sits behind the seat.
+   */
+  onToggleLock: (role: Role) => void
   onDropInRole: (payload: DragPayload, role: Role) => void
   onDragStartSlot: (role: Role) => void
   /** Locate mode: the role on hover, null on leave. */
@@ -82,6 +91,10 @@ const TAG: Record<BoardSlot['provenance'], string> = {
   derived: 'derived',
 }
 
+/** The lock's own sentence. It must never be inferred from provenance again. */
+const lockTitle = (locked: boolean): string =>
+  locked ? 'locked — riff will not move this' : 'unlocked — riff may move this'
+
 export function RoleBoard({
   view,
   openRole,
@@ -89,7 +102,7 @@ export function RoleBoard({
   rerolled,
   onAssign,
   onExplain,
-  onKeep,
+  onToggleLock,
   onDropInRole,
   onDragStartSlot,
   onLocate,
@@ -106,22 +119,20 @@ export function RoleBoard({
   return (
     <div className="role-board">
       {view.slots.map((slot) => {
-        const { role, hex, provenance } = slot
+        const { role, hex, sourceHex, provenance, locked } = slot
         const solid = provenance !== 'derived'
         const anchored = anchorRole === role
         const bounce = rerollOrder.get(role)
 
         // Chrome painted on a user colour asks the engine's own APCA solver
         // for its ink, so the sidebar is a live test of the thing being sold.
+        // Derived seats get it too: they are shown at full strength now, so
+        // the colour you judge is the colour you ship.
         const style = {
           '--c': hex,
-          ...(solid
-            ? {
-                '--ink-on': readableInk(hex),
-                '--well': wellOn(hex),
-                '--well-strong': wellOn(hex, true),
-              }
-            : null),
+          '--ink-on': readableInk(hex),
+          '--well': wellOn(hex),
+          '--well-strong': wellOn(hex, true),
           ...(bounce == null ? null : { animationDelay: `${bounce * 55}ms` }),
         } as CSSProperties
 
@@ -129,6 +140,7 @@ export function RoleBoard({
           'rb-slot',
           picking ? 'is-picking' : '',
           `rb-${provenance}`,
+          locked ? 'is-locked' : '',
           anchored ? 'is-anchored' : '',
           dropRole === role ? 'drop-ok' : '',
           dragRole === role ? 'is-dragging' : '',
@@ -211,30 +223,43 @@ export function RoleBoard({
             <button
               type="button"
               className="rb-body"
-              title={`${hex} — ${TAG[provenance]}. Change what fills ${role}.`}
+              // `hex` is the colour in the theme; `sourceHex` is what you typed,
+              // and only appears when the two have parted company.
+              title={`${hex} — ${TAG[provenance]}${sourceHex ? `, from ${sourceHex}` : ''}. Change what fills ${role}.`}
               aria-label={`${role} is ${hex}, ${TAG[provenance]} — change it`}
               onClick={(e) => onAssign(role, e.currentTarget)}
             >
               <span className="rb-hex">{hex}</span>
-              <span className="rb-tag">
-                {provenance === 'kept' ? (
-                  <Pin size={9} strokeWidth={1.75} className="rb-pinmark" aria-hidden="true" />
-                ) : null}
-                {TAG[provenance]}
-              </span>
+              <span className="rb-tag">{TAG[provenance]}</span>
             </button>
 
-            {provenance === 'derived' ? (
-              <button
-                type="button"
-                className="rb-keep"
-                title="keep this — riff will stop changing it"
-                aria-label={`keep ${hex} as your ${role}`}
-                onClick={() => onKeep(role)}
-              >
-                <Pin size={10} strokeWidth={1.75} aria-hidden="true" />
-              </button>
-            ) : null}
+            {/* The lock. Sits on every seat, because every unlocked colour walks
+                — including one you supplied. On a derived seat it doubles as
+                `keep`, so it keeps that class and that meaning. */}
+            <button
+              type="button"
+              className={solid ? 'rb-lock' : 'rb-lock rb-keep'}
+              data-locked={locked ? 'true' : 'false'}
+              // The seat is the drag source; grabbing its buttons should press
+              // them, not haul the colour somewhere.
+              draggable={false}
+              title={lockTitle(locked)}
+              aria-pressed={locked}
+              aria-label={
+                locked
+                  ? `unlock ${role} — let riff move it again`
+                  : solid
+                    ? `lock ${role} — riff will leave ${hex} alone`
+                    : `lock ${role} — keeps ${hex} as your colour`
+              }
+              onClick={() => onToggleLock(role)}
+            >
+              {locked ? (
+                <Lock size={10} strokeWidth={1.75} aria-hidden="true" />
+              ) : (
+                <LockOpen size={10} strokeWidth={1.75} aria-hidden="true" />
+              )}
+            </button>
           </div>
         )
       })}

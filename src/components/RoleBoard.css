@@ -1,20 +1,28 @@
 @layer chrome-base, chrome;
 
-/* RoleBoard-owned chrome: the seats, their two targets, and the riff bounce.
-   Provenance is the entire visual language here — solid means riff can't move
-   it, dashed-with-the-colour-pooled-behind means it will. */
+/* RoleBoard-owned chrome: the seats, their two targets, the lock, and the riff
+   bounce.
+
+   TWO languages, kept apart on purpose. A dashed inner edge says where a
+   colour came from (derived = the smith's; no edge = yours/kept). The lock
+   badge says whether riff may move it. The dashed seat used to mean both,
+   which is how a colour you dragged in became silently un-riffable.
+
+   Every seat is painted at full strength, derived included. Derived seats used
+   to be pooled at 20% behind a dashed border, which meant judging a colour you
+   could not actually see. */
 @layer chrome {
   .role-board {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--gap-m);
+    gap: var(--gap-s);
   }
 
   .rb-slot {
     position: relative;
     height: 60px;
     border-radius: 9px;
-    padding: 7px 8px 6px;
+    padding: 8px 10px 7px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -25,15 +33,19 @@
       border-color var(--d-base) var(--ease);
   }
 
-  /* YOURS / KEPT — solid: the colour fills the seat, and it can be dragged out */
-  .rb-slot.rb-yours,
-  .rb-slot.rb-kept {
+  /* Every seat: the colour fills it. The inset ring keeps a near-black seat
+     from dissolving into the panel. */
+  .rb-slot {
     background: var(--c);
     color: var(--ink-on);
     border: 1px solid transparent;
     box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.1),
-      0 1px 3px rgba(0, 0, 0, 0.4);
+      inset 0 0 0 1px rgb(255 255 255 / 0.14),
+      0 1px 3px rgb(0 0 0 / 0.4);
+  }
+  /* YOURS / KEPT — and only these can be dragged out */
+  .rb-slot.rb-yours,
+  .rb-slot.rb-kept {
     cursor: grab;
   }
   .rb-slot.rb-yours:active,
@@ -41,22 +53,23 @@
     cursor: grabbing;
   }
 
-  /* DERIVED — the only state riff touches, so it must never read as settled */
-  .rb-slot.rb-derived {
-    border: 1px dashed color-mix(in srgb, var(--c) 60%, var(--line-ctl));
-    background: color-mix(in srgb, var(--c) 20%, var(--surface-2));
-    color: var(--ink);
+  /* DERIVED — the smith's own colour, so it must never read as settled. The
+     edge is drawn in the seat's own ink, so it holds on any colour. */
+  .rb-slot.rb-derived::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 6px;
+    border: 1px dashed var(--ink-on);
+    opacity: 0.35;
+    pointer-events: none;
   }
 
   /* the mono base wears a second ring in its own ink, plus the anchor badge */
-  .rb-slot.rb-yours.is-anchored,
-  .rb-slot.rb-kept.is-anchored {
+  .rb-slot.is-anchored {
     box-shadow:
       inset 0 0 0 2px var(--ink-on),
-      0 1px 3px rgba(0, 0, 0, 0.4);
-  }
-  .rb-slot.rb-derived.is-anchored {
-    border-color: var(--accent);
+      0 1px 3px rgb(0 0 0 / 0.4);
   }
 
   .rb-slot.is-dragging {
@@ -85,15 +98,14 @@
     margin-left: -4px;
     border-radius: var(--radius-pill);
     font: inherit;
-    font-size: 9px;
-    font-weight: 650;
+    font-size: var(--fs-m);
+    font-weight: 600;
     line-height: 1;
-    text-transform: uppercase;
-    letter-spacing: 0.13em;
+    letter-spacing: -0.005em;
     background: transparent;
     border: 0;
     color: inherit;
-    opacity: 0.75;
+    opacity: 0.95;
     cursor: pointer;
     transition:
       background var(--d-fast) var(--ease),
@@ -107,18 +119,13 @@
   .rb-slot .rb-name:hover svg {
     opacity: 1;
   }
-  .rb-yours .rb-name:hover,
-  .rb-kept .rb-name:hover {
+  .rb-slot .rb-name:hover {
     background: var(--well);
     opacity: 1;
   }
-  .rb-derived .rb-name:hover {
-    background: var(--surface-4);
-    opacity: 1;
-  }
   .rb-slot .rb-name.open {
-    background: var(--accent);
-    color: var(--surface-0);
+    background: var(--ink-on);
+    color: var(--c);
     opacity: 1;
   }
 
@@ -145,37 +152,29 @@
     cursor: pointer;
   }
   .rb-hex {
-    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-family: var(--font-code);
     font-size: var(--fs-s);
-    font-weight: 550;
-    letter-spacing: -0.01em;
+    font-weight: 450;
+    opacity: 0.9;
   }
-  .rb-yours .rb-body:hover .rb-hex,
-  .rb-kept .rb-body:hover .rb-hex {
+  .rb-slot .rb-body:hover .rb-hex {
     text-decoration: underline;
     text-underline-offset: 3px;
-  }
-  .rb-derived .rb-hex {
-    color: var(--ink-muted);
   }
   .rb-tag {
     display: inline-flex;
     align-items: center;
     margin-left: auto;
-    font-size: 8px;
+    font-family: var(--font-code);
+    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    opacity: 0.6;
+    letter-spacing: 0.08em;
+    opacity: 0.72;
     white-space: nowrap;
   }
-  .rb-pinmark {
-    opacity: 0.9;
-    margin-right: 3px;
-  }
-
-  /* KEEP — claim the smith's colour as yours, so riff stops re-rolling it.
-     Derived seats only; there is nothing to claim on a seat you filled. */
-  .rb-slot .rb-keep {
+  /* LOCK — the control that decides what riff may touch. On a derived seat it
+     is also `keep`, since locking one has to materialise a colour first. */
+  .rb-slot .rb-lock {
     position: absolute;
     right: 5px;
     top: 5px;
@@ -198,23 +197,44 @@
       background var(--d-fast) var(--ease),
       color var(--d-fast) var(--ease);
   }
-  .rb-slot:hover .rb-keep,
-  .rb-slot .rb-keep:focus-visible {
+  /* A LOCKED seat says so without being hovered. Six seats each wearing an open
+     padlock is noise, but "which of these will riff move?" has to be answerable
+     at a glance — so only the locked state stays on screen. */
+  .rb-slot .rb-lock[data-locked='true'],
+  .rb-slot:hover .rb-lock,
+  .rb-slot .rb-lock:focus-visible {
     opacity: 1;
     transform: scale(1);
   }
-  .rb-slot .rb-keep:hover {
+  /* Filled, in the seat's own ink (every seat defines --ink-on/--c). */
+  .rb-slot .rb-lock[data-locked='true'] {
+    background: var(--ink-on);
+    color: var(--c);
+  }
+  .rb-slot .rb-lock:hover {
+    background: var(--ink-on);
+    color: var(--c);
+  }
+  /* keep, on a derived seat: claiming the smith's colour is a gain, not a freeze */
+  .rb-slot .rb-lock.rb-keep:hover {
     background: var(--ok);
-    color: var(--surface-0);
+    color: var(--stage);
   }
 
-  .rb-slot :where(.rb-name, .rb-body, .rb-keep):focus-visible {
+  /* the second, quieter half of the same signal: the seat itself is ringed, in
+     a way that composes with the mono-base ring rather than replacing it */
+  .rb-slot.is-locked {
+    outline: 1px solid color-mix(in srgb, var(--ink-on) 55%, transparent);
+    outline-offset: -3px;
+  }
+
+  .rb-slot :where(.rb-name, .rb-body, .rb-lock):focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
   }
 
-  /* riff bounce — only derived seats move, which is the clearest statement of
-     what riff does. Delay is set inline, staggered 55ms by index. */
+  /* riff bounce — every seat riff moved, which is now every unlocked seat.
+     Delay is set inline, staggered 55ms by index. */
   @keyframes rb-reroll {
     0% {
       transform: translateY(0) scale(1);
@@ -234,7 +254,7 @@
     .rb-slot,
     .rb-slot .rb-name,
     .rb-slot .rb-name svg,
-    .rb-slot .rb-keep {
+    .rb-slot .rb-lock {
       transition: none;
     }
     .rb-slot.is-rerolling {
@@ -243,7 +263,7 @@
     .rb-slot.drop-ok {
       transform: none;
     }
-    .rb-slot .rb-keep {
+    .rb-slot .rb-lock {
       transform: none;
     }
   }

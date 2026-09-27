@@ -1,69 +1,83 @@
 @layer chrome-base, chrome;
 
-/* The frame card — the canvas selector reads as a thing, not a toolbar.
-   Its controls stay borderless until hovered so the card, not the buttons,
-   is what you see first. The dot borrows the live theme's primary, which is
-   why the card looks like it belongs to the palette you just forged. */
+/* The frame's label row, on the stage above the frame. Its controls stay
+   borderless until hovered so the frame, not the buttons, is what you see
+   first. The only bordered things are the right-hand verbs, which change how
+   many frames exist — a heavier act than restyling this one. */
 @layer chrome {
   .frame-card {
     display: flex;
     align-items: center;
-    gap: var(--gap-s);
-    padding: 6px;
-    background: var(--surface-2);
-    border: 1px solid var(--line-card);
-    border-radius: var(--radius-ctl);
-    transition: border-color var(--d-fast) var(--ease);
-  }
-  .frame-card:hover {
-    border-color: var(--line-ctl);
-  }
-  .frame-card.active {
-    border-color: var(--line-active);
+    gap: 4px;
+    height: 28px;
+    flex: none;
+    font-size: var(--fs-m);
   }
 
+  /* The pane letter. Filled in ink when it is the frame your edits go to,
+     hollow when it isn't — so in split view the letter says which is live. */
   .frame-dot {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     padding: 0;
+    margin-right: 2px;
     flex-shrink: 0;
-    border-radius: var(--radius-ctl);
-    font: inherit;
+    border-radius: 6px;
+    font-family: var(--font-code);
     font-size: var(--fs-s);
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
-    background: color-mix(in srgb, var(--pal-primary, var(--accent)) 22%, var(--surface-4));
-    border: 1px solid color-mix(in srgb, var(--pal-primary, var(--accent)) 40%, transparent);
+    background: transparent;
+    border: 1px solid var(--line-active);
     color: var(--ink-muted);
     transition:
       background var(--d-base) var(--ease),
       border-color var(--d-base) var(--ease),
       color var(--d-fast) var(--ease);
   }
+  .frame-dot:hover {
+    color: var(--ink);
+    border-color: var(--ink-muted);
+  }
   .frame-card.active .frame-dot {
-    color: var(--ink-bright);
-    border-color: color-mix(in srgb, var(--pal-primary, var(--accent)) 65%, transparent);
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--stage);
   }
 
+  /* a native select dressed as a label: the chevron is ours, not the UA's */
+  .frame-pick {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    color: var(--ink-faint);
+  }
+  .frame-pick svg {
+    position: absolute;
+    right: 6px;
+    pointer-events: none;
+  }
   .frame-mockup {
-    flex: 1;
-    min-width: 0;
+    appearance: none;
     height: 26px;
-    padding: 0 6px;
+    padding: 0 24px 0 6px;
     background: transparent;
-    border: 1px solid transparent;
+    border: 0;
     border-radius: var(--radius-ctl);
     color: var(--ink);
     font: inherit;
-    font-size: var(--fs-s);
+    font-weight: 500;
     cursor: pointer;
     transition: background var(--d-fast) var(--ease);
   }
   .frame-mockup:hover {
-    background: var(--surface-3);
+    background: var(--surface-4);
+  }
+  .frame-mockup option {
+    background: var(--surface-2);
   }
 
   .frame-icon {
@@ -75,7 +89,7 @@
     padding: 0;
     flex-shrink: 0;
     background: transparent;
-    border: 1px solid transparent;
+    border: 0;
     border-radius: var(--radius-ctl);
     color: var(--ink-faint);
     cursor: pointer;
@@ -84,7 +98,7 @@
       color var(--d-fast) var(--ease);
   }
   .frame-icon:hover:not(:disabled) {
-    background: var(--surface-3);
+    background: var(--surface-4);
     color: var(--ink);
   }
   .frame-icon:disabled {
@@ -92,11 +106,48 @@
     cursor: default;
   }
 
+  .frame-actions {
+    margin-left: auto;
+    display: inline-flex;
+    gap: var(--gap-s);
+  }
+  .board-btn {
+    height: 28px;
+    padding: 0 10px 0 9px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface-1);
+    border: 1px solid var(--line-ctl);
+    border-radius: 7px;
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: var(--fs-m);
+    cursor: pointer;
+    transition:
+      background var(--d-fast) var(--ease),
+      border-color var(--d-fast) var(--ease),
+      color var(--d-fast) var(--ease);
+  }
+  .board-btn:hover {
+    background: var(--surface-4);
+    border-color: var(--line-active);
+    color: var(--ink);
+  }
+
+  .frame-dot:focus-visible,
+  .frame-mockup:focus-visible,
+  .frame-icon:focus-visible,
+  .board-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .frame-card,
     .frame-dot,
     .frame-mockup,
-    .frame-icon {
+    .frame-icon,
+    .board-btn {
       transition: none;
     }
   }

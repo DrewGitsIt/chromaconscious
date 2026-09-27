@@ -1,7 +1,5 @@
 import { useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent, ReactElement } from 'react'
-import { Layers2, Square, SquareStack } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
 import type { Separation } from '../engine'
 import { SEPARATIONS } from '../engine'
 import './SeparationControl.css'
@@ -12,15 +10,10 @@ export interface SeparationControlProps {
 }
 
 /**
- * One plane, two planes, a plane floating clear of the stack. The icons are the
- * only glyphs here — the words underneath do the teaching.
+ * Each tile carries a pictogram of what the setting does to a card on a page —
+ * drawn in CSS (see .sep-pict), not an icon, because the point is to show the
+ * hairline and the shadow trading places.
  */
-const ICON: Record<Separation, LucideIcon> = {
-  flat: Square,
-  layered: Layers2,
-  lifted: SquareStack,
-}
-
 /**
  * What each setting DOES, in the terms a designer sees rather than the tokens
  * it moves. Every line names both halves of the trade, because the whole point
@@ -94,7 +87,6 @@ export function SeparationControl({ value, onChange }: SeparationControlProps): 
           aria-hidden="true"
         />
         {SEPARATIONS.map((s) => {
-          const Icon = ICON[s]
           return (
             <button
               key={s}
@@ -110,7 +102,9 @@ export function SeparationControl({ value, onChange }: SeparationControlProps): 
               onFocus={() => setPeek(s)}
               onBlur={() => setPeek(null)}
             >
-              <Icon size={13} strokeWidth={1.75} aria-hidden="true" />
+              <span className={`sep-pict sep-pict-${s}`} aria-hidden="true">
+                <i />
+              </span>
               <span className="sep-opt-label">{s}</span>
             </button>
           )

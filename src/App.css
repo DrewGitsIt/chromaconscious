@@ -6,16 +6,16 @@
    strip, the fidelity slider, the status chip or the export row. What remains
    is what genuinely belongs to the page rather than to a component.
 
-   Every colour here is a token. The six one-off hexes this file used to carry
-   (#7a86b8, #a5b3e8, #8fa7dd, #cf9a66, #c0caf5, #cdd6f4) are now
-   --accent-quiet, --accent-quiet-hi, --accent-cool, --accent-warm and
-   --ink-bright in tokens.css. */
+   Every colour here is a token, and every token is a grey: engaged states
+   are drawn in ink, never in the palette being forged. */
 @layer chrome-base, chrome;
 
 @layer chrome {
+  /* the app fills the window; the frames scroll, never the page */
   .app {
     display: flex;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
   }
 
   /* ---------- section-header tools: the small pill controls that sit in a
@@ -29,7 +29,7 @@
   .mini {
     height: 22px;
     padding: 0 8px;
-    font-size: var(--fs-xs);
+    font-size: var(--fs-s);
     background: transparent;
     border: 1px solid transparent;
     color: var(--ink-faint);
@@ -52,10 +52,93 @@
     opacity: 0.4;
     cursor: default;
   }
-  /* the mono lock, engaged — tinted by the palette it is locking */
+  /* ---------- the palette's verbs, spelled out ----------
+     A labelled row under the section header rather than icon pills inside it.
+     Five controls plus a mono label overran the header by 33px, and because
+     `.sec-rule` bottoms out at an 8px floor the overflow became a horizontal
+     scrollbar under the whole sidebar instead of anything visible. Words also
+     answer the actual complaint: 11px wordless glyphs were unreadable. */
+  .ctl-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--gap-s);
+    margin: 0 0 12px;
+  }
+  .ctl {
+    height: 30px;
+    min-width: 0;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--surface-3);
+    border: 1px solid var(--line-ctl);
+    border-radius: 7px;
+    color: var(--ink-muted);
+    font-size: var(--fs-s);
+    cursor: pointer;
+    transition:
+      background var(--d-fast) var(--ease),
+      border-color var(--d-fast) var(--ease),
+      color var(--d-fast) var(--ease);
+  }
+  .ctl:hover:not(:disabled) {
+    background: var(--surface-4);
+    border-color: var(--line-ctl);
+    color: var(--ink);
+  }
+  /* Disabled in place, never unmounted: `riff` must not slide sideways under a
+     pointer that is about to press it again. */
+  .ctl:disabled {
+    opacity: 0.42;
+    cursor: default;
+  }
+  .ctl.on {
+    background: var(--surface-active);
+    border-color: var(--line-active);
+    color: var(--ink);
+  }
+  .ctl-hop {
+    font-family: var(--font-code);
+    font-size: 10px;
+    font-weight: 650;
+    background: var(--surface-active);
+    color: var(--ink);
+    border-radius: var(--radius-pill);
+    padding: 1px 5px;
+    margin-left: 1px;
+  }
+  /* The `?` sits beside `start over`, not among the verbs — it documents them,
+     it isn't one. `flex: none` so it can never be squeezed under the target
+     floor the way it was when it lived in the row. */
+  .ctl-help {
+    flex: none;
+    padding: 0;
+    width: 24px;
+    justify-content: center;
+    font-weight: 600;
+  }
+  /* The header's one survivor. 24px, not 22: it has to clear the same target
+     floor the row below is claiming. */
+  .ctl-head {
+    height: 24px;
+  }
+
+  /* The colour ruling a mono theme, standing in for the icon on the mono
+     control — it names the hue in the space the glyph was using anyway. */
+  .mono-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.25);
+    flex: none;
+  }
+  /* the mono lock, engaged */
   .mini.on {
-    background: color-mix(in srgb, var(--pal-primary, var(--accent)) 20%, transparent);
-    border-color: color-mix(in srgb, var(--pal-primary, var(--accent)) 45%, transparent);
+    background: var(--surface-active);
+    border-color: var(--line-active);
     color: var(--ink);
   }
   .mini.picking {
@@ -68,11 +151,6 @@
     margin: -2px 0 8px 2px;
   }
 
-  .frame-stack {
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap-s);
-  }
   .foot-stack {
     display: flex;
     flex-direction: column;
@@ -123,78 +201,85 @@
     border: 1px solid rgba(255, 255, 255, 0.12);
   }
 
-  /* ---------- the add field, the board object's last row ---------- */
-  .add-row {
-    display: flex;
-    gap: var(--gap-s);
-    margin-top: 10px;
-  }
-  .hexfield {
-    display: flex;
-    align-items: center;
-    gap: var(--gap-s);
-    flex: 1;
-    min-width: 0;
-    height: var(--ctl-h);
-    background: var(--surface-3);
-    border: 1px solid var(--line-card);
-    border-radius: var(--radius-ctl);
-    padding: 0 6px;
-    transition: border-color var(--d-fast) var(--ease);
-  }
-  .hexfield:focus-within {
-    border-color: color-mix(in srgb, var(--pal-primary, var(--accent)) 55%, transparent);
-  }
-  .hexfield input {
-    flex: 1;
-    min-width: 0;
-    height: auto;
-    background: transparent;
-    border: 0;
-    outline: 0;
-    padding: 0;
-    font-size: var(--fs-m);
-  }
-
-  /* ---------- stage — the canvas is mockup-only: no cards, no chrome ------- */
+  /* ---------- stage: a ruled drafting table the frames sit on ----------
+     Never a palette colour and never tinted, so the frame's edge holds on
+     every theme. The ruling is even from edge to edge — a drafting table
+     doesn't vignette. */
   .stage {
     flex: 1;
-    padding: 0;
     min-width: 0;
     display: flex;
     flex-direction: column;
     position: relative;
+    background-color: var(--stage);
+    background-image:
+      linear-gradient(var(--stage-rule) 1px, transparent 1px),
+      linear-gradient(90deg, var(--stage-rule) 1px, transparent 1px);
+    background-size: var(--stage-rule-step) var(--stage-rule-step);
   }
-  .stage .preview-root {
+  .boards {
     flex: 1;
-  }
-  .split {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    background: var(--line-card);
+    min-height: 0;
+    display: flex;
+    gap: 28px;
+    padding: 18px 28px 28px;
   }
   @media (max-width: 1200px) {
-    .split {
-      grid-template-columns: 1fr;
+    .boards.split {
+      flex-direction: column;
     }
   }
-  .split-pane {
+  .artboard {
+    flex: 1;
     min-width: 0;
-    background: var(--surface-1);
+    min-height: 0;
     display: flex;
     flex-direction: column;
+    gap: 10px;
+    animation: board-in var(--d-slow) var(--ease-out) both;
   }
-  .frame-indicator {
-    font-size: var(--fs-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--ink-muted);
-    padding: 6px 12px;
+  @keyframes board-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
   }
-  .split-pane.active .frame-indicator {
-    color: var(--ink-bright);
+
+  /* The frame is an object on the table: rounded, inset, shadowed. Two
+     rings — a light hairline so a black palette still has an edge, a dark
+     one so a white palette doesn't bloom into the stage. The mockup scrolls
+     inside it; the stage never scrolls. */
+  .frame {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    border-radius: 12px;
+    background: var(--surface-1);
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.13),
+      0 0 0 2px rgb(0 0 0 / 0.55),
+      0 30px 70px -20px rgb(0 0 0 / 0.85),
+      0 10px 24px -12px rgb(0 0 0 / 0.6);
+    scrollbar-width: thin;
+    scrollbar-color: rgb(128 128 128 / 0.4) transparent;
+    /* The mockups set no font of their own and used to inherit the page's
+       system stack. The chrome moved to Geist; the mockups' typography is a
+       separate decision, so the frame pins what they had. */
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    transition: box-shadow var(--d-base) var(--ease);
+  }
+  /* split view: the frame your edits go to keeps the bright ring */
+  .boards.split .artboard:not(.active) .frame {
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.06),
+      0 0 0 2px rgb(0 0 0 / 0.55),
+      0 30px 70px -20px rgb(0 0 0 / 0.85),
+      0 10px 24px -12px rgb(0 0 0 / 0.6);
+  }
+  .frame .preview-root {
+    flex: 1 0 auto;
   }
   .empty {
     color: var(--ink-faint);
@@ -307,11 +392,11 @@
 
   @media (prefers-reduced-motion: reduce) {
     .report-drawer,
+    .artboard,
     .toast {
       animation: none;
     }
-    .mini,
-    .hexfield {
+    .mini {
       transition: none;
     }
   }

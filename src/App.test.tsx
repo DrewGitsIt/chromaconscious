@@ -5,6 +5,8 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 afterEach(cleanup)
 import App from './App'
 import { parseColor } from './engine'
+import { hueDistance } from './engine/color'
+import { SHORTCUTS } from './shortcuts'
 
 // Base UI needs a few APIs jsdom lacks.
 class RO {
@@ -40,11 +42,43 @@ const hexOf = (role: RoleSeat): string | null =>
   seat(role).querySelector('.rb-hex')?.textContent ?? null
 const tagOf = (role: RoleSeat): string | null =>
   seat(role).querySelector('.rb-tag')?.textContent ?? null
+/**
+ * A seat shows the SEED — the colour really in the theme — so it need not be
+ * the string you typed. The input survives in the body tooltip as "from #…",
+ * and these read a seat back by the colour it came from.
+ */
+const sourceOf = (role: RoleSeat): string | null =>
+  /from (#[0-9a-f]{6})/.exec(seat(role).querySelector('.rb-body')?.getAttribute('title') ?? '')?.[1] ??
+  null
+const originOf = (role: RoleSeat): string | null => sourceOf(role) ?? hexOf(role)
+const seatOrigins = (): (string | null)[] => ROLE_SEATS.map(originOf)
+
+/** A frame read back off its label row, e.g. `B · dark · editing`: the mode
+    from the toggle's label (it offers the OTHER mode), and whether it is the
+    frame being edited from the pane letter's pressed state. */
+const frameState = (label: 'A' | 'B'): string => {
+  const mode = screen.queryByLabelText(`switch frame ${label} to light`) ? 'dark' : 'light'
+  const editing =
+    screen.getByLabelText(`edit frame ${label}`).getAttribute('aria-pressed') === 'true'
+  return `${label} · ${mode}${editing ? ' · editing' : ''}`
+}
 /** Every seat as "hex tag", so a whole board is one assertion. */
 const boardState = (): Record<string, string> =>
   Object.fromEntries(ROLE_SEATS.map((r) => [r, `${hexOf(r)} ${tagOf(r)}`]))
 const seatHexes = (): (string | null)[] => ROLE_SEATS.map(hexOf)
+/** Seats whose lock is the `keep` verb — i.e. the ones the smith still owns. */
 const keepPins = (): RoleSeat[] => ROLE_SEATS.filter((r) => seat(r).querySelector('.rb-keep'))
+/** The one control that decides what riff may move, read off every seat. */
+const lockOf = (role: RoleSeat): string | null =>
+  seat(role).querySelector('.rb-lock')?.getAttribute('data-locked') ?? null
+const lockedSeats = (): RoleSeat[] => ROLE_SEATS.filter((r) => lockOf(r) === 'true')
+const toggleLock = (role: RoleSeat) =>
+  fireEvent.click(seat(role).querySelector('.rb-lock') as HTMLElement)
+/** Chart swatches of yours carry the same control; derived fills have none. */
+const seriesLocks = (): (string | null)[] =>
+  [...document.querySelectorAll('.tray-set .series')].map(
+    (s) => s.querySelector('.series-lock')?.getAttribute('data-locked') ?? null,
+  )
 
 const benchBar = (): HTMLElement => document.querySelector('.bench-bar') as HTMLElement
 const benchHexes = (): (string | null)[] =>
@@ -73,15 +107,27 @@ const freeHint = (): string | null =>
   document.querySelector('.rp-free .rp-opt-hint')?.textContent ?? null
 const freeSeat = () => fireEvent.click(document.querySelector('.rp-free') as HTMLElement)
 
-// Section tools live in `.sec-act` and are addressed by their titles.
+// The palette's verbs live in `.ctl-row` under the section header and are
+// addressed by their titles. Every title now carries its shortcut key on the
+// end (`withKey`), so match on a prefix or a fragment, never the whole string.
+// Anchor the riff match at the start: `back one riff` also contains the word.
+const ctl = (sel: string): HTMLButtonElement =>
+  document.querySelector(`.ctl-row ${sel}`) as HTMLButtonElement
 const riffBtn = (): HTMLButtonElement =>
-  document.querySelector(
-    '.sec-act .mini[title*="re-roll"], .sec-act .mini[title*="nothing to riff"]',
-  ) as HTMLButtonElement
-/** The mono padlock, whichever of its two titles it is wearing. */
+  ctl('.ctl[title^="riff"], .ctl[title^="nothing to riff"]')
+const backBtn = (): HTMLButtonElement =>
+  ctl('.ctl[title^="back one riff"], .ctl[title^="no hops"]')
+const resetBtn = (): HTMLButtonElement =>
+  ctl('.ctl[title^="clear your placements"], .ctl[title^="nothing to reset"]')
+/** The mono control, whichever of its two titles it is wearing. */
 const monoBtn = (): HTMLButtonElement =>
-  document.querySelector('.sec-act .mini[title*="lock the theme"], .sec-act .mini[title*="unlock"]') as HTMLButtonElement
-const openStartOver = () => fireEvent.click(screen.getByTitle('start over'))
+  ctl('.ctl[title*="lock the theme"], .ctl[title*="unlock"]')
+/** The riff hop badge, or null before the first hop. */
+const hop = (): string | null =>
+  document.querySelector('.ctl-hop')?.textContent ?? null
+/** `start over` is the one verb still in the header. */
+const openStartOver = () =>
+  fireEvent.click(document.querySelector('.sec-act .mini[title^="start over"]') as HTMLElement)
 
 /** Which preset the current set still belongs to — the menu marks it `sel`. */
 const selectedPreset = (): string | null => {
@@ -103,9 +149,22 @@ const bootOneColor = (hex = '#7c3aed') => {
   fireEvent.change(screen.getByPlaceholderText(/or type/), { target: { value: hex } })
   fireEvent.click(screen.getByRole('button', { name: 'Add' }))
 }
+/** Boot enough colors to fill all six seats AND all five chart slots. */
+const bootFullBoard = () =>
+  bootOneColor(
+    '#e63946 #457b9d #f1faee #ef4444 #22c55e #eab308 #3b82f6 #a855f7 #14b8a6 #ec4899 #84cc16',
+  )
+/**
+ * The sidebar's add control is a `+` that opens a picker popover — the field
+ * and the commit button both live inside it, so every path opens it first.
+ */
+const openAdd = () => fireEvent.click(document.querySelector('.addsw') as HTMLElement)
+const addField = () => screen.getByPlaceholderText(/add a color/) as HTMLInputElement
+const addBtn = () => document.querySelector('.pk-add') as HTMLButtonElement
 const addColors = (text: string) => {
-  fireEvent.change(screen.getByPlaceholderText(/add a color/), { target: { value: text } })
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  if (!document.querySelector('.pk-pop')) openAdd()
+  fireEvent.change(addField(), { target: { value: text } })
+  fireEvent.click(addBtn())
 }
 
 const stubClipboard = () => {
@@ -138,12 +197,12 @@ describe('first run', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add' }))
     expect(document.querySelector('.start-hero')).toBeNull()
     expect(document.querySelector('.role-board')).toBeTruthy()
-    expect(seatHexes()).toContain('#101010')
-    expect(seatHexes()).toContain('#ababab')
-    expect(screen.getByPlaceholderText(/add a color/)).toBeTruthy()
+    expect(seatOrigins()).toContain('#101010')
+    expect(seatOrigins()).toContain('#ababab')
+    expect(document.querySelector('.addsw')).toBeTruthy()
     expect(document.querySelector('.preview-root')).toBeTruthy()
+    // canvas controls live on the stage now, above each frame
     expect([...document.querySelectorAll('.sec .sec-label')].map((e) => e.textContent)).toEqual([
-      'canvas',
       'colors',
       'tuning',
     ])
@@ -152,7 +211,7 @@ describe('first run', () => {
   it('a hero preset card applies its palette and keeps its name until you edit', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Neon arcade' }))
-    expect(seatHexes()).toContain('#f72585')
+    expect(seatOrigins()).toContain('#f72585')
     expect(selectedPreset()).toBe('Neon arcade')
     // editing the set clears the preset name
     addColors('#18aa66')
@@ -161,27 +220,28 @@ describe('first run', () => {
 })
 
 describe('frames', () => {
-  it('defaults to a single full-bleed frame with its own mockup select', () => {
+  it('defaults to a single frame with its own mockup select', () => {
     bootCoastal()
     expect(document.querySelectorAll('.preview-root')).toHaveLength(1)
-    expect(document.querySelector('.frame-indicator')).toBeNull()
+    expect(document.querySelectorAll('.artboard')).toHaveLength(1)
     expect(screen.getByLabelText('edit frame A')).toBeTruthy()
     expect(screen.getByTitle('compare two frames')).toBeTruthy()
     expect(document.querySelectorAll('.frame-mockup')).toHaveLength(1)
   })
 
   it('the frame card sun/moon toggle flips a frame between light and dark', () => {
+    // frames boot dark, so the first flip offers light
     bootCoastal()
-    fireEvent.click(screen.getByLabelText('switch frame A to dark'))
-    expect(screen.getByLabelText('switch frame A to light')).toBeTruthy()
+    fireEvent.click(screen.getByLabelText('switch frame A to light'))
+    expect(screen.getByLabelText('switch frame A to dark')).toBeTruthy()
   })
 
   it('compare creates frame B as an exact copy and selects it', () => {
     bootCoastal()
     fireEvent.click(screen.getByTitle('compare two frames'))
     expect(document.querySelectorAll('.preview-root')).toHaveLength(2)
-    expect(screen.getByText('B · light · editing')).toBeTruthy()
-    expect(screen.getByText('A · light')).toBeTruthy()
+    expect(frameState('B')).toBe('B · dark · editing')
+    expect(frameState('A')).toBe('A · dark')
     // with a sibling, each card can copy itself over the other
     expect(screen.getByLabelText('copy frame A over frame B')).toBeTruthy()
     expect(screen.getByLabelText('copy frame B over frame A')).toBeTruthy()
@@ -195,7 +255,7 @@ describe('frames', () => {
     fireEvent.click(screen.getByRole('button', { name: /start empty/ }))
     expect(document.querySelectorAll('.start-hero')).toHaveLength(1)
     expect(document.querySelectorAll('.preview-root')).toHaveLength(1)
-    expect(screen.getByText('A · light')).toBeTruthy()
+    expect(frameState('A')).toBe('A · dark')
     // the empty frame has no board or dial to show
     expect(document.querySelector('.role-board')).toBeNull()
   })
@@ -208,18 +268,28 @@ describe('frames', () => {
     fireEvent.click(screen.getByRole('button', { name: /from a preset/ }))
     fireEvent.click(screen.getByRole('button', { name: /Neon arcade/ }))
     fireEvent.click(screen.getByLabelText('copy frame B over frame A'))
-    expect(screen.getByText('A · light · editing')).toBeTruthy()
-    expect(hexOf('primary')).toBe('#f72585')
+    expect(frameState('A')).toBe('A · dark · editing')
+    expect(originOf('primary')).toBe('#f72585')
     expect(selectedPreset()).toBe('Neon arcade')
   })
 
   it('closing frame B returns to a single full-width frame', () => {
     bootCoastal()
     fireEvent.click(screen.getByTitle('compare two frames'))
-    fireEvent.click(screen.getByTitle('close frame B'))
+    // B's label row carries the close, captioned with the frame it closes
+    fireEvent.click(screen.getByRole('button', { name: 'close B' }))
     expect(document.querySelectorAll('.preview-root')).toHaveLength(1)
-    expect(document.querySelector('.frame-indicator')).toBeNull()
+    expect(document.querySelectorAll('.artboard')).toHaveLength(1)
     expect(screen.getByTitle('compare two frames')).toBeTruthy()
+  })
+
+  it('each label row closes its own frame', () => {
+    bootCoastal()
+    fireEvent.click(screen.getByTitle('compare two frames'))
+    // closing A promotes B into the single full-width slot
+    fireEvent.click(screen.getByTitle('close frame A'))
+    expect(document.querySelectorAll('.preview-root')).toHaveLength(1)
+    expect(document.querySelectorAll('.artboard')).toHaveLength(1)
   })
 })
 
@@ -235,9 +305,24 @@ describe('the role board', () => {
 
   it('shows provenance on every seat: your color reads yours, the smith derived reads derived', () => {
     bootOneColor()
-    expect(boardState().primary).toBe('#7c3aed yours')
+    expect(tagOf('primary')).toBe('yours')
+    expect(originOf('primary')).toBe('#7c3aed')
     expect(tagOf('danger')).toBe('derived')
     expect(ROLE_SEATS.filter((r) => tagOf(r) === 'derived').length).toBe(5)
+  })
+
+  it('a seat shows the colour in the theme, and names the one you typed', () => {
+    // The chip sits beside the preview and must track it. Below fidelity 1 the
+    // engine normalizes a user colour toward its role, so the two legitimately
+    // differ — and after a riff hop they differ every time.
+    bootOneColor()
+    expect(hexOf('primary')).not.toBe('#7c3aed')
+    expect(sourceOf('primary')).toBe('#7c3aed')
+    expect(seat('primary').querySelector('.rb-body')?.getAttribute('title')).toContain(
+      `${hexOf('primary')} — yours, from #7c3aed`,
+    )
+    // a derived seat had no input, so there is nothing to disclose
+    expect(sourceOf('danger')).toBeNull()
   })
 
   it('the keep pin appears only on derived seats', () => {
@@ -253,9 +338,47 @@ describe('the role board', () => {
     expect(tagOf('danger')).toBe('kept')
     // keeping freezes; it does not re-pick
     expect(hexOf('danger')).toBe(before)
-    // a kept seat is no longer offered a pin
+    // …and freezing is now spelled with the lock, which is what keep was always for
+    expect(lockOf('danger')).toBe('true')
+    // a kept seat is no longer offered a pin — its lock is an ordinary one
     expect(seat('danger').querySelector('.rb-keep')).toBeNull()
+    expect(seat('danger').querySelector('.rb-lock')).toBeTruthy()
     expect(keepPins()).toEqual(['success', 'warning'])
+  })
+
+  it('every seat carries a lock, and it starts open even on colours of yours', () => {
+    // The whole rewrite in one assertion: a colour you supplied is riffable
+    // until you say otherwise. Placing a colour is not a vow never to move it.
+    bootCoastal()
+    expect(ROLE_SEATS.map(lockOf)).toEqual(Array(6).fill('false'))
+    expect(lockedSeats()).toEqual([])
+    const lock = seat('primary').querySelector('.rb-lock') as HTMLElement
+    expect(lock.getAttribute('title')).toBe('unlocked — riff may move this')
+
+    toggleLock('primary')
+    expect(lockedSeats()).toEqual(['primary'])
+    expect(seat('primary').className).toContain('is-locked')
+    expect(seat('primary').querySelector('.rb-lock')?.getAttribute('title')).toBe(
+      'locked — riff will not move this',
+    )
+    // Unlocking is not a bench and not an unseat: the same colour of yours is
+    // still in the same seat, it is simply riffable again. (Its rendered seed
+    // may shift a little either way — a lock costs the repair pass its budget
+    // here, so the pairwise minimums get paid for by someone else.)
+    toggleLock('primary')
+    expect(lockOf('primary')).toBe('false')
+    expect(seat('primary').className).not.toContain('is-locked')
+    expect(originOf('primary')).toBe('#e63946')
+    expect(tagOf('primary')).toBe('yours')
+    expect(benchHexes()).toEqual([])
+  })
+
+  it('a chart swatch of yours carries the same lock; a derived fill has none', () => {
+    bootCoastal()
+    // coastal charts two of your colors; the smith invents the other three
+    expect(seriesLocks()).toEqual(['false', 'false', null, null, null])
+    fireEvent.click(document.querySelector('.tray-set .series-lock') as HTMLElement)
+    expect(seriesLocks()[0]).toBe('true')
   })
 
   it('the seat label teaches what the role is for and what it is doing now', () => {
@@ -319,10 +442,27 @@ describe('assigning a seat', () => {
     bootCoastal()
     openAssign('primary')
     pickOption('#457b9d')
-    expect(boardState().primary).toBe('#457b9d yours')
+    expect(originOf('primary')).toBe('#457b9d')
+    expect(tagOf('primary')).toBe('yours')
     expect(document.querySelector('.rp-asg')).toBeNull()
     expect(benchBar().textContent).toContain('1 color not in play')
     expect(benchHexes()).toEqual(['#e63946'])
+  })
+
+  it('adjust hands the seat a hand-picked colour on apply — and only on apply', () => {
+    bootCoastal()
+    openAssign('accent')
+    fireEvent.click(screen.getByRole('button', { name: /adjust this color/ }))
+    const before = originOf('accent')
+    fireEvent.change(screen.getByLabelText('new color for accent'), {
+      target: { value: '00a651' },
+    })
+    // editing the draft regenerates nothing — the engine hears about it on apply
+    expect(originOf('accent')).toBe(before)
+    fireEvent.click(screen.getByRole('button', { name: 'apply' }))
+    expect(document.querySelector('.rp-asg')).toBeNull()
+    expect(originOf('accent')).toBe('#00a651')
+    expect(tagOf('accent')).toBe('yours')
   })
 
   it('free this seat names the color that would take over — and it does', () => {
@@ -332,7 +472,8 @@ describe('assigning a seat', () => {
     // seat hands it over rather than inventing anything
     expect(freeHint()).toBe('#1d3557 takes over')
     freeSeat()
-    expect(boardState().accent).toBe('#1d3557 yours')
+    expect(originOf('accent')).toBe('#1d3557')
+    expect(tagOf('accent')).toBe('yours')
     expect(benchHexes()).toEqual(['#457b9d'])
   })
 
@@ -353,11 +494,7 @@ describe('assigning a seat', () => {
   it('a seat freed with a spare color of yours is not promised to the smith', () => {
     bootCoastal()
     // #18aa66 lands in success; coastal has nothing left to fill it after
-    fireEvent.click(screen.getByRole('button', { name: 'Pick a color' }))
-    fireEvent.change(document.querySelector('.picker-pop input') as HTMLInputElement, {
-      target: { value: '18aa66' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: 'Add color' }))
+    addColors('#18aa66')
     expect(boardState().success).toBe('#18aa66 yours')
     openAssign('success')
     expect(freeHint()).toBe('the smith derives it')
@@ -373,65 +510,108 @@ describe('assigning a seat', () => {
 })
 
 describe('riff', () => {
-  it('re-rolls the derived seats and leaves yours and kept untouched', () => {
+  it('walks every unlocked seat, including the ones that are yours', () => {
     bootCoastal()
-    keep('danger')
+    // primary, accent and neutral are all colours you supplied
+    expect(ROLE_SEATS.filter((r) => tagOf(r) === 'yours')).toEqual(['primary', 'accent', 'neutral'])
     const before = boardState()
-    expect(before.danger).toContain('kept')
+
     fireEvent.click(riffBtn())
+
     const after = boardState()
-    // riff never touches a color you own
-    expect(after.primary).toBe(before.primary)
-    expect(after.accent).toBe(before.accent)
-    expect(after.neutral).toBe(before.neutral)
-    expect(after.danger).toBe(before.danger)
-    // and it does move the ones the smith computed
-    expect(after.success).not.toBe(before.success)
-    expect(after.warning).not.toBe(before.warning)
-    expect(tagOf('success')).toBe('derived')
-    expect(tagOf('warning')).toBe('derived')
+    for (const role of ROLE_SEATS) expect(after[role]).not.toBe(before[role])
+    // a hop moves colours, never the casting: who sits where is unchanged
+    expect(ROLE_SEATS.map(tagOf)).toEqual(ROLE_SEATS.map((r) => before[r].split(' ')[1]))
+  })
+
+  it('a locked seat holds still while the walk carries the rest away', () => {
+    bootCoastal()
+    toggleLock('accent')
+    keep('danger')
+    expect(lockedSeats()).toEqual(['accent', 'danger'])
+    const before = boardState()
+
+    fireEvent.click(riffBtn())
+    fireEvent.click(riffBtn())
+
+    const after = boardState()
+    for (const role of ['accent', 'danger'] as const) expect(after[role]).toBe(before[role])
+    for (const role of ['primary', 'neutral', 'success', 'warning'] as const) {
+      expect(after[role]).not.toBe(before[role])
+    }
+  })
+
+  it('a colour you lock mid-walk stays put from there on', () => {
+    bootCoastal()
+    fireEvent.click(riffBtn())
+    toggleLock('primary')
+    const held = hexOf('primary')
+    fireEvent.click(riffBtn())
+    fireEvent.click(riffBtn())
+    expect(hexOf('primary')).toBe(held)
+    expect(lockOf('primary')).toBe('true')
   })
 
   it('walks the seed forward, and back walks it home', () => {
     bootCoastal()
     const canonical = boardState()
-    expect(riffBtn().textContent).toBe('')
-    expect(screen.queryByTitle('back one riff')).toBeNull()
+    // The hop count is its own badge now that the button carries a word, and
+    // `back` greys out in place rather than unmounting — so riff never slides
+    // sideways under a pointer that is about to press it again.
+    expect(hop()).toBeNull()
+    expect(backBtn().disabled).toBe(true)
     fireEvent.click(riffBtn())
-    expect(riffBtn().textContent).toBe('1')
+    expect(hop()).toBe('1')
     fireEvent.click(riffBtn())
-    expect(riffBtn().textContent).toBe('2')
-    fireEvent.click(screen.getByTitle('back one riff'))
-    expect(riffBtn().textContent).toBe('1')
-    // seed 0 is canonical: the count and the back button both retire
-    fireEvent.click(screen.getByTitle('back one riff'))
-    expect(riffBtn().textContent).toBe('')
-    expect(screen.queryByTitle('back one riff')).toBeNull()
+    expect(hop()).toBe('2')
+    fireEvent.click(backBtn())
+    expect(hop()).toBe('1')
+    // seed 0 is canonical: the count retires and back goes quiet again
+    fireEvent.click(backBtn())
+    expect(hop()).toBeNull()
+    expect(backBtn().disabled).toBe(true)
     expect(boardState()).toEqual(canonical)
   })
 
   it('start over resets the riff walk', () => {
     bootCoastal()
     fireEvent.click(riffBtn())
-    expect(riffBtn().textContent).toBe('1')
+    expect(hop()).toBe('1')
     openStartOver()
     fireEvent.click(screen.getByRole('button', { name: /from a preset/ }))
     fireEvent.click(screen.getByRole('button', { name: /Neon arcade/ }))
-    expect(riffBtn().textContent).toBe('')
-    expect(screen.queryByTitle('back one riff')).toBeNull()
+    expect(hop()).toBeNull()
+    expect(backBtn().disabled).toBe(true)
   })
 
-  it('is disabled once every seat is yours or kept — there is nothing left to roll', () => {
+  it('a board with every seat filled by you is still fully riffable', () => {
+    // The defect this replaced: `hasDerivedSeats` went false the moment your
+    // colours filled the board, killing riff on exactly the palette you had
+    // just pulled out of an image and most wanted to explore.
+    bootFullBoard()
+    expect(ROLE_SEATS.map(tagOf).every((t) => t === 'yours')).toBe(true)
+    expect(document.querySelector('.tray-cap')?.textContent).toBe('5 of 5')
+    expect(lockedSeats()).toEqual([])
+    expect(riffBtn().disabled).toBe(false)
+
+    const before = boardState()
+    fireEvent.click(riffBtn())
+    for (const role of ROLE_SEATS) expect(boardState()[role]).not.toBe(before[role])
+  })
+
+  it('is disabled only once every seat is locked', () => {
     bootCoastal()
     expect(riffBtn().disabled).toBe(false)
-    // freeze the three derived seats…
-    for (const role of ['danger', 'success', 'warning'] as const) keep(role)
-    // …and give the chart series enough of your colors to fill itself
-    addColors('#123456 #abcdef #ff00aa #00ffaa #aa00ff #55aa22 #2288cc')
-    expect(ROLE_SEATS.map(tagOf).every((t) => t === 'yours' || t === 'kept')).toBe(true)
-    expect(document.querySelector('.tray-cap')?.textContent).toBe('5 of 5')
+    // lock the three seats of yours, keep (= lock) the three the smith owns…
+    for (const role of ROLE_SEATS) toggleLock(role)
+    expect(lockedSeats()).toEqual([...ROLE_SEATS])
+    // …and lock the two colours of yours sitting in the chart tray
+    for (const el of document.querySelectorAll('.tray-set .series-lock')) {
+      fireEvent.click(el as HTMLElement)
+    }
+    expect(seriesLocks().every((l) => l !== 'false')).toBe(true)
     expect(riffBtn().disabled).toBe(true)
-    expect(riffBtn().title).toBe('nothing to riff — every seat is yours')
+    expect(riffBtn().title).toContain('nothing to riff — every seat is locked')
   })
 })
 
@@ -466,13 +646,14 @@ describe('the bench', () => {
     expect(benchHexes()).toEqual(['#4d4d4d', '#9a9a9a', '#e8e8e8'])
   })
 
-  it('says so plainly when nothing is parked', () => {
+  it('says so plainly when nothing is parked, and says it once', () => {
     bootCoastal()
     expect(benchBar().textContent).toContain('bench · 0 colors not in play')
     expect(document.querySelectorAll('.benched')).toHaveLength(0)
-    expect(document.querySelector('.bench-empty')?.textContent).toContain(
-      'every color you added is in play',
-    )
+    // The bar's own count is the whole message. A second line inside the
+    // drawer restating it was redundant; the bar is also the drop target, so
+    // an empty drawer costs nothing.
+    expect(document.querySelector('.bench-empty')).toBeNull()
   })
 })
 
@@ -487,35 +668,31 @@ describe('color input', () => {
     expect(document.querySelector('.start-hero')).toBeNull()
   })
 
-  it('a color picked in the add-row popover is added by the main Add button', () => {
+  it('the + opens a picker, and what you type in it lands on the board', () => {
     bootCoastal()
-    fireEvent.click(screen.getByRole('button', { name: 'Pick a color' }))
-    const hexInput = document.querySelector('.picker-pop input') as HTMLInputElement
-    fireEvent.change(hexInput, { target: { value: '18aa66' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    expect(document.querySelector('.pk-pop')).toBeNull()
+    openAdd()
+    expect(document.querySelector('.pk-pop')).toBeTruthy()
+    fireEvent.change(addField(), { target: { value: '#18aa66' } })
+    fireEvent.click(addBtn())
     expect(boardState().success).toBe('#18aa66 yours')
   })
 
-  it('the popover Add color button commits the picked color directly, once', () => {
+  it('a color already in the list cannot be added twice', () => {
     bootCoastal()
-    fireEvent.click(screen.getByRole('button', { name: 'Pick a color' }))
-    const hexInput = document.querySelector('.picker-pop input') as HTMLInputElement
-    fireEvent.change(hexInput, { target: { value: '18aa66' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Add color' }))
+    addColors('#18aa66')
     expect(boardState().success).toBe('#18aa66 yours')
-    // the color is in the list — a later Add must not re-add it
-    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    openAdd()
+    fireEvent.change(addField(), { target: { value: '#18aa66' } })
+    // the control says so rather than silently making a duplicate
+    expect(addBtn().disabled).toBe(true)
     expect(seatHexes().filter((h) => h === '#18aa66')).toHaveLength(1)
     expect(benchHexes()).not.toContain('#18aa66')
   })
 
-  it('a color removed from the bench can be re-added with the main Add button', () => {
+  it('a color removed from the bench can be added again', () => {
     bootCoastal()
-    fireEvent.click(screen.getByRole('button', { name: 'Pick a color' }))
-    fireEvent.change(document.querySelector('.picker-pop input') as HTMLInputElement, {
-      target: { value: '18aa66' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: 'Add color' }))
+    addColors('#18aa66')
     // free its seat to park it, then drop it from the bench entirely
     openAssign('success')
     freeSeat()
@@ -524,16 +701,15 @@ describe('color input', () => {
     fireEvent.click(screen.getByLabelText('remove #18aa66'))
     expect(benchHexes()).toEqual([])
     expect(seatHexes()).not.toContain('#18aa66')
-    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    addColors('#18aa66')
     expect(boardState().success).toBe('#18aa66 yours')
   })
 
-  it('the embedded swatch previews the color being typed', () => {
+  it('the popover previews the color being typed', () => {
     bootCoastal()
-    fireEvent.change(screen.getByPlaceholderText(/add a color/), {
-      target: { value: '#22aa88' },
-    })
-    const swatch = document.querySelector('.add-row .swatch-btn') as HTMLElement
+    openAdd()
+    fireEvent.change(addField(), { target: { value: '#22aa88' } })
+    const swatch = document.querySelector('.pk-prev') as HTMLElement
     expect(swatch.style.background).toBe('rgb(34, 170, 136)')
   })
 })
@@ -569,7 +745,7 @@ describe('start over', () => {
     openStartOver()
     fireEvent.click(screen.getByRole('button', { name: /from a preset/ }))
     fireEvent.click(screen.getByRole('button', { name: /Neon arcade/ }))
-    expect(hexOf('primary')).toBe('#f72585')
+    expect(originOf('primary')).toBe('#f72585')
     expect(document.querySelector('.toast')?.textContent).toContain('started over with Neon arcade')
     expect(selectedPreset()).toBe('Neon arcade')
   })
@@ -616,14 +792,32 @@ describe('mono lock', () => {
   const anchoredRole = (): string | null =>
     document.querySelector('.rb-slot:has(.rb-anchor)')?.getAttribute('data-role') ?? null
 
-  it('the padlock turns the board into the menu; clicking a seat locks its hue', async () => {
+  it('the padlock turns the board into the menu; the base stays in its seat', async () => {
     bootCoastal()
+    const accentBefore = hexOf('accent')
+    const primaryBefore = hexOf('primary')
     fireEvent.click(monoBtn())
     expect(document.querySelector('.pick-hint')?.textContent).toContain('click a seat to lock')
     openAssign('accent')
-    // exactly one seat is the base, and the tool names it
+
+    // The base is NOT crowned primary any more. Picking the accent used to
+    // move that colour into the primary seat and displace whoever was there,
+    // which read as the pick being ignored — the chip would say "primary"
+    // however you had chosen.
     expect(document.querySelectorAll('.rb-anchor')).toHaveLength(1)
-    expect(monoBtn().textContent).toBe(anchoredRole())
+    expect(anchoredRole()).toBe('accent')
+    // The base keeps its hue and its seat. Its LIGHTNESS may still shift: once
+    // every seat shares one hue, the pairwise minimums can only be paid for in
+    // lightness, and the base is not exempt from that.
+    const hue = (h: string) => parseColor(h)!.h
+    expect(hueDistance(hue(hexOf('accent')!), hue(accentBefore!))).toBeLessThan(3)
+    // and the seat that was NOT picked is coerced onto the base's hue
+    expect(hexOf('primary')).not.toBe(primaryBefore)
+    expect(hueDistance(hue(hexOf('primary')!), hue(accentBefore!))).toBeLessThan(3)
+
+    // the chip names the colour, not the seat
+    expect(monoBtn().textContent).toContain('mono')
+    expect(monoBtn().querySelector('.mono-dot')).toBeTruthy()
     expect(monoBtn().title).toContain('unlock')
     expect(document.querySelector('.pick-hint')).toBeNull()
     const slider = document.querySelector('.dial-slider') as HTMLInputElement
@@ -640,16 +834,23 @@ describe('mono lock', () => {
     expect(monoBtn().textContent).toBe('mono')
   })
 
-  it('unlock parks the base; one click re-locks it', () => {
+  it('re-locking asks again, so the base can be changed', () => {
+    // It used to remember the last base and restore it on the next click. That
+    // saved one click and cost the ability to ever change your mind: off, on,
+    // and you were back on the same base with no route to the picker.
     bootCoastal()
     fireEvent.click(monoBtn())
     openAssign('primary')
-    const base = anchoredRole()
+    expect(anchoredRole()).toBe('primary')
+
     fireEvent.click(monoBtn())
     expect(document.querySelector('.rb-anchor')).toBeNull()
-    expect(monoBtn().textContent).toBe('mono')
+    expect(monoBtn().querySelector('.mono-dot')).toBeNull()
+
     fireEvent.click(monoBtn())
-    expect(anchoredRole()).toBe(base)
+    expect(document.querySelector('.pick-hint')).toBeTruthy()
+    openAssign('accent')
+    expect(anchoredRole()).toBe('accent')
   })
 
   it('with a single candidate the padlock locks immediately', () => {
@@ -693,7 +894,7 @@ describe('the dial', () => {
     expect(document.querySelector('.dial .dial-caption')?.textContent).toBeTruthy()
     const slider = document.querySelector('.dial .dial-slider') as HTMLInputElement
     fireEvent.change(slider, { target: { value: '1' } })
-    expect(document.querySelector('.dial-bubble')?.textContent).toBe('1.00')
+    expect(document.querySelector('.dial-value')?.textContent).toBe('1.00')
     expect(slider.getAttribute('aria-valuetext')).toContain('colors kept exactly')
     // the caption cross-fades, so it lands a beat after the value
     await screen.findByText('colors kept exactly')
@@ -728,7 +929,9 @@ describe('separation', () => {
     expect(group().getAttribute('role')).toBe('radiogroup')
     expect(inForce()).toBe('layered')
     expect(sentence()).toMatch(/hairline and shadow sharing the work/)
-    // an untouched frame is the engine's historical output
+    // an untouched frame is the engine's historical output — read in light,
+    // where the ladder recedes the card below the page (frames boot dark now)
+    fireEvent.click(screen.getByLabelText('switch frame A to light'))
     expect(L(painted('--card'))).toBeLessThan(L(painted('--background')))
   })
 
@@ -845,5 +1048,82 @@ describe('export', () => {
     expect(document.querySelector('.export-main-label')?.textContent).toContain(
       'Tailwind v4 CSS',
     )
+  })
+})
+
+describe('keyboard', () => {
+  const press = (key: string) => fireEvent.keyDown(window, { key })
+
+  it('one key per verb in the row, and each button names its own', () => {
+    // SHORTCUTS is the single source of truth: the handler switches on it, the
+    // tooltips append from it, and the flyout lists it. This asserts the three
+    // agree, so a key can never be bound to one thing and documented as another.
+    bootCoastal()
+    for (const [btn, id] of [
+      [monoBtn(), 'mono'],
+      [riffBtn(), 'riff'],
+      [backBtn(), 'back'],
+      [resetBtn(), 'reset'],
+    ] as const) {
+      expect(btn.title, id).toContain(SHORTCUTS.find((s) => s.id === id)!.key.toUpperCase())
+    }
+  })
+
+  it('r riffs, z walks back', () => {
+    bootCoastal()
+    expect(hop()).toBeNull()
+    press('r')
+    expect(hop()).toBe('1')
+    press('r')
+    expect(hop()).toBe('2')
+    press('z')
+    expect(hop()).toBe('1')
+  })
+
+  it('m opens the mono picker, b toggles the bench', () => {
+    bootCoastal()
+    press('m')
+    expect(document.querySelector('.pick-hint')).toBeTruthy()
+    press('Escape')
+    expect(document.querySelector('.pick-hint')).toBeNull()
+
+    expect(benchBar().getAttribute('aria-expanded')).toBe('false')
+    press('b')
+    expect(benchBar().getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('shift+? opens the map, and it lists every shortcut', () => {
+    bootCoastal()
+    expect(document.querySelector('.sc-flyout')).toBeNull()
+    press('?')
+    const fly = document.querySelector('.sc-flyout') as HTMLElement
+    expect(fly).toBeTruthy()
+    // Both spellings of the same keystroke: the browser usually hands us the
+    // mapped `?`, but only when the layout maps it that way.
+    press('Escape')
+    fireEvent.keyDown(window, { key: '/', shiftKey: true })
+    expect(document.querySelector('.sc-flyout')).toBeTruthy()
+    for (const s of SHORTCUTS) expect(fly.textContent, s.id).toContain(s.label)
+    press('Escape')
+    expect(document.querySelector('.sc-flyout')).toBeNull()
+  })
+
+  it('keys are ignored while you are typing in a field', () => {
+    // Without this, typing a hex into the add field would riff, bench and
+    // start over on the way through.
+    bootCoastal()
+    openAdd()
+    const field = addField()
+    fireEvent.keyDown(field, { key: 'r' })
+    fireEvent.keyDown(field, { key: 'b' })
+    expect(hop()).toBeNull()
+    expect(benchBar().getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('a modifier hands the key back to the browser', () => {
+    bootCoastal()
+    fireEvent.keyDown(window, { key: 'r', ctrlKey: true })
+    fireEvent.keyDown(window, { key: 'r', metaKey: true })
+    expect(hop()).toBeNull()
   })
 })

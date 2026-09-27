@@ -16,6 +16,28 @@ export interface ColorCandidate {
   /** User explicitly assigned this candidate to a role (or to the chart series). */
   pin?: Role | 'chart'
   /**
+   * User locked this color: riff may never move it. This is the ONLY thing
+   * that freezes a color — not provenance, not fidelity. A color you supplied
+   * and did not lock walks like any other, and hop 0 is always your input
+   * verbatim, one `back` away.
+   *
+   * Deliberately separate from `pin`. A pin answers "which seat does this sit
+   * in", a lock answers "may the riff move it" — dragging a color to a seat is
+   * a statement about placement, not a vow never to explore from it.
+   */
+  locked?: boolean
+  /**
+   * The exact colour the lock froze, when that is not `color` itself — a seat
+   * three hops along is locked where it stands, not where it started.
+   *
+   * Kept BESIDE `color` rather than written over it. Overwriting was tried and
+   * silently destroyed the user's input: lock then unlock, and the hex they
+   * typed was gone for good. Because `color` survives, unlocking needs no
+   * inverse — the walk simply resumes and lands back on the same seed it was
+   * frozen at.
+   */
+  lockedColor?: Oklch
+  /**
    * User parked this color: it is skipped by every seat and lands in
    * `unusedCandidateIndexes`. Distinct from merely losing — unpinning alone
    * can't free a seat, because the engine would re-cast the same color into
@@ -24,8 +46,11 @@ export interface ColorCandidate {
   benched?: boolean
   /**
    * Set when the color was promoted from a seed the engine invented ("keep as
-   * your color"). Behaviorally identical to a user color — riff never moves
-   * either — but the board says "kept" rather than "yours".
+   * your color"), so the board can say "kept" rather than "yours".
+   *
+   * Provenance only. It used to imply immobility, back when riff moved derived
+   * seats and nothing else; now `locked` carries that alone, and a kept color
+   * with the lock cleared walks exactly like one you typed.
    */
   origin?: 'invented'
   source: 'manual' | 'image'
@@ -94,16 +119,24 @@ export interface GenerateOptions {
    */
   fidelity?: number
   /**
-   * Mono lock: index of the candidate whose hue rules the theme. The base is
-   * crowned primary and donates hue + chroma to every role the engine has to
-   * invent; under the lock the engine varies lightness only. Other candidates
-   * are exempt — colors the user hands in keep their own hue.
+   * Mono lock: index of the candidate whose hue rules the theme. Every seat
+   * takes that hue at its own lightness — including seats held by colors the
+   * user supplied. Two exemptions, and only two: a `locked` candidate, and the
+   * base itself, which keeps its own lightness and chroma.
+   *
+   * The base is NOT crowned primary; casting is untouched. It donates its hue
+   * from wherever scoring already put it, so engaging the lock never moves a
+   * colour between seats.
    */
   monoBase?: number
   /**
-   * Riff seed for the repertoire the engine invents from. 0 (the default) is
-   * the canonical cookbook; other integers pick deterministic alternatives.
-   * Only synthesized role seeds vary — user-cast colors never move with it.
+   * How many riff hops to walk. 0 (the default) is the canonical cookbook and
+   * is bit-identical to a no-seed call; each increment walks the palette one
+   * bounded, judged step further through OKLCH (walk.ts).
+   *
+   * Every seed moves except the ones the user locked — including colors they
+   * supplied, at any fidelity. Cost is linear in the hop count, so this is a
+   * hop *count*, not an opaque seed you can jump around in.
    */
   seed?: number
   /** Surface separation. Defaults to `layered`, which is the historical output. */
@@ -119,7 +152,11 @@ export interface RoleAssignment {
   candidateIndex: number | null
   /** The seed actually used for the ramp (post-fidelity adjustment). */
   seed: Oklch
-  /** deltaE (OK) between input color and used seed; 0 for synthesized roles. */
+  /**
+   * deltaE (OK) between the color the user handed in and the seed actually
+   * used; 0 for synthesized roles, which have no input to differ from. Grows
+   * as a riff carries an unlocked seat away from its source.
+   */
   deltaE: number
 }
 
@@ -229,12 +266,12 @@ export interface ThemeResult {
   monoBase: number | null
   /** The surface separation this theme was built at. */
   separation: Separation
-  /** The riff seed this theme was generated with (0 = canonical cookbook). */
+  /** How many riff hops this theme stands from the cookbook (0 = the cookbook). */
   seed: number
   /**
    * Judge verdict for the seed set the theme was built from (pre-repair).
-   * Always present: at seed 0 it scores the canonical cookbook itself — no
-   * sampling happened; at seed N>0 it is the argmax of the K sampled variants.
+   * Always present: at seed 0 it scores the cookbook itself, unwalked; at
+   * seed N it scores where N hops of the walk arrived.
    */
   judge: JudgeVerdict
   css: string

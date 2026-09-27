@@ -187,7 +187,7 @@ test.describe('separation moves the surface ladder, not just the control', () =>
 
   test('it belongs to the frame, so split view can hold two settings at once', async ({ page }) => {
     await boot(page)
-    await page.locator('.sec-act .mini[title*="compare two frames"]').click()
+    await page.locator('.board-btn[title*="compare two frames"]').click()
     await expect(page.locator('.preview-root')).toHaveCount(2)
 
     // B is the active frame after compare

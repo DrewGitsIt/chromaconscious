@@ -38,7 +38,7 @@
   }
 
   .rp-mono {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-family: var(--font-code);
   }
 
   /* ---------------------------------------------------------------
@@ -208,6 +208,39 @@
     border-radius: 0;
   }
 
+  /* adjusting is a third act — fenced like freeing, opening a drawer */
+  .rp-adjust-toggle {
+    width: 100%;
+    margin-top: 2px;
+    padding: 8px 11px 9px;
+    border: 0;
+    border-top: 1px solid var(--line-card);
+    border-radius: 0;
+  }
+  .rp-adjust-icon {
+    flex-shrink: 0;
+    color: var(--ink-muted);
+  }
+  .rp-adjust {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-m);
+    padding: 0 11px 10px;
+  }
+  .rp-adjust-row {
+    display: flex;
+    gap: var(--gap-s);
+  }
+  .rp-adjust-row input {
+    flex: 1;
+    width: 0;
+    min-width: 0;
+    font-family: var(--font-code);
+  }
+  .rp-adjust-apply {
+    flex-shrink: 0;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .rp-pop {
       animation: none;
@@ -216,4 +249,42 @@
       transition: none;
     }
   }
+}
+
+/* ------------------------------------------------------------------
+   react-colorful in the adjust drawer — DELIBERATELY UNLAYERED.
+
+   The library injects its stylesheet at runtime with no `@layer`, and
+   unlayered author declarations beat every layer regardless of specificity;
+   inside `@layer chrome` these rules would silently never apply (see the
+   identical note in ColorAddField.css).
+   ------------------------------------------------------------------ */
+.rp-adjust .react-colorful {
+  width: 100%;
+  height: auto;
+  gap: var(--gap-m);
+}
+.rp-adjust .react-colorful__saturation {
+  flex: none;
+  height: 108px;
+  border-bottom: 0;
+  border-radius: var(--radius-ctl);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.rp-adjust .react-colorful__hue {
+  height: 12px;
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.rp-adjust .react-colorful__pointer {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+/* The library sets `outline: none` on the drag surfaces, which leaves them
+   invisible to a keyboard once they take focus. */
+.rp-adjust .react-colorful__interactive:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

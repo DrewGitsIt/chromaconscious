@@ -14,25 +14,26 @@
     top: 0;
     border-right: 1px solid var(--line-card);
     background: var(--surface-1);
+    font-size: var(--fs-m);
     overflow: hidden; /* the footer's frost must not bleed past the edge */
   }
 
   /* ---------- header: fixed, never scrolls away ---------- */
   .sb-head {
     flex-shrink: 0;
-    padding: var(--pad-side) var(--pad-side) 12px;
+    padding: 18px var(--pad-side) 14px;
     position: relative;
     z-index: 2;
   }
   .sb-wordmark {
     margin: 0;
     font-size: var(--fs-h1);
-    font-weight: 650;
+    font-weight: 600;
     letter-spacing: -0.02em;
     width: fit-content;
   }
   .sb-tagline {
-    margin: 3px 0 0;
+    margin: 2px 0 0;
     font-size: var(--fs-s);
     color: var(--ink-faint);
   }
@@ -91,7 +92,7 @@
 
   /* ---------- sections ---------- */
   .sec {
-    margin: 0 0 18px;
+    margin: 0 0 22px;
   }
   .sec:last-child {
     margin-bottom: 0;
@@ -100,24 +101,24 @@
     display: flex;
     align-items: center;
     gap: var(--gap-m);
-    margin: 0 0 9px;
-    min-height: 22px;
+    margin: 0 0 10px;
+    min-height: 24px;
   }
+  /* the instrument-panel voice: monospace, tracked out, quiet */
   .sec-label {
+    font-family: var(--font-code);
     font-size: var(--fs-xs);
-    font-weight: 600;
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.14em;
     color: var(--ink-faint);
     white-space: nowrap;
   }
-  /* The hairline fades out rather than ruling the full width: it points at the
-     label, it doesn't divide the panel. */
   .sec-rule {
     flex: 1;
     min-width: 8px;
     height: 1px;
-    background: linear-gradient(90deg, var(--line-card), transparent);
+    background: var(--line-card);
   }
   .sec-act {
     display: inline-flex;

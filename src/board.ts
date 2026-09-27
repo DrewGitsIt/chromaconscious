@@ -7,14 +7,20 @@
  * `benched: true`. This module is the whole translation, so components never
  * reason about candidate indexes directly.
  *
- * Three provenances, because the question a user needs answered is "will riff
- * change this?":
- *   yours   — you supplied it and placed it        (riff never touches it)
- *   kept    — the engine derived it, you froze it  (riff never touches it)
- *   derived — the engine computed it               (riff re-rolls it)
+ * Three provenances, because "where did this colour come from?" is worth
+ * showing on its own:
+ *   yours   — you supplied it and placed it
+ *   kept    — the engine derived it, you claimed it as yours
+ *   derived — the engine computed it
+ *
+ * Provenance no longer answers "will riff change this?". The LOCK answers it,
+ * and it is the only thing that does (see `locked` in engine/types.ts): a
+ * colour of yours that you did not lock walks like any other. A derived seat
+ * has no candidate to carry a lock, so it is always riffable — locking one
+ * means keeping it first, which materialises a candidate to hang the lock on.
  */
 import type { ColorCandidate, Oklch, Role, ThemeResult } from './engine'
-import { ROLES, apcaLc, toHex, tokenAncestry } from './engine'
+import { ROLES, apcaLc, parseColor, toHex, tokenAncestry } from './engine'
 
 export type Provenance = 'yours' | 'kept' | 'derived'
 
@@ -36,8 +42,17 @@ export const SERIES_SEATS = 5
 
 export interface BoardSlot {
   role: Role
+  /** The colour actually in the theme — the seed, not what you typed. */
   hex: string
+  /**
+   * The colour you typed, when the seed moved off it (fidelity, repair, or a
+   * riff hop). Null when they agree, so a component can render it as "from …"
+   * without having to compare.
+   */
+  sourceHex: string | null
   provenance: Provenance
+  /** You locked this colour: riff may not move it. Derived seats: false. */
+  locked: boolean
   /** Index into candidates, or null when the engine derived this seat. */
   candidateIndex: number | null
 }
@@ -47,6 +62,8 @@ export interface SeriesEntry {
   slot: number
   hex: string
   provenance: Provenance
+  /** You locked this colour: riff may not move it. Derived fills: false. */
+  locked: boolean
   candidateIndex: number | null
 }
 
@@ -74,13 +91,23 @@ export function readBoard(
 ): BoardView {
   const byRole = new Map(result.assignments.map((a) => [a.role, a]))
 
+  // The seat shows the SEED — the colour that is really in the theme — not the
+  // string you typed. The two were already allowed to differ (below fidelity 1
+  // a user colour is normalized toward its role), and under the walk they
+  // differ after every hop: a chip pinned to the input would simply stop
+  // tracking the preview it sits next to. The input survives as `sourceHex`.
   const slots: BoardSlot[] = ROLES.map((role) => {
     const a = byRole.get(role)
     const ci = a?.candidateIndex ?? null
+    const c = ci != null ? candidates[ci] : undefined
+    const hex = a ? toHex(a.seed) : '#000000'
+    const source = c ? toHex(c.color) : null
     return {
       role,
-      hex: ci != null ? toHex(candidates[ci].color) : a ? toHex(a.seed) : '#000000',
-      provenance: provenanceOf(ci != null ? candidates[ci] : undefined),
+      hex,
+      sourceHex: source != null && source !== hex ? source : null,
+      provenance: provenanceOf(c),
+      locked: c?.locked === true,
       candidateIndex: ci,
     }
   })
@@ -90,10 +117,12 @@ export function readBoard(
   const ancestry = tokenAncestry(result, mode)
   const series: SeriesEntry[] = Array.from({ length: SERIES_SEATS }, (_, k) => {
     const ci = ancestry[`chart-${k + 1}`] ?? null
+    const c = ci != null ? candidates[ci] : undefined
     return {
       slot: k + 1,
       hex: result[mode].tokens[`chart-${k + 1}`],
-      provenance: provenanceOf(ci != null ? candidates[ci] : undefined),
+      provenance: provenanceOf(c),
+      locked: c?.locked === true,
       candidateIndex: ci,
     }
   })
@@ -164,7 +193,12 @@ export function deriveRole(
 
 /**
  * Freeze a derived seat as your own ("keep as your color"). The color does not
- * change — only its provenance, and therefore whether riff may move it.
+ * change — only who owns it, and the lock that comes with the claim.
+ *
+ * The lock is the point: "keep this one" has always meant "riff stops changing
+ * it", and that is now spelled with `locked` rather than implied by provenance.
+ * A derived seat has no candidate to hang a lock on, so materialising one is
+ * the only way to lock it at all — which is why `lockRole` defers here.
  */
 export function keepRole(
   candidates: ColorCandidate[],
@@ -172,7 +206,128 @@ export function keepRole(
   color: Oklch,
   raw: string,
 ): ColorCandidate[] {
-  return [...candidates, { color, source: 'manual', raw, pin: role, origin: 'invented' }]
+  return [
+    ...candidates,
+    { color, source: 'manual', raw, pin: role, origin: 'invented', locked: true },
+  ]
+}
+
+/**
+ * Change the colour sitting in a seat to one the user just picked.
+ *
+ * Three cases, mirroring the lock's:
+ *   yours/kept — the candidate itself is edited, so the new colour flows
+ *     through the engine like any input (fidelity, repair, the walk).
+ *   locked     — the snapshot moves too. The engine takes `lockedColor`
+ *     verbatim, so editing `color` alone would change nothing on screen —
+ *     the one outcome an "adjust" control must never produce.
+ *   derived    — no candidate to edit, so one is materialised at the picked
+ *     colour, exactly as keeping the seat would (pinned and locked).
+ *
+ * `source` flips to manual: whatever extracted the old colour, this one was
+ * picked by hand.
+ *
+ * The adjusted candidate is PINNED to the seat it was adjusted in. Without the
+ * pin the next solve is free to re-cast the new colour into whichever seat it
+ * now suits best — adjust accent toward green and the green lands in success —
+ * and "adjust this seat" silently becomes "reshuffle the board".
+ */
+export function adjustRole(
+  candidates: ColorCandidate[],
+  role: Role,
+  color: Oklch,
+  raw: string,
+  view: BoardView,
+): ColorCandidate[] {
+  const slot = view.slots.find((s) => s.role === role)
+  if (!slot) return candidates
+  if (slot.candidateIndex == null) return keepRole(candidates, role, color, raw)
+  const holder = candidates[slot.candidateIndex]
+  return patch(candidates, slot.candidateIndex, {
+    color,
+    raw,
+    source: 'manual',
+    pin: role,
+    ...(holder.locked ? { lockedColor: color } : {}),
+  })
+}
+
+/**
+ * Lock the colour in a seat: riff may not move it. The only thing that freezes
+ * a colour — not provenance, not fidelity.
+ *
+ * It locks the colour you are LOOKING AT, not the one you originally typed.
+ * Setting the flag alone was the obvious implementation and it was wrong: a
+ * seat three hops along shows the walked colour, so flagging the untouched
+ * candidate rewound the swatch to the input under the very click meant to
+ * freeze it — and riff→lock→riff, the loop this whole feature exists to serve,
+ * could not keep anything the riff had found. Snapshotting is also what makes
+ * the lock exact end to end, since the engine takes a locked candidate's
+ * colour verbatim (no fidelity adjustment, no walk, no repair).
+ *
+ * The snapshot lands in `lockedColor`, beside the colour you gave rather than
+ * over it, so unlocking needs no inverse: `color` never moved, the walk picks
+ * up again and arrives back at the seed it was frozen at. It also leaves the
+ * pin alone — locking says nothing about placement, and pinning is not free
+ * (on the chart tray it reorders the series).
+ *
+ * A derived seat has no candidate to carry the lock, so this is a no-op there
+ * rather than a silent half-success; `keepRole` is the verb that handles it.
+ */
+export function lockRole(
+  candidates: ColorCandidate[],
+  role: Role,
+  view: BoardView,
+): ColorCandidate[] {
+  const slot = view.slots.find((s) => s.role === role)
+  if (!slot || slot.candidateIndex == null) return candidates
+  const standing = parseColor(slot.hex)
+  if (!standing) return candidates
+  return patch(candidates, slot.candidateIndex, { locked: true, lockedColor: standing })
+}
+
+/**
+ * Unlock a seat: the colour becomes riffable again and does not otherwise move.
+ *
+ * Deliberately NOT a bench or an unpin. `pin` says which seat a colour sits in,
+ * `locked` says whether riff may move it; collapsing the two is exactly the
+ * conflation this feature exists to undo.
+ */
+export function unlockRole(
+  candidates: ColorCandidate[],
+  role: Role,
+  view: BoardView,
+): ColorCandidate[] {
+  const holder = view.slots.find((s) => s.role === role)?.candidateIndex ?? null
+  if (holder == null) return candidates
+  return patch(candidates, holder, { locked: false, lockedColor: undefined })
+}
+
+/**
+ * Lock a chart slot's colour, as it currently stands — see lockRole for why the
+ * snapshot matters. No-op on a fill the engine invented.
+ */
+export function lockSeries(
+  candidates: ColorCandidate[],
+  slot: number,
+  view: BoardView,
+): ColorCandidate[] {
+  const entry = view.series.find((s) => s.slot === slot)
+  if (!entry || entry.candidateIndex == null) return candidates
+  const standing = parseColor(entry.hex)
+  if (!standing) return candidates
+  return patch(candidates, entry.candidateIndex, { locked: true, lockedColor: standing })
+}
+
+/** Unlock a chart slot's colour; it stays in the tray and becomes riffable. */
+export function unlockSeries(
+  candidates: ColorCandidate[],
+  slot: number,
+  view: BoardView,
+): ColorCandidate[] {
+  const holder = view.series.find((s) => s.slot === slot)?.candidateIndex ?? null
+  if (holder == null) return candidates
+  return patch(candidates, holder, { locked: false, lockedColor: undefined })
 }
 
 /** Park a color on the bench. */
@@ -210,6 +365,17 @@ export function resetPlacements(candidates: ColorCandidate[]): ColorCandidate[] 
 }
 
 /**
+ * Name a candidate by its OWN colour rather than by the seat it sits in.
+ *
+ * A seat shows the seed the engine resolved — fidelity-adjusted, repaired, and
+ * now walked — so `slot.hex` is a colour the user never typed. The assign
+ * popover is a list of *your colours*, and a colour must not have two names
+ * inside one popover.
+ */
+export const nameOf = (candidates: ColorCandidate[], i: number | null): string | null =>
+  i == null ? null : candidates[i] ? toHex(candidates[i].color) : null
+
+/**
  * What placing `candidateIndex` into `role` would ACTUALLY do, described by
  * running the placement and reading the board back.
  *
@@ -231,17 +397,18 @@ export function describePlacement(
 
   const target = view.slots.find((s) => s.role === role)
   if (target && target.candidateIndex != null && target.candidateIndex !== candidateIndex) {
-    parts.push(`benches ${target.hex}`)
+    parts.push(`benches ${nameOf(candidates, target.candidateIndex)}`)
   } else if (target && target.provenance === 'derived') {
     parts.push('takes a seat the engine was inventing')
   }
 
-  // What becomes of the seat this colour is leaving.
+  // What becomes of the seat this colour is leaving. `next` is a patch of
+  // `candidates`, never a splice, so indexes still name the same colours.
   const from = view.slots.find((s) => s.candidateIndex === candidateIndex)
   if (from && from.role !== role) {
     const now = after.slots.find((s) => s.role === from.role)
     if (now?.provenance === 'derived') parts.push(`${from.role} goes to the smith`)
-    else if (now) parts.push(`frees ${from.role} for ${now.hex}`)
+    else if (now) parts.push(`frees ${from.role} for ${nameOf(next, now.candidateIndex)}`)
   }
 
   return parts.join(' · ') || `seats it as ${role}`
@@ -262,7 +429,8 @@ export function wouldTakeOver(
   if (next === candidates) return null
   const after = readBoard(regenerate(next), next, 'light').slots.find((s) => s.role === role)
   if (!after || after.candidateIndex == null) return null
-  return { hex: after.hex, candidateIndex: after.candidateIndex }
+  // Named as the candidate, like every option in the same popover — see nameOf.
+  return { hex: nameOf(next, after.candidateIndex)!, candidateIndex: after.candidateIndex }
 }
 
 // ---------------------------------------------------------------------------
@@ -290,7 +458,21 @@ export function wellOn(hex: string, strong = false): string {
   return dark ? `rgba(0,0,0,${a})` : `rgba(255,255,255,${a + 0.02})`
 }
 
-/** Riff can only move seats the engine derived; true when any seat is derived. */
-export const hasDerivedSeats = (view: BoardView): boolean =>
-  view.slots.some((s) => s.provenance === 'derived') ||
-  view.series.some((s) => s.provenance === 'derived')
+/**
+ * True when riff has anything left to move.
+ *
+ * Riff is no longer limited to the seats the engine derived — it walks the
+ * whole palette — so the question is simply "is anything unlocked". A board you
+ * filled entirely yourself is fully riffable until you start locking it, which
+ * is what the old `hasDerivedSeats` got exactly backwards: drop an image, fill
+ * every seat, and the button went dead on the palette you most wanted to explore.
+ *
+ * A chart slot only counts when a colour of yours is in it. The fills the
+ * engine invents for the empty slots are hue-spins off the primary seed (see
+ * tokens.ts) rather than subjects of the walk in their own right, so with every
+ * role locked they stand still too — counting them would leave the button live
+ * and doing nothing.
+ */
+export const hasRiffableSeats = (view: BoardView): boolean =>
+  view.slots.some((s) => !s.locked) ||
+  view.series.some((s) => s.candidateIndex != null && !s.locked)

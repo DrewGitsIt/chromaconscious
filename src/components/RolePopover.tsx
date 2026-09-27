@@ -16,8 +16,10 @@
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { CSSProperties, RefObject } from 'react'
-import { Check } from 'lucide-react'
+import { HexColorInput, HexColorPicker } from 'react-colorful'
+import { Check, SlidersHorizontal } from 'lucide-react'
 import type { Role } from '../engine'
+import { EyeDropperButton } from './ColorSwatchPicker'
 import { useDismiss } from './useDismiss'
 import './RolePopover.css'
 
@@ -69,9 +71,15 @@ function usePlacement(anchor: HTMLElement, ref: RefObject<HTMLElement | null>): 
     window.addEventListener('resize', measure)
     // Capture, so a scroll in the sidebar body (not just the window) re-pins us.
     window.addEventListener('scroll', measure, true)
+    // The popover's own size can change after mount — the assign popover grows
+    // when its adjust section opens — and a grown popover must re-clamp or its
+    // tail runs off the bottom of the viewport.
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
     return () => {
       window.removeEventListener('resize', measure)
       window.removeEventListener('scroll', measure, true)
+      ro.disconnect()
     }
   }, [anchor, ref])
 
@@ -184,11 +192,18 @@ export interface AssignPopoverProps {
   takeOver: { hex: string } | null
   anchor: HTMLElement
   onPick: (candidateIndex: number) => void
+  /** Commit a hand-picked colour for this seat; the theme re-forges around it. */
+  onAdjust: (hex: string) => void
   onFree: () => void
   onClose: () => void
 }
 
-/** Answers "will riff change this?" — the only question provenance is for. */
+/**
+ * Where the colour in this seat came from. It no longer answers "will riff
+ * change this?" — the lock on the seat does, and it is the only thing that
+ * does. A derived seat is the one case where the two still coincide: it has no
+ * candidate to carry a lock, so it is always riffable.
+ */
 const PROVENANCE_SUB: Record<AssignPopoverProps['provenance'], string> = {
   yours: 'you placed this one',
   kept: 'derived, then kept by you',
@@ -204,11 +219,16 @@ export function AssignPopover({
   takeOver,
   anchor,
   onPick,
+  onAdjust,
   onFree,
   onClose,
 }: AssignPopoverProps) {
   const { ref, style } = usePopover(anchor, onClose)
   const current = hex.toLowerCase()
+  // The adjust drawer's working colour. Nothing regenerates while it changes —
+  // the engine only hears about it on apply, which is the whole submit contract.
+  const [adjusting, setAdjusting] = useState(false)
+  const [draft, setDraft] = useState(hex)
 
   return (
     <div
@@ -251,6 +271,45 @@ export function AssignPopover({
           <p className="rp-asg-empty">no other colors of yours to put here</p>
         )}
       </div>
+
+      {/* Adjusting is a third act, distinct from reassigning and freeing: the
+          colour itself changes. The drawer edits a draft; only apply hands it
+          to the engine. */}
+      <button
+        type="button"
+        className="rp-opt rp-adjust-toggle"
+        aria-expanded={adjusting}
+        onClick={() => {
+          setDraft(hex)
+          setAdjusting((o) => !o)
+        }}
+      >
+        <SlidersHorizontal className="rp-adjust-icon" size={13} strokeWidth={1.75} />
+        <span className="rp-opt-txt">
+          <span className="rp-opt-name">adjust this color</span>
+          <span className="rp-opt-hint">pick a new value for {role}</span>
+        </span>
+      </button>
+      {adjusting && (
+        <div className="rp-adjust">
+          <HexColorPicker color={draft} onChange={setDraft} />
+          <div className="rp-adjust-row">
+            <HexColorInput
+              color={draft}
+              onChange={setDraft}
+              prefixed
+              aria-label={`new color for ${role}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onAdjust(draft)
+              }}
+            />
+            <EyeDropperButton onPick={setDraft} />
+            <button type="button" className="rp-adjust-apply" onClick={() => onAdjust(draft)}>
+              apply
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* The one line that must not lie: with colors to spare, freeing a seat
           lets another of yours step in — only name the smith when it truly

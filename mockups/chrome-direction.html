@@ -1,0 +1,723 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>themesmith — tool vs. bench, and the config panel</title>
+<style>
+  /* ============================================================
+     Two questions on one sheet:
+       1. Why does the sidebar/frame boundary vanish, and what
+          holds it regardless of the palette?
+       2. What does the config panel look like when it's drawn
+          as an instrument rather than a proof of concept?
+     "current" reproduces today's chrome from src/styles/tokens.css
+     and the component CSS. A and B share one proposed chrome;
+     they differ only in how the sidebar sits on the stage.
+     The in-frame dashboard is deliberately left in today's style
+     (that's question #2, a separate pass) so only the chrome
+     varies between views.
+     ============================================================ */
+  @font-face {
+    font-family: 'Geist';
+    src: url('../node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2') format('woff2');
+    font-weight: 100 900;
+  }
+
+  :root {
+    /* today's chrome, verbatim from tokens.css */
+    --surface-0:#14151a; --surface-1:#17181c; --surface-2:#1c1e24;
+    --surface-3:#1f2127; --surface-4:#262932; --surface-active:#3b4252;
+    --line-card:#2a2c33; --line-ctl:#33363f; --line-active:#4c566a;
+    --ink:#e6e7ea; --ink-muted:#9a9daa; --ink-faint:#6a6e7a;
+    --accent:#7aa2f7; --ok:#9ece6a; --warn:#e0af68; --fail:#ff8a8a;
+    --ink-bright:#c0caf5; --accent-cool:#8fa7dd; --accent-warm:#cf9a66;
+
+    /* the proposal: zero chroma everywhere. The only colour on screen
+       belongs to the user. */
+    --n-stage:#09090a;     /* the bench the frames sit on */
+    --n-dot:rgba(255,255,255,.075);
+    /* the stage's ruling: a quiet minor grid every 24px, a slightly
+       firmer major line every 5th, both pinned to the stage's origin */
+    --n-grid-minor:rgba(255,255,255,.035);
+    --n-grid-major:rgba(255,255,255,.07);
+    --n-panel:#111112;     /* the tool */
+    --n-raise:#18181a;     /* controls at rest */
+    --n-hover:#202023;
+    --n-line:#232326;      /* hairlines */
+    --n-line-2:#2e2e32;    /* control edges */
+    --n-ink:#ededee;
+    --n-ink-2:#a3a3a8;
+    --n-ink-3:#6e6e74;
+    --n-sel:#ededee;       /* selection is ink, not a hue */
+    --n-ok:#7fd6a4;        /* the one exception: pass/fail must read at a glance */
+    --n-fail:#f08c8c;
+
+    --f-sans:'Geist',ui-sans-serif,system-ui,sans-serif;
+    --f-mono:'Geist Mono','JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+
+    --slow:1; /* the slow-mo toggle multiplies every duration */
+    --d-fast:calc(120ms * var(--slow));
+    --d-base:calc(200ms * var(--slow));
+    --d-slow:calc(340ms * var(--slow));
+    --ease:cubic-bezier(.2,.8,.3,1);
+    --ease-out:cubic-bezier(.16,1,.3,1);
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; padding:24px 28px 80px; background:#0c0c0e; color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;
+  }
+  button { font:inherit; color:inherit; }
+
+  /* ---------------- sheet chrome ---------------- */
+  .sheet-head {
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+    padding-bottom:16px; margin-bottom:18px; border-bottom:1px solid #1f1f23;
+  }
+  .sheet-head h1 { font-size:15px; margin:0; }
+  .sheet-head .sub { font-size:12px; color:#6e6e74; margin-right:auto; }
+  .ctl { display:flex; align-items:center; gap:8px; }
+  .ctl-key { font-size:9px; text-transform:uppercase; letter-spacing:.12em; color:#6e6e74; }
+  .seg { display:flex; background:#16161a; border:1px solid #26262b; border-radius:999px; padding:2px; gap:2px; }
+  .seg button {
+    height:24px; padding:0 12px; border:0; border-radius:999px; background:transparent;
+    color:#8a8a92; font-size:10px; text-transform:uppercase; letter-spacing:.08em; cursor:pointer;
+  }
+  .seg button:hover { color:#d0d0d4; }
+  .seg button.on { background:#ededee; color:#0c0c0e; font-weight:650; }
+
+  .view-note {
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:10px 28px;
+    margin:18px 0 0; font-size:13px; line-height:1.55; color:#b8b8be;
+  }
+  .view-note h3 { grid-column:1/-1; margin:0; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#6e6e74; font-weight:600; }
+  .view-note p { margin:0; padding-left:15px; position:relative; }
+  .view-note p::before { position:absolute; left:0; font-weight:700; }
+  .view-note .plus::before { content:'+'; color:var(--n-ok); }
+  .view-note .minus::before { content:'−'; color:var(--warn); }
+  .view-note .eq::before { content:'·'; color:#6e6e74; }
+  .view-note b { color:#ededee; font-weight:600; }
+
+  /* the app viewport every view renders into */
+  .app {
+    height:880px; display:flex; overflow:hidden; border-radius:10px;
+    outline:1px solid #1f1f23; position:relative;
+  }
+
+  /* ============================================================
+     THE IN-FRAME DASHBOARD — shared by every view, themed only by
+     --m-* so palette switches exercise the boundary honestly.
+     ============================================================ */
+  .mk {
+    container-type:inline-size;
+    display:flex; height:100%; min-width:0; flex:1;
+    background:var(--m-bg); color:var(--m-fg);
+    font-family:ui-sans-serif,system-ui,sans-serif; font-size:13px;
+    transition:background var(--d-slow) var(--ease), color var(--d-slow) var(--ease);
+  }
+  .mk * { transition:background-color var(--d-slow) var(--ease), border-color var(--d-slow) var(--ease), color var(--d-slow) var(--ease); }
+  .mk-nav { width:136px; flex:none; padding:14px 10px; background:var(--m-sidebar); border-right:1px solid var(--m-border); display:flex; flex-direction:column; gap:4px; }
+  .mk-brand { color:var(--m-primary); font-weight:700; font-size:14px; padding:0 8px 10px; }
+  .mk-link { padding:6px 8px; border-radius:6px; color:var(--m-fg); display:flex; justify-content:space-between; }
+  .mk-link.on { background:var(--m-primary); color:var(--m-on-primary); }
+  .mk-link small { color:var(--m-muted); }
+  .mk-main { flex:1; min-width:0; padding:14px 16px; overflow:hidden; display:flex; flex-direction:column; gap:10px; }
+  .mk-top { display:flex; align-items:center; gap:8px; }
+  .mk-top h2 { margin:0 auto 0 0; font-size:14px; }
+  .mk-btn { height:26px; padding:0 10px; border-radius:6px; font-size:12px; display:inline-flex; align-items:center; border:1px solid var(--m-primary); color:var(--m-primary); background:transparent; }
+  .mk-btn.fill { background:var(--m-primary); color:var(--m-on-primary); }
+  .mk-alert { padding:9px 11px; border-radius:6px; border:1px solid; font-size:12px; line-height:1.5; }
+  .mk-alert.ok { border-color:color-mix(in srgb,var(--m-success) 60%,transparent); background:color-mix(in srgb,var(--m-success) 10%,var(--m-bg)); }
+  .mk-alert.warn { border-color:color-mix(in srgb,var(--m-warning) 60%,transparent); background:color-mix(in srgb,var(--m-warning) 8%,var(--m-bg)); }
+  .mk-alert u { color:var(--m-accent); }
+  .mk-kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  @container (max-width:640px) { .mk-kpis { grid-template-columns:1fr 1fr; } .mk-kpis > :nth-child(3) { display:none; } .mk-nav { display:none; } }
+  .mk-card { background:var(--m-card); border:1px solid var(--m-border); border-radius:8px; padding:11px 12px; }
+  .mk-card .lbl { font-size:12px; }
+  .mk-card .val { font-size:17px; font-weight:600; margin:2px 0 10px; }
+  .mk-card .sub { font-size:11px; color:var(--m-muted); margin-top:6px; }
+  .mk-bars { display:flex; align-items:flex-end; gap:3px; height:26px; }
+  .mk-bars i { flex:1; border-radius:2px 2px 0 0; }
+  .mk-traffic { height:5px; display:flex; gap:2px; border-radius:3px; overflow:hidden; margin:10px 0 8px; }
+  .mk-legend { display:flex; gap:12px; font-size:11px; color:var(--m-muted); flex-wrap:wrap; }
+  .mk-legend span::before { content:''; display:inline-block; width:7px; height:7px; border-radius:2px; background:var(--c); margin-right:5px; }
+  .mk-feed div { display:flex; gap:8px; align-items:center; padding:7px 0; border-top:1px solid var(--m-border); font-size:12px; }
+  .mk-feed div:first-child { border-top:0; }
+  .mk-feed i { width:6px; height:6px; border-radius:50%; background:var(--c); }
+  .mk-feed time { margin-left:auto; color:var(--m-muted); font-size:11px; }
+
+  /* ============================================================
+     CURRENT — lifted from SidebarShell / App / RoleBoard /
+     SeriesTray / Dial / SeparationControl / ExportRow CSS.
+     ============================================================ */
+  .cur {
+    width:320px; flex:none; background:var(--surface-1); border-right:1px solid var(--line-card);
+    display:flex; flex-direction:column; font-size:12px;
+  }
+  .cur-head { padding:16px 16px 10px; }
+  .cur-head h2 { margin:0; font-size:20px; font-weight:650; letter-spacing:-.02em; }
+  .cur-head p { margin:3px 0 0; font-size:11px; color:var(--ink-faint); }
+  .cur-body { padding:4px 16px; flex:1; overflow:hidden; }
+  .cur-sec { display:flex; align-items:center; gap:8px; margin:14px 0 8px; }
+  .cur-sec b { font-size:10px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint); }
+  .cur-sec i { flex:1; }
+  .cur-sec span { font-size:10px; color:var(--ink-faint); }
+  .cur-select { height:32px; display:flex; align-items:center; gap:8px; padding:0 8px; background:var(--surface-2); border:1px solid var(--line-ctl); border-radius:6px; }
+  .cur-select em { width:18px; height:18px; border-radius:4px; background:#2b3b63; color:#aec3ff; font-size:10px; font-style:normal; display:grid; place-items:center; }
+  .cur-row { display:flex; gap:5px; margin-bottom:8px; }
+  .cur-pill { height:22px; padding:0 8px; border-radius:999px; background:var(--surface-3); border:1px solid var(--line-card); font-size:10px; color:var(--ink-muted); display:inline-flex; align-items:center; }
+  .cur-pill.off { opacity:.45; }
+  .cur-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .cur-tile { height:48px; border-radius:6px; padding:6px 7px; position:relative; font-weight:600; }
+  .cur-tile b { display:block; font-size:7px; letter-spacing:.16em; text-transform:uppercase; }
+  .cur-tile code { font-size:9px; font-family:ui-monospace,monospace; display:block; margin-top:8px; }
+  .cur-tile small { position:absolute; right:7px; bottom:5px; font-size:6px; letter-spacing:.12em; text-transform:uppercase; opacity:.6; }
+  .cur-tile.der { border:1px solid rgba(255,255,255,.08); }
+  .cur-series { margin-top:6px; padding:7px; border:1px solid var(--line-card); border-radius:6px; }
+  .cur-series b { font-size:7px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint); }
+  .cur-series div { display:flex; gap:4px; margin-top:6px; }
+  .cur-series i { width:24px; height:22px; border-radius:4px; }
+  .cur-bench { margin-top:8px; height:24px; border:1px solid var(--line-card); border-radius:6px; font-size:9px; color:var(--ink-faint); display:flex; align-items:center; padding:0 8px; }
+  .cur-add { margin-top:8px; font-size:9px; color:var(--ink-faint); display:flex; align-items:center; gap:8px; }
+  .cur-add i { width:22px; height:22px; border:1px dashed var(--line-ctl); border-radius:5px; display:grid; place-items:center; font-style:normal; }
+  .cur-dial-ends { display:flex; justify-content:space-between; font-size:9px; margin-top:6px; }
+  .cur-dial-ends span:first-child { color:var(--accent-cool); } .cur-dial-ends span:last-child { color:var(--accent-warm); }
+  .cur-track { height:3px; margin:18px 0 6px; border-radius:2px; background:linear-gradient(90deg,var(--accent-cool),var(--accent-warm)); position:relative; }
+  .cur-track i { position:absolute; left:50%; top:50%; width:14px; height:14px; transform:translate(-50%,-50%); border-radius:50%; background:var(--ink-bright); box-shadow:0 0 0 3px var(--surface-1); }
+  .cur-track b { position:absolute; left:50%; bottom:10px; transform:translateX(-50%); font-size:8px; background:var(--surface-4); padding:1px 4px; border-radius:3px; font-weight:400; }
+  .cur-cap { font-size:9px; color:var(--ink-faint); text-align:center; margin:10px 0 14px; }
+  .cur-seg { display:flex; border:1px solid var(--line-card); border-radius:6px; padding:2px; }
+  .cur-seg span { flex:1; text-align:center; font-size:9px; padding:5px 0; color:var(--ink-faint); border-radius:4px; }
+  .cur-seg span.on { background:#23325a; color:var(--ink-bright); border:1px solid #3a5aa5; }
+  .cur-foot { padding:10px 16px 14px; border-top:1px solid var(--line-card); display:flex; flex-direction:column; gap:6px; }
+  .cur-checks { height:26px; display:flex; align-items:center; padding:0 9px; gap:6px; border-radius:6px; font-size:9px; color:var(--ok); background:color-mix(in srgb,var(--ok) 8%,transparent); border:1px solid color-mix(in srgb,var(--ok) 25%,transparent); }
+  .cur-checks span { margin-left:auto; color:var(--warn); }
+  .cur-export { display:flex; gap:6px; }
+  .cur-export div { flex:1; height:32px; display:flex; align-items:center; justify-content:center; gap:7px; background:linear-gradient(180deg,var(--surface-4),var(--surface-3)); border:1px solid var(--line-ctl); border-radius:6px; font-size:12px; }
+  .cur-export div + div { flex:none; width:28px; }
+  .cur-frames { flex:1; display:flex; min-width:0; }
+  .cur-frames > .mk + .mk { border-left:1px solid var(--line-card); }
+
+  /* ============================================================
+     PROPOSED CHROME (A and B)
+     ============================================================ */
+  .p-app { background:var(--n-stage); font-family:var(--f-sans); color:var(--n-ink); }
+  .mono { font-family:var(--f-mono); }
+  .num { font-variant-numeric:tabular-nums; }
+
+  /* --- the stage: fixed, ruled, never a palette colour --- */
+  .stage {
+    flex:1; min-width:0; position:relative; display:flex; flex-direction:column;
+    background-color:var(--n-stage);
+  }
+  [data-stage="graph"] .stage-bg {
+    background-image:
+      linear-gradient(var(--n-grid-major) 1px,transparent 1px),
+      linear-gradient(90deg,var(--n-grid-major) 1px,transparent 1px),
+      linear-gradient(var(--n-grid-minor) 1px,transparent 1px),
+      linear-gradient(90deg,var(--n-grid-minor) 1px,transparent 1px);
+    background-size:120px 120px,120px 120px,24px 24px,24px 24px;
+  }
+  [data-stage="grid"] .stage-bg {
+    background-image:
+      linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+    background-size:24px 24px;
+  }
+  [data-stage="dots"] .stage-bg {
+    background-image:radial-gradient(circle at center,var(--n-dot) 1px,transparent 1.3px);
+    background-size:18px 18px; background-position:9px 9px;
+  }
+  /* even ruling edge to edge, like a drafting table — no vignette */
+  .stage-bg { position:absolute; inset:0; pointer-events:none; }
+  .ghost {
+    height:28px; padding:0 10px; border-radius:7px; border:1px solid var(--n-line-2);
+    background:rgba(17,17,18,.8); backdrop-filter:blur(8px); color:var(--n-ink-2);
+    display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;
+    transition:border-color var(--d-fast) var(--ease), color var(--d-fast) var(--ease), background var(--d-fast) var(--ease);
+  }
+  .ghost:hover { color:var(--n-ink); border-color:#3d3d42; background:var(--n-hover); }
+  .ghost svg { width:14px; height:14px; }
+
+  .bench { flex:1; min-height:0; display:flex; gap:28px; padding:18px 28px 28px; position:relative; }
+  .artboard { flex:1; min-width:0; display:flex; flex-direction:column; gap:9px; animation:board-in var(--d-slow) var(--ease-out) both; }
+  @keyframes board-in { from { opacity:0; transform:translateY(6px); } }
+  /* the frame label lives ON the stage, outside the frame — like an
+     artboard name — so it can't be confused with the mockup's own UI */
+  .board-label { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--n-ink-2); height:28px; }
+  .board-label .pane {
+    width:20px; height:20px; border-radius:5px; display:grid; place-items:center;
+    font-family:var(--f-mono); font-size:11px; font-weight:600;
+    background:var(--n-ink); color:var(--n-stage);
+  }
+  .board-label .pick { display:inline-flex; align-items:center; gap:4px; color:var(--n-ink); font-weight:500; cursor:pointer; padding:2px 6px 2px 4px; border-radius:5px; }
+  .board-label .pick:hover { background:var(--n-hover); }
+  .board-label .pick svg { width:13px; height:13px; color:var(--n-ink-3); }
+  .board-label .right { margin-left:auto; display:flex; gap:2px; }
+  .icon-btn { width:24px; height:24px; border-radius:6px; border:0; background:transparent; color:var(--n-ink-3); display:grid; place-items:center; cursor:pointer; }
+  .icon-btn:hover { background:var(--n-hover); color:var(--n-ink); }
+  .icon-btn svg { width:14px; height:14px; }
+
+  .frame {
+    flex:1; min-height:0; display:flex; border-radius:12px; overflow:hidden; position:relative;
+    /* two rings: a light hairline so a black palette still has an edge,
+       and a dark one so a white palette doesn't bloom into the stage */
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,.13),
+      0 0 0 2px rgba(0,0,0,.55),
+      0 30px 70px -20px rgba(0,0,0,.85),
+      0 10px 24px -12px rgba(0,0,0,.6);
+  }
+
+  /* --- the tool --- */
+  .tool {
+    width:320px; flex:none; display:flex; flex-direction:column; background:var(--n-panel);
+    font-size:13px; color:var(--n-ink); position:relative; z-index:1;
+  }
+  .p-app.flush .tool { border-right:1px solid var(--n-line); }
+  /* B: the tool floats on the stage too */
+  .p-app.float { padding:10px 0 10px 10px; }
+  .p-app.float .tool {
+    border-radius:14px; background:rgba(17,17,18,.86); backdrop-filter:blur(14px);
+    box-shadow:0 0 0 1px rgba(255,255,255,.07), 0 20px 50px -20px rgba(0,0,0,.9);
+  }
+  .p-app.float { position:relative; }
+  .p-app.float .stage { position:static; background-color:transparent; }
+
+  .t-head { padding:18px 20px 10px; display:flex; align-items:baseline; gap:8px; }
+  .t-word { font-size:16px; font-weight:600; letter-spacing:-.02em; }
+  .t-word i { font-style:normal; color:var(--n-ink-3); font-weight:400; }
+  .t-ver { margin-left:auto; font-family:var(--f-mono); font-size:10px; color:var(--n-ink-3); }
+  .t-body { flex:1; overflow:hidden; padding:0 20px; }
+
+  .t-sec { margin:0 0 18px; }
+  .t-sec-head { display:flex; align-items:center; gap:10px; height:24px; margin-bottom:10px; }
+  .t-label { font-family:var(--f-mono); font-size:11px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--n-ink-3); }
+  .t-label b { color:var(--n-ink-2); font-weight:500; }
+  .t-sec-head .rule { flex:1; height:1px; background:var(--n-line); }
+  .link { font-size:12px; color:var(--n-ink-3); background:none; border:0; padding:0; cursor:pointer; display:inline-flex; gap:5px; align-items:center; }
+  .link:hover { color:var(--n-ink); }
+  .link svg { width:13px; height:13px; }
+
+  .verbs { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:12px; }
+  .verb {
+    height:30px; border-radius:7px; border:1px solid var(--n-line-2); background:var(--n-raise);
+    color:var(--n-ink-2); font-size:12px; display:inline-flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;
+    transition:background var(--d-fast) var(--ease), color var(--d-fast) var(--ease), border-color var(--d-fast) var(--ease);
+  }
+  .verb:hover:not(:disabled) { background:var(--n-hover); color:var(--n-ink); border-color:#3d3d42; }
+  .verb:disabled { opacity:.38; cursor:default; }
+  .verb svg { width:14px; height:14px; }
+
+  /* role tiles: colour is the object, text sits in auto-contrast ink,
+     and nothing on them is under 11px */
+  .roles { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .role {
+    height:56px; border-radius:9px; padding:8px 10px; position:relative; cursor:pointer;
+    display:flex; flex-direction:column; justify-content:space-between;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);
+    transition:transform var(--d-fast) var(--ease), background-color var(--d-slow) var(--ease), color var(--d-slow) var(--ease);
+  }
+  .role:hover { transform:translateY(-1px); }
+  .role-top { display:flex; align-items:center; justify-content:space-between; }
+  .role-name { font-size:13px; font-weight:600; letter-spacing:-.005em; }
+  .role-tag { font-family:var(--f-mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; opacity:.72; }
+  .role-hex { font-family:var(--f-mono); font-size:12px; opacity:.9; }
+  /* derived: the engine chose it. A dashed inner edge says "not yours"
+     without dimming the colour you need to judge */
+  .role.der::after {
+    content:''; position:absolute; inset:3px; border-radius:6px;
+    border:1px dashed currentColor; opacity:.28; pointer-events:none;
+  }
+
+  .series { margin-top:6px; border-radius:9px; background:var(--n-raise); box-shadow:inset 0 0 0 1px var(--n-line); padding:9px 10px 10px; }
+  .series-head { display:flex; justify-content:space-between; font-size:12px; color:var(--n-ink-2); margin-bottom:8px; }
+  .series-head .mono { font-size:11px; color:var(--n-ink-3); }
+  .series-strip { display:flex; height:22px; border-radius:5px; overflow:hidden; gap:2px; }
+  .series-strip i { flex:1; transition:background-color var(--d-slow) var(--ease); }
+
+  .add {
+    margin-top:6px; height:36px; border-radius:9px; border:1px dashed var(--n-line-2);
+    display:flex; align-items:center; gap:9px; padding:0 11px; color:var(--n-ink-3); font-size:12px; cursor:text;
+  }
+  .add:hover { border-color:#45454b; color:var(--n-ink-2); }
+  .add svg { width:14px; height:14px; }
+  .add kbd { margin-left:auto; font-family:var(--f-mono); font-size:10px; border:1px solid var(--n-line-2); border-radius:4px; padding:1px 5px; color:var(--n-ink-3); }
+  .benchrow { margin-top:6px; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--n-ink-3); padding:0 2px; }
+  .benchrow i { width:12px; height:12px; border-radius:3px; background:#f5f7fa; }
+
+  /* --- the taste instrument --- */
+  .inst-read { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:6px; }
+  .inst-read .name { font-size:13px; color:var(--n-ink); }
+  .inst-read .val { font-family:var(--f-mono); font-size:20px; font-weight:500; letter-spacing:-.02em; }
+  .inst { position:relative; height:34px; }
+  .inst-ticks { position:absolute; left:0; right:0; top:0; height:14px; display:flex; justify-content:space-between; pointer-events:none; }
+  .inst-ticks i { width:1px; height:6px; background:var(--n-line-2); }
+  .inst-ticks i:nth-child(5n+1) { height:10px; background:#48484e; }
+  .inst-ticks i.detent { height:14px; background:var(--n-ink-2); }
+  .inst-fill { position:absolute; left:0; top:17px; height:2px; background:var(--n-ink); border-radius:1px; pointer-events:none; }
+  .inst-rail { position:absolute; left:0; right:0; top:17px; height:2px; background:var(--n-line-2); border-radius:1px; pointer-events:none; }
+  .inst input { position:absolute; inset:0; width:100%; margin:0; opacity:0; cursor:ew-resize; }
+  .inst-thumb {
+    position:absolute; top:10px; width:4px; height:16px; margin-left:-2px; border-radius:2px;
+    background:var(--n-ink); box-shadow:0 0 0 3px var(--n-panel); pointer-events:none;
+  }
+  .inst-ends { display:flex; justify-content:space-between; font-family:var(--f-mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--n-ink-3); }
+  .inst-cap { font-size:12px; line-height:1.5; color:var(--n-ink-2); margin:8px 0 0; min-height:36px; }
+
+  .sep { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .sep button {
+    height:50px; border-radius:9px; border:1px solid var(--n-line-2); background:var(--n-raise); color:var(--n-ink-3);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; font-size:12px; cursor:pointer;
+    transition:border-color var(--d-fast) var(--ease), color var(--d-fast) var(--ease), background var(--d-fast) var(--ease);
+  }
+  .sep button:hover { color:var(--n-ink); }
+  .sep button.on { border-color:var(--n-sel); color:var(--n-ink); background:var(--n-hover); }
+  /* pictograms: the three stacks drawn as what they do */
+  .pict { width:30px; height:18px; position:relative; }
+  .pict i { position:absolute; inset:0; border-radius:3px; }
+  .pict .pg { background:#2a2a2e; }
+  .pict .cd { inset:4px 5px 0; border-radius:3px 3px 0 0; }
+  .p-flat .cd { background:#2a2a2e; box-shadow:inset 0 0 0 1px #3a3a3f; }
+  .p-layer .cd { background:#3a3a40; box-shadow:0 0 0 1px #55555c; }
+  .p-lift .cd { background:#46464d; box-shadow:0 4px 6px -1px #000, 0 0 0 1px #66666d; inset:3px 5px 1px; }
+
+  .t-foot { padding:14px 20px 18px; border-top:1px solid var(--n-line); display:flex; flex-direction:column; gap:10px; }
+  .checks { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--n-ink-2); }
+  .checks .score { font-family:var(--f-mono); font-size:13px; color:var(--n-ok); display:inline-flex; align-items:center; gap:6px; }
+  .checks .score::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; box-shadow:0 0 0 3px color-mix(in srgb,currentColor 20%,transparent); }
+  .checks .link { margin-left:auto; }
+  .export { display:flex; height:38px; border-radius:9px; overflow:hidden; background:var(--n-ink); color:#0b0b0c; }
+  .export button { border:0; background:transparent; color:inherit; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; font-size:13px; font-weight:600; transition:background var(--d-fast) var(--ease); }
+  .export button:hover { background:rgba(0,0,0,.07); }
+  .export .main { flex:1; }
+  .export .fmt { font-family:var(--f-mono); font-size:11px; font-weight:500; opacity:.55; }
+  .export .caret { width:38px; border-left:1px solid rgba(0,0,0,.14); }
+  .export svg { width:15px; height:15px; }
+  .export.copied { background:var(--n-ok); }
+</style>
+</head>
+<body>
+
+<div class="sheet-head">
+  <h1>themesmith — tool vs. bench</h1>
+  <span class="sub">the same session, drawn three ways · the dashboard inside the frame is unchanged on purpose</span>
+  <div class="ctl"><span class="ctl-key">view</span>
+    <div class="seg" data-ctl="view">
+      <button data-v="current">current</button>
+      <button data-v="a" class="on">A · flush tool</button>
+      <button data-v="b">B · floating tool</button>
+    </div>
+  </div>
+  <div class="ctl"><span class="ctl-key">palette</span>
+    <div class="seg" data-ctl="pal">
+      <button data-v="dark" class="on">dark ≈ chrome</button>
+      <button data-v="black">true black</button>
+      <button data-v="light">light</button>
+      <button data-v="warm">warm dark</button>
+    </div>
+  </div>
+  <div class="ctl"><span class="ctl-key">stage</span>
+    <div class="seg" data-ctl="stage">
+      <button data-v="grid" class="on">grid</button>
+      <button data-v="graph">graph</button>
+      <button data-v="dots">dots</button>
+    </div>
+  </div>
+  <div class="ctl"><span class="ctl-key">frames</span>
+    <div class="seg" data-ctl="frames">
+      <button data-v="1" class="on">1</button>
+      <button data-v="2">2</button>
+    </div>
+  </div>
+  <div class="ctl"><span class="ctl-key">motion</span>
+    <div class="seg" data-ctl="slow">
+      <button data-v="1" class="on">1×</button>
+      <button data-v="5">slow</button>
+    </div>
+  </div>
+</div>
+
+<div id="app"></div>
+<div id="notes" class="view-note"></div>
+
+<script>
+const PALETTES = {
+  // the palette in the screenshot: its background lands within a few
+  // units of --surface-1, which is the whole problem
+  dark:  { bg:'#17181c', card:'#1b1c21', sidebar:'#141518', border:'#2b2d34', fg:'#e6e7ea', muted:'#8e919c',
+           primary:'#1f6feb', accent:'#619df9', neutral:'#f5f7fa', danger:'#c72c53', success:'#158561', warning:'#cdac00',
+           charts:['#6f8fbf','#f0509c','#ff7043','#d4a017','#8bc34a'] },
+  black: { bg:'#0a0a0a', card:'#101010', sidebar:'#0a0a0a', border:'#1f1f1f', fg:'#ededed', muted:'#8a8a8a',
+           primary:'#10b981', accent:'#34d399', neutral:'#fafafa', danger:'#ef4444', success:'#22c55e', warning:'#eab308',
+           charts:['#10b981','#3b82f6','#f59e0b','#ec4899','#a78bfa'] },
+  light: { bg:'#ffffff', card:'#ffffff', sidebar:'#f7f7f8', border:'#e4e4e7', fg:'#18181b', muted:'#71717a',
+           primary:'#4f46e5', accent:'#818cf8', neutral:'#18181b', danger:'#dc2626', success:'#16a34a', warning:'#d97706',
+           charts:['#4f46e5','#0ea5e9','#f59e0b','#ec4899','#10b981'] },
+  warm:  { bg:'#1c1714', card:'#231d19', sidebar:'#181310', border:'#3a302a', fg:'#f1e8e1', muted:'#a8978a',
+           primary:'#e07a3f', accent:'#f2b36b', neutral:'#f1e8e1', danger:'#d9534f', success:'#6aa56a', warning:'#e0b341',
+           charts:['#e07a3f','#6aa5a0','#c9a24a','#b0668e','#8a9a5b'] },
+};
+const PAL_ORDER = ['dark','black','light','warm'];
+
+const state = { view:'a', pal:'dark', frames:1, stage:'grid', taste:0.5, sep:'layered', copied:false };
+
+// ---------- colour helpers ----------
+function lum(hex){ const n=parseInt(hex.slice(1),16); const c=[n>>16,(n>>8)&255,n&255].map(v=>{v/=255;return v<=.03928?v/12.92:((v+.055)/1.055)**2.4}); return .2126*c[0]+.7152*c[1]+.0722*c[2]; }
+const onColor = hex => lum(hex) > .42 ? '#0b0b0c' : '#ffffff';
+
+// ---------- icons (lucide geometry, inlined) ----------
+const I = {
+  chev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  blend:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="9" r="7"/><circle cx="15" cy="15" r="7"/></svg>',
+  reset:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>',
+  riff:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>',
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>',
+  help:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg>',
+  arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>',
+  sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  cols:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></svg>',
+};
+
+// ---------- the in-frame dashboard ----------
+function mock(key){
+  const p = PALETTES[key];
+  const vars = `--m-bg:${p.bg};--m-card:${p.card};--m-sidebar:${p.sidebar};--m-border:${p.border};--m-fg:${p.fg};--m-muted:${p.muted};--m-primary:${p.primary};--m-on-primary:${onColor(p.primary)};--m-accent:${p.accent};--m-success:${p.success};--m-warning:${p.warning};--m-danger:${p.danger}`;
+  const bars = c => `<div class="mk-bars">${[40,70,45,90,55,100,72].map(h=>`<i style="height:${h}%;background:${c}"></i>`).join('')}</div>`;
+  const src = [['Direct',34],['Organic search',27],['Referral',18],['Social',13],['Email',8]];
+  return `<div class="mk" style="${vars}">
+    <nav class="mk-nav"><div class="mk-brand">Acme</div>
+      <div class="mk-link on">Dashboard</div><div class="mk-link">Projects <small>4</small></div><div class="mk-link">Settings</div></nav>
+    <main class="mk-main">
+      <div class="mk-top"><h2>Dashboard</h2><span class="mk-btn">Export</span><span class="mk-btn fill">+ New project</span></div>
+      <div class="mk-alert ok"><div>Deploy succeeded</div>All 42 checks passed on production. <u>View report</u></div>
+      <div class="mk-alert warn">Certificate expires in 12 days</div>
+      <div class="mk-kpis">
+        <div class="mk-card"><div class="lbl">Revenue</div><div class="val">$48,210</div>${bars(p.charts[0])}<div class="sub">+4.2% vs. last month</div></div>
+        <div class="mk-card"><div class="lbl">Active users</div><div class="val">3,842</div>${bars(p.charts[1])}<div class="sub">+12.1% vs. last month</div></div>
+        <div class="mk-card"><div class="lbl">Churn</div><div class="val">2.1%</div>${bars(p.charts[2])}<div class="sub">−0.4% vs. last month</div></div>
+      </div>
+      <div class="mk-card"><div class="lbl">Traffic by source</div><div class="val" style="margin-bottom:0">12,904</div>
+        <div class="mk-traffic">${src.map(([,v],i)=>`<i style="flex:${v};background:${p.charts[i]}"></i>`).join('')}</div>
+        <div class="mk-legend">${src.map(([n,v],i)=>`<span style="--c:${p.charts[i]}">${n} ${v}%</span>`).join('')}</div></div>
+      <div class="mk-card"><div class="lbl" style="font-weight:600;font-size:13px">Activity</div><div class="sub" style="margin:2px 0 8px">Everything the team did today.</div>
+        <div class="mk-feed">
+          <div><i style="--c:${p.success}"></i>ana deployed marketing-site to production<time>09:42</time></div>
+          <div><i style="--c:${p.warning}"></i>billing-service p95 latency above 400 ms<time>09:31</time></div>
+          <div><i style="--c:${p.danger}"></i>legacy-importer health check failed 3× in a row<time>09:12</time></div>
+          <div><i style="--c:${p.fg}"></i>kai opened “Rewrite the docs search index”<time>08:58</time></div>
+        </div></div>
+    </main></div>`;
+}
+
+const ROLES = p => [
+  ['primary',p.primary,'yours'],['accent',p.accent,'yours'],['neutral',p.neutral,'yours'],
+  ['danger',p.danger,'derived'],['success',p.success,'derived'],['warning',p.warning,'derived'],
+];
+
+// ---------- current ----------
+function current(){
+  const p = PALETTES[state.pal];
+  const tiles = ROLES(p).map(([n,c,t]) => {
+    const der = t==='derived';
+    const bg = der ? `color-mix(in srgb, ${c} 32%, #17181c)` : c;
+    const ink = der ? c : onColor(c);
+    return `<div class="cur-tile ${der?'der':''}" style="background:${bg};color:${ink}"><b>${n} ⓘ</b><code>${c}</code><small>${t}</small></div>`;
+  }).join('');
+  const frames = state.frames===2 ? mock(state.pal)+mock(PAL_ORDER[(PAL_ORDER.indexOf(state.pal)+2)%4]) : mock(state.pal);
+  return `<div class="app">
+    <aside class="cur">
+      <div class="cur-head"><h2>themesmith</h2><p>any colors in, working theme out</p></div>
+      <div class="cur-body">
+        <div class="cur-sec"><b>canvas</b><i></i><span>◫ split frame</span></div>
+        <div class="cur-select"><em>A</em>App dashboard<span style="margin-left:auto;color:var(--ink-faint)">▾ ☼</span></div>
+        <div class="cur-sec"><b>colors</b><i></i><span>start over &nbsp;?</span></div>
+        <div class="cur-row"><span class="cur-pill">◎ mono</span><span class="cur-pill off">↺ reset</span><span class="cur-pill">✎ riff</span><span class="cur-pill off">↶ back</span></div>
+        <div class="cur-grid">${tiles}</div>
+        <div class="cur-series"><b>chart series ⓘ</b><span style="float:right;font-size:7px;color:var(--ink-faint)">1 of 5</span>
+          <div>${p.charts.map((c,i)=>`<i style="background:${i?`color-mix(in srgb,${c} 35%,#17181c)`:c}"></i>`).join('')}</div></div>
+        <div class="cur-bench">⌄ &nbsp;bench · 1 color not in play</div>
+        <div class="cur-add"><i>+</i>add a color</div>
+        <div class="cur-sec"><b>tuning</b><i></i></div>
+        <div class="cur-dial-ends"><span>smith's taste</span><span>raw colors</span></div>
+        <div class="cur-track"><b>0.50</b><i></i></div>
+        <div class="cur-cap">your colors already sit well — nothing to tune</div>
+        <div style="font-size:10px;color:var(--ink-faint);margin-bottom:6px">separation</div>
+        <div class="cur-seg"><span>☐ flat</span><span class="on">◈ layered</span><span>◌ lifted</span></div>
+        <div class="cur-cap" style="text-align:left">the familiar stack — the card sits a step off the page, with hairline and shadow sharing the work</div>
+      </div>
+      <div class="cur-foot">
+        <div class="cur-checks">✓ all 40 checks pass<span>report ›</span></div>
+        <div class="cur-export"><div>⧉ Copy CSS variables</div><div>⌄</div></div>
+      </div>
+    </aside>
+    <div class="cur-frames">${frames}</div>
+  </div>`;
+}
+
+// ---------- proposed ----------
+const CAPTIONS = [
+  [0.15, 'The engine rewrites freely — your colours are a starting hint.'],
+  [0.4,  'Engine-led. Hues hold; lightness and chroma are the smith’s call.'],
+  [0.6,  'Your colours already sit well — nothing to tune.'],
+  [0.85, 'Mostly yours. The engine only steps in to pass contrast.'],
+  [1.01, 'Raw. Exactly what you typed, failures and all.'],
+];
+const SEP_CAP = {
+  flat:'One plane. Cards are drawn by hairlines alone.',
+  layered:'The familiar stack — the card sits a step off the page, hairline and shadow sharing the work.',
+  lifted:'Cards float. Shadow does the separating; hairlines drop out.',
+};
+
+function tool(){
+  const p = PALETTES[state.pal];
+  const roles = ROLES(p).map(([n,c,t]) =>
+    `<div class="role ${t==='derived'?'der':''}" style="background:${c};color:${onColor(c)}">
+       <div class="role-top"><span class="role-name">${n}</span><span class="role-tag">${t}</span></div>
+       <span class="role-hex">${c}</span></div>`).join('');
+  const ticks = Array.from({length:21},(_,i)=>`<i class="${i===10?'detent':''}"></i>`).join('');
+  const t = state.taste;
+  const cap = CAPTIONS.find(([v])=>t<v)[1];
+  return `<aside class="tool">
+    <div class="t-head"><span class="t-word">themesmith</span><span class="t-ver">v2.4.1</span></div>
+    <div class="t-body">
+      <section class="t-sec">
+        <div class="t-sec-head"><span class="t-label">colors <b>· 6</b></span><span class="rule"></span>
+          <button class="link">start over</button><button class="link" title="shortcuts  ?">${I.help}</button></div>
+        <div class="verbs">
+          <button class="verb">${I.blend}mono</button>
+          <button class="verb" disabled>${I.reset}reset</button>
+          <button class="verb">${I.riff}riff</button>
+          <button class="verb" disabled>${I.back}back</button>
+        </div>
+        <div class="roles">${roles}</div>
+        <div class="series">
+          <div class="series-head"><span>Chart series</span><span class="mono">1 of 5 yours</span></div>
+          <div class="series-strip">${p.charts.map(c=>`<i style="background:${c}"></i>`).join('')}</div>
+        </div>
+        <div class="add">${I.plus}add a color — hex, rgb, or paste a list<kbd>A</kbd></div>
+        <div class="benchrow"><i></i>1 on the bench, not in play</div>
+      </section>
+
+      <section class="t-sec">
+        <div class="t-sec-head"><span class="t-label">tuning</span><span class="rule"></span></div>
+        <div class="inst-read"><span class="name">Taste</span><span class="val num" id="tasteVal">${t.toFixed(2)}</span></div>
+        <div class="inst">
+          <div class="inst-ticks">${ticks}</div>
+          <div class="inst-rail"></div>
+          <div class="inst-fill" style="width:${t*100}%"></div>
+          <div class="inst-thumb" style="left:${t*100}%"></div>
+          <input type="range" min="0" max="1" step="0.05" value="${t}" id="taste" aria-label="taste">
+        </div>
+        <div class="inst-ends"><span>smith</span><span>raw</span></div>
+        <p class="inst-cap">${cap}</p>
+      </section>
+
+      <section class="t-sec">
+        <div class="t-sec-head"><span class="t-label">separation</span><span class="rule"></span></div>
+        <div class="sep">
+          ${['flat','layered','lifted'].map(k=>`<button data-sep="${k}" class="${state.sep===k?'on':''}">
+             <span class="pict p-${k==='layered'?'layer':k==='lifted'?'lift':'flat'}"><i class="pg"></i><i class="cd"></i></span>${k}</button>`).join('')}
+        </div>
+        <p class="inst-cap">${SEP_CAP[state.sep]}</p>
+      </section>
+    </div>
+    <div class="t-foot">
+      <div class="checks"><span class="score num">40/40</span>contrast checks pass<button class="link">report ${I.arrow}</button></div>
+      <div class="export ${state.copied?'copied':''}">
+        <button class="main" id="copy">${state.copied?I.check+'Copied':I.copy+'Copy variables'} <span class="fmt">css</span></button>
+        <button class="caret" title="other formats">${I.chev}</button>
+      </div>
+    </div>
+  </aside>`;
+}
+
+function board(pane, key){
+  return `<div class="artboard">
+    <div class="board-label">
+      <span class="pane">${pane}</span>
+      <span class="pick">App dashboard ${I.chev}</span>
+      <button class="icon-btn" title="light / dark">${I.sun}</button>
+      <span class="right">
+        ${state.frames===1 ? `<button class="ghost" data-frames="2">${I.cols}compare</button>` : ''}
+        ${state.frames===2 && pane==='B' ? `<button class="ghost" data-frames="1">${I.x}close B</button>` : ''}
+      </span>
+    </div>
+    <div class="frame">${mock(key)}</div>
+  </div>`;
+}
+
+function proposed(){
+  const second = PAL_ORDER[(PAL_ORDER.indexOf(state.pal)+2)%4];
+  return `<div class="app p-app ${state.view==='a'?'flush':'float'}" data-stage="${state.stage}">
+    ${state.view==='b' ? '<div class="stage-bg"></div>' : ''}
+    ${tool()}
+    <div class="stage">
+      <div class="stage-bg"></div>
+      <div class="bench">${board('A',state.pal)}${state.frames===2?board('B',second):''}</div>
+    </div>
+  </div>`;
+}
+
+const NOTES = {
+  current: `<h3>current — what to look for</h3>
+    <p class="minus">On <b>dark ≈ chrome</b> the palette background is <b>#17181c</b>, the same as <code>--surface-1</code>. The tool and the frame are one surface, and only a 1px line separates them.</p>
+    <p class="minus">On <b>light</b> the boundary is loud, but only because the user's palette makes it so. The chrome doesn't do anything to hold it.</p>
+    <p class="minus">The chrome's hues (<b>#7aa2f7</b>, <b>#c0caf5</b>, <b>#9ece6a</b>) come from Tokyo Night, and its blue competes with the user's primary.</p>
+    <p class="minus">Type runs from 7px to 12px. The <b>yours / derived</b> tags are about 6–7px, and derived tiles are dimmed, so you judge a colour you can't see at full strength.</p>`,
+  a: `<h3>A · flush tool, framed bench</h3>
+    <p class="plus">The frame sits on a fixed <b>ruled stage</b> with a 12px radius, a double ring and a long shadow. Cycle all four palettes: the edge holds on every one, including <b>true black</b> and <b>light</b>.</p>
+    <p class="plus">The chrome is <b>achromatic</b>. The role tiles, series strip and frame hold the only colour on screen. Selection is drawn in ink, not a hue.</p>
+    <p class="plus">Type is on a <b>12 / 13 / 16 / 20</b> scale in Geist, and hex values and readouts are monospace with tabular numbers. Nothing is under 10px.</p>
+    <p class="plus"><b>Taste</b> is an instrument, with a large readout, ticks, a detent at 0.50 and a hairline thumb. Drag it.</p>
+    <p class="plus">Export is the <b>one solid object</b> in the panel, with no gradient. Click it.</p>
+    <p class="eq"><b>Canvas moved out of the sidebar</b> into the frame's label row: pane letter, mockup picker, light/dark, and <b>compare</b> on the right. Once split, <b>close B</b> sits in the same spot on B's row. The sidebar holds only the palette.</p>
+    <p class="eq"><b>Stage ruling:</b> a flat 24px <b>grid</b> at 5% white, even from edge to edge (chosen). <b>graph</b> and <b>dots</b> stay on the switch above for reference.</p>
+    <p class="eq">Derived tiles are no longer dimmed. A dashed inner edge marks them, so you judge the real colour.</p>
+    <p class="minus">The frame loses about 56px of width and 46px of height to the stage margins and label row.</p>`,
+  b: `<h3>B · floating tool</h3>
+    <p class="eq">This is the same chrome as A, but the tool is also an object on the stage: rounded, translucent and inset.</p>
+    <p class="plus">It reads more "futurist" and is more obviously a tool held over the work.</p>
+    <p class="minus">It costs 10px more on each edge, and a floating tool implies it can move or collapse, which it can't. I'd only pick it if we also make the tool collapsible.</p>
+    <p class="minus">The glass blur is decoration here. Nothing sits behind the panel for it to show.</p>`,
+};
+
+function render(){
+  document.documentElement.style.setProperty('--slow', state.slow || 1);
+  document.getElementById('app').innerHTML = state.view==='current' ? current() : proposed();
+  document.getElementById('notes').innerHTML = NOTES[state.view];
+  document.querySelectorAll('.seg[data-ctl]').forEach(seg => {
+    const k = seg.dataset.ctl;
+    seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', String(state[k] ?? 1)===b.dataset.v));
+  });
+}
+
+document.querySelector('.sheet-head').addEventListener('click', e => {
+  const b = e.target.closest('.seg button'); if (!b) return;
+  const k = b.closest('.seg').dataset.ctl, v = b.dataset.v;
+  state[k] = (k==='frames'||k==='slow') ? Number(v) : v;
+  render();
+});
+document.getElementById('app').addEventListener('click', e => {
+  const f = e.target.closest('[data-frames]'); if (f) { state.frames = Number(f.dataset.frames); render(); return; }
+  const s = e.target.closest('[data-sep]'); if (s) { state.sep = s.dataset.sep; render(); return; }
+  if (e.target.closest('#copy')) { state.copied = true; render(); setTimeout(()=>{ state.copied=false; render(); }, 1400); }
+});
+document.getElementById('app').addEventListener('input', e => {
+  if (e.target.id !== 'taste') return;
+  state.taste = Number(e.target.value);
+  // update in place so the drag isn't interrupted by a re-render
+  const t = state.taste, root = e.target.closest('.t-sec');
+  root.querySelector('#tasteVal').textContent = t.toFixed(2);
+  root.querySelector('.inst-fill').style.width = t*100+'%';
+  root.querySelector('.inst-thumb').style.left = t*100+'%';
+  root.querySelector('.inst-cap').textContent = CAPTIONS.find(([v])=>t<v)[1];
+});
+render();
+</script>
+</body>
+</html>

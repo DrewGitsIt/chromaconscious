@@ -1,140 +1,77 @@
 import type { Oklch, Role } from './types'
-import { draw } from './random'
 
 /**
- * The seeded repertoire: what the engine may invent instead of the one fixed
- * cookbook line. Every distribution lists its canonical option first and
- * short-circuits to it at seed 0 — seed 0 IS the cookbook, bit-identical.
- * Only synthesized roles ever come through here; user-cast seeds never riff.
- * All windows sit inside each role's contrast-safe region — the ramps and
- * solvers downstream do the rest.
+ * The cookbook: what the engine invents for a seat no color of yours claimed.
+ * One fixed line per role — this is the palette at hop 0, and every riff walks
+ * away from here (walk.ts) rather than re-drawing from here.
+ *
+ * It used to be a *seeded* repertoire: each role held a weighted menu of
+ * options and a riff re-drew from it. That made variety cheap but made hops
+ * meaningless — consecutive seeds were uncorrelated by construction, so the
+ * palette teleported instead of travelling, and the canonical option's weight
+ * kept pulling it back to the start. The menus are gone; their windows live on
+ * as the walk's envelopes, which bound where a seed may roam rather than
+ * deciding where it lands.
  */
 
-interface Weighted<T> {
-  v: T
-  w: number
-}
-
-/** Weighted pick; index 0 is canonical and wins outright at seed 0. */
-function choice<T>(seed: number, role: string, decision: string, options: Array<Weighted<T>>): T {
-  if (seed === 0) return options[0].v
-  const total = options.reduce((s, o) => s + o.w, 0)
-  let r = draw(seed, role, decision) * total
-  for (const o of options) {
-    r -= o.w
-    if (r < 0) return o.v
-  }
-  return options[options.length - 1].v
-}
-
-/** Uniform draw in [lo, hi]; exactly `canonical` at seed 0. */
-function range(
-  seed: number,
-  role: string,
-  decision: string,
-  canonical: number,
-  lo: number,
-  hi: number,
-): number {
-  if (seed === 0) return canonical
-  return lo + draw(seed, role, decision) * (hi - lo)
-}
-
-/** Accent: a hue relationship to primary, plus l/c within the accent window. */
-export function accentRepertoire(primary: Oklch, seed: number): Oklch {
-  const rel = choice(seed, 'accent', 'hue-relation', [
-    { v: 60, w: 4 }, // canonical
-    { v: -60, w: 1 },
-    { v: 180, w: 1 }, // complement
-    { v: 150, w: 0.75 }, // split-complement
-    { v: -150, w: 0.75 },
-    { v: 120, w: 0.75 }, // triad
-    { v: -120, w: 0.75 },
-    { v: 30, w: 0.5 }, // analogous
-    { v: -30, w: 0.5 },
-  ])
+/** Accent: the theme's second voice, a sixth of the wheel off primary. */
+export function accentRepertoire(primary: Oklch): Oklch {
   return {
-    l: range(seed, 'accent', 'lightness', 0.6, 0.55, 0.68),
-    c: range(seed, 'accent', 'chroma', Math.max(primary.c * 0.8, 0.1), 0.08, 0.16),
-    // rel >= 0 keeps the seed-0 arithmetic byte-for-byte canonical
-    h: rel >= 0 ? (primary.h + rel) % 360 : (primary.h + 360 + rel) % 360,
+    l: 0.6,
+    c: Math.max(primary.c * 0.8, 0.1),
+    h: (primary.h + 60) % 360,
   }
 }
 
-/** Neutral temperature: tinted toward primary, counter-tinted, or pure gray. */
-export function neutralRepertoire(primary: Oklch, seed: number): Oklch {
-  const temperature = choice(seed, 'neutral', 'temperature', [
-    { v: 'toward', w: 4 }, // canonical
-    { v: 'counter', w: 1.5 },
-    { v: 'gray', w: 1 },
-  ] as Array<Weighted<'toward' | 'counter' | 'gray'>>)
-  const tint = range(seed, 'neutral', 'tint', 0.25, 0.1, 0.4)
+/** Neutral: barely tinted toward primary, so the chrome belongs to the theme. */
+export function neutralRepertoire(primary: Oklch): Oklch {
   return {
     l: 0.5,
-    c: temperature === 'gray' ? 0 : Math.min(0.03, primary.c * tint),
-    h: temperature === 'counter' ? (primary.h + 180) % 360 : primary.h,
+    c: Math.min(0.03, primary.c * 0.25),
+    h: primary.h,
   }
 }
 
-// Each status roams its credible hue window and a subtle↔saturated chroma
-// band around the canonical anchor. Lightness is the role's fixed register.
-const STATUS_REPERTOIRE = {
-  danger: { l: 0.55, hue: [27, 22, 32], chroma: [0.19, 0.15, 0.22] },
-  success: { l: 0.55, hue: [150, 140, 165], chroma: [0.11, 0.09, 0.15] },
-  warning: { l: 0.75, hue: [80, 70, 90], chroma: [0.16, 0.11, 0.19] },
+// Each status sits on its semantic anchor. The walk may carry one off it; the
+// judge prices that drift (statusLegibility), which is why there is no clamp.
+const STATUS_ANCHOR = {
+  danger: { l: 0.55, c: 0.19, h: 27 },
+  success: { l: 0.55, c: 0.11, h: 150 },
+  warning: { l: 0.75, c: 0.16, h: 80 },
 } as const
 
 /** Status anchor before harmonization (the caller rotates it toward primary). */
-export function statusRepertoire(role: 'danger' | 'success' | 'warning', seed: number): Oklch {
-  const spec = STATUS_REPERTOIRE[role]
-  const [c0, cLo, cHi] = spec.chroma
-  const [h0, hLo, hHi] = spec.hue
-  return {
-    l: spec.l,
-    c: range(seed, role, 'chroma', c0, cLo, cHi),
-    h: range(seed, role, 'hue', h0, hLo, hHi),
-  }
+export function statusRepertoire(role: 'danger' | 'success' | 'warning'): Oklch {
+  return { ...STATUS_ANCHOR[role] }
 }
 
 /**
  * Mono variations: lightness placement and chroma scaling only — hue is the
- * base's by definition, and every cap matches the cookbook's.
+ * base's by definition, and every cap is the cookbook's.
+ *
+ * The five roles that must stay tellable apart (primary, accent, and the three
+ * statuses — see PAIR_MIN in index.ts) are spread across the lightness range
+ * on rungs at least ~0.1 apart, because under this lock lightness is the ONLY
+ * axis left to separate them on. They used to sit at 0.38 / 0.55 / 0.55 / 0.62
+ * / 0.75, with primary and success on the very same rung; that collision was
+ * survivable while the lock exempted colours the user supplied, and became a
+ * reported clash the moment it stopped. Neutral is exempt — it carries no
+ * chroma to be confused by, and sits out the pairwise graph entirely.
  */
-export function monoRepertoire(role: Role, base: Oklch, seed: number): Oklch {
+export function monoRepertoire(role: Role, base: Oklch): Oklch {
   const h = base.h
   switch (role) {
     case 'primary':
-      // never riffed: a mono theme always has a base to seed primary from
-      return { l: 0.55, c: Math.min(base.c, 0.23), h }
+      return { l: 0.5, c: Math.min(base.c, 0.23), h }
     case 'neutral':
-      return {
-        l: 0.5,
-        c: Math.min(0.03, base.c * range(seed, 'neutral', 'mono-chroma', 0.25, 0.1, 0.25)),
-        h,
-      }
+      return { l: 0.5, c: Math.min(0.03, base.c * 0.25), h }
     case 'accent':
-      return {
-        l: range(seed, 'accent', 'mono-lightness', 0.62, 0.56, 0.68),
-        c: Math.min(base.c * range(seed, 'accent', 'mono-chroma', 0.6, 0.45, 0.75), 0.12),
-        h,
-      }
+      return { l: 0.71, c: Math.min(base.c * 0.6, 0.12), h }
     case 'danger':
-      return {
-        l: range(seed, 'danger', 'mono-lightness', 0.38, 0.32, 0.44),
-        c: Math.min(base.c * range(seed, 'danger', 'mono-chroma', 1, 0.8, 1), 0.16),
-        h,
-      }
+      return { l: 0.38, c: Math.min(base.c, 0.16), h }
     case 'success':
-      return {
-        l: range(seed, 'success', 'mono-lightness', 0.55, 0.5, 0.62),
-        c: Math.min(base.c * range(seed, 'success', 'mono-chroma', 0.8, 0.6, 0.9), 0.14),
-        h,
-      }
+      return { l: 0.6, c: Math.min(base.c * 0.8, 0.14), h }
     default: // warning
-      return {
-        l: range(seed, 'warning', 'mono-lightness', 0.75, 0.7, 0.8),
-        c: Math.min(base.c * range(seed, 'warning', 'mono-chroma', 0.8, 0.6, 0.9), 0.14),
-        h,
-      }
+      return { l: 0.82, c: Math.min(base.c * 0.8, 0.14), h }
   }
 }

@@ -3,12 +3,16 @@
  *
  * Chart is a pooled seat set — several colours at once — so it can't be a
  * single slot. It's a wide tray that takes drops anywhere on itself, and each
- * swatch says whether the smith computed it (dashed = riff may re-roll it) or
- * you did (solid = yours to keep).
+ * swatch says whether the smith computed it (dashed) or you did (solid).
+ *
+ * A swatch of yours also carries a lock, the only thing that stops riff moving
+ * it. A derived fill has none: there is no candidate behind it to hang a lock
+ * on, and unlike a role seat there is no `keep` verb here to materialise one —
+ * so it is always riffable, and showing an inert padlock would only lie.
  */
 import { useCallback, useState } from 'react'
 import type { CSSProperties, DragEvent, ReactElement } from 'react'
-import { HelpCircle } from 'lucide-react'
+import { HelpCircle, Lock, LockOpen } from 'lucide-react'
 import type { SeriesEntry } from '../board'
 import { SERIES_SEATS } from '../board'
 import type { DragPayload } from '../board'
@@ -35,10 +39,19 @@ function readDragPayload(e: DragEvent): DragPayload | null {
   }
 }
 
+/** What a swatch is, in one word — provenance only; the lock speaks for itself. */
+const ORIGIN: Record<SeriesEntry['provenance'], string> = {
+  derived: 'the smith computed this',
+  kept: 'kept as yours',
+  yours: 'yours',
+}
+
 export interface SeriesTrayProps {
   series: SeriesEntry[]
   onDropInSeries: (payload: DragPayload) => void
   onDragStartSeries: (slot: number) => void
+  /** Flip whether riff may move this slot's colour. Only sent for slots of yours. */
+  onToggleLock: (slot: number) => void
   onExplain: (anchor: HTMLElement) => void
 }
 
@@ -46,6 +59,7 @@ export function SeriesTray({
   series,
   onDropInSeries,
   onDragStartSeries,
+  onToggleLock,
   onExplain,
 }: SeriesTrayProps): ReactElement {
   const [dropOk, setDropOk] = useState(false)
@@ -104,20 +118,45 @@ export function SeriesTray({
             className={[
               'series',
               entry.provenance,
+              entry.locked ? 'is-locked' : '',
               dragSlot === entry.slot ? 'dragging' : '',
             ]
               .filter(Boolean)
               .join(' ')}
             style={{ '--c': entry.hex } as CSSProperties}
             draggable
-            title={`${entry.hex} — ${entry.provenance === 'derived' ? 'the smith computed this' : entry.provenance === 'kept' ? 'kept as yours' : 'yours'}`}
+            title={`${entry.hex} — ${ORIGIN[entry.provenance]}`}
             onDragStart={(e) => {
               writeDragPayload(e, { kind: 'series', slot: entry.slot })
               setDragSlot(entry.slot)
               onDragStartSeries(entry.slot)
             }}
             onDragEnd={() => setDragSlot(null)}
-          />
+          >
+            {entry.candidateIndex == null ? null : (
+              <button
+                type="button"
+                className="series-lock"
+                data-locked={entry.locked ? 'true' : 'false'}
+                // the swatch is the drag source; the badge must press, not drag
+                draggable={false}
+                title={
+                  entry.locked
+                    ? 'locked — riff will not move this'
+                    : 'unlocked — riff may move this'
+                }
+                aria-pressed={entry.locked}
+                aria-label={`${entry.locked ? 'unlock' : 'lock'} chart ${entry.slot}`}
+                onClick={() => onToggleLock(entry.slot)}
+              >
+                {entry.locked ? (
+                  <Lock size={9} strokeWidth={1.75} aria-hidden="true" />
+                ) : (
+                  <LockOpen size={9} strokeWidth={1.75} aria-hidden="true" />
+                )}
+              </button>
+            )}
+          </span>
         ))}
       </div>
     </div>
