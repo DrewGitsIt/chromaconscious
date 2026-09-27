@@ -3,10 +3,12 @@ import {
   Ban,
   Blend,
   Columns2,
+  ExternalLink,
   Guitar,
   Image as ImageIcon,
   Palette,
   RotateCcw,
+  SlidersHorizontal,
   Undo2,
   X,
 } from 'lucide-react'
@@ -53,6 +55,8 @@ import type { MockupProps } from './mockups'
 import { MOCKUPS, mockupById } from './mockups'
 import { PRESETS } from './presets'
 import { useDismiss } from './components/useDismiss'
+import { EMBED, embedPreset, fullAppHref } from './embed'
+import { decodeState, isThemeId } from './api/state'
 import type { Op, ThemeState } from './ops'
 import { applyOp, emptyThemeState } from './ops'
 import './styles/tokens.css'
@@ -92,6 +96,14 @@ const EXPORT_FORMATS = (Object.keys(FORMAT_LABEL) as ExportFormat[]).map((id) =>
 }))
 
 const emptyFrameState = (): FrameState => ({ ...emptyThemeState(), mode: 'dark', mockup: 'app' })
+
+/** Where the app opens: blank for the full app, a preset in an embed (see embed.ts). */
+const initialFrame = (): FrameState => {
+  const f = emptyFrameState()
+  if (!EMBED) return f
+  const p = embedPreset()
+  return applyOp(f, { op: 'preset', name: p.name, colors: p.colors }, { mode: f.mode })
+}
 
 /** Every seat and every chart slot already holds a colour of yours. */
 const boardIsFull = (v: BoardView): boolean =>
@@ -150,7 +162,7 @@ export default function App() {
   // One or two independent frames. All sidebar edits target the active one;
   // the canvas splits when a second frame exists. Frames boot empty — the
   // first move belongs to the user, made in the stage's start hero.
-  const [frames, setFrames] = useState<FrameState[]>(() => [emptyFrameState()])
+  const [frames, setFrames] = useState<FrameState[]>(() => [initialFrame()])
   const [active, setActive] = useState(0)
   const [reportOpen, setReportOpen] = useState(false)
   // Mono lock pick mode: the padlock was clicked, the board is the menu.
@@ -176,6 +188,14 @@ export default function App() {
   // its open state has to live out here rather than inside the control.
   const [helpOpen, setHelpOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  // Embed only: the sidebar is a drawer over the stage (see embed.ts).
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  useEffect(() => {
+    if (!drawerOpen) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setDrawerOpen(false)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [drawerOpen])
 
   const frame = frames[active]
   const updateFrame = (i: number, patch: Partial<FrameState>) => {
@@ -312,6 +332,31 @@ export default function App() {
       setToast({ text: err instanceof Error ? err.message : String(err), undo: null })
     }
   }
+
+  // ---- open a theme by id: /themesmith#t_… --------------------------------
+  // Every API summary links here, so an agent can hand a person the exact
+  // theme it made. The state comes from the same API; this app runs the
+  // engine itself, so what opens is rebuilt locally from that state.
+  useEffect(() => {
+    const id = location.hash.slice(1)
+    if (!isThemeId(id)) return
+    let live = true
+    fetch(`/api/themesmith/v1/state?theme=${id}`)
+      .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`theme ${id} not found`))))
+      .then((text) => {
+        if (!live) return
+        const state = decodeState(text)
+        setFrames((prev) => prev.map((f, i) => (i === 0 ? { ...f, ...state } : f)))
+        setActive(0)
+        setToast({ text: `opened ${id}`, undo: null })
+      })
+      .catch((err: unknown) => {
+        if (live) setToast({ text: err instanceof Error ? err.message : `couldn't open ${id}`, undo: null })
+      })
+    return () => {
+      live = false
+    }
+  }, [])
 
   const undoStartOver = () => {
     if (toast?.undo) updateFrame(toast.undo.frameIndex, toast.undo.prev)
@@ -587,7 +632,7 @@ export default function App() {
 
   return (
     <div
-      className="app"
+      className={`app${EMBED ? ' embed' : ''}${drawerOpen ? ' drawer-open' : ''}`}
       onDragEnter={(e) => {
         if (Array.from(e.dataTransfer.types).includes('Files')) {
           e.preventDefault()
@@ -905,6 +950,9 @@ export default function App() {
           never a palette colour, so the frame's edge holds whatever theme is
           inside it — the sidebar and the frame used to share a surface, and
           the boundary vanished on any dark palette near #17181c. */}
+      {EMBED && drawerOpen && (
+        <div className="drawer-scrim" aria-hidden="true" onClick={() => setDrawerOpen(false)} />
+      )}
       <main className="stage">
         {emptyFrame && !split ? (
           hero(active)
@@ -930,7 +978,47 @@ export default function App() {
                   onToggleMode={() => toggleMode(i)}
                   onCopyTo={() => duplicateFrame(i)}
                   actions={
-                    split ? (
+                    EMBED ? (
+                      <>
+                        <button
+                          className={`board-btn${drawerOpen ? ' on' : ''}`}
+                          onClick={() => setDrawerOpen((o) => !o)}
+                          aria-expanded={drawerOpen}
+                          title="colors, taste and export"
+                        >
+                          <SlidersHorizontal size={13} strokeWidth={1.75} aria-hidden />
+                          tune
+                        </button>
+                        <button
+                          className="board-btn"
+                          onClick={riff}
+                          disabled={!view || !hasRiffableSeats(view)}
+                          title="riff — walk the palette one hop"
+                        >
+                          <Guitar size={13} strokeWidth={1.75} aria-hidden />
+                          riff
+                        </button>
+                        <button
+                          className="board-btn"
+                          onClick={riffBack}
+                          disabled={frame.seed === 0}
+                          title="back one riff"
+                        >
+                          <Undo2 size={13} strokeWidth={1.75} aria-hidden />
+                          back
+                        </button>
+                        <a
+                          className="board-btn"
+                          href={fullAppHref()}
+                          target="_blank"
+                          rel="noopener"
+                          title="open the full app in a new tab"
+                        >
+                          <ExternalLink size={13} strokeWidth={1.75} aria-hidden />
+                          open
+                        </a>
+                      </>
+                    ) : split ? (
                       <button
                         className="board-btn"
                         onClick={() => closeFrame(i)}
