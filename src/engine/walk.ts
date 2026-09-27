@@ -134,7 +134,7 @@ const admit = ([lo, hi]: [number, number], v: number, room: number): [number, nu
 ]
 
 /** A direction of travel, one component per axis, each in [-1, 1]. */
-interface Heading {
+export interface Heading {
   h: number
   l: number
   c: number
@@ -157,6 +157,33 @@ function stepped(s: WalkSubject, c: Oklch, env: Envelope, aim: Heading, jit: Hea
 }
 
 /**
+ * Every hop's end state for ONE set of walk inputs, so a later call can resume
+ * at hop n instead of replaying hops 1..n. The walk is a pure function of its
+ * inputs and the hop index — each hop is keyed on its index alone and carries
+ * forward only the colours and the headings — so resuming from a stop is
+ * bit-identical to replaying, and `back` is a lookup.
+ *
+ * A trail is only valid for the exact subjects and judge it was walked with;
+ * the caller owns that keying (see `generateTheme`). Stops are frozen so a
+ * caller mutating a returned colour cannot corrupt a later resume.
+ */
+export interface WalkTrail {
+  /** The quality floor, fixed at hop 0. */
+  floor?: number
+  /**
+   * stops[k - 1] is where the walk stood after hop k. May be sparse: a stop
+   * restored from storage (see restoreWalkStop) arrives without the hops
+   * before it, and the walk resumes from the nearest stop at or below.
+   */
+  stops: Array<WalkStop | undefined>
+}
+
+export interface WalkStop {
+  colors: ReadonlyMap<string, Oklch>
+  heading: ReadonlyMap<string, Heading>
+}
+
+/**
  * Walk `hops` steps from where the subjects stand. `hops === 0` returns the
  * starting colours untouched, so seed 0 remains the canonical cookbook
  * bit-for-bit. `judge` scores a whole proposed palette; the walk itself knows
@@ -167,6 +194,7 @@ export function walkPalette(
   subjects: WalkSubject[],
   hops: number,
   judge: (colors: Map<string, Oklch>) => number,
+  trail: WalkTrail = { stops: [] },
 ): Map<string, Oklch> {
   let current = new Map(subjects.map((s) => [s.id, s.color]))
   if (hops <= 0) return current
@@ -187,24 +215,36 @@ export function walkPalette(
     ]),
   )
 
+  // Resume from the furthest stop already walked at or below `hops`, if any.
+  let resumeAt = Math.min(hops, trail.stops.length)
+  while (resumeAt > 0 && !trail.stops[resumeAt - 1]) resumeAt--
+  if (resumeAt > 0) {
+    current = new Map(trail.stops[resumeAt - 1]!.colors)
+    if (resumeAt === hops) return current
+  }
+
   // Initial headings, keyed per subject so the roles set off in different
   // directions rather than the whole palette sliding as one block.
   const heading = new Map<string, Heading>(
-    movable.map((s) => {
-      const aim = (axis: string) => {
-        const u = draw(0, s.id, `heading ${axis}`)
-        // Bias away from zero: a heading near 0 is no heading at all, and the
-        // axis would sit still for the whole walk.
-        return (u < 0.5 ? -1 : 1) * (0.6 + 0.4 * Math.abs(centre(u)))
-      }
-      return [s.id, { h: aim('h'), l: aim('l'), c: aim('c') }]
-    }),
+    resumeAt > 0
+      ? trail.stops[resumeAt - 1]!.heading
+      : movable.map((s) => {
+          const aim = (axis: string) => {
+            const u = draw(0, s.id, `heading ${axis}`)
+            // Bias away from zero: a heading near 0 is no heading at all, and the
+            // axis would sit still for the whole walk.
+            return (u < 0.5 ? -1 : 1) * (0.6 + 0.4 * Math.abs(centre(u)))
+          }
+          return [s.id, { h: aim('h'), l: aim('l'), c: aim('c') }]
+        }),
   )
 
   // A hop may not leave the palette below where it began, nor below the bar.
-  const floor = Math.min(judge(current), ABSOLUTE_FLOOR)
+  // Measured at hop 0, so a resumed walk must reuse the value, not re-measure.
+  trail.floor ??= Math.min(judge(current), ABSOLUTE_FLOOR)
+  const floor = trail.floor
 
-  for (let hop = 1; hop <= hops; hop++) {
+  for (let hop = resumeAt + 1; hop <= hops; hop++) {
     // Keyed on the hop index alone, so hop n is reproducible and `back` is
     // exact. The offsets a hop offers are fixed; which one wins is not,
     // because the judge scores them against this particular palette.
@@ -254,6 +294,11 @@ export function walkPalette(
     }
     if (bestAim) for (const [id, a] of bestAim) heading.set(id, a)
     current = best
+    if (!trail.stops[hop - 1]) {
+      for (const c of current.values()) Object.freeze(c)
+      for (const a of heading.values()) Object.freeze(a)
+      trail.stops[hop - 1] = { colors: new Map(current), heading: new Map(heading) }
+    }
   }
   return current
 }

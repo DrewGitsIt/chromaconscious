@@ -1,0 +1,187 @@
+div.rb-slot.rb-yours --c: #25b1ec; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12); --well-strong: rgba(0,0,0,0.22);
+div.rb-slot.rb-derived --c: #8373bd; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
+div.rb-slot.rb-yours --c: #111727; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
+div.rb-slot.rb-derived --c: #c72c53; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
+div.rb-slot.rb-derived --c: #158561; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
+div.rb-slot.rb-derived --c: #cdac00; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12); --well-strong: rgba(0,0,0,0.22);
+span.series.derived --c: #9184c4;
+span.series.derived --c: #ce85d7;
+span.series.derived --c: #ec7d94;
+span.series.derived --c: #e7894a;
+span.series.derived --c: #bca424;
+div.bench-drawer height: 0px;
+div.dial-track-wrap --v: 50%;
+input.dial-slider 
+span.sep-thumb --sep-i: 1;
+input. 
+div.preview-root.flex.min-h-[680px].flex-col.bg-background.text-sm.text-foreground.dark --background: #0b111f; --foreground: #e5eaf4; --card: #111724; --card-foreground: #e5eaf4; --popover: #111724; --popover-foreground: #e5eaf4; --primary: #49b0e1; --primary-foreground: #090e11; --secondary: #191f2c; --secondary-foreground: #e5eaf4; --muted: #191f2c; --muted-foreground: #b4b9c2; --accent: #201c2e; --accent-foreground: #ebe7ff; --accent-strong: #9c8cd8; --link: #b8b3d6; --destructive: #c5445f; --destructive-foreground: #fdf9f9; --destructive-subtle: #201314; --destructive-subtle-foreground: #eaa6ad; --success: #2f7f63; --success-foreground: #f7fbf9; --success-subtle: #101a15; --success-subtle-foreground: #9ac1ae; --warning: #c9ac36; --warning-foreground: #0f0d08; --warning-subtle: #1a170b; --warning-subtle-foreground: #c7b883; --border: #323844; --input: #444a58; --ring: #9c8cd8; --chart-1: #9184c4; --chart-2: #ce85d7; --chart-3: #ec7d94; --chart-4: #e7894a; --chart-5: #bca424; --sidebar: #111724; --sidebar-foreground: #e5eaf4; --sidebar-primary: #49b0e1; --sidebar-primary-foreground: #090e11; --sidebar-accent: #201c2e; --sidebar-accent-foreground: #ebe7ff; --sidebar-border: #323844; --sidebar-ring: #9c8cd8; --elevation-1: 0px 1px 2px 0px rgb(0 0 2 / 0.18), 0px 2px 6px -1px rgb(0 0 2 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(0 0 2 / 0.28), 0px 8px 20px -6px rgb(0 0 2 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(0 0 2 / 0.38), 0px 24px 48px -12px rgb(0 0 2 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(0 0 2 / 0.58);
+input. clip-path: inset(50%); overflow: hidden; white-space: nowrap; border: 0px; padding: 0px; width: 1px; height: 1px; margin: -1px; position: fixed; top: 0px; left: 0px;
+span.h-[3px].w-3.5.shrink-0.rounded-full background: var(--chart-1);
+span.h-[3px].w-3.5.shrink-0.rounded-full background: var(--chart-2);
+span.h-[3px].w-3.5.shrink-0.rounded-full background: var(--chart-3);
+span.h-[3px].w-3.5.shrink-0.rounded-full background: var(--chart-4);
+span.h-[3px].w-3.5.shrink-0.rounded-full background: var(--chart-5);
+span.h-[3px].w-3.5.shrink-0.rounded-full background: var(--chart-1);
+span.h-[3px].w-3.5.shrink-0.rounded-full background: var(--chart-2);
+span.h-[3px].w-3.5.shrink-0.rounded-full background: var(--chart-3);
+span.h-[3px].w-3.5.shrink-0.rounded-full background: var(--chart-4);
+span.h-[3px].w-3.5.shrink-0.rounded-full background: var(--chart-5);
+div.an-scrub.absolute.rounded-sm.focus-visible:ring-3.focus-visible:ring-ring/50.focus-visible:outline-none inset: 5.83333% 11.3889% 10.8333% 6.66667%;
+circle.an-arc-hit cursor: pointer;
+circle.an-arc-hit cursor: pointer;
+circle.an-arc-hit cursor: pointer;
+circle.an-arc-hit cursor: pointer;
+circle.an-arc-hit cursor: pointer;
+span.size-2.shrink-0.rounded-[2px] background: var(--chart-1);
+span.size-2.shrink-0.rounded-[2px] background: var(--chart-2);
+span.size-2.shrink-0.rounded-[2px] background: var(--chart-3);
+span.size-2.shrink-0.rounded-[2px] background: var(--chart-4);
+span.size-2.shrink-0.rounded-[2px] background: var(--chart-5);
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+path.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+path.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+path.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+path.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+path.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+path.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+path.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+path.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+path.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+rect.an-bar-seg cursor: pointer;
+path.an-bar-seg cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+rect.an-heat-cell cursor: pointer;
+span.h-3.flex-1.rounded-[2px] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 10%, var(--card));
+span.h-3.flex-1.rounded-[2px] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 26%, var(--card));
+span.h-3.flex-1.rounded-[2px] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 44%, var(--card));
+span.h-3.flex-1.rounded-[2px] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 62%, var(--card));
+span.h-3.flex-1.rounded-[2px] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 81%, var(--card));
+span.h-3.flex-1.rounded-[2px] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 100%, var(--card));
+---
+themesmith
+
+any colors in, working theme out
+
+COLORS
+start over
+?
+mono
+reset
+riff
+back
+primary
+#25b1ec
+YOURS
+accent
+#8373bd
+DERIVED
+neutral
+#111727
+YOURS
+danger
+#c72c53
+DERIVED
+success
+#158561
+DERIVED
+warning
+#cdac00
+DERIVED
+chart series
+0 of 5
+bench · 0 colors not in play
+add a color
+TUNING
+taste
+0.50
+SMITH
+RAW
+gently tuning your colors · avg shift ΔE 0.02
+separation
+flat
+layered
+lifted
+
+the familiar stack — the card sits a step off the page, with hairline and shadow sharing the work
+
+all 40 checks pass
+report
+Copy CSS variables

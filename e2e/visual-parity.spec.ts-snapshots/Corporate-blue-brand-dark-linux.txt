@@ -1,0 +1,89 @@
+div.rb-slot.rb-yours --c: #1f6feb; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
+div.rb-slot.rb-yours --c: #619df9; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
+div.rb-slot.rb-yours --c: #f5f7fa; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12); --well-strong: rgba(0,0,0,0.22);
+div.rb-slot.rb-derived --c: #c72c53; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
+div.rb-slot.rb-derived --c: #158561; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
+div.rb-slot.rb-derived --c: #cdac00; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12); --well-strong: rgba(0,0,0,0.22);
+span.series.yours --c: #7292b5;
+span.series.derived --c: #fc65b7;
+span.series.derived --c: #ff7453;
+span.series.derived --c: #d59800;
+span.series.derived --c: #8cb600;
+i. background: rgb(208, 215, 222);
+div.bench-drawer height: 0px;
+i. background: rgb(208, 215, 222);
+div.dial-track-wrap --v: 50%;
+input.dial-slider 
+span.sep-thumb --sep-i: 1;
+input. 
+div.brand-board --elevation-1: 0px 1px 2px 0px rgb(0 0 0 / 0.18), 0px 2px 6px -1px rgb(0 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(0 0 0 / 0.28), 0px 8px 20px -6px rgb(0 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(0 0 0 / 0.38), 0px 24px 48px -12px rgb(0 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(0 0 0 / 0.58); --bb-paper: #101214; --bb-ink: #e8eaec; --bb-ink-subtle: #b7b8bb; --bb-line: #2c2e30; --bb-wash: #111721; --bb-brand: #2d6ed7; --bb-brand-ink: #f8fafe; --bb-accent: #4472c0; --bb-accent-ink: #f8fafe;
+div.bb-chip-fill background: rgb(45, 110, 215);
+div.bb-chip-fill background: rgb(68, 114, 192);
+div.bb-chip-fill background: rgb(232, 234, 236);
+div.bb-chip-fill background: rgb(16, 18, 20);
+div. background: rgb(14, 18, 24);
+div. background: rgb(17, 23, 33);
+div. background: rgb(18, 31, 52);
+div. background: rgb(22, 38, 65);
+div. background: rgb(23, 45, 80);
+div. background: rgb(28, 55, 99);
+div. background: rgb(35, 73, 133);
+div. background: rgb(44, 93, 174);
+div. background: rgb(85, 150, 255);
+div. background: rgb(105, 162, 255);
+div. background: rgb(154, 186, 236);
+div. background: rgb(222, 235, 255);
+div. flex-basis: 60%; background: rgb(17, 23, 33);
+div. flex-basis: 30%; background: rgb(45, 110, 215);
+div. flex-basis: 10%; background: rgb(68, 114, 192);
+---
+themesmith
+
+any colors in, working theme out
+
+COLORS
+start over
+?
+mono
+reset
+riff
+back
+primary
+#1f6feb
+YOURS
+accent
+#619df9
+YOURS
+neutral
+#f5f7fa
+YOURS
+danger
+#c72c53
+DERIVED
+success
+#158561
+DERIVED
+warning
+#cdac00
+DERIVED
+chart series
+1 of 5
+bench · 1 color not in play
+#d0d7de
+add a color
+TUNING
+taste
+0.50
+SMITH
+RAW
+your colors already sit well — nothing to tune
+separation
+flat
+layered
+lifted
+
+the familiar stack — the card sits a step off the page, with hairline and shadow sharing the work
+
+all 40 checks pass
+report
+Copy CSS variables

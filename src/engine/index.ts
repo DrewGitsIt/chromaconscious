@@ -2,7 +2,7 @@ import type { ColorCandidate, GenerateOptions, JudgeInput, Oklch, Role, ThemeRes
 import { deltaEok, lerp, parseColor } from './color'
 import { assignRoles, chartAdjust } from './roles'
 import { judgePalette } from './judge'
-import type { WalkSubject } from './walk'
+import type { Heading, WalkSubject, WalkTrail } from './walk'
 import { chartEnvelope, envelopeFor, travelFor, walkPalette } from './walk'
 import type { RepairEdge, RepairNode } from './repair'
 import { repairSeeds } from './repair'
@@ -64,6 +64,79 @@ function repairBudget(
   return (pinned ? 0.5 : 1) * lerp(0.12, 0, fidelity)
 }
 
+/**
+ * Walk trails from recent calls, keyed by everything the walk depends on
+ * except the hop count. Riffing forward then costs one hop, not n, and `back`
+ * costs none — without it a theme 200 hops out paid for all 200 on every
+ * rebuild, so the UI got slower the more you riffed.
+ *
+ * Insertion-ordered for LRU eviction. Sized for two frames plus the one-off
+ * probes (placement previews regenerate with a patched board), which would
+ * otherwise evict the frames' trails.
+ */
+const TRAIL_CACHE = 32
+const trails = new Map<string, WalkTrail>()
+
+function trailFor(key: string): WalkTrail {
+  let trail = trails.get(key)
+  if (trail) trails.delete(key)
+  else trail = { stops: [] }
+  trails.set(key, trail)
+  if (trails.size > TRAIL_CACHE) trails.delete(trails.keys().next().value!)
+  return trail
+}
+
+/**
+ * One walk stop as plain data, so it can outlive the process — a Worker keeps
+ * it beside a stored theme, and whichever isolate serves the next riff resumes
+ * there instead of replaying every hop. Exact: floats travel as JSON numbers.
+ */
+export interface WalkCheckpoint {
+  key: string
+  hop: number
+  floor: number
+  colors: Array<[id: string, l: number, c: number, h: number]>
+  heading: Array<[id: string, h: number, l: number, c: number]>
+}
+
+/** Walk inputs → trail key. The judge is a function of the subjects and `synthesized`. */
+const walkKey = (subjects: WalkSubject[], synthesized: Role[]) => JSON.stringify([subjects, synthesized])
+
+/** The stop a theme just built at, as data; null at hop 0 or if it isn't cached. */
+export function walkCheckpoint(result: ThemeResult): WalkCheckpoint | null {
+  const key = lastWalk?.result === result ? lastWalk.key : null
+  const trail = key ? trails.get(key) : undefined
+  const stop = trail?.stops[result.seed - 1]
+  if (!key || !trail || !stop || trail.floor == null) return null
+  return {
+    key,
+    hop: result.seed,
+    floor: trail.floor,
+    colors: [...stop.colors].map(([id, c]) => [id, c.l, c.c, c.h]),
+    heading: [...stop.heading].map(([id, a]) => [id, a.h, a.l, a.c]),
+  }
+}
+
+/** Seed the trail cache with a stored stop. Harmless if the key is unknown or already walked. */
+export function restoreWalkStop(cp: WalkCheckpoint) {
+  const trail = trailFor(cp.key)
+  trail.floor ??= cp.floor
+  if (trail.stops[cp.hop - 1]) return
+  trail.stops[cp.hop - 1] = {
+    colors: new Map(cp.colors.map(([id, l, c, h]) => [id, Object.freeze({ l, c, h })])),
+    heading: new Map(cp.heading.map(([id, h, l, c]) => [id, Object.freeze<Heading>({ h, l, c })])),
+  }
+}
+
+/** Which trail the most recent build walked — lets walkCheckpoint find it. */
+let lastWalk: { result: ThemeResult; key: string } | null = null
+
+/** Drop every cached trail — for tests that need a replay from hop 0. */
+export function clearWalkTrails() {
+  trails.clear()
+  lastWalk = null
+}
+
 export function generateTheme(options: GenerateOptions): ThemeResult {
   const fidelity = options.fidelity ?? 0.5
   const seed = options.seed ?? 0
@@ -120,7 +193,11 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
     synthesized,
     chartSeeds: chartCandidateIndexes.map((_, k) => colors.get(`chart-${k + 1}`)!),
   })
-  const walked = walkPalette(subjects, seed, (colors) => judgePalette(judgeOf(colors)).score)
+  // The judge is a function of the subjects and `synthesized`, so those two
+  // are the whole key; JSON keeps every float exact.
+  const key = seed > 0 ? walkKey(subjects, synthesized) : null
+  const trail = key ? trailFor(key) : undefined
+  const walked = walkPalette(subjects, seed, (colors) => judgePalette(judgeOf(colors)).score, trail)
   const judge = judgePalette(judgeOf(walked))
   const walkedAssignments = assignments.map((a) => ({ ...a, seed: walked.get(a.role)! }))
 
@@ -210,7 +287,7 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
   const light = buildMode(seeds, chartSeeds, 'light', fidelity, monoSeed, separation, chartLocked)
   const dark = buildMode(seeds, chartSeeds, 'dark', fidelity, monoSeed, separation, chartLocked)
 
-  return {
+  const result: ThemeResult = {
     light,
     dark,
     assignments: finalAssignments,
@@ -225,4 +302,6 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
     judge,
     css: emitCss(light, dark),
   }
+  lastWalk = key ? { result, key } : null
+  return result
 }

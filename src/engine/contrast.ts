@@ -1,7 +1,7 @@
 import { APCAcontrast, sRGBtoY } from 'apca-w3'
 import { wcagContrast } from 'culori'
 import type { Oklch } from './types'
-import { clamp, toHex } from './color'
+import { clamp, oklchToRgb24, toHex } from './color'
 
 function hexToRgb255(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16)
@@ -43,9 +43,22 @@ export function solveLightnessForLc(
     lo = 0.99 // extreme
     hi = 0.1
   }
+  // The background is fixed for the whole search: read its two luminances
+  // once, not once per step. Each step then works on the candidate's 8-bit
+  // channels directly — the hex the theme would ship, never a string.
+  const bg = parseInt(bgHex.slice(1), 16)
+  const bgApcaY = apcaY(bg)
+  const bgWcagY = wcagY(bg)
   const satisfied = (l: number) => {
-    const hex = toHex({ l, c: chromaAt(l), h })
-    return apcaLc(hex, bgHex) >= targetLc && wcagContrast(hex, bgHex) >= targetWcag
+    const c = chromaAt(l)
+    const fg = oklchToRgb24(l, c, h)
+    if (fg < 0) {
+      const hex = toHex({ l, c, h })
+      return apcaLc(hex, bgHex) >= targetLc && wcagContrast(hex, bgHex) >= targetWcag
+    }
+    if (!(apcaFromY(apcaY(fg), bgApcaY) >= targetLc)) return false
+    const fgWcagY = wcagY(fg)
+    return (Math.max(fgWcagY, bgWcagY) + 0.05) / (Math.min(fgWcagY, bgWcagY) + 0.05) >= targetWcag
   }
   // If even the extreme can't reach the target, return the extreme.
   if (!satisfied(lo)) {
@@ -58,6 +71,29 @@ export function solveLightnessForLc(
   }
   const l = clamp(lo, 0, 1)
   return { l, c: chromaAt(l), h }
+}
+
+// Per-channel lookup tables for the solver: 256 entries replace a Math.pow
+// per channel per step. Each entry is the exact expression its library uses
+// (apca-w3's simpleExp; culori's rgb → lrgb), and the sums below keep the
+// libraries' coefficient order, so the results are bit-identical to apcaLc
+// and wcagRatio on the same hex.
+const APCA_CHANNEL = Float64Array.from({ length: 256 }, (_, i) => Math.pow(i / 255.0, 2.4))
+const WCAG_CHANNEL = Float64Array.from({ length: 256 }, (_, i) => {
+  const c = i / 255
+  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+})
+const apcaY = (rgb: number) =>
+  0.2126729 * APCA_CHANNEL[(rgb >> 16) & 0xff] +
+  0.7151522 * APCA_CHANNEL[(rgb >> 8) & 0xff] +
+  0.072175 * APCA_CHANNEL[rgb & 0xff]
+const wcagY = (rgb: number) =>
+  0.2126 * WCAG_CHANNEL[(rgb >> 16) & 0xff] +
+  0.7152 * WCAG_CHANNEL[(rgb >> 8) & 0xff] +
+  0.0722 * WCAG_CHANNEL[rgb & 0xff]
+const apcaFromY = (fgY: number, bgY: number) => {
+  const lc = APCAcontrast(fgY, bgY)
+  return Math.abs(typeof lc === 'string' ? parseFloat(lc) : lc)
 }
 
 /** Choose near-white or near-black foreground for a solid bg, by APCA. */

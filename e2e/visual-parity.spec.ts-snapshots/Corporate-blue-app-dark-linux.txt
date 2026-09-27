@@ -1,0 +1,101 @@
+div.rb-slot.rb-yours --c: #1f6feb; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
+div.rb-slot.rb-yours --c: #619df9; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
+div.rb-slot.rb-yours --c: #f5f7fa; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12); --well-strong: rgba(0,0,0,0.22);
+div.rb-slot.rb-derived --c: #c72c53; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
+div.rb-slot.rb-derived --c: #158561; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
+div.rb-slot.rb-derived --c: #cdac00; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12); --well-strong: rgba(0,0,0,0.22);
+span.series.yours --c: #7292b5;
+span.series.derived --c: #fc65b7;
+span.series.derived --c: #ff7453;
+span.series.derived --c: #d59800;
+span.series.derived --c: #8cb600;
+i. background: rgb(208, 215, 222);
+div.bench-drawer height: 0px;
+i. background: rgb(208, 215, 222);
+div.dial-track-wrap --v: 50%;
+input.dial-slider 
+span.sep-thumb --sep-i: 1;
+input. 
+div.preview-root.relative.flex.min-h-[680px].overflow-hidden.bg-background.text-sm.text-foreground.dark --background: #101214; --foreground: #e8eaec; --card: #161719; --card-foreground: #e8eaec; --popover: #161719; --popover-foreground: #e8eaec; --primary: #2d6ed7; --primary-foreground: #f8fafe; --secondary: #1e1f21; --secondary-foreground: #e8eaec; --muted: #1e1f21; --muted-foreground: #b7b8bb; --accent: #121f34; --accent-foreground: #deebff; --accent-strong: #5a97f1; --link: #9db9e2; --destructive: #c5445f; --destructive-foreground: #fdf9f9; --destructive-subtle: #201314; --destructive-subtle-foreground: #eaa6ad; --success: #2f7f63; --success-foreground: #f7fbf9; --success-subtle: #101a15; --success-subtle-foreground: #9ac1ae; --warning: #c9ac36; --warning-foreground: #0f0d08; --warning-subtle: #1a170b; --warning-subtle-foreground: #c7b883; --border: #36383a; --input: #494a4d; --ring: #5a97f1; --chart-1: #7292b5; --chart-2: #fc65b7; --chart-3: #ff7453; --chart-4: #d59800; --chart-5: #8cb600; --sidebar: #161719; --sidebar-foreground: #e8eaec; --sidebar-primary: #2d6ed7; --sidebar-primary-foreground: #f8fafe; --sidebar-accent: #121f34; --sidebar-accent-foreground: #deebff; --sidebar-border: #36383a; --sidebar-ring: #5a97f1; --elevation-1: 0px 1px 2px 0px rgb(0 0 0 / 0.18), 0px 2px 6px -1px rgb(0 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(0 0 0 / 0.28), 0px 8px 20px -6px rgb(0 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(0 0 0 / 0.38), 0px 24px 48px -12px rgb(0 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(0 0 0 / 0.58);
+div.flex-1.rounded-t-sm height: 40%; background: var(--chart-1);
+div.flex-1.rounded-t-sm height: 65%; background: var(--chart-1);
+div.flex-1.rounded-t-sm height: 45%; background: var(--chart-1);
+div.flex-1.rounded-t-sm height: 80%; background: var(--chart-1);
+div.flex-1.rounded-t-sm height: 55%; background: var(--chart-1);
+div.flex-1.rounded-t-sm height: 90%; background: var(--chart-1);
+div.flex-1.rounded-t-sm height: 70%; background: var(--chart-1);
+div.flex-1.rounded-t-sm height: 40%; background: var(--chart-2);
+div.flex-1.rounded-t-sm height: 65%; background: var(--chart-2);
+div.flex-1.rounded-t-sm height: 45%; background: var(--chart-2);
+div.flex-1.rounded-t-sm height: 80%; background: var(--chart-2);
+div.flex-1.rounded-t-sm height: 55%; background: var(--chart-2);
+div.flex-1.rounded-t-sm height: 90%; background: var(--chart-2);
+div.flex-1.rounded-t-sm height: 70%; background: var(--chart-2);
+div.flex-1.rounded-t-sm height: 40%; background: var(--chart-3);
+div.flex-1.rounded-t-sm height: 65%; background: var(--chart-3);
+div.flex-1.rounded-t-sm height: 45%; background: var(--chart-3);
+div.flex-1.rounded-t-sm height: 80%; background: var(--chart-3);
+div.flex-1.rounded-t-sm height: 55%; background: var(--chart-3);
+div.flex-1.rounded-t-sm height: 90%; background: var(--chart-3);
+div.flex-1.rounded-t-sm height: 70%; background: var(--chart-3);
+div.rounded-full.motion-safe:transition-opacity flex: 34 0 0px; background: var(--chart-1); opacity: 1;
+div.rounded-full.motion-safe:transition-opacity flex: 27 0 0px; background: var(--chart-2); opacity: 1;
+div.rounded-full.motion-safe:transition-opacity flex: 18 0 0px; background: var(--chart-3); opacity: 1;
+div.rounded-full.motion-safe:transition-opacity flex: 13 0 0px; background: var(--chart-4); opacity: 1;
+div.rounded-full.motion-safe:transition-opacity flex: 8 0 0px; background: var(--chart-5); opacity: 1;
+span.size-2.shrink-0.rounded-[2px] background: var(--chart-1);
+span.size-2.shrink-0.rounded-[2px] background: var(--chart-2);
+span.size-2.shrink-0.rounded-[2px] background: var(--chart-3);
+span.size-2.shrink-0.rounded-[2px] background: var(--chart-4);
+span.size-2.shrink-0.rounded-[2px] background: var(--chart-5);
+---
+themesmith
+
+any colors in, working theme out
+
+COLORS
+start over
+?
+mono
+reset
+riff
+back
+primary
+#1f6feb
+YOURS
+accent
+#619df9
+YOURS
+neutral
+#f5f7fa
+YOURS
+danger
+#c72c53
+DERIVED
+success
+#158561
+DERIVED
+warning
+#cdac00
+DERIVED
+chart series
+1 of 5
+bench · 1 color not in play
+#d0d7de
+add a color
+TUNING
+taste
+0.50
+SMITH
+RAW
+your colors already sit well — nothing to tune
+separation
+flat
+layered
+lifted
+
+the familiar stack — the card sits a step off the page, with hairline and shadow sharing the work
+
+all 40 checks pass
+report
+Copy CSS variables

@@ -10,7 +10,7 @@ import {
   Undo2,
   X,
 } from 'lucide-react'
-import type { ColorCandidate, Role, Separation, ThemeResult, TokenAncestor } from './engine'
+import type { ColorCandidate, Role, ThemeResult, TokenAncestor } from './engine'
 import {
   candidatesFromList,
   generateTheme,
@@ -22,23 +22,10 @@ import {
 } from './engine'
 import type { BoardView, DragPayload } from './board'
 import {
-  adjustRole,
-  benchCandidate,
-  deriveRole,
   describePlacement,
-  dropCandidate,
   hasRiffableSeats,
-  keepRole,
-  lockRole,
-  lockSeries,
   nameOf,
-  placeInRole,
-  placeInSeries,
   readBoard,
-  remapAfterRemove,
-  resetPlacements,
-  unlockRole,
-  unlockSeries,
   wouldTakeOver,
 } from './board'
 import { GLOSS, jobsForRole } from './roleCopy'
@@ -66,26 +53,19 @@ import type { MockupProps } from './mockups'
 import { MOCKUPS, mockupById } from './mockups'
 import { PRESETS } from './presets'
 import { useDismiss } from './components/useDismiss'
+import type { Op, ThemeState } from './ops'
+import { applyOp, emptyThemeState } from './ops'
 import './styles/tokens.css'
 import './styles/base.css'
 import './App.css'
 
 type Mode = 'light' | 'dark'
 
-interface FrameState {
-  candidates: ColorCandidate[]
-  fidelity: number
+/** A theme's state (see ops.ts) plus how this frame shows it. */
+interface FrameState extends ThemeState {
   mode: Mode
   /** Which design-space mockup this frame renders into. */
   mockup: string
-  /** Name of the applied preset; cleared once candidates diverge from it. */
-  preset: string | null
-  /** Mono lock: candidate index whose hue rules the theme, or null. */
-  monoBase: number | null
-  /** How many riff hops this frame stands from the cookbook; 0 = the cookbook. */
-  seed: number
-  /** How hard the surface stack separates itself. `layered` = historical output. */
-  separation: Separation
 }
 
 /** What "start over" replaces — and what undo brings back. */
@@ -111,16 +91,7 @@ const EXPORT_FORMATS = (Object.keys(FORMAT_LABEL) as ExportFormat[]).map((id) =>
   label: FORMAT_LABEL[id],
 }))
 
-const emptyFrameState = (): FrameState => ({
-  candidates: [],
-  fidelity: 0.5,
-  mode: 'dark',
-  mockup: 'app',
-  preset: null,
-  monoBase: null,
-  seed: 0,
-  separation: 'layered',
-})
+const emptyFrameState = (): FrameState => ({ ...emptyThemeState(), mode: 'dark', mockup: 'app' })
 
 /** Every seat and every chart slot already holds a colour of yours. */
 const boardIsFull = (v: BoardView): boolean =>
@@ -138,23 +109,42 @@ function FrameMockup({ mockup, ...props }: { mockup: string } & MockupProps) {
   return <M {...props} />
 }
 
+/**
+ * Keyed on the engine's inputs, not the frame object: switching mockup or
+ * light/dark replaces the frame but not the theme, and used to rebuild it.
+ */
 function useThemeResult(f: FrameState | undefined) {
+  const candidates = f?.candidates
+  const fidelity = f?.fidelity
+  const monoBase = f?.monoBase
+  const seed = f?.seed
+  const separation = f?.separation
   return useMemo(() => {
-    if (!f || f.candidates.length === 0) return null
+    if (!candidates || candidates.length === 0) return null
     try {
-      return generateTheme({
-        candidates: f.candidates,
-        fidelity: f.fidelity,
-        monoBase: f.monoBase ?? undefined,
-        seed: f.seed,
-        separation: f.separation,
-      })
+      return generateTheme({ candidates, fidelity, monoBase: monoBase ?? undefined, seed, separation })
     } catch (err) {
       console.error(err)
       return null
     }
-  }, [f])
+  }, [candidates, fidelity, monoBase, seed, separation])
 }
+
+/**
+ * The regenerate callback the placement probes (describePlacement,
+ * wouldTakeOver) run once per option. They read only who sits where, and
+ * casting happens before the riff walk and never depends on it — so the probe
+ * builds at seed 0. At the frame's own seed each probe replayed the whole walk
+ * for a board it then read nothing from: 65–273 ms per popover at hop 200.
+ */
+const probeCasting = (f: FrameState) => (next: ColorCandidate[]) =>
+  generateTheme({
+    candidates: next,
+    fidelity: f.fidelity,
+    monoBase: f.monoBase ?? undefined,
+    separation: f.separation,
+    seed: 0,
+  })
 
 export default function App() {
   // One or two independent frames. All sidebar edits target the active one;
@@ -191,7 +181,6 @@ export default function App() {
   const updateFrame = (i: number, patch: Partial<FrameState>) => {
     setFrames((prev) => prev.map((f, j) => (j === i ? { ...f, ...patch } : f)))
   }
-  const updateActive = (patch: Partial<FrameState>) => updateFrame(active, patch)
 
   const results = [useThemeResult(frames[0]), useThemeResult(frames[1])]
   const result = results[active]
@@ -201,6 +190,17 @@ export default function App() {
     () => (result ? readBoard(result, frame.candidates, frame.mode) : null),
     [result, frame.candidates, frame.mode],
   )
+
+  // Every theme edit is an op (ops.ts) — the same verbs the remote API runs.
+  // The active frame reuses the board already on screen; another frame's ops
+  // (the start hero in split view) build their own.
+  const dispatchTo = (i: number, op: Op) => {
+    const f = frames[i]
+    const next = applyOp(f, op, { mode: f.mode, view: i === active ? view : undefined })
+    if (next !== f) updateFrame(i, next)
+    return next !== f
+  }
+  const dispatch = (op: Op) => dispatchTo(active, op)
 
   const toggleMode = (i: number) => {
     setFrames((prev) =>
@@ -255,26 +255,13 @@ export default function App() {
   // ---- candidate edits ----------------------------------------------------
   // Placement is explicit now, so an edit needs no seat-transfer detective
   // work: the board shows the consequence in the seat you just changed.
-  const setCandidates = (next: ColorCandidate[]) =>
-    updateActive({ candidates: next, preset: null })
-
   const addCandidates = (inputs: string[]) => {
-    const parsed = inputs
-      .map((raw) => ({ raw, color: parseColor(raw) }))
-      .filter((x): x is { raw: string; color: NonNullable<ReturnType<typeof parseColor>> } => !!x.color)
-    if (parsed.length === 0) return
-    const added: ColorCandidate[] = parsed.map((x) => ({
-      color: x.color,
-      source: 'manual',
-      raw: x.raw,
-    }))
-    const next = [...frame.candidates, ...added]
-    setCandidates(next)
+    const before = view
+    if (!dispatch({ op: 'add', colors: inputs })) return
     // A colour that lands on a collapsed bench would vanish silently, and with
     // every seat already filled that is where it goes. Deliberately NOT
     // `hasRiffableSeats` — this asks "is the board full", which is a question
     // about seats, not about what riff may move.
-    const before = view
     if (before && boardIsFull(before)) {
       setBenchFlash(true)
       setTimeout(() => setBenchFlash(false), 1000)
@@ -293,7 +280,7 @@ export default function App() {
     label: string,
   ) => {
     const prev = frames[i]
-    updateFrame(i, { candidates, preset, monoBase: null, seed: 0 })
+    dispatchTo(i, { op: 'start', candidates, preset })
     setPicking(false)
     setSeatMenu(null)
     if (prev.candidates.length > 0) {
@@ -345,13 +332,13 @@ export default function App() {
   const riff = () => {
     if (!view) return
     const moving = view.slots.filter((s) => !s.locked).map((s) => s.role)
-    updateActive({ seed: frame.seed + 1 })
+    dispatch({ op: 'riff' })
     setSeatMenu(null)
     setRerolled(moving)
     setTimeout(() => setRerolled([]), 700)
   }
   const riffBack = () => {
-    updateActive({ seed: Math.max(0, frame.seed - 1) })
+    dispatch({ op: 'back' })
     setSeatMenu(null)
   }
 
@@ -368,9 +355,9 @@ export default function App() {
       idx = view.series.find((s) => s.slot === payload.slot)?.candidateIndex ?? null
     }
     if (idx == null) return
-    if (target.kind === 'role') setCandidates(placeInRole(frame.candidates, idx, target.role, view))
-    else if (target.kind === 'series') setCandidates(placeInSeries(frame.candidates, idx))
-    else setCandidates(benchCandidate(frame.candidates, idx))
+    if (target.kind === 'role') dispatch({ op: 'place', index: idx, role: target.role })
+    else if (target.kind === 'series') dispatch({ op: 'series', index: idx })
+    else dispatch({ op: 'bench', index: idx })
   }
 
   /**
@@ -380,35 +367,19 @@ export default function App() {
    * first — that materialises one at exactly the colour on screen.
    */
   const toggleSeatLock = (role: Role) => {
-    if (!view) return
-    const slot = view.slots.find((s) => s.role === role)
-    if (!slot) return
-    if (slot.locked) {
-      setCandidates(unlockRole(frame.candidates, role, view))
-    } else if (slot.provenance === 'derived') {
-      const parsed = parseColor(slot.hex)
-      if (parsed) setCandidates(keepRole(frame.candidates, role, parsed, slot.hex))
-    } else {
-      setCandidates(lockRole(frame.candidates, role, view))
-    }
+    const slot = view?.slots.find((s) => s.role === role)
+    if (slot) dispatch({ op: slot.locked ? 'unlock' : 'lock', role })
   }
 
   // A derived chart fill has no candidate behind it and no `keep` verb to
   // materialise one, so the tray only offers the lock on slots of yours.
   const toggleSeriesLock = (slot: number) => {
-    if (!view) return
-    const entry = view.series.find((s) => s.slot === slot)
-    if (!entry || entry.candidateIndex == null) return
-    setCandidates(
-      entry.locked
-        ? unlockSeries(frame.candidates, slot, view)
-        : lockSeries(frame.candidates, slot, view),
-    )
+    const entry = view?.series.find((s) => s.slot === slot)
+    if (entry) dispatch({ op: entry.locked ? 'unlockSeries' : 'lockSeries', slot })
   }
 
   const freeSeat = (role: Role) => {
-    if (!view) return
-    setCandidates(deriveRole(frame.candidates, role, view))
+    dispatch({ op: 'derive', role })
     setSeatMenu(null)
   }
 
@@ -417,13 +388,7 @@ export default function App() {
     if (!view || !result || !seatMenu || seatMenu.kind !== 'assign') return []
     const role = seatMenu.seat as Role
     const here = view.slots.find((s) => s.role === role)?.candidateIndex ?? null
-    const regen = (next: ColorCandidate[]) =>
-      generateTheme({
-        candidates: next,
-        fidelity: frame.fidelity,
-        monoBase: frame.monoBase ?? undefined,
-        seed: frame.seed,
-      })
+    const regen = probeCasting(frame)
     const seen = new Set<number>()
     const out: Array<{ candidateIndex: number; hex: string; hint: string }> = []
     const add = (candidateIndex: number, hex: string) => {
@@ -445,21 +410,14 @@ export default function App() {
       }
     }
     return out
-  }, [view, result, seatMenu, frame.candidates, frame.fidelity, frame.monoBase, frame.seed])
+  }, [view, result, seatMenu, frame])
 
   // What would step in if this seat's holder left — so the popover names the
   // successor instead of promising a derived result it can't guarantee.
   const takeOver = useMemo(() => {
     if (!view || !seatMenu || seatMenu.kind !== 'assign') return null
-    return wouldTakeOver(frame.candidates, seatMenu.seat as Role, view, (next) =>
-      generateTheme({
-        candidates: next,
-        fidelity: frame.fidelity,
-        monoBase: frame.monoBase ?? undefined,
-        seed: frame.seed,
-      }),
-    )
-  }, [view, seatMenu, frame.candidates, frame.fidelity, frame.monoBase, frame.seed])
+    return wouldTakeOver(frame.candidates, seatMenu.seat as Role, view, probeCasting(frame))
+  }, [view, seatMenu, frame])
 
   // ---- locate mode --------------------------------------------------------
   // Hovering a seat lights that seat's colour in the mockup. Debounced so
@@ -503,8 +461,8 @@ export default function App() {
   // you were back on the same base with no way to reach the picker again.
   const lockClick = () => {
     if (picking) setPicking(false)
-    else if (locked) updateActive({ monoBase: null })
-    else if (frame.candidates.length === 1) updateActive({ monoBase: 0 })
+    else if (locked) dispatch({ op: 'mono', index: null })
+    else if (frame.candidates.length === 1) dispatch({ op: 'mono', index: 0 })
     else if (frame.candidates.length > 1) setPicking(true)
   }
   useEffect(() => {
@@ -549,7 +507,7 @@ export default function App() {
           if (frame.seed > 0) riffBack()
           break
         case 'reset':
-          if (hasPlacements) setCandidates(resetPlacements(frame.candidates))
+          if (hasPlacements) dispatch({ op: 'reset' })
           break
         case 'startOver':
           setStartOverPage('root')
@@ -618,19 +576,7 @@ export default function App() {
 
   const hero = (i: number) => (
     <StartHero
-      onAddColors={(inputs) => {
-        const f = frames[i]
-        const parsed = inputs
-          .map((raw) => ({ raw, color: parseColor(raw) }))
-          .filter((x): x is { raw: string; color: NonNullable<ReturnType<typeof parseColor>> } => !!x.color)
-        updateFrame(i, {
-          candidates: [
-            ...f.candidates,
-            ...parsed.map((x) => ({ color: x.color, source: 'manual' as const, raw: x.raw })),
-          ],
-          preset: null,
-        })
-      }}
+      onAddColors={(inputs) => dispatchTo(i, { op: 'add', colors: inputs })}
       onImage={(candidates) => startOverAt(i, candidates, null, 'extracted colors')}
       onPreset={(p) => startOverAt(i, candidatesFromList(p.colors), p.name, `started with ${p.name}`)}
     />
@@ -794,7 +740,7 @@ export default function App() {
                 </button>
                 <button
                   className="ctl"
-                  onClick={() => setCandidates(resetPlacements(frame.candidates))}
+                  onClick={() => dispatch({ op: 'reset' })}
                   disabled={!hasPlacements}
                   title={withKey(
                     'reset',
@@ -848,7 +794,7 @@ export default function App() {
                 onPick={(role) => {
                   const idx = view.slots.find((s) => s.role === role)?.candidateIndex ?? null
                   // a derived seat has no colour of yours to lock onto
-                  if (idx != null) updateActive({ monoBase: idx })
+                  if (idx != null) dispatch({ op: 'mono', index: idx })
                   setPicking(false)
                 }}
                 onAssign={(role, anchor) => setSeatMenu({ kind: 'assign', seat: role, anchor })}
@@ -874,15 +820,7 @@ export default function App() {
                 onToggle={() => setBenchOpen((o) => !o)}
                 onDropToBench={(payload) => applyDrop(payload, { kind: 'bench' })}
                 onDragStartBench={() => setSeatMenu(null)}
-                onRemove={(i) =>
-                  // The mono base is an INDEX — it must be remapped with the
-                  // splice or the lock silently re-points at another color.
-                  updateActive({
-                    candidates: dropCandidate(frame.candidates, i),
-                    preset: null,
-                    monoBase: remapAfterRemove(frame.monoBase, i),
-                  })
-                }
+                onRemove={(i) => dispatch({ op: 'drop', index: i })}
               />
 
               {/* No wrapper: the control lays out its own row now, and the
@@ -902,13 +840,13 @@ export default function App() {
               <Dial
                 value={frame.fidelity}
                 caption={caption}
-                onChange={(v) => updateActive({ fidelity: v })}
+                onChange={(v) => dispatch({ op: 'fidelity', value: v })}
               />
               {/* Per-frame, like fidelity/mode/seed: two frames side by side at
                   different settings is how the trade reads clearest. */}
               <SeparationControl
                 value={frame.separation}
-                onChange={(s) => updateActive({ separation: s })}
+                onChange={(s) => dispatch({ op: 'separation', value: s })}
               />
             </Section>
           )}
@@ -951,14 +889,11 @@ export default function App() {
           takeOver={takeOver}
           anchor={seatMenu.anchor}
           onPick={(idx) => {
-            if (!view) return
-            setCandidates(placeInRole(frame.candidates, idx, seatMenu.seat as Role, view))
+            dispatch({ op: 'place', index: idx, role: seatMenu.seat as Role })
             setSeatMenu(null)
           }}
           onAdjust={(hex) => {
-            const parsed = parseColor(hex)
-            if (!view || !parsed) return
-            setCandidates(adjustRole(frame.candidates, seatMenu.seat as Role, parsed, hex, view))
+            dispatch({ op: 'adjust', role: seatMenu.seat as Role, color: hex })
             setSeatMenu(null)
           }}
           onFree={() => freeSeat(seatMenu.seat as Role)}

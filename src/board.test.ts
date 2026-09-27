@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { candidatesFromList, generateTheme, parseColor, toHex } from './engine'
+import { ROLES, candidatesFromList, generateTheme, parseColor, toHex } from './engine'
+import { PRESETS } from './presets'
 import type { ColorCandidate } from './engine'
 import {
   adjustRole,
@@ -10,7 +11,9 @@ import {
   lockRole,
   lockSeries,
   placeInRole,
+  describePlacement,
   readBoard,
+  wouldTakeOver,
   dropCandidate,
   readableInk,
   remapAfterRemove,
@@ -398,5 +401,30 @@ describe('adjustRole — hand-picking a new colour for a seat', () => {
     const role = v.slots.find((s) => s.candidateIndex === 0)!.role
     const next = adjustRole(c, role, parseColor('#00a651')!, '#00a651', v)
     expect(next[0].source).toBe('manual')
+  })
+})
+
+describe('placement probes are riff-independent', () => {
+  // App probes at seed 0 (probeCasting) because casting runs before the walk.
+  // If that ever stops being true, the popover would describe a different
+  // board than the one on screen — this pins it.
+  it('describePlacement and wouldTakeOver read the same at seed 0 and seed N', () => {
+    for (const p of PRESETS) {
+      const candidates = candidatesFromList(p.colors)
+      for (const seed of [3, 20]) {
+        for (const fidelity of [0, 0.5, 1]) {
+          const at = (s: number) => (next: ColorCandidate[]) => generateTheme({ candidates: next, fidelity, seed: s })
+          const view = readBoard(at(seed)(candidates), candidates, 'light')
+          for (const role of ROLES) {
+            expect(wouldTakeOver(candidates, role, view, at(0))).toEqual(wouldTakeOver(candidates, role, view, at(seed)))
+            candidates.forEach((_, i) =>
+              expect(describePlacement(candidates, i, role, view, at(0))).toBe(
+                describePlacement(candidates, i, role, view, at(seed)),
+              ),
+            )
+          }
+        }
+      }
+    }
   })
 })

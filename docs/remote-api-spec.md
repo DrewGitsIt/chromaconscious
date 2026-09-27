@@ -1,6 +1,6 @@
-# Themesmith remote API — spec (draft 2)
+# Themesmith remote API — spec (draft 3)
 
-Status: draft for review, 2026-09-25. Nothing built.
+Status: 2026-09-26. Phase 1 and the core of phase 2 are built on the `phase1/core` branch (worktree `../themesmith-phase1`); not merged, not deployed. See [Phases](#phases).
 
 ## Decisions so far
 
@@ -88,7 +88,7 @@ GET  /presets
   - A lock freezes the color *where it currently stands*. That can be several riff hops from what you typed.
   - Locking a seat the engine derived first keeps that color as yours (`keepRole`), as in the UI.
   - `lock` and `unlock` are accepted on `/riff` and `/generate?from=`.
-- **`mode`** is not theme state. Every theme contains light and dark, and `mode` only chooses what `/export` and `/preview` show.
+- **`mode`** is not theme state. Every theme contains light and dark, and `mode` only chooses what `/export` and `/preview` show. As built, `/export` honours it for `json` only; CSS and Tailwind always carry both modes (`:root` and `.dark`), which is what a stylesheet wants.
 - **`mono`** takes the hex of the color whose hue rules the theme, or `off`.
 - **`format`** on `/export`:
   - `css` gives CSS variables
@@ -138,17 +138,18 @@ preview  …/preview?theme=t_k3v9x2&mockup=app&mode=light&as=png
   "v": 1,
   "candidates": [
     { "color": "#e63946", "pin": "primary", "locked": true,
-      "lockedColor": "oklch(0.6312 0.2011 25.14)", "benched": false, "origin": "invented" }
+      "lockedColor": [0.6312398, 0.2011204, 25.1400131], "benched": true, "origin": "invented" }
   ],
   "fidelity": 0.5, "seed": 3, "monoBase": null, "separation": "layered",
   "parent": "t_8b2mq1"     // provenance only; not part of the hash
 }
 ```
 
-- **Canonical form.** Keys are sorted, defaults are dropped and numbers are fixed to 4 decimal places.
-  - `id = "t_" + base32(sha256(canonical))[:12]`.
+- **Canonical form.** Fixed key order, defaults and false flags dropped. **Nothing is rounded**: a lock names an exact colour and taste 0.8 must stay 0.8, and JSON numbers round-trip exactly. (Draft 2 proposed 4-decimal rounding; that would have moved locked colours.)
+  - `id = "t_" + base32(sha256(canonical))[:12]` — 60 bits.
+  - Stored beside it in KV, outside the hash: `parent`, and the riff walk checkpoint (below).
 - **No engine version in the ID.** Old IDs re-solve on the current engine, as decided.
-- **`lockedColor` is stored as `oklch()` text.** Hex would round it, and a lock is supposed to be exact.
+- **`lockedColor` is stored as an `[l, c, h]` number array.** Hex would round it, and `oklch()` text would need a parse round-trip that isn't exact at chroma 0.
 
 ## Architecture
 
@@ -205,49 +206,39 @@ Full parameters and examples: https://drewkidwell.com/themesmith/docs.md
 
 ## Performance
 
-Measured 2026-09-25 on a Ryzen 7 9800X3D, in Node, on a bundled build of the engine. Cloudflare's servers are probably 1.5–2× slower per core.
+Measured on a Ryzen 7 9800X3D, in Node, on the minified Worker bundle (190 KB, 50 KB gzipped). Cloudflare's servers are probably 1.5–2× slower per core. "Fresh isolate" = a new process whose first request is timed, with Node's own lazy Web API start-up (~16 ms for `Request` and WebCrypto, which a Worker has natively) paid beforehand.
 
-| riff hops | 0 | 10 | 50 | 200 | 500 |
-|---|---|---|---|---|---|
-| warm (ms) | 2.0 | 2.6 | 4.9 | 13.7 | 29.0 |
-| first call in a new isolate (ms) | 8–12 | 10–14 | 14–19 | 24–29 | 44–51 |
+**Before** (2026-09-25 review): a warm build took 1.9 ms; a first call in a fresh isolate 8–12 ms; riff cost grew ~0.055 ms per hop, so every rebuild of a theme 200 hops out cost ~14 ms and a 500-hop one ~29 ms.
 
-Candidate count (2–32), mono lock and separation barely change the cost: 1.7–2.9 ms warm.
+**After** (phase 1, 2026-09-26), all with byte-identical output:
 
-**Verdict: this doesn't fit a 10 ms CPU limit reliably today.** Getting under about 5 ms needs three changes, all in phase 1:
+| | before | after |
+|---|---|---|
+| warm build, riff 0 | 1.94 ms | 0.91 ms |
+| riff one step at hop ~200 (same process) | ~15 ms | 0.87 ms |
+| fresh isolate, first `/generate` (whole request) | — | 2.3–2.9 ms |
+| fresh isolate, first `/riff` with a lock | — | 3.0–4.4 ms |
+| fresh isolate, riff hop 150 → 151 from a stored theme | 28–29 ms | 2.8–3.0 ms |
+| assign popover at riff 200 (UI) | 65–273 ms | seed-0 probes, ~1 ms per option |
 
-1. **A faster text-contrast solver.**
-   - It's about 80% of every build (`engine/contrast.ts:28`). The solver works through hex strings, and the WCAG check re-parses both hexes on every call.
-   - A version that works on numbers only, with 20 steps instead of 40, produced **byte-identical CSS in 540/540 configurations** and cut a warm build from 1.9 to 0.6 ms.
-   - The UI benefits from this too.
-2. **Warm-up builds at module load.**
-   - A first call is slow mostly because the JIT hasn't warmed up. With the faster solver, one warm-up build brings the first request to 1.7 ms; five bring it to 1.15 ms.
-   - Check Cloudflare's docs to confirm that start-up CPU isn't charged to the per-request limit.
-3. **Resumable riffs.**
-   - `walkPalette` replays every hop from 0, so riff cost grows by about 0.055 ms per hop.
-   - The walk's state at hop *n* is small: the current colors plus the heading each subject is moving in. Store it in KV next to the snapshot, under the theme ID but not part of the hash. `/riff?theme=t_x` can then resume from t_x and walk one hop.
-   - Changing a lock changes which subjects move, so the path changes. That riff replays from 0, as the UI does today.
-   - Cap `hops` per request at **50**, not 500.
+What did it:
 
-Other results from the same review concern the UI, not the API. They're phase-1 candidates because they touch the same code:
+1. **String-free contrast solver** (`engine/contrast.ts`). It bisected lightness 40 times per text colour, and each step built a hex string through culori, then re-parsed it and the unchanging background for APCA and again for WCAG. It now reads the background once and works on packed 8-bit channels with lookup tables, through a transcription of culori's conversion chain that keeps its constants and operation order. `toHex`/`toGamut` use the same path.
+2. **Resumable riff walk** (`engine/walk.ts`). Each hop's end state (colours plus headings) is kept in a trail keyed by the walk's inputs; forward is one hop, back is a lookup. For the API, the stop a theme was built at is stored beside its snapshot and restored on load, so any isolate resumes instead of replaying.
+3. **Warm-up at module load** (`api/worker.ts`). Runs the whole request path (parse, ops, build, summary, exports) for six presets, locking a different seat each time: ~57 ms of start-up CPU. Still to confirm: that Cloudflare doesn't charge start-up CPU to the first request.
 
-- **Assign popover.** It rebuilds the whole theme for every option: 10 ms at riff 0, 65–273 ms at riff 200. Its preview text depends only on the casting, which doesn't vary with riff (594/594 identical), so it can run `assignRoles` alone at about 0.02 ms. It also drops `separation`.
-- **`useThemeResult`.** It depends on the whole frame (`App.tsx:156`), so switching mockups or modes rebuilds the theme for no reason.
-- **Image extraction.** It blocks the main thread for 27–50 ms (86–182 ms at 4× CPU slowdown). Move it to a Web Worker, or downscale to 64–96 px.
-- **Bundle.** 237 KB gzipped, in one chunk. The Material quantizer (87 KB), the non-default mockups and culori's full build can all be loaded lazily or trimmed.
+Remaining costs over 5 ms: a trail miss at depth (changing taste or a lock at hop 40 replays those 40 hops, ~7 ms), and hops-per-request is capped at **50** so one request can't walk far. Not done yet from the review: image extraction off the main thread, and bundle splitting.
 
 ## Phases
 
-1. **Core extraction.**
-   - Build `ops.ts` and `state.ts`, and move the App handlers onto `applyOp`.
-   - Golden tests: the same state gives byte-identical CSS, and each UI verb matches `applyOp`.
-   - The faster solver, resumable riff state, and a warm-up hook. The golden tests guard the solver's byte-identical output.
-   - No visible change in the UI.
-2. **Worker v1.**
-   - `/generate` (colors and presets), `/riff`, `/back`, `/theme`, `/export` with the ID header, KV snapshots, and the owner's API key.
-   - The `#t_…` handoff in the UI.
-   - The skill plus `docs.md`.
-3. **Remaining placement verbs** (`derive`, `bench`, `add`, `unlock`) and `include=`.
+1. **Core extraction — done** (branch `phase1/core`).
+   - `ops.ts`: every UI edit is an `Op` run by `applyOp`; App dispatches them.
+   - Faster solver, resumable walk with storable checkpoints, seed-0 popover probes, theme memo keyed on its inputs.
+   - Regression nets: golden hashes of every engine surface over 4,254 configurations; 40 UI flows checked by pixels and by exact DOM (theme variables, seat hexes); the full e2e suite. All identical to the pre-change baseline.
+2. **Worker v1 — core done**, rest open.
+   - Done: `src/api/` — `/generate` (colors, preset, `from=`), `/riff`, `/back`, `/theme`, `/export` with the ID header, `/presets`; placements `derive`, `bench`, `add`, `lock`/`unlock` (seats and `chart-N`), `mono`; KV-shaped snapshots with walk checkpoints; text and JSON summaries. 12 API tests, including one that the API and the UI verbs reach identical CSS.
+   - Open: the Cloudflare project itself (wrangler config, KV binding, route), the owner's API key, the `#t_…` handoff in the UI, the skill and `docs.md`.
+3. **`include=`** (tokens, ramps, full report) on `/theme`.
 4. **Eyes and images.** `preview.html`, `preview.png`, then image extraction.
 5. **Public.** Anonymous access with rate limits and TTLs, the site playground, named themes, and optional MCP.
 

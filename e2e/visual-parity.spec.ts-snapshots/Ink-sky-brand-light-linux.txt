@@ -1,0 +1,86 @@
+div.rb-slot.rb-yours --c: #25b1ec; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12); --well-strong: rgba(0,0,0,0.22);
+div.rb-slot.rb-derived --c: #8373bd; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
+div.rb-slot.rb-yours --c: #111727; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
+div.rb-slot.rb-derived --c: #c72c53; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
+div.rb-slot.rb-derived --c: #158561; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
+div.rb-slot.rb-derived --c: #cdac00; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12); --well-strong: rgba(0,0,0,0.22);
+span.series.derived --c: #8373bd;
+span.series.derived --c: #a761b0;
+span.series.derived --c: #c35871;
+span.series.derived --c: #bf641f;
+span.series.derived --c: #958000;
+div.bench-drawer height: 0px;
+div.dial-track-wrap --v: 50%;
+input.dial-slider 
+span.sep-thumb --sep-i: 1;
+input. 
+div.brand-board --elevation-1: 0px 1px 2px 0px rgb(19 26 42 / 0.03), 0px 2px 6px -1px rgb(19 26 42 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(19 26 42 / 0.05), 0px 8px 20px -6px rgb(19 26 42 / 0.09); --elevation-3: 0px 1px 2px 0px rgb(19 26 42 / 0.08), 0px 24px 48px -12px rgb(19 26 42 / 0.18); --scrim: rgb(19 26 42 / 0.32); --bb-paper: #f5f8ff; --bb-ink: #181b23; --bb-ink-subtle: #656972; --bb-line: #ced8ec; --bb-wash: #eff9ff; --bb-brand: #0079a9; --bb-brand-ink: #f7fbfd; --bb-accent: #7967b1; --bb-accent-ink: #faf9fd;
+div.bb-chip-fill background: rgb(0, 121, 169);
+div.bb-chip-fill background: rgb(121, 103, 177);
+div.bb-chip-fill background: rgb(24, 27, 35);
+div.bb-chip-fill background: rgb(245, 248, 255);
+div. background: rgb(248, 252, 255);
+div. background: rgb(239, 249, 255);
+div. background: rgb(218, 242, 255);
+div. background: rgb(195, 233, 255);
+div. background: rgb(175, 224, 252);
+div. background: rgb(153, 213, 246);
+div. background: rgb(121, 197, 237);
+div. background: rgb(74, 177, 226);
+div. background: rgb(37, 177, 236);
+div. background: rgb(8, 166, 224);
+div. background: rgb(47, 113, 146);
+div. background: rgb(0, 40, 58);
+div. flex-basis: 60%; background: rgb(239, 249, 255);
+div. flex-basis: 30%; background: rgb(0, 121, 169);
+div. flex-basis: 10%; background: rgb(121, 103, 177);
+---
+themesmith
+
+any colors in, working theme out
+
+COLORS
+start over
+?
+mono
+reset
+riff
+back
+primary
+#25b1ec
+YOURS
+accent
+#8373bd
+DERIVED
+neutral
+#111727
+YOURS
+danger
+#c72c53
+DERIVED
+success
+#158561
+DERIVED
+warning
+#cdac00
+DERIVED
+chart series
+0 of 5
+bench · 0 colors not in play
+add a color
+TUNING
+taste
+0.50
+SMITH
+RAW
+gently tuning your colors · avg shift ΔE 0.02
+separation
+flat
+layered
+lifted
+
+the familiar stack — the card sits a step off the page, with hairline and shadow sharing the work
+
+all 40 checks pass
+report
+Copy CSS variables

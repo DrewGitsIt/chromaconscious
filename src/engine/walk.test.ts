@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { ColorCandidate, Oklch, Role, ThemeResult } from './index'
-import { candidatesFromList, generateTheme, parseColor } from './index'
+import { candidatesFromList, clearWalkTrails, generateTheme, parseColor, restoreWalkStop, walkCheckpoint } from './index'
 import { deltaEok, hueDistance } from './color'
-import type { WalkSubject } from './walk'
+import type { WalkSubject, WalkTrail } from './walk'
 import { chartEnvelope, envelopeFor, walkPalette } from './walk'
 
 /**
@@ -570,5 +570,67 @@ describe('R3: three hops keep the family, repeated hops leave it', () => {
         `${name}: primary hue at hop 20`,
       ).toBeGreaterThan(50)
     }
+  })
+})
+
+describe('resumable walk', () => {
+  // A judge with real structure, so the argmax actually depends on where the
+  // walk stands — a constant judge would make resume trivially correct.
+  const judge = (colors: Map<string, Oklch>) => {
+    let s = 0
+    for (const c of colors.values()) s += Math.sin(c.h / 17) * c.c + c.l * 0.3
+    return 0.85 + 0.01 * Math.tanh(s)
+  }
+  const subjectsOf = (hexes: string[]): WalkSubject[] =>
+    hexes.map((hex, i) => ({
+      id: ROLES[i] ?? `chart-${i - ROLES.length + 1}`,
+      color: parseColor(hex)!,
+      envelope: ROLES[i] ? envelopeFor(ROLES[i]) : chartEnvelope(),
+      locked: i === 2,
+      lightnessOnly: i === 3,
+      travel: 1,
+    }))
+
+  it('resuming from any stop is bit-identical to replaying from hop 0', () => {
+    const subjects = subjectsOf([...FLAG, '#8a6fd1', '#c77d3a'])
+    const trail: WalkTrail = { stops: [] }
+    // Forward one hop at a time, a jump, then back down — every call is
+    // answered from the trail and must equal a fresh replay.
+    for (const hops of [1, 2, 3, 4, 5, 12, 40, 41, 39, 7, 0, 60]) {
+      const resumed = walkPalette(subjects, hops, judge, trail)
+      const replayed = walkPalette(subjects, hops, judge)
+      expect([...resumed]).toEqual([...replayed])
+    }
+    expect(trail.stops).toHaveLength(60)
+  })
+
+  it('freezes its stops, so a caller cannot corrupt a later resume', () => {
+    const trail: WalkTrail = { stops: [] }
+    const out = walkPalette(subjectsOf(FLAG), 3, judge, trail)
+    expect(() => {
+      out.get('primary')!.l = 0.1
+    }).toThrow(TypeError)
+  })
+
+  it('generateTheme riffing forward and back matches fresh themes exactly', () => {
+    const candidates = candidatesFromList(PASTEL)
+    const path = [1, 2, 3, 10, 9, 25, 24, 3, 0]
+    const walked = path.map((seed) => generateTheme({ candidates, seed }).css)
+    for (const [i, seed] of path.entries()) {
+      clearWalkTrails()
+      expect(walked[i]).toBe(generateTheme({ candidates, seed }).css)
+    }
+  })
+
+  it('a stop restored on its own (a fresh isolate) resumes identically, forward and back', () => {
+    const candidates = candidatesFromList(FLAG)
+    clearWalkTrails()
+    const at30 = generateTheme({ candidates, seed: 30 })
+    const cp = JSON.parse(JSON.stringify(walkCheckpoint(at30)))
+    expect(cp.hop).toBe(30)
+    const expected = [31, 34, 30, 12, 0].map((seed) => generateTheme({ candidates, seed }).css)
+    clearWalkTrails()
+    restoreWalkStop(cp) // the trail now holds hop 30 and nothing before it
+    expect([31, 34, 30, 12, 0].map((seed) => generateTheme({ candidates, seed }).css)).toEqual(expected)
   })
 })
