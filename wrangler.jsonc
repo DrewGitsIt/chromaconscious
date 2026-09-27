@@ -1,0 +1,51 @@
+// themesmith on Cloudflare Workers: the React app as static assets, the API as
+// Worker code, one deploy. See docs/remote-api-spec.md.
+//
+//   npm run build:cf     build the app for /themesmith/
+//   npm run dev:cf       run it all locally in workerd (local KV)
+//   npm run deploy       build + deploy
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "themesmith",
+	"main": "src/api/worker.ts",
+	"compatibility_date": "2026-09-01",
+	// The app is built with base /themesmith/ into dist-cf/themesmith/, so a
+	// request path maps straight onto a file: /themesmith/ → index.html,
+	// /themesmith/assets/… → the bundles. Asset requests are free and never run
+	// the Worker.
+	"assets": {
+		"directory": "./dist-cf",
+		// Only the API runs code. Anything else that matches no file also falls
+		// through to the Worker, which answers 404.
+		"run_worker_first": [
+			"/api/*"
+		],
+	},
+	// Theme snapshots and their riff checkpoints (src/api/handler.ts).
+	// Create the namespace once, then paste its id here:
+	//   npx wrangler kv namespace create THEMES
+	"kv_namespaces": [
+		{
+			"binding": "THEMES",
+			"id": "d6668dfbf3cb43f99a9cbbf032618b37"
+		}
+	],
+	// Served under the site's own domain, beside whatever serves the rest of it.
+	// Requires drewkidwell.com to be a zone on this Cloudflare account.
+	"routes": [
+		{
+			"pattern": "drewkidwell.com/themesmith*",
+			"zone_name": "drewkidwell.com"
+		},
+		{
+			"pattern": "drewkidwell.com/api/themesmith/*",
+			"zone_name": "drewkidwell.com"
+		},
+	],
+	// Also reachable at themesmith.<account>.workers.dev — handy before the
+	// routes are live, and for checking a deploy in isolation.
+	"workers_dev": true,
+	"observability": {
+		"enabled": true
+	},
+}

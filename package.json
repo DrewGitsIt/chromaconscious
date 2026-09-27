@@ -8,7 +8,10 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "build:cf": "tsc -b && vite build --base=/themesmith/ --outDir dist-cf/themesmith --emptyOutDir",
+    "dev:cf": "npm run build:cf && wrangler dev",
+    "deploy": "npm run build:cf && wrangler deploy"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -42,6 +45,7 @@
     "oxlint": "^1.75.0",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "wrangler": "^4.141.0"
   }
 }
