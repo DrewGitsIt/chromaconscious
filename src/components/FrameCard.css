@@ -129,10 +129,23 @@
       border-color var(--d-fast) var(--ease),
       color var(--d-fast) var(--ease);
   }
-  .board-btn:hover {
+  .board-btn:hover:not(:disabled) {
     background: var(--surface-4);
     border-color: var(--line-active);
     color: var(--ink);
+  }
+  /* The embed's verbs (App.tsx): one is a link, one toggles the drawer. */
+  a.board-btn {
+    text-decoration: none;
+  }
+  .board-btn.on {
+    background: var(--surface-active);
+    border-color: var(--line-active);
+    color: var(--ink);
+  }
+  .board-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
   }
 
   .frame-dot:focus-visible,

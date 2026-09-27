@@ -6,15 +6,18 @@ import { handle } from './handler'
 import { decodeState, encodeState } from './state'
 import { applyOp, buildTheme, emptyThemeState } from '../ops'
 
+const KEY = 'test-key-123'
 const memoryEnv = (): Env & { size: () => number } => {
   const m = new Map<string, string>()
   return {
     THEMES: { get: async (k) => m.get(k) ?? null, put: async (k, v) => void m.set(k, v) },
+    THEMESMITH_API_KEYS: `other-key, ${KEY}`,
     size: () => m.size,
   }
 }
-const call = async (env: Env, path: string, json = false) => {
-  const res = await handle(new Request(`https://drewkidwell.com/api/themesmith/v1${path}${json ? (path.includes('?') ? '&' : '?') + 'as=json' : ''}`), env)
+const call = async (env: Env, path: string, json = false, key: string | null = KEY) => {
+  const url = `https://drewkidwell.com/api/themesmith/v1${path}${json ? (path.includes('?') ? '&' : '?') + 'as=json' : ''}`
+  const res = await handle(new Request(url, { headers: key ? { authorization: `Bearer ${key}` } : {} }), env)
   return { status: res.status, body: await res.text() }
 }
 const summary = async (env: Env, path: string) => {
@@ -149,5 +152,27 @@ describe('api', () => {
     const cold = await summary(env, `/riff?theme=${t.theme}&hops=2`)
     expect(cold.theme).toBe(warm.theme)
     expect(cold.seats).toEqual(warm.seats)
+  })
+
+  it('creating needs a valid key; reading an existing theme does not', async () => {
+    const env = memoryEnv()
+    expect((await call(env, '/generate?preset=ink-sky', false, null)).status).toBe(401)
+    expect((await call(env, '/generate?preset=ink-sky', false, 'wrong')).status).toBe(403)
+    const g = await summary(env, '/generate?preset=ink-sky')
+    expect((await call(env, `/riff?theme=${g.theme}`, false, null)).status).toBe(401)
+    for (const path of [`/theme?theme=${g.theme}`, `/export?theme=${g.theme}`, `/state?theme=${g.theme}`, '/presets'])
+      expect((await call(env, path, false, null)).status, path).toBe(200)
+    // unset secret: nobody may create
+    const closed = { ...env, THEMESMITH_API_KEYS: undefined }
+    expect((await call(closed, '/generate?preset=ink-sky')).status).toBe(403)
+  })
+
+  it('/state returns the exact state the theme was built from', async () => {
+    const env = memoryEnv()
+    const g = await summary(env, '/generate?preset=terracotta&lock=primary&taste=0.7')
+    const r = await summary(env, `/riff?theme=${g.theme}&hops=2`)
+    const state = decodeState((await call(env, `/state?theme=${r.theme}`, false, null)).body)
+    const css = (await call(env, `/export?theme=${r.theme}`)).body.split('\n').slice(1).join('\n')
+    expect(buildTheme(state)!.css).toBe(css)
   })
 })
