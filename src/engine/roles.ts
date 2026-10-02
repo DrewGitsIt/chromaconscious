@@ -122,21 +122,33 @@ function synthesize(role: Role, primary: Oklch): Oklch {
 }
 
 /**
+ * The canonical window each role's seed is normalized into below fidelity 1,
+ * in OKLCH. `l` absent: lightness is the role's own business (neutral).
+ */
+export interface RoleWindow {
+  l?: readonly [number, number]
+  c: readonly [number, number]
+}
+
+export function roleWindow(role: Role, monoLocked = false): RoleWindow {
+  // The mono base keeps its chroma identity: the usual lower clamp would
+  // inject chroma into a locked gray, tinting a deliberate grayscale theme.
+  if (role === 'neutral') return { c: [0, 0.025] }
+  if (role === 'warning') return { l: [0.6, 0.8], c: [0.07, 0.2] }
+  if (monoLocked) return { l: [0.45, 0.68], c: [0, 0.23] }
+  return { l: [0.45, 0.68], c: [0.07, 0.23] }
+}
+
+/**
  * Fidelity: at 0, the seed is normalized into the role's canonical window
  * (so ramps and contrast targets always work); at 1 the input is kept verbatim.
  */
 function fidelityAdjust(input: Oklch, role: Role, fidelity: number, monoLocked = false): Oklch {
-  // The mono base keeps its chroma identity: the usual lower clamp would
-  // inject chroma into a locked gray, tinting a deliberate grayscale theme.
-  let target: Oklch
-  if (role === 'neutral') {
-    target = { l: input.l, c: Math.min(input.c, 0.025), h: input.h }
-  } else if (role === 'warning') {
-    target = { l: clamp(input.l, 0.6, 0.8), c: clamp(input.c, 0.07, 0.2), h: input.h }
-  } else if (monoLocked) {
-    target = { l: clamp(input.l, 0.45, 0.68), c: Math.min(input.c, 0.23), h: input.h }
-  } else {
-    target = { l: clamp(input.l, 0.45, 0.68), c: clamp(input.c, 0.07, 0.23), h: input.h }
+  const w = roleWindow(role, monoLocked)
+  const target: Oklch = {
+    l: w.l ? clamp(input.l, w.l[0], w.l[1]) : input.l,
+    c: clamp(input.c, w.c[0], w.c[1]),
+    h: input.h,
   }
   return {
     l: lerp(target.l, input.l, fidelity),
@@ -146,6 +158,12 @@ function fidelityAdjust(input: Oklch, role: Role, fidelity: number, monoLocked =
 }
 
 /**
+ * Chart seeds' window, plus the hard lightness floor and ceiling that hold even
+ * at fidelity 1.
+ */
+export const CHART_WINDOW = { l: [0.5, 0.75], c: [0.09, 0.2], hardL: [0.45, 0.8] } as const
+
+/**
  * Chart seeds are leftovers, but "leftover" is a provenance, not a quality
  * bar. Hue and chroma follow the fidelity contract like every role; lightness
  * gets a hard readability clamp even at full fidelity — a data series must be
@@ -153,13 +171,14 @@ function fidelityAdjust(input: Oklch, role: Role, fidelity: number, monoLocked =
  * fidelity. (A photo's shadow blob may keep its hue, never its darkness.)
  */
 export function chartAdjust(input: Oklch, fidelity: number): Oklch {
+  const { l, c, hardL } = CHART_WINDOW
   const target: Oklch = {
-    l: clamp(input.l, 0.5, 0.75),
-    c: clamp(input.c, 0.09, 0.2),
+    l: clamp(input.l, l[0], l[1]),
+    c: clamp(input.c, c[0], c[1]),
     h: input.h,
   }
   return {
-    l: clamp(lerp(target.l, input.l, fidelity), 0.45, 0.8),
+    l: clamp(lerp(target.l, input.l, fidelity), hardL[0], hardL[1]),
     c: lerp(target.c, input.c, fidelity),
     h: input.h,
   }

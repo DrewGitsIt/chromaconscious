@@ -167,6 +167,33 @@ describe('api', () => {
     expect((await call(closed, '/generate?preset=ink-sky')).status).toBe(403)
   })
 
+  it('says which of your colors moved, why, and how to keep them', async () => {
+    const env = memoryEnv()
+    // #6f4e37 is under primary's chroma floor; #d98e04 is over accent's lightness ceiling.
+    const g = await summary(env, '/generate?colors=primary:6f4e37,accent:d98e04')
+    expect(g.adjusted.map((a: { seat: string }) => a.seat)).toEqual(['primary', 'accent'])
+    expect(g.adjusted[0]).toMatchObject({ from: '#6f4e37', to: seat(g, 'primary').hex, fix: 'taste=1 keeps it as typed' })
+    expect(g.adjusted[0].why).toMatch(/^too muted for primary \(chroma 0\.057/)
+    expect(g.adjusted[1].why).toMatch(/^too light for accent \(lightness 0\.706/)
+
+    // taste=1 keeps them as typed, and nothing is reported.
+    const exact = await summary(env, '/generate?colors=primary:6f4e37,accent:d98e04&taste=1')
+    expect(exact.adjusted).toEqual([])
+    expect(seat(exact, 'primary').hex).toBe('#6f4e37')
+    expect((await call(env, `/theme?theme=${exact.theme}`)).body).toMatch(/^adjusted {4}—$/m)
+
+    // Riff names itself, and points at the lock; a locked seat is not reported.
+    const r = await summary(env, `/riff?theme=${exact.theme}&hops=3&lock=accent`)
+    expect(r.adjusted.map((a: { seat: string }) => a.seat)).toEqual(['primary'])
+    expect(r.adjusted[0]).toMatchObject({ why: 'riff 3 moved it', fix: 'lock=primary holds it through riffs' })
+
+    // Chart lightness is clamped even at taste 1.
+    const c = await summary(env, '/generate?colors=0b6e4f,f2a541,chart:111111&taste=1')
+    expect(c.adjusted).toHaveLength(1)
+    expect(c.adjusted[0].seat).toMatch(/^chart-/)
+    expect(c.adjusted[0].fix).toMatch(/clamped at any taste/)
+  })
+
   it('/state returns the exact state the theme was built from', async () => {
     const env = memoryEnv()
     const g = await summary(env, '/generate?preset=terracotta&lock=primary&taste=0.7')
