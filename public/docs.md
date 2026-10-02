@@ -18,6 +18,8 @@ The API drives the same engine, with the same verbs, as the app at https://drewk
 - **A lock freezes a seat where it currently stands.** That can be several riffs away from the color you typed. A lock persists into every theme descended from the one it was set on, until you `unlock` it. The lock is the only thing riff cannot move.
 - **Colors are addressed by role, chart slot (`chart-1`…`chart-5`) or hex, never by position.** A position shifts when a color is removed; a role does not.
 - **Light and dark are both always present.** `mode` only selects which one an export shows.
+- **Your colors may be adjusted; `taste=1` keeps them as typed.** Below 1, a color outside its role's range is pulled toward it, and a color too close to a neighbor is pushed apart. The summary's `adjusted` lines say which colors moved, why, and how to stop it. See [Adjustments](#adjustments).
+- **Chart colors are a series stepped from the accent.** `chart-1` is the accent, and derived chart colors move with it. Supply `chart:hex` colors to set them yourself.
 
 ## Authentication
 
@@ -43,8 +45,8 @@ Reading an existing theme (`/theme`, `/export`, `/state`, `/presets`) needs no k
 | `colors` | list | | Comma-separated colors. Bare hex (`1d3557`) or any URL-encoded CSS color. `role:hex` places a color in a seat (`primary:1d3557`), and `chart:hex` puts it in the chart series. Order matters: earlier colors get first claim on seats. With `from`, these replace the theme's **unlocked** colors, and locked colors carry over. |
 | `preset` | string | | Start from a preset (`coastal-starter`). See `/presets`. |
 | `from` | theme id | | Start from an existing theme and change only what you pass. |
-| `add` | list | | Append colors instead of replacing them. |
-| `taste` | 0–1 | | `0` adjusts your colors freely to fit their roles. `1` keeps them verbatim and may miss contrast targets. Default `0.5`. |
+| `add` | list | | Append colors instead of replacing them. With `from`, this is how to change one thing and keep the rest. `chart:hex` colors fill the chart slots after `chart-1`. |
+| `taste` | 0–1 | | How freely the engine may adjust your colors. `0` adjusts freely to fit their roles; `1` keeps them as typed. Default `0.5`. See [Adjustments](#adjustments). |
 | `separation` | enum | | `flat`, `layered` (default) or `lifted`: how strongly surfaces separate from each other. |
 | `mono` | hex \| `off` | | Mono lock. That color's hue rules every seat. |
 | `lock` / `unlock` | list | | Roles or `chart-N`. Locking a seat the engine derived keeps it as your color first. |
@@ -73,6 +75,8 @@ seats
   warning   #cdac00  derived
 chart       #996da8 derived · #af648d derived · #b86655 derived · #a57726 derived · #758a3a derived
 bench       —
+adjusted    primary   #1d3557 → #294266  too dark and too muted for primary (lightness 0.328, range 0.45–0.68; chroma 0.068, range 0.07–0.23) · taste=1 keeps it as typed
+adjusted    neutral   #a8dadc → #b1d8d9  too vivid for neutral (chroma 0.052, range 0–0.025) · taste=1 keeps it as typed
 
 contrast  light 20/20 · dark 20/20
 spacing   ok
@@ -89,14 +93,31 @@ export   https://drewkidwell.com/api/themesmith/v1/export?theme=t_levvog6reokv&f
   - `derived` is one the engine invented.
   - `from` shows the color you typed, when the seat moved off it (because of taste, spacing repair or riff).
 - **`bench`** lists colors that didn't win a seat, and why.
+- **`adjusted`** lists each color you supplied that the theme doesn't hold as typed: what you typed, what it holds, why it moved, and the fix. `—` means nothing moved.
 - **`contrast`** counts the text pairings that pass, per mode. Any failures are listed below it.
 - **`spacing`** lists pairs of seats the engine couldn't push far enough apart to tell apart.
 - **`judge`** scores the palette's harmony from 0 to 1.
 - **`open`** is a link that opens this exact theme in the app.
 
+### Adjustments
+
+Every color you supply goes through these steps, in order. The `adjusted` line names the one that moved it.
+
+| step | what happens | stopped by |
+|---|---|---|
+| Role range | A color outside its role's range moves part of the way into it, by `1 − taste`. Ranges in OKLCH: primary, accent, danger and success are lightness 0.45–0.68 and chroma 0.07–0.23; warning is lightness 0.6–0.8; neutral is chroma up to 0.025. Chart colors are lightness 0.5–0.75 and chroma 0.09–0.2. | `taste=1` |
+| Mono lock | With `mono` on, every unlocked seat takes the mono color's hue. | `lock`, or `mono=off` |
+| Riff | Each hop moves every unlocked color. | `lock` |
+| Spacing | Seats too close to tell apart are pushed apart, by up to `1 − taste` of a small allowance. At `taste=1` nothing moves and the `spacing` line lists the pair instead. | `taste=1` |
+| Chart floor | Chart colors stay between lightness 0.45 and 0.8 at any taste, so a series stays visible. | Choose a lighter or darker color |
+
+A color inside its range, with no close neighbor, isn't touched at any taste.
+
+**The exported variables are a separate step.** Every token, `--primary` included, is derived from the seats and solved for contrast in each mode. So even an exact seat can appear as a different hex in the export, in light mode as well as dark.
+
 ### `GET /riff`: walk the palette
 
-Every unlocked seat takes a small step through color space; locked seats hold still.
+Every unlocked seat takes a small step through color space, including colors you supplied; locked seats hold still. Derived chart colors follow the accent. One hop is a small move; 3 to 5 hops is a clearly different option.
 
 | param | type | | description |
 |---|---|---|---|
@@ -120,6 +141,8 @@ seats
   danger    #e03c2d  yours    from #e63946
   success   #2a845c  derived
   warning   #d6a90b  derived
+…
+adjusted    danger    #e63946 → #e03c2d  riff 1 moved it · lock=danger holds it through riffs
 …
 ```
 
@@ -151,6 +174,22 @@ Every export names its theme, so a file in a repo points back to the theme that 
 ```
 
 In JSON the id is at `$extensions.themesmith.id`.
+
+**The variables** follow shadcn/ui naming. `:root` holds light and `.dark` holds dark.
+
+| variables | use |
+|---|---|
+| `--background`, `--foreground`, `--card`, `--popover`, `--muted`, `--muted-foreground` | Surfaces and text, each with a `-foreground`. |
+| `--primary`, `--secondary` | Buttons and brand. `--primary` is your primary seat. |
+| `--accent`, `--accent-foreground` | A **subtle** hover and selected tint, as in shadcn. |
+| `--accent-strong`, `--link` | The bold accent color, and link text. |
+| `--destructive`, `--success`, `--warning` | Status colors. Each has `-foreground`, plus `-subtle` and `-subtle-foreground` for alert and badge backgrounds. |
+| `--border`, `--input`, `--ring` | Lines, field borders, focus rings. |
+| `--chart-1` … `--chart-5` | Data series. |
+| `--sidebar-*` | A sidebar's own surface, text, primary, accent, border and ring. |
+| `--elevation-1` … `--elevation-3`, `--scrim` | Box-shadows for raised surfaces, and the overlay behind dialogs. |
+
+themesmith makes **colors only**. Radius, spacing and type are up to you, and there are no hover tokens: derive them, for example `color-mix(in oklab, var(--primary) 88%, var(--foreground))`.
 
 ### `GET /state`: a theme's inputs
 
