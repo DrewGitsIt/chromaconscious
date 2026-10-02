@@ -21,6 +21,7 @@ export type ShortcutId =
   | 'reset'
   | 'startOver'
   | 'bench'
+  | 'vision'
   | 'help'
 
 export const SHORTCUTS: Shortcut[] = [
@@ -32,6 +33,7 @@ export const SHORTCUTS: Shortcut[] = [
   { id: 'reset', key: 'x', label: 'clear your placements' },
   { id: 'startOver', key: 'o', label: 'start over' },
   { id: 'bench', key: 'b', label: 'show the bench' },
+  { id: 'vision', key: 'v', label: 'vision — cycle typical, protan, deutan, tritan' },
   { id: 'help', key: '?', label: 'this list' },
 ]
 

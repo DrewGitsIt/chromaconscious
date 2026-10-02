@@ -56,7 +56,12 @@ import { MOCKUPS, mockupById } from './mockups'
 import { PRESETS } from './presets'
 import { useDismiss } from './components/useDismiss'
 import { EMBED, embedPreset, fullAppHref } from './embed'
-import { decodeState, isThemeId } from './api/state'
+import { decodeState } from './api/state'
+import { parseThemeHash } from './visionLink'
+import type { Vision } from './engine/cvd'
+import { VISIONS } from './engine/cvd'
+import { VisionFilter } from './components/VisionFilter'
+import { PortalScope } from './components/PortalContainer'
 import type { Op, ThemeState } from './ops'
 import { applyOp, emptyThemeState } from './ops'
 import './styles/tokens.css'
@@ -70,6 +75,13 @@ interface FrameState extends ThemeState {
   mode: Mode
   /** Which design-space mockup this frame renders into. */
   mockup: string
+  /**
+   * A colorblind simulation over this frame's mockup. View state like `mode`:
+   * it never reaches the engine, and neither opening a link nor an op resets it.
+   */
+  vision: Vision
+  /** 0..1, how far toward the full dichromacy. Meaningless for typical. */
+  strength: number
 }
 
 /** What "start over" replaces — and what undo brings back. */
@@ -95,7 +107,17 @@ const EXPORT_FORMATS = (Object.keys(FORMAT_LABEL) as ExportFormat[]).map((id) =>
   label: FORMAT_LABEL[id],
 }))
 
-const emptyFrameState = (): FrameState => ({ ...emptyThemeState(), mode: 'dark', mockup: 'app' })
+const emptyFrameState = (): FrameState => ({
+  ...emptyThemeState(),
+  mode: 'dark',
+  mockup: 'app',
+  vision: 'typical',
+  strength: 1,
+})
+
+/** The CSS filter for frame i's simulation (see VisionFilter), or null. */
+const visionFilter = (f: FrameState, i: number): string | null =>
+  f.vision === 'typical' ? null : `url(#vision-${FRAME_LABEL[i].toLowerCase()})`
 
 /** Where the app opens: blank for the full app, a preset in an embed (see embed.ts). */
 const initialFrame = (): FrameState => {
@@ -230,6 +252,9 @@ export default function App() {
     )
   }
 
+  const setVision = (i: number, vision: Vision, strength: number) =>
+    updateFrame(i, { vision, strength })
+
   const setMockup = (i: number, id: string) => {
     const m = mockupById(id)
     // a print-like mockup has no dark mode; snap the frame back to light
@@ -338,15 +363,25 @@ export default function App() {
   // theme it made. The state comes from the same API; this app runs the
   // engine itself, so what opens is rebuilt locally from that state.
   useEffect(() => {
-    const id = location.hash.slice(1)
-    if (!isThemeId(id)) return
+    const link = parseThemeHash(location.hash)
+    if (!link) return
+    const { id, vision } = link
     let live = true
     fetch(`/api/themesmith/v1/state?theme=${id}`)
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`theme ${id} not found`))))
       .then((text) => {
         if (!live) return
         const state = decodeState(text)
-        setFrames((prev) => prev.map((f, i) => (i === 0 ? { ...f, ...state } : f)))
+        // A vision link opens in compare: the theme as it is next to the theme
+        // as it is seen, so the simulation never stands in for the real thing.
+        setFrames((prev) => {
+          const a = { ...prev[0], ...state }
+          if (!vision) return prev.map((f, i) => (i === 0 ? a : f))
+          return [
+            { ...a, vision: 'typical', strength: 1 },
+            { ...cloneFrame(a), vision: vision.vision, strength: vision.strength },
+          ]
+        })
         setActive(0)
         setToast({ text: `opened ${id}`, undo: null })
       })
@@ -560,6 +595,9 @@ export default function App() {
           break
         case 'bench':
           setBenchOpen((o) => !o)
+          break
+        case 'vision':
+          setVision(active, VISIONS[(VISIONS.indexOf(frame.vision) + 1) % VISIONS.length], frame.strength)
           break
       }
     }
@@ -972,10 +1010,13 @@ export default function App() {
                   mockup={f.mockup}
                   mode={f.mode}
                   supportsDark={mockupById(f.mockup).supportsDark}
+                  vision={f.vision}
+                  strength={f.strength}
                   copyTarget={split ? FRAME_LABEL[1 - i] : null}
                   onSelect={() => setActive(i)}
                   onChangeMockup={(id) => setMockup(i, id)}
                   onToggleMode={() => toggleMode(i)}
+                  onChangeVision={(v, s) => setVision(i, v, s)}
                   onCopyTo={() => duplicateFrame(i)}
                   actions={
                     EMBED ? (
@@ -1039,21 +1080,35 @@ export default function App() {
                     )
                   }
                 />
-                <div className="frame">
-                  {results[i] ? (
-                    <PreviewBoundary>
-                      <FrameMockup
-                        mockup={f.mockup}
-                        result={results[i]!}
-                        mode={f.mode}
-                        uid={FRAME_LABEL[i].toLowerCase()}
-                        locateTarget={active === i ? locating : null}
-                      />
-                    </PreviewBoundary>
-                  ) : (
-                    hero(i)
-                  )}
-                </div>
+                <VisionFilter
+                  id={`vision-${FRAME_LABEL[i].toLowerCase()}`}
+                  vision={f.vision}
+                  strength={f.strength}
+                />
+                {/* The filter sits on .frame itself, so everything the mockup
+                    draws is simulated and the label row above never is. Its
+                    menus and dialogs get the same filter on their own layer. */}
+                <PortalScope filter={visionFilter(f, i)}>
+                  <div
+                    className="frame"
+                    data-vision={f.vision === 'typical' ? undefined : f.vision}
+                    style={f.vision === 'typical' ? undefined : { filter: visionFilter(f, i)! }}
+                  >
+                    {results[i] ? (
+                      <PreviewBoundary>
+                        <FrameMockup
+                          mockup={f.mockup}
+                          result={results[i]!}
+                          mode={f.mode}
+                          uid={FRAME_LABEL[i].toLowerCase()}
+                          locateTarget={active === i ? locating : null}
+                        />
+                      </PreviewBoundary>
+                    ) : (
+                      hero(i)
+                    )}
+                  </div>
+                </PortalScope>
               </section>
             ))}
           </div>

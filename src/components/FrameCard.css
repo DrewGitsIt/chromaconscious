@@ -106,6 +106,84 @@
     cursor: default;
   }
 
+  /* The eye's popover opens down over the frame, so it sits above it. The
+     tag beside the eye is the loud half: while a simulation is on, the row
+     itself says so in words, in ink, and the eye stays lit. */
+  .frame-vision {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .frame-icon.on {
+    background: var(--surface-active);
+    color: var(--ink);
+  }
+  .frame-vision-tag {
+    font-family: var(--font-code);
+    font-size: var(--fs-s);
+    color: var(--ink);
+  }
+  .frame-vision-menu {
+    position: absolute;
+    z-index: 40;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 210px;
+    padding: 4px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-ctl);
+    border-radius: var(--radius-card);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+  }
+  .frame-vision-opt {
+    display: flex;
+    align-items: baseline;
+    gap: var(--gap-m);
+    padding: 6px 10px;
+    border-radius: var(--radius-ctl);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .frame-vision-opt:hover {
+    background: var(--surface-4);
+  }
+  .frame-vision-opt input,
+  .frame-vision-strength input {
+    accent-color: var(--ink);
+  }
+  .frame-vision-opt input {
+    align-self: center;
+    margin: 0;
+  }
+  .frame-vision-hint {
+    margin-left: auto;
+    color: var(--ink-faint);
+    font-size: var(--fs-s);
+  }
+  .frame-vision-strength {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-m);
+    margin-top: 2px;
+    padding: 6px 10px;
+    border-top: 1px solid var(--line-card);
+    color: var(--ink-muted);
+  }
+  .frame-vision-strength input {
+    flex: 1;
+    min-width: 0;
+  }
+  .frame-vision-strength:has(input:disabled) {
+    opacity: 0.4;
+  }
+  .frame-vision-strength output {
+    min-width: 3ch;
+    text-align: right;
+    font-family: var(--font-code);
+    font-size: var(--fs-s);
+  }
+
   .frame-actions {
     margin-left: auto;
     display: inline-flex;
@@ -151,6 +229,8 @@
   .frame-dot:focus-visible,
   .frame-mockup:focus-visible,
   .frame-icon:focus-visible,
+  .frame-vision-opt input:focus-visible,
+  .frame-vision-strength input:focus-visible,
   .board-btn:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 1px;

@@ -97,7 +97,7 @@ export   https://drewkidwell.com/api/themesmith/v1/export?theme=t_levvog6reokv&f
 - **`contrast`** counts the text pairings that pass, per mode. Any failures are listed below it.
 - **`spacing`** lists pairs of seats the engine couldn't push far enough apart to tell apart.
 - **`judge`** scores the palette's harmony from 0 to 1.
-- **`open`** is a link that opens this exact theme in the app.
+- **`open`** is a link that opens this exact theme in the app. Append `&vision=deutan` (or `protan`, `tritan`; optionally `&strength=60`, a percent) to open it side by side with a colorblind simulation of itself: frame A as typed, frame B as someone with that type of colorblindness sees it. View-only; it doesn't change the theme or its id.
 
 ### Adjustments
 
