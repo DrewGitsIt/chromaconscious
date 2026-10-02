@@ -31,7 +31,7 @@ Every call returns a **new** id; nothing changes in place. To go back, use an ol
 - **Exact brand colors everywhere?** `taste=1` plus `lock=` keeps the *seat* exact. The exported variables are derived from the seats and solved for contrast in each mode, so `--primary`, `--accent-strong` and the rest can differ from the seat's hex in light mode as well as dark. Tell the user this if they asked for exact colors everywhere.
 - **Riff moves every unlocked seat, your colors included.** Lock whatever must hold before you riff.
 - **Chart colors are a series stepped from the accent** (`chart-1` is the accent). They change when the accent does. To set them yourself, pass `chart:hex` (in `colors`, or in `add` to keep the rest).
-- **Show a person the result** with the summary's `open` link. It opens the exact theme in the themesmith app.
+- **Show a person the result** with the summary's `open` link. It opens the exact theme in the themesmith app. To show how it reads to someone colorblind, append `&vision=deutan` (or `protan`, `tritan`): it opens next to a simulation of itself.
 
 ## Using the export
 
