@@ -4,7 +4,9 @@ import { PRESETS } from '../presets'
 import type { Env } from './handler'
 import { handle, legacyAppRedirect } from './handler'
 import { decodeState, encodeState, themeId } from './state'
-import { contrastParam } from './query'
+import { contrastParam, runOps } from './query'
+import { figmaExport, figmaModeFiles } from '../figmaExport'
+import { unzipSync } from 'fflate'
 import { applyOp, buildTheme, emptyThemeState } from '../ops'
 
 const KEY = 'test-key-123'
@@ -320,5 +322,50 @@ describe('the legacy name keeps working after the rename', () => {
     expect(legacyAppRedirect(new URL(`https://drewkidwell.com/${OLD}#t_levvog6reokv`))).toBe('https://drewkidwell.com/chromaconscious/')
     expect(legacyAppRedirect(new URL(`https://drewkidwell.com/${OLD}x`))).toBeNull()
     expect(legacyAppRedirect(new URL('https://drewkidwell.com/chromaconscious/'))).toBeNull()
+  })
+})
+
+describe('export: figma', () => {
+  const get = (env: Env, path: string) =>
+    handle(new Request(`https://drewkidwell.com/api/chromaconscious/v1${path}`), env)
+
+  it('the API zip is byte-for-byte the zip the Export dialog builds client-side', async () => {
+    const env = memoryEnv()
+    const g = await summary(env, '/generate?preset=ink-sky')
+    const res = await get(env, `/export?theme=${g.theme}&format=figma`)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toBe('application/zip')
+    expect(res.headers.get('content-disposition')).toBe(`attachment; filename="chromaconscious-${g.theme}-figma.zip"`)
+    const api = new Uint8Array(await res.arrayBuffer())
+    // The app's own state for the same preset, built through the ops — not read back from the API.
+    const p = PRESETS.find((x) => x.name === 'Ink & sky')!
+    const client = figmaExport(runOps(emptyThemeState(), [{ op: 'preset', name: p.name, colors: p.colors }]))!
+    expect(api).toEqual(client.bytes)
+  })
+
+  it('holds for a riffed, locked, high-contrast theme opened from its link', async () => {
+    const env = memoryEnv()
+    const g = await summary(env, '/generate?preset=pastel-picnic&contrast=high')
+    const r = await summary(env, `/riff?theme=${g.theme}&hops=3&lock=primary`)
+    const api = new Uint8Array(await (await get(env, `/export?theme=${r.theme}&format=figma`)).arrayBuffer())
+    // What the app does with /chromaconscious#t_…: fetch /state, decode, export.
+    const state = decodeState((await call(env, `/state?theme=${r.theme}`)).body)
+    expect(api).toEqual(figmaExport(state)!.bytes)
+    expect(Object.keys(unzipSync(api))).toHaveLength(7)
+  })
+
+  it('&mode= returns one file, the same text as that file in the zip', async () => {
+    const env = memoryEnv()
+    const g = await summary(env, '/generate?preset=ink-sky')
+    const res = await get(env, `/export?theme=${g.theme}&format=figma&mode=dark-high`)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toBe('application/json')
+    expect(res.headers.get('content-disposition')).toBe(`attachment; filename="${g.theme}-dark-high.json"`)
+    const state = decodeState((await call(env, `/state?theme=${g.theme}`)).body)
+    expect(await res.text()).toBe(figmaModeFiles(state)!.find((f) => f.name === 'dark-high')!.json)
+    expect(await call(env, `/export?theme=${g.theme}&format=figma&mode=dim`)).toMatchObject({
+      status: 422,
+      body: expect.stringContaining('light, dark, light-medium'),
+    })
   })
 })
