@@ -467,7 +467,7 @@ export function Marketing({ tokens, mode, uid, effects }: TokenSpaceProps) {
                   {['Brand', 'Accent', 'Neutral'].map((row, i) => (
                     <div
                       key={row}
-                      className={`mb-1 rounded px-1.5 py-1 text-[0.7rem] ${
+                      className={`mb-1 rounded-[calc(var(--radius)*0.4)] px-1.5 py-1 text-[0.7rem] ${
                         i === 0
                           ? 'bg-sidebar-primary text-sidebar-primary-foreground'
                           : 'text-sidebar-foreground/80'
@@ -1028,7 +1028,7 @@ export function Marketing({ tokens, mode, uid, effects }: TokenSpaceProps) {
                     <li key={l}>
                       <a
                         href={`#${sectionId('top')}`}
-                        className={`rounded text-xs text-muted-foreground transition-colors hover:text-link ${focus}`}
+                        className={`rounded-[calc(var(--radius)*0.4)] text-xs text-muted-foreground transition-colors hover:text-link ${focus}`}
                       >
                         {l}
                       </a>
@@ -1041,10 +1041,10 @@ export function Marketing({ tokens, mode, uid, effects }: TokenSpaceProps) {
           <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5 text-xs text-muted-foreground">
             <span>© 2026 Northwind Labs, Inc.</span>
             <span className="flex items-center gap-4">
-              <a href={`#${sectionId('top')}`} className={`rounded hover:text-link ${focus}`}>
+              <a href={`#${sectionId('top')}`} className={`rounded-[calc(var(--radius)*0.4)] hover:text-link ${focus}`}>
                 Terms
               </a>
-              <a href={`#${sectionId('top')}`} className={`rounded hover:text-link ${focus}`}>
+              <a href={`#${sectionId('top')}`} className={`rounded-[calc(var(--radius)*0.4)] hover:text-link ${focus}`}>
                 Privacy
               </a>
               <span className="inline-flex items-center gap-1.5">
