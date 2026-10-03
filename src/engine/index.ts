@@ -8,6 +8,7 @@ import type { RepairEdge, RepairNode } from './repair'
 import { repairSeeds } from './repair'
 import { buildMode } from './tokens'
 import { emitCss } from './css'
+import { normalizeContrast } from './contrastLevel'
 
 export * from './types'
 export { assignRoles, CHART_CHROMA_GATE, CHART_WINDOW, roleWindow } from './roles'
@@ -23,6 +24,8 @@ export type { BrandColorName } from './adapters'
 export { tokenAncestry } from './tokens'
 export { locateMuted, locateTokens, sameAncestor } from './locate'
 export { buildEffects, cssAlphaColor, cssShadow, effectVars } from './elevation'
+export { CONTRAST_LEVELS, contrastLevelName, contrastTargets, normalizeContrast } from './contrastLevel'
+export type { ContrastLevelName, ContrastTargets, LcTarget } from './contrastLevel'
 
 /** Build candidates from a manual, ordered list of color strings. */
 export function candidatesFromList(inputs: string[]): ColorCandidate[] {
@@ -285,8 +288,11 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
   // Which series colours the user locked, so the mono ladder can step around
   // them — parallel to chartSeeds by construction.
   const chartLocked = chartCandidateIndexes.map((ci) => isLocked(ci))
-  const light = buildMode(seeds, chartSeeds, 'light', fidelity, monoSeed, separation, chartLocked)
-  const dark = buildMode(seeds, chartSeeds, 'dark', fidelity, monoSeed, separation, chartLocked)
+  // Contrast acts only after casting, the walk and repair: it raises the
+  // targets the modes solve against, never which colour sits where.
+  const contrast = normalizeContrast(options.contrast)
+  const light = buildMode(seeds, chartSeeds, 'light', fidelity, monoSeed, separation, chartLocked, contrast)
+  const dark = buildMode(seeds, chartSeeds, 'dark', fidelity, monoSeed, separation, chartLocked, contrast)
 
   const result: ThemeResult = {
     light,
@@ -299,6 +305,7 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
     fidelity,
     monoBase,
     separation,
+    ...(contrast > 0 ? { contrast } : {}),
     seed,
     judge,
     css: emitCss(light, dark),

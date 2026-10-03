@@ -153,15 +153,16 @@ function useThemeResult(f: FrameState | undefined) {
   const monoBase = f?.monoBase
   const seed = f?.seed
   const separation = f?.separation
+  const contrast = f?.contrast
   return useMemo(() => {
     if (!candidates || candidates.length === 0) return null
     try {
-      return generateTheme({ candidates, fidelity, monoBase: monoBase ?? undefined, seed, separation })
+      return generateTheme({ candidates, fidelity, monoBase: monoBase ?? undefined, seed, separation, contrast })
     } catch (err) {
       console.error(err)
       return null
     }
-  }, [candidates, fidelity, monoBase, seed, separation])
+  }, [candidates, fidelity, monoBase, seed, separation, contrast])
 }
 
 /**

@@ -33,6 +33,23 @@ export function solveLightnessForLc(
   chromaAt: (l: number) => number,
   direction: 'darker' | 'lighter',
 ): Oklch {
+  return solveLightness(targetLc, targetWcag, bgHex, h, chromaAt, direction).color
+}
+
+/**
+ * `solveLightnessForLc`, also saying whether the target was REACHED. When it
+ * wasn't, the colour is the search's extreme — the most contrast this hue and
+ * chroma can have on that background — and the caller should report the miss
+ * as a ceiling, not a choice. A raised contrast level makes this common.
+ */
+export function solveLightness(
+  targetLc: number,
+  targetWcag: number,
+  bgHex: string,
+  h: number,
+  chromaAt: (l: number) => number,
+  direction: 'darker' | 'lighter',
+): { color: Oklch; reached: boolean } {
   // Contrast grows monotonically as we move away from the bg lightness, so
   // binary search on L between the bg side and the extreme.
   let lo: number, hi: number
@@ -62,7 +79,7 @@ export function solveLightnessForLc(
   }
   // If even the extreme can't reach the target, return the extreme.
   if (!satisfied(lo)) {
-    return { l: lo, c: chromaAt(lo), h }
+    return { color: { l: lo, c: chromaAt(lo), h }, reached: false }
   }
   for (let i = 0; i < 40; i++) {
     const mid = (lo + hi) / 2
@@ -70,7 +87,7 @@ export function solveLightnessForLc(
     else hi = mid
   }
   const l = clamp(lo, 0, 1)
-  return { l, c: chromaAt(l), h }
+  return { color: { l, c: chromaAt(l), h }, reached: true }
 }
 
 // Per-channel lookup tables for the solver: 256 entries replace a Math.pow

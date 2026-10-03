@@ -4,7 +4,7 @@
  * terminals read it best) or the same content as JSON.
  */
 import type { Oklch, Role, ThemeResult } from '../engine'
-import { CHART_WINDOW, roleWindow, toHex, whyLines } from '../engine'
+import { CHART_WINDOW, contrastLevelName, contrastTargets, roleWindow, toHex, whyLines } from '../engine'
 import type { BoardView } from '../board'
 import { readBoard } from '../board'
 import type { ThemeState } from '../ops'
@@ -15,6 +15,12 @@ export interface ThemeSummary {
   riff: number
   taste: number
   separation: string
+  /**
+   * The contrast level: 0 standard, 0.5 medium, 1 high (`name` is null
+   * between detents), and the floors it promises every text pair and every
+   * non-text mark.
+   */
+  contrastLevel: { level: number; name: string | null; text: { lc: number; wcag: number }; marks: { lc: number; wcag: number } }
   mono: string | null
   seats: Array<{ role: string; hex: string; provenance: string; from: string | null; locked: boolean }>
   chart: Array<{ slot: number; hex: string; provenance: string; locked: boolean }>
@@ -24,7 +30,21 @@ export interface ThemeSummary {
   contrast: {
     light: { pass: number; total: number }
     dark: { pass: number; total: number }
-    failures: Array<{ mode: string; token: string; on: string; wcag: number; required: number }>
+    /**
+     * `requiredLc` appears above standard. `unreachable`: the engine pushed this
+     * colour as far as its hue goes on that surface and still fell short — a
+     * ceiling, not a choice; only a different colour fixes it.
+     */
+    failures: Array<{
+      mode: string
+      token: string
+      on: string
+      wcag: number
+      required: number
+      lc?: number
+      requiredLc?: number
+      unreachable?: true
+    }>
   }
   spacing: Array<{ pair: string; deltaE: number; required: number }>
   judge: number
@@ -117,6 +137,18 @@ function adjustments(state: ThemeState, view: BoardView): Adjustment[] {
   return out
 }
 
+const round = (v: number, p: number) => Math.round(v * 10 ** p) / 10 ** p
+
+function contrastSummary(level: number): ThemeSummary['contrastLevel'] {
+  const t = contrastTargets(level)
+  return {
+    level,
+    name: contrastLevelName(level),
+    text: { lc: round(t.text.lc, 1), wcag: round(t.text.wcag, 2) },
+    marks: { lc: round(t.mark.lc, 1), wcag: round(t.mark.wcag, 2) },
+  }
+}
+
 export function summarize(
   id: string,
   parent: string | null,
@@ -136,6 +168,7 @@ export function summarize(
     riff: state.seed,
     taste: state.fidelity,
     separation: state.separation,
+    contrastLevel: contrastSummary(state.contrast),
     mono: state.monoBase != null ? state.candidates[state.monoBase].raw : null,
     seats: view.slots.map((s) => ({
       role: s.role,
@@ -157,7 +190,15 @@ export function summarize(
       failures: (['light', 'dark'] as const).flatMap((mode) =>
         result[mode].report
           .filter((r) => !r.pass)
-          .map((r) => ({ mode, token: r.token, on: r.background, wcag: +r.wcag.toFixed(2), required: r.requiredWcag })),
+          .map((r) => ({
+            mode,
+            token: r.token,
+            on: r.background,
+            wcag: +r.wcag.toFixed(2),
+            required: r.requiredWcag,
+            ...(r.requiredLc != null ? { lc: +r.apca.toFixed(1), requiredLc: r.requiredLc } : {}),
+            ...(r.unreachable ? { unreachable: true as const } : {}),
+          })),
       ),
     },
     spacing: result.repairs.map((r) => ({ pair: r.label, deltaE: +r.deltaE.toFixed(3), required: r.required })),
@@ -176,6 +217,7 @@ export function summaryText(s: ThemeSummary): string {
     `riff ${s.riff}`,
     `taste ${s.taste.toFixed(2)}`,
     `separation ${s.separation}`,
+    `contrast ${s.contrastLevel.name ?? s.contrastLevel.level.toFixed(2)}`,
     s.mono ? `mono ${s.mono}` : null,
   ]
     .filter(Boolean)
@@ -195,8 +237,15 @@ export function summaryText(s: ThemeSummary): string {
   if (s.adjusted.length === 0) lines.push('adjusted    —')
   for (const a of s.adjusted) lines.push(`adjusted    ${pad(a.seat, 9)} ${a.from} → ${a.to}  ${a.why} · ${a.fix}`)
   const { light, dark, failures } = s.contrast
-  lines.push('', `contrast  light ${light.pass}/${light.total} · dark ${dark.pass}/${dark.total}`)
-  for (const f of failures) lines.push(`  fail  ${f.mode}  ${f.token} on ${f.on}  ${f.wcag} (needs ${f.required})`)
+  const { text: floor } = s.contrastLevel
+  lines.push(
+    '',
+    `contrast  light ${light.pass}/${light.total} · dark ${dark.pass}/${dark.total}   (text ≥ Lc ${floor.lc} · ${floor.wcag}:1)`,
+  )
+  for (const f of failures) {
+    const lc = f.requiredLc != null ? `, Lc ${f.lc} (needs ${f.requiredLc})` : ''
+    lines.push(`  fail  ${f.mode}  ${f.token} on ${f.on}  ${f.wcag} (needs ${f.required})${lc}${f.unreachable ? ' — unreachable: as far as this hue goes' : ''}`)
+  }
   lines.push(`spacing   ${s.spacing.length ? '' : 'ok'}`.trimEnd())
   for (const r of s.spacing) lines.push(`  short  ${r.pair}  ΔE ${r.deltaE} (needs ${r.required})`)
   lines.push(`judge     ${s.judge}`, '', `open     ${s.links.open}`, `export   ${s.links.export}`)

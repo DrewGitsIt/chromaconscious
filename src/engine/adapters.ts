@@ -1,5 +1,6 @@
 import type { Role, ThemeMode, ThemeResult, TokenAncestor } from './types'
-import { compliantSolid, popBudget } from './tokens'
+import { compliantSolid, fillMinimums, popBudget } from './tokens'
+import { contrastTargets } from './contrastLevel'
 
 /**
  * An adapter speaks one design space's language: it maps the engine's ramps
@@ -15,6 +16,8 @@ export interface ThemeAdapter<V extends string = string> {
     mode: ThemeMode,
     seedHues: Record<'primary' | 'accent' | 'neutral', number>,
     fidelity: number,
+    /** Contrast level 0..1; raises the solves' targets. Default 0 (standard). */
+    contrast?: number,
   ): Record<V, string>
 }
 
@@ -32,14 +35,15 @@ export type BrandColorName =
 
 export const brandAdapter: ThemeAdapter<BrandColorName> = {
   id: 'brand',
-  resolve(mode, seedHues, fidelity) {
+  resolve(mode, seedHues, fidelity, contrast = 0) {
     const N = mode.ramps.neutral
     const P = mode.ramps.primary
     const A = mode.ramps.accent
     // Solids must carry type and stand off the paper — same solves and same
     // fidelity-budgeted pop as app UI, different vocabulary.
-    const brand = compliantSolid(P[8], seedHues.primary, N[0], popBudget(fidelity))
-    const accent = compliantSolid(A[8], seedHues.accent, N[0], popBudget(fidelity))
+    const fill = fillMinimums(contrastTargets(contrast), contrast)
+    const brand = compliantSolid(P[8], seedHues.primary, N[0], popBudget(fidelity), fill)
+    const accent = compliantSolid(A[8], seedHues.accent, N[0], popBudget(fidelity), fill)
     return {
       paper: N[0],
       ink: N[11],
@@ -100,5 +104,5 @@ export function resolveBrand(result: ThemeResult, modeName: 'light' | 'dark'): R
   for (const a of result.assignments) {
     if (a.role in hues) hues[a.role as keyof typeof hues] = a.seed.h
   }
-  return brandAdapter.resolve(result[modeName], hues, result.fidelity)
+  return brandAdapter.resolve(result[modeName], hues, result.fidelity, result.contrast ?? 0)
 }

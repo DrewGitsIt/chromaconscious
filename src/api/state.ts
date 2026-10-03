@@ -11,7 +11,7 @@
  * 0.8, so floats travel as JSON numbers (which round-trip exactly).
  */
 import type { ColorCandidate, Role, Separation } from '../engine'
-import { SEPARATIONS, parseColor } from '../engine'
+import { SEPARATIONS, normalizeContrast, parseColor } from '../engine'
 import type { ThemeState } from '../ops'
 import { emptyThemeState } from '../ops'
 
@@ -35,6 +35,8 @@ interface WireState {
   seed?: number
   monoBase?: number
   separation?: Separation
+  /** Contrast level 0..1. Absent = 0 (standard), so pre-contrast ids still resolve. */
+  contrast?: number
   preset?: string
 }
 
@@ -59,6 +61,9 @@ export function encodeState(s: ThemeState): string {
     ...(s.seed ? { seed: s.seed } : {}),
     ...(s.monoBase != null ? { monoBase: s.monoBase } : {}),
     ...(s.separation !== 'layered' ? { separation: s.separation } : {}),
+    // Omitted at standard: the id is a hash of these bytes, and every theme
+    // stored before the level existed must keep the id it was given.
+    ...(s.contrast ? { contrast: s.contrast } : {}),
     ...(s.preset ? { preset: s.preset } : {}),
   }
   return JSON.stringify(wire)
@@ -96,6 +101,7 @@ export function decodeState(text: string): ThemeState {
     seed: Number.isInteger(wire.seed) && wire.seed! >= 0 ? wire.seed! : 0,
     monoBase: monoBase != null && monoBase >= 0 && monoBase < candidates.length ? monoBase : null,
     separation: SEPARATIONS.includes(wire.separation!) ? wire.separation! : base.separation,
+    contrast: typeof wire.contrast === 'number' ? normalizeContrast(wire.contrast) : base.contrast,
     preset: typeof wire.preset === 'string' ? wire.preset : null,
   }
 }

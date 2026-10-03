@@ -8,7 +8,7 @@
  * op will run on.
  */
 import type { ColorCandidate, Role } from '../engine'
-import { ROLES, SEPARATIONS, candidatesFromList, parseColor, toHex } from '../engine'
+import { CONTRAST_LEVELS, ROLES, SEPARATIONS, candidatesFromList, parseColor, toHex } from '../engine'
 import type { BoardView } from '../board'
 import { readBoard } from '../board'
 import type { Op, ThemeState } from '../ops'
@@ -87,6 +87,19 @@ const number01 = (name: string, v: string) => {
   return n
 }
 
+/**
+ * `contrast=standard|medium|high`, or any number from 0 to 1 (0 standard, 0.5
+ * medium, 1 high; the targets interpolate between).
+ */
+export function contrastParam(v: string): number {
+  const name = v.trim().toLowerCase()
+  if (Object.hasOwn(CONTRAST_LEVELS, name)) return CONTRAST_LEVELS[name as keyof typeof CONTRAST_LEVELS]
+  const n = v.trim() === '' ? NaN : Number(v)
+  if (!Number.isFinite(n) || n < 0 || n > 1)
+    throw new QueryError(`contrast is standard, medium, high, or a number from 0 to 1`)
+  return n
+}
+
 export function hopsParam(q: URLSearchParams): number {
   const v = q.get('hops')
   if (v == null) return 1
@@ -129,6 +142,8 @@ export function applyEdits(start: ThemeState, q: URLSearchParams, fromExisting: 
       throw new QueryError(`separation is one of ${SEPARATIONS.join(', ')}`)
     ops.push({ op: 'separation', value: separation as ThemeState['separation'] })
   }
+  const contrast = q.get('contrast')
+  if (contrast != null) ops.push({ op: 'contrast', value: contrastParam(contrast) })
   const mono = q.get('mono')
   if (mono != null) ops.push((s) => ({ op: 'mono', index: mono === 'off' ? null : indexOf(s, mono) }))
   for (const ref of list(q.get('bench'))) ops.push((s) => ({ op: 'bench', index: indexOf(s, ref) }))

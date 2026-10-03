@@ -3,7 +3,8 @@ import { candidatesFromList, clearWalkTrails, generateTheme } from '../engine'
 import { PRESETS } from '../presets'
 import type { Env } from './handler'
 import { handle, legacyAppRedirect } from './handler'
-import { decodeState, encodeState } from './state'
+import { decodeState, encodeState, themeId } from './state'
+import { contrastParam } from './query'
 import { applyOp, buildTheme, emptyThemeState } from '../ops'
 
 const KEY = 'test-key-123'
@@ -41,6 +42,71 @@ describe('state codec', () => {
       expect(encodeState(back)).toBe(encodeState(s))
       expect(buildTheme(back)!.css).toBe(buildTheme(s)!.css)
     }
+  })
+})
+
+describe('state codec — contrast level', () => {
+  // Written by the encoder as it stood before the contrast level existed; the
+  // id was computed outside this codebase (sha256 → base32, 60 bits).
+  const OLD = '{"v":1,"candidates":[{"color":"#e63946"},{"color":"#1d3557","pin":"primary","locked":true}],"fidelity":0.7,"seed":2,"separation":"flat","preset":"Coastal starter"}'
+  const OLD_ID = 't_yofoevnthnbv'
+
+  it('an id minted before the level existed still resolves to the same state, id and theme', async () => {
+    const s = decodeState(OLD)
+    expect(s.contrast).toBe(0)
+    expect(encodeState(s)).toBe(OLD)
+    expect(await themeId(encodeState(s))).toBe(OLD_ID)
+    expect(buildTheme(s)!.css).toBe(buildTheme({ ...s, contrast: 0 })!.css)
+  })
+
+  it('a raised level travels on the wire, exactly, and changes the id', async () => {
+    const s = { ...decodeState(OLD), contrast: 0.65 }
+    const text = encodeState(s)
+    expect(JSON.parse(text).contrast).toBe(0.65)
+    expect(text.indexOf('"contrast"')).toBeLessThan(text.indexOf('"preset"'))
+    expect(decodeState(text).contrast).toBe(0.65)
+    expect(await themeId(text)).not.toBe(OLD_ID)
+    expect(buildTheme(decodeState(text))!.css).toBe(buildTheme(s)!.css)
+  })
+
+  it('a malformed level on the wire is clamped or ignored, never trusted', () => {
+    const wire = (v: unknown) => decodeState(OLD.replace('"preset"', `"contrast":${JSON.stringify(v)},"preset"`)).contrast
+    expect(wire(4)).toBe(1)
+    expect(wire(-2)).toBe(0)
+    expect(wire('high')).toBe(0)
+  })
+})
+
+describe('api — contrast parameter', () => {
+  it('reads names and numbers, and refuses anything else', () => {
+    expect(['standard', 'medium', 'high', 'HIGH', ' medium '].map(contrastParam)).toEqual([0, 0.5, 1, 1, 0.5])
+    expect(['0', '0.25', '1'].map(contrastParam)).toEqual([0, 0.25, 1])
+    for (const bad of ['max', '1.5', '-0.1', '', 'constructor', 'NaN'])
+      expect(() => contrastParam(bad), bad).toThrow(/contrast is standard, medium, high, or a number from 0 to 1/)
+  })
+
+  it('generate takes it, reports it, persists it through from= and riff, and exports it', async () => {
+    const env = memoryEnv()
+    const base = await summary(env, '/generate?preset=coastal-starter')
+    expect(base.contrastLevel).toMatchObject({ level: 0, name: 'standard', text: { lc: 62, wcag: 4.5 } })
+    const high = await summary(env, '/generate?preset=coastal-starter&contrast=high')
+    expect(high.contrastLevel).toMatchObject({ level: 1, name: 'high', text: { lc: 88, wcag: 10 } })
+    expect(high.theme).not.toBe(base.theme)
+    expect(high.contrast.light.total).toBe(24)
+    const text = (await call(env, `/theme?theme=${high.theme}`)).body
+    expect(text).toMatch(/^theme t_\w+ +\(riff 0 · taste 0\.50 · separation layered · contrast high\)/)
+    expect(text).toMatch(/\(text ≥ Lc 88 · 10:1\)/)
+
+    const riffed = await summary(env, `/riff?theme=${high.theme}`)
+    expect(riffed.contrastLevel.level).toBe(1)
+    const back = await summary(env, `/generate?from=${riffed.theme}&contrast=standard`)
+    expect(back.contrastLevel.level).toBe(0)
+    const json = JSON.parse((await call(env, `/export?theme=${high.theme}&format=json`)).body)
+    expect(json.$meta).toEqual({ contrast: 1 })
+    expect(await call(env, '/generate?preset=ink-sky&contrast=extreme')).toMatchObject({
+      status: 422,
+      body: expect.stringContaining('contrast is standard, medium, high'),
+    })
   })
 })
 
