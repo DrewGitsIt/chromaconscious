@@ -119,7 +119,7 @@ The sidebar is `.sidebar-shell`, a stack of `.sec` bands (`.sec-label` names eac
 | chart series | `.tray-top`, `.tray-name`, `.tray-cap` ("N of 5"), `.tray-set` |
 | colors not in play | `.bench-bar` (collapsed by default) → `.bench-drawer`, `.benched`, `.bench-empty` |
 | section tools | `.sec-act .mini[title*="…"]` — see the gotcha below |
-| contrast level | `.ctr-slider` (`role=slider:contrast`, 0 / 0.5 / 1 = standard / medium / high); readout `.ctr-value` reads the text floor, e.g. `Lc 75 · 7:1` |
+| contrast level | `.ctr-slider` (`role=slider:contrast`, 0 / 0.5 / 1 = standard / medium / high); readout `.ctr-ratio` (`7:1`, the WCAG check) then `.ctr-lc` (`Lc 75`, focusable; its `role=tooltip` explains APCA) |
 | the rest | `.dial-slider` (readout `.dial-value`), `.status-chip`, `.export-row`, `.report-drawer`, `.toast`, `.stage`, `.artboard`, `.frame`, `.preview-root` |
 
 ## Run (human path)

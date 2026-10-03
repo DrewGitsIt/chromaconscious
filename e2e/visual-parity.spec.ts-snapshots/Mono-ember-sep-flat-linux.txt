@@ -105,12 +105,13 @@ lifted
 card and page meet at one level — the hairline does the separating, and nothing casts a shadow at rest
 
 contrast
-Lc 62 · 4.5:1
+4.5:1
+Lc 62
 STANDARD
 MEDIUM
 HIGH
 
-every text pair clears Lc 62 · 4.5:1; focus ring and marks 3:1; hairlines as separation sets them
+every text pair clears 4.5:1 · Lc 62; focus ring and marks 3:1; hairlines as separation sets them
 
 all 40 checks pass
 report
