@@ -74,6 +74,7 @@ GET  /riff?theme=t_x&lock=primary,chart-2&hops=1
 GET  /back?theme=t_x&hops=1
 GET  /theme?theme=t_x                 re-read the summary (with &include=… for more detail)
 GET  /export?theme=t_x&format=css|tailwind|json&mode=both|light|dark
+GET  /export?theme=t_x&format=figma[&mode=light|dark|light-medium|dark-medium|light-high|dark-high]
 GET  /preview?theme=t_x&mockup=app|analytics|marketing|brand&mode=light|dark&as=png|html
 GET  /presets
 ```
@@ -97,6 +98,11 @@ GET  /presets
   - `css` gives CSS variables
   - `tailwind` gives the Tailwind v4 `@theme` CSS
   - `json` gives DTCG tokens
+  - `figma` gives a zip (`application/zip`) for Figma's native DTCG variable import: `README.txt` plus one file per mode × contrast level (`light.json`, `dark.json`, `light-medium.json`, `dark-medium.json`, `light-high.json`, `dark-high.json`), all three levels whatever the theme's own `contrast`. With `mode=` it returns that one file as JSON. Built by `src/figmaExport.ts` (`figmaExport(state)`), a pure function the app's Export dialog calls too, so the API and the UI emit identical bytes (unit-tested). The format rules, from Figma's import docs:
+    - Colours are objects, `{colorSpace: "srgb", components, alpha, hex}`, with sRGB-encoded (not linear) components from 0 to 1. Nested groups become `/` names (`color/primary`, `ramp/primary/9`).
+    - Figma makes a variable only for a token present in every file with the same `$type`, and silently drops the rest. `themeFigmaModes` (`engine/css.ts`) throws if the files differ, and if a name would collide after the `/` rename.
+    - No aliases: role tokens are often not an exact ramp step. Shadows have no variable type, so they ride in `$extensions.chromaconscious.shadows`; the scrim is an RGBA colour variable.
+    - CPU (Node on this machine, `process.cpuUsage`, median over 60 requests across four themes): **~8.5 ms** for the zip, of which ~6.5 ms is the three theme builds (one per contrast level), ~1 ms serializing and ~2 ms deflating; ~2.5 ms for a single `&mode=` file, which builds one level. The first zip in an isolate costs ~25 ms after warm-up (~35 ms without). The zip is the one read endpoint above 5 ms. Scaled by the 1.5–2× noted under Performance it is ~13–17 ms on Cloudflare, which is over the Workers Free plan's 10 ms CPU limit and well under Paid's. Not yet measured on Cloudflare.
 
   Every format includes the ID header. JSON carries it as `$extensions.chromaconscious.id`.
 

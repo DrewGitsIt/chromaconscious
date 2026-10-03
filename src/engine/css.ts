@@ -1,5 +1,7 @@
-import { converter, formatHex8 } from 'culori'
+import { converter, formatHex, formatHex8 } from 'culori'
+import type { ContrastLevelName } from './contrastLevel'
 import { effectVars } from './elevation'
+import { ROLES } from './types'
 import type { Separation, ShadowLayer, ThemeEffects, ThemeMode, ThemeResult } from './types'
 
 const toRgb = converter('rgb')
@@ -74,13 +76,13 @@ export function themeTailwind(result: Pick<ThemeResult, 'light' | 'dark'>): stri
  * inconsistent about it, and the shipping consumers (Style Dictionary, the
  * Figma importers) read strings. Style Dictionary accepts both.
  */
-function dtcgShadow(layer: ShadowLayer): Record<string, string | boolean> {
+function dtcgShadow<C>(layer: ShadowLayer, color: ColorEncoder<C>): Record<string, string | boolean | C> {
   return {
     offsetX: px(layer.offsetX),
     offsetY: px(layer.offsetY),
     blur: px(layer.blur),
     spread: px(layer.spread),
-    color: hex8(layer.color, layer.alpha),
+    color: color(layer.color, layer.alpha),
     // Omitted rather than `false` when absent: the spec defaults it to false.
     ...(layer.inset ? { inset: true } : {}),
   }
@@ -98,8 +100,8 @@ function dtcgShadow(layer: ShadowLayer): Record<string, string | boolean> {
  * ordering; this matches CSS `box-shadow` and Style Dictionary's emitter, so
  * the array and the `--elevation-*` string above stay the same shadow.
  */
-function dtcgElevation(layers: ShadowLayer[]) {
-  return { $type: 'shadow', $value: layers.map(dtcgShadow) }
+function dtcgElevation<C>(layers: ShadowLayer[], color: ColorEncoder<C>) {
+  return { $type: 'shadow', $value: layers.map((l) => dtcgShadow(l, color)) }
 }
 
 /**
@@ -115,21 +117,37 @@ function hex8(color: string, alpha: number): string {
   return formatHex8({ ...rgb, alpha })
 }
 
+/**
+ * How a colour is written: a token's own colour (no alpha) or a colour with
+ * alpha (the scrim, a shadow layer). The DTCG file and the Figma files differ
+ * only here, so they share one token walk and cannot disagree about which
+ * tokens a mode has.
+ */
+type ColorEncoder<C> = (color: string, alpha?: number) => C
+
+/** The DTCG file's encoding: the token's string as-is, 8-digit hex where there is alpha. */
+const dtcgColor: ColorEncoder<string> = (color, alpha) => (alpha == null ? color : hex8(color, alpha))
+
+/** One mode's tokens, flat and in emit order: colours, then elevation, then the scrim. */
+function dtcgModeTokens<C>({ tokens, effects }: ExportableMode, color: ColorEncoder<C>) {
+  return {
+    ...Object.fromEntries(Object.entries(tokens).map(([k, v]) => [k, { $type: 'color', $value: color(v) }])),
+    ...(effects
+      ? {
+          ...Object.fromEntries(
+            LEVELS.map((n) => [`elevation-${n}`, dtcgElevation(effects.elevation[n], color)]),
+          ),
+          scrim: { $type: 'color', $value: color(effects.scrim.color, effects.scrim.alpha) },
+        }
+      : {}),
+  }
+}
+
 /** DTCG-style design tokens: each token as { $type, $value } per mode. */
 export function themeTokensJson(
   result: Pick<ThemeResult, 'light' | 'dark'> & { seed?: number; separation?: Separation; contrast?: number },
 ): string {
-  const block = ({ tokens, effects }: ExportableMode) => ({
-    ...Object.fromEntries(Object.entries(tokens).map(([k, v]) => [k, { $type: 'color', $value: v }])),
-    ...(effects
-      ? {
-          ...Object.fromEntries(
-            LEVELS.map((n) => [`elevation-${n}`, dtcgElevation(effects.elevation[n])]),
-          ),
-          scrim: { $type: 'color', $value: hex8(effects.scrim.color, effects.scrim.alpha) },
-        }
-      : {}),
-  })
+  const block = (mode: ExportableMode) => dtcgModeTokens(mode, dtcgColor)
   // seed 0, `layered` and standard contrast are the canonical settings — an export made with
   // anything else carries it so the theme is reproducible, and one made with
   // the defaults stays byte-identical to before $meta existed.
@@ -149,4 +167,135 @@ export function themeTokensJson(
     null,
     2,
   )
+}
+
+// ---------------------------------------------------------------------------
+// Figma variables: one DTCG file per mode, for Figma's native import.
+
+/**
+ * A colour the way Figma's importer reads it. `components` are sRGB-ENCODED
+ * channels in 0..1 (the bytes of the hex over 255), not linear light: Figma
+ * stores what you would see in its colour picker, so linearizing here would
+ * import a mid grey #808080 as roughly #bcbcbc. `hex` is the same colour as a
+ * 6-digit fallback; the two are derived from the same three bytes, so they
+ * cannot disagree. Alpha is separate and never baked into the hex.
+ */
+export interface FigmaColor {
+  colorSpace: 'srgb'
+  components: [number, number, number]
+  alpha: number
+  hex: string
+}
+
+/** Clamped to sRGB and rounded to 8 bits first, so `components` and `hex` are exactly one colour. */
+export function figmaColor(color: string, alpha = 1): FigmaColor {
+  const rgb: ReturnType<typeof toRgb> | undefined = toRgb(color)
+  if (!rgb) throw new Error(`figma export: "${color}" is not a colour`)
+  const hex = formatHex(rgb)
+  const byte = (i: number) => parseInt(hex.slice(1 + 2 * i, 3 + 2 * i), 16) / 255
+  // Three decimals is what the CSS export writes (cssAlphaColor), and it keeps
+  // 0.045 * 1.4 from arriving as 0.06300000000000001.
+  return { colorSpace: 'srgb', components: [byte(0), byte(1), byte(2)], alpha: Number(alpha.toFixed(3)), hex }
+}
+
+/** standard → `light`, high → `light-high`: standard is the theme, the others are variants of it. */
+export const FIGMA_LEVELS = ['standard', 'medium', 'high'] as const satisfies readonly ContrastLevelName[]
+
+export function figmaModeName(mode: 'light' | 'dark', level: ContrastLevelName): string {
+  return level === 'standard' ? mode : `${mode}-${level}`
+}
+
+export interface FigmaModeFile {
+  /** `light`, `dark-high`, … — Figma names the mode after the file. */
+  name: string
+  filename: string
+  json: string
+}
+
+/** One contrast level's theme, plus the settings that make it reproducible. */
+type FigmaSource = Pick<ThemeResult, 'light' | 'dark'> & { seed?: number; separation?: Separation }
+
+/**
+ * A DTCG name may not hold `.`, `{`, `}` or start with `$`, and Figma joins
+ * groups with `/`, so a `/` inside a name would collide with a nested path.
+ */
+const BAD_NAME = /[./{}]|^\$/
+
+/**
+ * Every variable a file defines, as Figma will name it (`color/primary`), with
+ * its `$type`. Used to hold the files to the import's one hard rule: a token
+ * missing from any file — or typed differently in one — is silently dropped.
+ */
+function figmaPaths(doc: Record<string, unknown>, prefix = '', out = new Map<string, string>()) {
+  for (const [key, node] of Object.entries(doc)) {
+    if (key.startsWith('$')) continue
+    if (BAD_NAME.test(key)) throw new Error(`figma export: "${prefix}${key}" is not a valid token name`)
+    const path = prefix + key
+    const n = node as Record<string, unknown>
+    if ('$type' in n) {
+      if (out.has(path)) throw new Error(`figma export: two tokens are named ${path}`)
+      out.set(path, String(n.$type))
+    } else figmaPaths(n, path + '/', out)
+  }
+  return out
+}
+
+/**
+ * One file per mode × contrast level, for Figma's native DTCG variable import
+ * (drag the files onto a collection; each file becomes a mode named after it).
+ *
+ * The colour tokens come from the same walk as `themeTokensJson`, encoded as
+ * Figma colour objects instead of strings. Figma has no shadow variable, so the
+ * elevation shadows ride in `$extensions.chromaconscious` (which Figma ignores)
+ * for a future plugin to turn into effect styles; the scrim is a colour with
+ * alpha and imports as an RGBA variable. Ramps are exported step by step
+ * (`ramp/primary/9`) as plain values, not aliases: role tokens are often not an
+ * exact ramp step (`compliantSolid` shifts fills), so an alias would lie.
+ *
+ * Throws if any two files disagree on their set of paths or types, since
+ * Figma would drop the difference without a word.
+ */
+export function themeFigmaModes(byLevel: Partial<Record<ContrastLevelName, FigmaSource>>): FigmaModeFile[] {
+  const files: FigmaModeFile[] = []
+  const sets: string[] = []
+  for (const level of FIGMA_LEVELS) {
+    const result = byLevel[level]
+    if (!result) continue
+    for (const mode of ['light', 'dark'] as const) {
+      const m = result[mode]
+      const { scrim, ...flat } = dtcgModeTokens(m, figmaColor)
+      const color: Record<string, unknown> = {}
+      const shadows: Record<string, unknown> = {}
+      for (const [k, token] of Object.entries(flat) as Array<[string, { $type: string }]>) (token.$type === 'shadow' ? shadows : color)[k] = token
+      if (scrim) color.scrim = scrim
+      const ramp = Object.fromEntries(
+        ROLES.map((role) => [
+          role,
+          Object.fromEntries(m.ramps[role].map((v, i) => [String(i + 1), { $type: 'color', $value: figmaColor(v) }])),
+        ]),
+      )
+      const doc = {
+        color,
+        ramp,
+        $extensions: {
+          chromaconscious: {
+            mode,
+            contrast: level,
+            ...(result.seed ? { seed: result.seed } : {}),
+            ...(result.separation && result.separation !== 'layered' ? { separation: result.separation } : {}),
+            // Figma variables cannot hold shadows. DTCG shadow tokens, one per
+            // elevation level, layer colours in the same object form as above.
+            shadows,
+          },
+        },
+      }
+      sets.push([...figmaPaths(doc)].map(([p, t]) => `${p}:${t}`).sort().join('\n'))
+      const name = figmaModeName(mode, level)
+      files.push({ name, filename: `${name}.json`, json: JSON.stringify(doc, null, 2) + '\n' })
+    }
+  }
+  // The import's one hard rule, enforced here rather than discovered in Figma.
+  const odd = sets.findIndex((s) => s !== sets[0])
+  if (odd > 0) throw new Error(`figma export: ${files[odd].filename} and ${files[0].filename} define different tokens`)
+  return files
 }

@@ -10,6 +10,7 @@ import { restoreWalkStop, themeTailwind, themeTokensJson, walkCheckpoint } from 
 import type { ThemeState } from '../ops'
 import { buildTheme, emptyThemeState } from '../ops'
 import { PRESETS } from '../presets'
+import { FIGMA_MODE_NAMES, figmaExport, figmaLevel, figmaModeFiles } from '../figmaExport'
 import { QueryError, applyEdits, backOp, hopsParam, presetByName, riffOp, runOps } from './query'
 import { StateError, decodeState, encodeState, isThemeId, themeId } from './state'
 import { summarize, summaryText } from './summary'
@@ -74,9 +75,11 @@ async function load(env: Env, id: string | null): Promise<Stored & { id: string 
   return { id, state: decodeState(state), parent }
 }
 
+const noColors = () => new HttpError(422, 'a theme needs at least one color — pass colors= or preset=')
+
 const forge = (state: ThemeState): ThemeResult => {
   const result = buildTheme(state)
-  if (!result) throw new HttpError(422, 'a theme needs at least one color — pass colors= or preset=')
+  if (!result) throw noColors()
   return result
 }
 
@@ -167,8 +170,35 @@ async function route(req: Request, env: Env): Promise<Response> {
     }
     case '/export': {
       const t = await load(env, q.get('theme'))
-      const result = forge(t.state)
       const format = q.get('format') ?? 'css'
+      // Before forge: the Figma files build the theme at each contrast level
+      // themselves, and the Worker's CPU budget has no room for a fourth build.
+      if (format === 'figma') {
+        // The same bytes the Export dialog builds client-side (src/figmaExport.ts).
+        const mode = q.get('mode')
+        if (mode != null) {
+          if (!FIGMA_MODE_NAMES.includes(mode)) throw new QueryError(`mode is one of ${FIGMA_MODE_NAMES.join(', ')}`)
+          const file = figmaModeFiles(t.state, [figmaLevel(mode)])?.find((f) => f.name === mode)
+          if (!file) throw noColors()
+          return new Response(file.json, {
+            headers: {
+              'content-type': 'application/json',
+              'content-disposition': `attachment; filename="${t.id}-${file.filename}"`,
+              'access-control-allow-origin': '*',
+            },
+          })
+        }
+        const zip = figmaExport(t.state, `chromaconscious-${t.id}`)
+        if (!zip) throw noColors()
+        return new Response(zip.bytes as Uint8Array<ArrayBuffer>, {
+          headers: {
+            'content-type': 'application/zip',
+            'content-disposition': `attachment; filename="${zip.filename}"`,
+            'access-control-allow-origin': '*',
+          },
+        })
+      }
+      const result = forge(t.state)
       const header = `ChromaConscious ${t.id} · ${url.origin}/chromaconscious#${t.id}`
       if (format === 'css' || format === 'tailwind') {
         const body = format === 'css' ? result.css : themeTailwind(result)
@@ -186,7 +216,7 @@ async function route(req: Request, env: Env): Promise<Response> {
         }
         return text(JSON.stringify(body, null, 2), 200, 'application/json')
       }
-      throw new QueryError('format is css, tailwind or json')
+      throw new QueryError('format is css, tailwind, json or figma')
     }
     case '/presets':
       return text(PRESETS.map((p) => `${p.name.padEnd(18)} ${p.colors.map((c) => c.slice(1)).join(',')}`).join('\n') + '\n')
@@ -213,6 +243,9 @@ export function warmUp(rounds = 6) {
     summaryText(summarize('t_warmwarmwarm', null, round, result, 'https://warm.up'))
     themeTailwind(result)
     themeTokensJson(result)
+    // Once: the Figma zip's first call costs ~35 ms cold (its serializer and
+    // the deflater compiling) and ~25 ms after this, against ~9 ms warm.
+    if (i === 0) figmaExport(round)
   }
 }
 

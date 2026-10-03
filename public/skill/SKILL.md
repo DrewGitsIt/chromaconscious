@@ -18,6 +18,7 @@ Base URL: `https://drewkidwell.com/api/chromaconscious/v1` (the legacy `/api/the
    `curl -s -H "Authorization: Bearer $CHROMACONSCIOUS_API_KEY" "$BASE/riff?theme=t_…&lock=primary"`
 4. **Export** when it's right. No key is needed:
    `curl -s "$BASE/export?theme=t_…&format=css"` (or `tailwind`, `json`)
+   For Figma: `curl -s -o theme-figma.zip "$BASE/export?theme=t_…&format=figma"`. It's a zip of Figma variable files, one per mode (light/dark × standard/medium/high contrast), with a README on importing them.
 
 Every call returns a **new** id; nothing changes in place. To go back, use an older id, or `/back?theme=…`.
 
