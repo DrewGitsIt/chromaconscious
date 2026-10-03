@@ -1,0 +1,164 @@
+@layer chrome-base, chrome;
+
+/* CONTRAST — the taste dial's sibling. Same instrument: a ruled scale, a 2px
+   rail filled in ink up to a hairline needle. Three detents (standard, medium,
+   high) instead of the dial's one, and the readout is the floor the level buys
+   rather than the slider's number. Achromatic; the named stop in force is
+   told by weight and ink, never by hue. Every colour is a chrome token.
+
+   Own class names rather than the dial's: `.dial-slider` is a handle tests
+   and the driver address, and must keep naming exactly one control. */
+@layer chrome {
+  .ctr {
+    margin-top: 20px;
+  }
+
+  .ctr-read {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .ctr-name {
+    font-size: var(--fs-m);
+    color: var(--ink);
+  }
+  /* smaller than the dial's readout: this one is a phrase, not a number */
+  .ctr-value {
+    font-family: var(--font-code);
+    font-size: var(--fs-m);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+
+  .ctr-track-wrap {
+    position: relative;
+    height: 30px;
+  }
+  .ctr-ticks {
+    position: absolute;
+    inset: 0 2px auto;
+    height: 14px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+  .ctr-ticks i {
+    display: block;
+    width: 1px;
+    height: 6px;
+    background: var(--line-ctl);
+  }
+  .ctr-ticks i.major {
+    height: 10px;
+    background: var(--line-active);
+  }
+  .ctr-ticks i.detent {
+    height: 14px;
+    background: var(--ink-muted);
+  }
+
+  .ctr-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    position: absolute;
+    top: 8px;
+    left: 0;
+    width: 100%;
+    height: 20px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    cursor: ew-resize;
+  }
+  .ctr-slider::-webkit-slider-runnable-track {
+    height: 2px;
+    border-radius: 1px;
+    background: linear-gradient(90deg, var(--ink) 0 var(--v), var(--line-ctl) var(--v) 100%);
+  }
+  .ctr-slider::-moz-range-track {
+    height: 2px;
+    border-radius: 1px;
+    background: var(--line-ctl);
+  }
+  .ctr-slider::-moz-range-progress {
+    height: 2px;
+    border-radius: 1px;
+    background: var(--ink);
+  }
+  .ctr-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 4px;
+    height: 16px;
+    margin-top: -7px;
+    border-radius: 2px;
+    background: var(--ink-bright);
+    border: 0;
+    box-shadow: 0 0 0 3px var(--surface-1);
+    transition: box-shadow var(--d-fast) var(--ease);
+  }
+  .ctr-slider::-moz-range-thumb {
+    width: 4px;
+    height: 16px;
+    border-radius: 2px;
+    background: var(--ink-bright);
+    border: 0;
+    box-shadow: 0 0 0 3px var(--surface-1);
+    transition: box-shadow var(--d-fast) var(--ease);
+  }
+  .ctr-slider:active::-webkit-slider-thumb,
+  .ctr-slider:focus-visible::-webkit-slider-thumb {
+    box-shadow:
+      0 0 0 3px var(--surface-1),
+      0 0 0 5px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  .ctr-slider:active::-moz-range-thumb,
+  .ctr-slider:focus-visible::-moz-range-thumb {
+    box-shadow:
+      0 0 0 3px var(--surface-1),
+      0 0 0 5px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+
+  /* the three stops, under their detents; the one in force reads in full ink */
+  .ctr-ends {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    font-family: var(--font-code);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .ctr-ends span:nth-child(2) {
+    text-align: center;
+  }
+  .ctr-ends span:nth-child(3) {
+    text-align: right;
+  }
+  .ctr-ends span.on {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .ctr-caption {
+    margin: 10px 0 0;
+    font-size: var(--fs-s);
+    line-height: 1.55;
+    color: var(--ink-muted);
+  }
+}
+
+/* Unlayered, like the other kill switches, so no layered rule can outrank it.
+   One pseudo-element per rule: a browser that doesn't know the other vendor's
+   drops the whole selector list. */
+@media (prefers-reduced-motion: reduce) {
+  .ctr-slider::-webkit-slider-thumb {
+    transition: none;
+  }
+  .ctr-slider::-moz-range-thumb {
+    transition: none;
+  }
+}

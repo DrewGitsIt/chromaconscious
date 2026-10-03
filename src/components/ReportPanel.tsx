@@ -103,8 +103,19 @@ export function ReportPanel({ result, candidates }: Props) {
                   </td>
                   <td>{r.wcag.toFixed(2)}</td>
                   <td>{r.apca.toFixed(0)}</td>
-                  <td>{r.requiredWcag}</td>
-                  <td>{r.pass ? '✓' : '✗'}</td>
+                  <td>
+                    {r.requiredWcag}
+                    {r.requiredLc != null && ` · Lc ${r.requiredLc}`}
+                  </td>
+                  <td
+                    title={
+                      r.unreachable
+                        ? 'unreachable: the engine pushed this colour as far as its hue goes on this surface — only a different colour fixes it'
+                        : undefined
+                    }
+                  >
+                    {r.pass ? '✓' : r.unreachable ? '✗ ceiling' : '✗'}
+                  </td>
                 </tr>
               ))}
             </tbody>
