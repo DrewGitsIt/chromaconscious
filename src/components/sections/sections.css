@@ -1,0 +1,119 @@
+/* Section bodies: what the pane's numbered sections hold. The shell
+   (SidebarShell.css) owns the headers, the fold and the rail. */
+@layer chrome-base, chrome;
+
+@layer chrome {
+  /* a control row with two verbs instead of four */
+  .ctl-row.ctl-row-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* ---------- 1 input: the first-run doors, set into the pane ----------
+     StartHero is unchanged; this re-lays its stage-sized blocks into one
+     280px column. */
+  .pane-start .start-hero {
+    padding: 0;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+  .pane-start .start-hero h2 {
+    font-size: var(--fs-m);
+    font-weight: 600;
+    margin: 0 0 2px;
+  }
+  .pane-start .hero-sub {
+    font-size: var(--fs-s);
+    color: var(--ink-faint);
+    margin: 0 0 12px;
+  }
+  .pane-start .hero-cards {
+    flex-direction: column;
+    gap: 10px;
+    max-width: none;
+  }
+  .pane-start .hero-card {
+    min-width: 0;
+    padding: 12px;
+    gap: 8px;
+  }
+  /* the stage hero opened its picker beside the card; in a 320px pane that
+     would be off the edge, so it drops below the swatch like everywhere else */
+  .pane-start .hero-color .picker-pop {
+    top: calc(100% + 6px);
+    left: 0;
+  }
+  .pane-start .hero-color > .picker-anchor .swatch-btn {
+    height: 40px;
+  }
+  .pane-start .hero-card .image-drop {
+    min-height: 72px;
+  }
+  .pane-start .hero-foot {
+    margin-top: 12px;
+    text-align: center;
+  }
+
+  /* ---------- 4 compare ---------- */
+  .cmp-note {
+    margin: 0 0 8px;
+    font-size: var(--fs-s);
+    color: var(--ink-faint);
+    line-height: 1.5;
+  }
+  .cmp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--fs-s);
+  }
+  .cmp-table th,
+  .cmp-table td {
+    padding: 2px 0;
+    text-align: left;
+    font-weight: 400;
+  }
+  .cmp-table thead th {
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+  }
+  .cmp-table tbody th {
+    color: var(--ink-muted);
+    width: 70px;
+  }
+  .cmp-side {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 6px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    font-family: var(--font-code);
+    font-size: var(--fs-xs);
+    color: var(--ink);
+  }
+  .cmp-side i {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    flex: none;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+  }
+  .cmp-take {
+    color: var(--ink-faint);
+    cursor: pointer;
+  }
+  .cmp-take:hover,
+  .cmp-take:focus-visible {
+    background: var(--surface-3);
+    color: var(--ink);
+  }
+
+  /* ---------- footer: Export before any input ---------- */
+  .exp-cap {
+    margin: 0;
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+    text-align: center;
+    line-height: 1.45;
+  }
+}

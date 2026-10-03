@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Ban,
-  Blend,
   Columns2,
   ExternalLink,
   Guitar,
   Image as ImageIcon,
   Palette,
-  RotateCcw,
   SlidersHorizontal,
   Undo2,
   X,
@@ -15,6 +13,7 @@ import {
 import type { ColorCandidate, Role, ThemeResult, TokenAncestor } from './engine'
 import {
   candidatesFromList,
+  contrastLevelName,
   generateTheme,
   parseColor,
   ROLES,
@@ -33,24 +32,24 @@ import {
 import { GLOSS, jobsForRole } from './roleCopy'
 import type { Seat } from './roleCopy'
 import type { ExportFormat } from './components/Preview'
-import { Bench } from './components/Bench'
-import { ColorAddField } from './components/ColorAddField'
-import { Dial } from './components/Dial'
 import { ExportRow } from './components/ExportRow'
 import { FrameCard } from './components/FrameCard'
 import { fileToCandidates } from './components/ImageDrop'
 import { PresetDots } from './components/PresetDots'
 import { PreviewBoundary } from './components/PreviewBoundary'
 import { ReportPanel } from './components/ReportPanel'
-import { RoleBoard } from './components/RoleBoard'
 import { AssignPopover, RoleTooltip } from './components/RolePopover'
-import { SeparationControl } from './components/SeparationControl'
-import { ContrastControl } from './components/ContrastControl'
-import { SeriesTray } from './components/SeriesTray'
-import { Section, SidebarShell } from './components/SidebarShell'
+import type { PaneSection } from './components/SidebarShell'
+import { SidebarShell } from './components/SidebarShell'
+import { revealSection } from './components/rail'
+import { ColorsSectionBody } from './components/sections/ColorsSection'
+import { CompareSectionBody } from './components/sections/CompareSection'
+import { InputSectionBody } from './components/sections/InputSection'
+import { RiffSectionBody } from './components/sections/RiffSection'
+import { TuningSectionBody } from './components/sections/TuningSection'
 import { ShortcutsFlyout } from './components/Shortcuts'
+import type { SectionId } from './shortcuts'
 import { SHORTCUTS, isTypingTarget, withKey } from './shortcuts'
-import { StartHero } from './components/StartHero'
 import { StatusChip } from './components/StatusChip'
 import type { MockupProps } from './mockups'
 import { MOCKUPS, mockupById } from './mockups'
@@ -138,6 +137,22 @@ const cloneFrame = (f: FrameState): FrameState => ({
   candidates: f.candidates.map((c) => ({ ...c })),
 })
 
+/**
+ * The stage before a frame has colours. The ways in live in the pane's first
+ * section now; this only says where, and that a drop works anywhere.
+ */
+function StageEmpty({ frame }: { frame?: string }) {
+  return (
+    <div className="stage-empty">
+      <p>
+        {frame ? `frame ${frame} is empty` : 'drop an image anywhere'}
+        <br />
+        {frame ? 'select it, then start in the sidebar' : 'or start in the sidebar'}
+      </p>
+    </div>
+  )
+}
+
 /** Proper component wrapper so each mockup's hooks stay its own. */
 function FrameMockup({ mockup, ...props }: { mockup: string } & MockupProps) {
   const M = mockupById(mockup).Component
@@ -212,6 +227,15 @@ export default function App() {
   // its open state has to live out here rather than inside the control.
   const [helpOpen, setHelpOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  // Which pane sections are folded. Shared by every frame: folding is about
+  // what you want to look at, not about the theme. Anything absent is open.
+  const [folded, setFolded] = useState<ReadonlySet<SectionId>>(() => new Set())
+  const toggleSection = (id: string) =>
+    setFolded((prev) => {
+      const next = new Set(prev)
+      if (!next.delete(id as SectionId)) next.add(id as SectionId)
+      return next
+    })
   // Embed only: the sidebar is a drawer over the stage (see embed.ts).
   const [drawerOpen, setDrawerOpen] = useState(false)
   useEffect(() => {
@@ -572,6 +596,18 @@ export default function App() {
       // Every branch below needs a built theme; only help works without one.
       if (hit.id !== 'help' && (!view || emptyFrame)) return
       e.preventDefault()
+      // A key aimed at a folded section opens it and brings it into view
+      // first, so the press is never silent and its result is on screen. An
+      // open section is left where it is: no scroll jump on every riff.
+      if (hit.section && folded.has(hit.section)) {
+        const id = hit.section
+        setFolded((prev) => {
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
+        requestAnimationFrame(() => revealSection(id))
+      }
       switch (hit.id) {
         case 'help':
           setHelpOpen((o) => !o)
@@ -659,16 +695,220 @@ export default function App() {
   const nColors = `${frame.candidates.length} color${frame.candidates.length === 1 ? '' : 's'}`
   const hasPlacements = frame.candidates.some((c) => c.pin || c.benched)
 
-  const hero = (i: number) => (
-    <StartHero
-      onAddColors={(inputs) => dispatchTo(i, { op: 'add', colors: inputs })}
-      onImage={(candidates) => startOverAt(i, candidates, null, 'extracted colors')}
-      onPreset={(p) => startOverAt(i, candidatesFromList(p.colors), p.name, `started with ${p.name}`)}
-    />
-  )
-
   const seatOf = (seat: Seat) =>
     seat === 'chart' ? null : (view?.slots.find((s) => s.role === seat) ?? null)
+
+  // ---- compare: what differs between the two frames -----------------------
+  const otherResult = split ? results[1 - active] : null
+  const otherFrame = split ? frames[1 - active] : null
+  const otherView: BoardView | null = useMemo(
+    () => (otherResult && otherFrame ? readBoard(otherResult, otherFrame.candidates, otherFrame.mode) : null),
+    [otherResult, otherFrame],
+  )
+  const compareRows = useMemo(() => {
+    if (!view || !otherView) return []
+    return ROLES.flatMap((role) => {
+      const mine = view.slots.find((s) => s.role === role)?.hex
+      const theirs = otherView.slots.find((s) => s.role === role)?.hex
+      return mine && theirs && mine !== theirs ? [{ role, mine, theirs }] : []
+    })
+  }, [view, otherView])
+
+  // ---- the pane's sections --------------------------------------------------
+  // Each exists only once it applies: before any colour there is one section,
+  // "input", and nothing greyed out beneath it. It becomes "colors" (a new key,
+  // so it re-enters) with tuning and riff after it; compare joins only while
+  // the stage is split. The shell numbers them and gives each a rail tick.
+  const colorsActions = (
+    <span className="sec-tools" ref={startOverRef}>
+      {/* The header keeps exactly one verb; the others live in the row below. */}
+      <button
+        className="mini ctl-head"
+        onClick={() => {
+          setStartOverPage('root')
+          setStartOverOpen((o) => !o)
+        }}
+        title={withKey('startOver', 'start over')}
+      >
+        <Palette size={12} strokeWidth={1.75} />
+        start over
+      </button>
+      {/* The keyboard map lives up here rather than in the row it documents:
+          flex squeezed it under the target floor there. */}
+      <button
+        className="mini ctl-head ctl-help"
+        onClick={() => setHelpOpen((o) => !o)}
+        aria-expanded={helpOpen}
+        aria-label="keyboard shortcuts"
+        title={withKey('help', 'keyboard shortcuts')}
+      >
+        ?
+      </button>
+      {helpOpen && <ShortcutsFlyout onClose={() => setHelpOpen(false)} />}
+      {startOverOpen && (
+        <div className="menu startover-menu">
+          {startOverPage === 'root' ? (
+            <>
+              <button className="item" onClick={() => fileInputRef.current?.click()}>
+                <ImageIcon size={13} strokeWidth={1.75} /> from an image…
+              </button>
+              <button className="item" onClick={() => setStartOverPage('presets')}>
+                <Palette size={13} strokeWidth={1.75} /> from a preset…
+              </button>
+              <button
+                className="item"
+                onClick={() => {
+                  setStartOverOpen(false)
+                  startOverAt(active, [], null, `cleared ${nColors}`)
+                }}
+              >
+                <Ban size={13} strokeWidth={1.75} /> start empty
+              </button>
+              <div className="menu-cap">
+                each of these replaces your current {nColors} — undo is one click
+              </div>
+            </>
+          ) : (
+            <>
+              <button className="item" onClick={() => setStartOverPage('root')}>
+                ‹ back
+              </button>
+              {PRESETS.map((p) => (
+                <button
+                  key={p.name}
+                  className={`item preset-item ${frame.preset === p.name ? 'sel' : ''}`}
+                  onClick={() => {
+                    setStartOverOpen(false)
+                    startOverAt(active, candidatesFromList(p.colors), p.name, `started over with ${p.name}`)
+                  }}
+                >
+                  <PresetDots colors={p.colors} /> {p.name}
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </span>
+  )
+
+  const sections: PaneSection[] = []
+  if (emptyFrame || !view) {
+    sections.push({
+      id: 'input',
+      label: 'input',
+      body: (
+        <InputSectionBody
+          onAddColors={(inputs) => dispatch({ op: 'add', colors: inputs })}
+          onImage={(candidates) => startOverAt(active, candidates, null, 'extracted colors')}
+          onPreset={(p) =>
+            startOverAt(active, candidatesFromList(p.colors), p.name, `started with ${p.name}`)
+          }
+        />
+      ),
+    })
+  } else {
+    const yours = view.slots.filter((s) => s.provenance !== 'derived').length
+    sections.push(
+      {
+        id: 'colors',
+        label: 'colors',
+        readout: `${yours} yours · ${view.slots.length - yours} derived`,
+        actions: colorsActions,
+        body: (
+          <ColorsSectionBody
+            controls={{
+              locked,
+              picking,
+              baseHex,
+              hasPlacements,
+              onMono: lockClick,
+              onReset: () => dispatch({ op: 'reset' }),
+            }}
+            board={{
+              view,
+              openRole: seatMenu && seatMenu.seat !== 'chart' ? (seatMenu.seat as Role) : null,
+              anchorRole,
+              rerolled,
+              picking,
+              onPick: (role) => {
+                const idx = view.slots.find((s) => s.role === role)?.candidateIndex ?? null
+                // a derived seat has no colour of yours to lock onto
+                if (idx != null) dispatch({ op: 'mono', index: idx })
+                setPicking(false)
+              },
+              onAssign: (role, anchor) => setSeatMenu({ kind: 'assign', seat: role, anchor }),
+              onExplain: (role, anchor) => setSeatMenu({ kind: 'explain', seat: role, anchor }),
+              onToggleLock: toggleSeatLock,
+              onDropInRole: (payload, role) => applyDrop(payload, { kind: 'role', role }),
+              onDragStartSlot: () => setSeatMenu(null),
+              onLocate: onLocateSeat,
+            }}
+            tray={{
+              series: view.series,
+              onDropInSeries: (payload) => applyDrop(payload, { kind: 'series' }),
+              onDragStartSeries: () => setSeatMenu(null),
+              onToggleLock: toggleSeriesLock,
+              onExplain: (anchor) => setSeatMenu({ kind: 'explain', seat: 'chart', anchor }),
+            }}
+            bench={{
+              entries: view.bench,
+              open: benchOpen,
+              flash: benchFlash,
+              onToggle: () => setBenchOpen((o) => !o),
+              onDropToBench: (payload) => applyDrop(payload, { kind: 'bench' }),
+              onDragStartBench: () => setSeatMenu(null),
+              onRemove: (i) => dispatch({ op: 'drop', index: i }),
+            }}
+            add={{ has: inList, onAdd: addCandidates, open: addOpen, onOpenChange: setAddOpen }}
+          />
+        ),
+      },
+      {
+        id: 'tuning',
+        label: 'tuning',
+        readout: `${frame.fidelity.toFixed(2)} · ${frame.separation} · ${contrastLevelName(frame.contrast) ?? frame.contrast.toFixed(2)}`,
+        body: (
+          <TuningSectionBody
+            fidelity={frame.fidelity}
+            caption={caption}
+            separation={frame.separation}
+            contrast={frame.contrast}
+            onFidelity={(v) => dispatch({ op: 'fidelity', value: v })}
+            onSeparation={(v) => dispatch({ op: 'separation', value: v })}
+            onContrast={(v) => dispatch({ op: 'contrast', value: v })}
+          />
+        ),
+      },
+      {
+        id: 'riff',
+        label: 'riff',
+        readout: frame.seed > 0 ? `hop ${frame.seed}` : 'as derived',
+        body: (
+          <RiffSectionBody
+            hop={frame.seed}
+            canRiff={hasRiffableSeats(view)}
+            onRiff={riff}
+            onBack={riffBack}
+          />
+        ),
+      },
+    )
+    if (split) {
+      sections.push({
+        id: 'compare',
+        label: 'compare',
+        readout: `${compareRows.length} differ · editing ${FRAME_LABEL[active]}`,
+        body: (
+          <CompareSectionBody
+            editing={FRAME_LABEL[active]}
+            rows={compareRows}
+            onTake={(role, hex) => dispatch({ op: 'adjust', role, color: hex })}
+          />
+        ),
+      })
+    }
+  }
 
   return (
     <div
@@ -683,283 +923,50 @@ export default function App() {
       <SidebarShell
         title="ChromaConscious"
         tagline="any colors in, working theme out"
+        sections={sections}
+        folded={folded}
+        onToggle={toggleSection}
         footer={
-          emptyFrame && !split ? null : (
-            <div className="foot-stack">
-              {checkStats && (
-                <StatusChip
-                  ok={checkStats.issues === 0}
-                  text={chipText}
-                  onOpenReport={() => setReportOpen((o) => !o)}
-                />
-              )}
-              <ExportRow
-                formats={EXPORT_FORMATS}
-                current={exportFormat}
-                copied={copied}
-                disabled={!result}
-                onCopy={(id) => void doExport(id as ExportFormat)}
-                onChangeFormat={(id) => {
-                  setExportFormat(id as ExportFormat)
-                  void doExport(id as ExportFormat)
-                }}
+          <div className="foot-stack">
+            {checkStats && (
+              <StatusChip
+                ok={checkStats.issues === 0}
+                text={chipText}
+                onOpenReport={() => setReportOpen((o) => !o)}
               />
-            </div>
-          )
+            )}
+            {/* Always here, greyed before any input: the one deliberate grey
+                in the pane, because it answers "what do I get out of this?"
+                before you have given it anything. */}
+            <ExportRow
+              formats={EXPORT_FORMATS}
+              current={exportFormat}
+              copied={copied}
+              disabled={!result}
+              onCopy={(id) => void doExport(id as ExportFormat)}
+              onChangeFormat={(id) => {
+                setExportFormat(id as ExportFormat)
+                void doExport(id as ExportFormat)
+              }}
+            />
+            {!result && (
+              <p className="exp-cap">add a color to export CSS, Tailwind, Figma variables or a share link</p>
+            )}
+          </div>
         }
-      >
-        <div>
-          {!emptyFrame && view && (
-            <Section
-              label="colors"
-              actions={
-                <span className="sec-tools" ref={startOverRef}>
-                  {/* The header keeps exactly one verb. The other four moved to
-                      the row below: five controls plus a data-dependent mono
-                      label overran the header by 33px in the busiest state, and
-                      `.sec-rule` bottoming out at its 8px floor turned the
-                      overflow into a horizontal scrollbar under the sidebar
-                      rather than anything you could see. */}
-                  <button
-                    className="mini ctl-head"
-                    onClick={() => {
-                      setStartOverPage('root')
-                      setStartOverOpen((o) => !o)
-                    }}
-                    title={withKey('startOver', 'start over')}
-                  >
-                    <Palette size={12} strokeWidth={1.75} />
-                    start over
-                  </button>
-                  {/* The keyboard map lives up here rather than in the row it
-                      documents: the row runs 286px of a 287px box at its
-                      busiest, and flex shrank this button to 10px — well under
-                      the target floor everything else in the row now clears. */}
-                  <button
-                    className="mini ctl-head ctl-help"
-                    onClick={() => setHelpOpen((o) => !o)}
-                    aria-expanded={helpOpen}
-                    aria-label="keyboard shortcuts"
-                    title={withKey('help', 'keyboard shortcuts')}
-                  >
-                    ?
-                  </button>
-                  {helpOpen && <ShortcutsFlyout onClose={() => setHelpOpen(false)} />}
-                  {startOverOpen && (
-                    <div className="menu startover-menu">
-                      {startOverPage === 'root' ? (
-                        <>
-                          <button className="item" onClick={() => fileInputRef.current?.click()}>
-                            <ImageIcon size={13} strokeWidth={1.75} /> from an image…
-                          </button>
-                          <button className="item" onClick={() => setStartOverPage('presets')}>
-                            <Palette size={13} strokeWidth={1.75} /> from a preset…
-                          </button>
-                          <button
-                            className="item"
-                            onClick={() => {
-                              setStartOverOpen(false)
-                              startOverAt(active, [], null, `cleared ${nColors}`)
-                            }}
-                          >
-                            <Ban size={13} strokeWidth={1.75} /> start empty
-                          </button>
-                          <div className="menu-cap">
-                            each of these replaces your current {nColors} — undo is one click
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <button className="item" onClick={() => setStartOverPage('root')}>
-                            ‹ back
-                          </button>
-                          {PRESETS.map((p) => (
-                            <button
-                              key={p.name}
-                              className={`item preset-item ${frame.preset === p.name ? 'sel' : ''}`}
-                              onClick={() => {
-                                setStartOverOpen(false)
-                                startOverAt(
-                                  active,
-                                  candidatesFromList(p.colors),
-                                  p.name,
-                                  `started over with ${p.name}`,
-                                )
-                              }}
-                            >
-                              <PresetDots colors={p.colors} /> {p.name}
-                            </button>
-                          ))}
-                        </>
-                      )}
-                    </div>
-                  )}
-                </span>
-              }
-            >
-              {/* The palette's four verbs, spelled out. Nothing here appears or
-                  disappears with state — `reset` and `back` grey out in place
-                  rather than unmounting, so `riff` never slides out from under
-                  a pointer that is about to press it again. */}
-              <div className="ctl-row">
-                <button
-                  className={`ctl${locked ? ' on' : ''}${picking ? ' picking' : ''}`}
-                  onClick={lockClick}
-                  title={withKey(
-                    'mono',
-                    locked
-                      ? `unlock — back to the full-palette engine (ruled by ${baseHex})`
-                      : "lock the theme to one color's hue",
-                  )}
-                >
-                  {/* Engaged, the glyph IS the base colour — it names the hue
-                      ruling the theme in the space the icon was using anyway.
-                      The label used to read the base's ROLE, which was always
-                      "primary" because the base was crowned, so it said nothing. */}
-                  {locked && baseHex ? (
-                    <i className="mono-dot" style={{ background: baseHex }} aria-hidden="true" />
-                  ) : (
-                    <Blend size={12} strokeWidth={1.75} aria-hidden="true" />
-                  )}
-                  mono
-                </button>
-                <button
-                  className="ctl"
-                  onClick={() => dispatch({ op: 'reset' })}
-                  disabled={!hasPlacements}
-                  title={withKey(
-                    'reset',
-                    hasPlacements
-                      ? "clear your placements — back to the engine's own casting"
-                      : 'nothing to reset — you have not placed a color by hand yet',
-                  )}
-                >
-                  <RotateCcw size={12} strokeWidth={1.75} aria-hidden="true" />
-                  reset
-                </button>
-                <button
-                  className="ctl"
-                  onClick={riff}
-                  disabled={!hasRiffableSeats(view)}
-                  title={withKey(
-                    'riff',
-                    hasRiffableSeats(view)
-                      ? // NB avoid the substring "unlock" — the mono control
-                        // beside this one is addressed by it in the e2e suite
-                        'riff — walk the palette one hop; locked seats hold still'
-                      : 'nothing to riff — every seat is locked',
-                  )}
-                >
-                  <Guitar size={12} strokeWidth={1.75} aria-hidden="true" />
-                  riff
-                  {frame.seed > 0 && <span className="ctl-hop">{frame.seed}</span>}
-                </button>
-                <button
-                  className="ctl"
-                  onClick={riffBack}
-                  disabled={frame.seed === 0}
-                  title={withKey(
-                    'back',
-                    frame.seed > 0 ? 'back one riff' : 'no hops to step back through',
-                  )}
-                >
-                  <Undo2 size={12} strokeWidth={1.75} aria-hidden="true" />
-                  back
-                </button>
-              </div>
-              {picking && (
-                <div className="pick-hint">click a seat to lock its hue · esc to cancel</div>
-              )}
-              <RoleBoard
-                view={view}
-                openRole={seatMenu && seatMenu.seat !== 'chart' ? (seatMenu.seat as Role) : null}
-                anchorRole={anchorRole}
-                rerolled={rerolled}
-                picking={picking}
-                onPick={(role) => {
-                  const idx = view.slots.find((s) => s.role === role)?.candidateIndex ?? null
-                  // a derived seat has no colour of yours to lock onto
-                  if (idx != null) dispatch({ op: 'mono', index: idx })
-                  setPicking(false)
-                }}
-                onAssign={(role, anchor) => setSeatMenu({ kind: 'assign', seat: role, anchor })}
-                onExplain={(role, anchor) => setSeatMenu({ kind: 'explain', seat: role, anchor })}
-                onToggleLock={toggleSeatLock}
-                onDropInRole={(payload, role) => applyDrop(payload, { kind: 'role', role })}
-                onDragStartSlot={() => setSeatMenu(null)}
-                onLocate={onLocateSeat}
-              />
-
-              <SeriesTray
-                series={view.series}
-                onDropInSeries={(payload) => applyDrop(payload, { kind: 'series' })}
-                onDragStartSeries={() => setSeatMenu(null)}
-                onToggleLock={toggleSeriesLock}
-                onExplain={(anchor) => setSeatMenu({ kind: 'explain', seat: 'chart', anchor })}
-              />
-
-              <Bench
-                entries={view.bench}
-                open={benchOpen}
-                flash={benchFlash}
-                onToggle={() => setBenchOpen((o) => !o)}
-                onDropToBench={(payload) => applyDrop(payload, { kind: 'bench' })}
-                onDragStartBench={() => setSeatMenu(null)}
-                onRemove={(i) => dispatch({ op: 'drop', index: i })}
-              />
-
-              {/* No wrapper: the control lays out its own row now, and the
-                  `.add-row` box this sat in was a second, competing one. */}
-              <ColorAddField
-                placeholder="add a color — #e63946, oklch(…)"
-                has={inList}
-                onAdd={addCandidates}
-                open={addOpen}
-                onOpenChange={setAddOpen}
-              />
-            </Section>
-          )}
-
-          {!emptyFrame && (
-            <Section label="tuning">
-              <Dial
-                value={frame.fidelity}
-                caption={caption}
-                onChange={(v) => dispatch({ op: 'fidelity', value: v })}
-              />
-              {/* Per-frame, like fidelity/mode/seed: two frames side by side at
-                  different settings is how the trade reads clearest. */}
-              <SeparationControl
-                value={frame.separation}
-                onChange={(s) => dispatch({ op: 'separation', value: s })}
-              />
-              {/* Theme state, like separation: it changes the colours you
-                  export. Per frame, so A and B can compare two levels. */}
-              <ContrastControl
-                value={frame.contrast}
-                onChange={(v) => dispatch({ op: 'contrast', value: v })}
-              />
-            </Section>
-          )}
-
-          {emptyFrame && !split && (
-            <p className="controls-empty">controls appear once you have colors</p>
-          )}
-        </div>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,.heic,.heif"
-          hidden
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            setStartOverOpen(false)
-            if (file) void imageStartOver(active, file)
-            e.target.value = ''
-          }}
-        />
-      </SidebarShell>
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,.heic,.heif"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          setStartOverOpen(false)
+          if (file) void imageStartOver(active, file)
+          e.target.value = ''
+        }}
+      />
 
       {/* ---- popovers: fixed-positioned, so no ancestor overflow clips them ---- */}
       {seatMenu?.kind === 'explain' && result && (
@@ -1001,7 +1008,7 @@ export default function App() {
       )}
       <main className="stage">
         {emptyFrame && !split ? (
-          hero(active)
+          <StageEmpty />
         ) : (
           <div className={`boards${split ? ' split' : ''}`}>
             {frames.map((f, i) => (
@@ -1113,7 +1120,7 @@ export default function App() {
                         />
                       </PreviewBoundary>
                     ) : (
-                      hero(i)
+                      <StageEmpty frame={FRAME_LABEL[i]} />
                     )}
                   </div>
                 </PortalScope>

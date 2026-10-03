@@ -183,10 +183,19 @@ describe('first run', () => {
     expect(screen.getByRole('button', { name: 'Pick a color' })).toBeTruthy()
     expect(screen.getByText(/drop an image here/)).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Neon arcade' })).toBeTruthy()
-    expect(screen.getByText(/controls appear once you have colors/)).toBeTruthy()
+    // The three doors are the pane's only section, "1 input" — nothing else
+    // is mounted, greyed or otherwise, until there is a colour.
+    expect(document.querySelector('.sidebar-shell [data-sec="input"] .start-hero')).toBeTruthy()
+    expect([...document.querySelectorAll('.sec .sec-label')].map((e) => e.textContent)).toEqual([
+      'input',
+    ])
     expect(document.querySelector('.sidebar-shell')).toBeTruthy()
     expect(document.querySelector('.role-board')).toBeNull()
     expect(document.querySelector('.dial')).toBeNull()
+    // the one deliberate grey: Export is there, disabled, and says what it will give you
+    expect((document.querySelector('.export-main') as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByText(/add a color to export CSS, Tailwind, Figma variables or a share link/)).toBeTruthy()
+    expect(document.querySelector('.status-chip')).toBeNull()
   })
 
   it('the hero yields to the working layout after the first colors', () => {
@@ -205,7 +214,17 @@ describe('first run', () => {
     expect([...document.querySelectorAll('.sec .sec-label')].map((e) => e.textContent)).toEqual([
       'colors',
       'tuning',
+      'riff',
     ])
+    // "1 input" became "1 colors"; the numbers run 1..3 with no gaps
+    expect([...document.querySelectorAll('.sec .sec-n')].map((e) => e.textContent)).toEqual([
+      '1',
+      '2',
+      '3',
+    ])
+    // Export is live now, and its caption has done its job
+    expect((document.querySelector('.export-main') as HTMLButtonElement).disabled).toBe(false)
+    expect(screen.queryByText(/add a color to export/)).toBeNull()
   })
 
   it('a hero preset card applies its palette and keeps its name until you edit', () => {
@@ -1125,5 +1144,72 @@ describe('keyboard', () => {
     fireEvent.keyDown(window, { key: 'r', ctrlKey: true })
     fireEvent.keyDown(window, { key: 'r', metaKey: true })
     expect(hop()).toBeNull()
+  })
+})
+
+describe('the pane sections', () => {
+  const head = (id: string) =>
+    document.querySelector(`[data-sec="${id}"] .sec-toggle`) as HTMLButtonElement
+  const body = (id: string) => document.getElementById(head(id).getAttribute('aria-controls')!)!
+
+  it('each header is a real button that folds its own section; several stay open at once', () => {
+    bootCoastal()
+    for (const id of ['colors', 'tuning', 'riff']) {
+      expect(head(id).getAttribute('aria-expanded'), id).toBe('true')
+      expect(body(id).hasAttribute('inert'), id).toBe(false)
+    }
+    fireEvent.click(head('tuning'))
+    expect(head('tuning').getAttribute('aria-expanded')).toBe('false')
+    // a folded body cannot take focus or a click
+    expect(body('tuning').hasAttribute('inert')).toBe(true)
+    // the others are untouched
+    expect(head('colors').getAttribute('aria-expanded')).toBe('true')
+    expect(head('riff').getAttribute('aria-expanded')).toBe('true')
+    // folded, the header says what it holds
+    expect(document.querySelector('[data-sec="tuning"] .sec-read')?.textContent).toMatch(/^0\.50 · layered/)
+    fireEvent.click(head('tuning'))
+    expect(head('tuning').getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('a hotkey aimed at a folded section opens it before acting', () => {
+    bootCoastal()
+    fireEvent.click(head('riff'))
+    expect(head('riff').getAttribute('aria-expanded')).toBe('false')
+    fireEvent.keyDown(window, { key: 'r' })
+    expect(head('riff').getAttribute('aria-expanded')).toBe('true')
+    expect(hop()).toBe('1')
+    // and one aimed at an open section leaves the folds alone
+    fireEvent.click(head('colors'))
+    fireEvent.keyDown(window, { key: 'z' })
+    expect(hop()).toBeNull()
+    expect(head('colors').getAttribute('aria-expanded')).toBe('false')
+    fireEvent.keyDown(window, { key: 'b' })
+    expect(head('colors').getAttribute('aria-expanded')).toBe('true')
+    expect(benchBar().getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('compare exists only while the stage is split, as section 4', () => {
+    bootCoastal()
+    expect(document.querySelector('[data-sec="compare"]')).toBeNull()
+    fireEvent.click(screen.getByTitle('compare two frames'))
+    const cmp = document.querySelector('[data-sec="compare"]') as HTMLElement
+    expect(cmp.querySelector('.sec-n')?.textContent).toBe('4')
+    expect(cmp.textContent).toContain('A and B match')
+    // B is selected; riff it and the difference lists, takeable from A
+    fireEvent.keyDown(window, { key: 'r' })
+    expect(cmp.querySelectorAll('.cmp-take').length).toBeGreaterThan(0)
+    fireEvent.click(screen.getByTitle('close frame B'))
+    expect(document.querySelector('[data-sec="compare"]')).toBeNull()
+  })
+
+  it('one rail tick per section that exists', () => {
+    render(<App />)
+    expect([...document.querySelectorAll('.rail-tick')].map((t) => t.getAttribute('data-tick'))).toEqual(['input'])
+    fireEvent.click(screen.getByRole('button', { name: 'Coastal starter' }))
+    expect([...document.querySelectorAll('.rail-tick')].map((t) => t.getAttribute('data-tick'))).toEqual([
+      'colors',
+      'tuning',
+      'riff',
+    ])
   })
 })
