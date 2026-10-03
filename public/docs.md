@@ -117,7 +117,7 @@ A color inside its range, with no close neighbor, isn't touched at any taste.
 
 ### Contrast level
 
-`contrast` raises the targets every token is solved for, like Material 3's contrast levels. It never changes which color sits in which seat, and it doesn't change what `taste` means: taste still decides how far *your* color may move to stand off the page. A fill must always carry readable text, at any taste.
+`contrast` raises the targets every token is solved for, like Material 3's contrast levels. It never changes which color sits in which seat, and it doesn't change what `taste` means: taste still decides how far *your* color may move. Raising the level never lowers any checked pair: a fill that can't reach its label target without sinking toward the page (or spending drift taste didn't grant) stays where it is, and the label miss is reported.
 
 | target | `standard` (0) | `medium` (0.5) | `high` (1) |
 |---|---|---|---|

@@ -1,0 +1,14 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`contrast level — every preset at medium and high > at taste 1 the only misses are the primary fill held where you put it — taste, not a ceiling 1`] = `
+[
+  "Ink & sky light c0.5 primary-foreground/primary",
+  "Ink & sky light c0.5 primary/background",
+  "Ink & sky light c1 primary-foreground/primary",
+  "Ink & sky light c1 primary/background",
+  "Pastel picnic light c0.5 primary-foreground/primary",
+  "Pastel picnic light c0.5 primary/background",
+  "Pastel picnic light c1 primary-foreground/primary",
+  "Pastel picnic light c1 primary/background",
+]
+`;
