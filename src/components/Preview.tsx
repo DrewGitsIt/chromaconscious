@@ -1405,7 +1405,9 @@ function LogDrawer({ logKey, onClose }: { logKey: string; onClose: () => void })
   const tone: Record<Level, string> = {
     ok: 'text-success',
     info: 'text-muted-foreground',
-    warn: 'text-warning',
+    // The warning TEXT step, not the fill: the fill lightens at raised contrast
+    // levels to carry its own dark label, which would fade a line drawn in it.
+    warn: 'text-warning-subtle-foreground',
     error: 'text-destructive',
   }
   return (
@@ -1468,7 +1470,7 @@ function ToastStack({
           ) : t.level === 'error' ? (
             <CircleAlert className="size-4 shrink-0 text-destructive" />
           ) : t.level === 'warn' ? (
-            <TriangleAlert className="size-4 shrink-0 text-warning" />
+            <TriangleAlert className="size-4 shrink-0 text-warning-subtle-foreground" />
           ) : (
             <Archive className="size-4 shrink-0 text-muted-foreground" />
           )}

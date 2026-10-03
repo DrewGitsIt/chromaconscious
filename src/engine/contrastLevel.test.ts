@@ -89,18 +89,20 @@ describe('contrast level — the zero point', () => {
 })
 
 describe('contrast level — monotone in the theme it builds', () => {
-  // Every text pair (and both hairlines) against the level before it, over the
-  // presets, both modes, three tastes and every separation.
-  const textPairs = (r: ReturnType<typeof generateTheme>, mode: 'light' | 'dark') => {
+  // EVERY checked pair — text, marks, the primary fill against the page — and
+  // both hairlines (checked only above standard, so measured directly here),
+  // against the level before it: presets × both modes × three tastes × every
+  // separation. A user who drags the slider up must never watch a check fall.
+  const checkedPairs = (r: ReturnType<typeof generateTheme>, mode: 'light' | 'dark') => {
     const out: Record<string, number> = {}
-    for (const row of r[mode].report) if (row.token !== 'primary') out[`${row.token}/${row.background}`] = row.wcag
+    for (const row of r[mode].report) out[`${row.token}/${row.background}`] = row.wcag
     const t = r[mode].tokens
     out['border/background'] = wcagRatio(t.border, t.background)
     out['input/background'] = wcagRatio(t.input, t.background)
     return out
   }
 
-  it('raising the level never lowers the contrast of any text pair or hairline', () => {
+  it('raising the level never lowers the contrast of any checked pair or hairline', () => {
     const drops: string[] = []
     for (const p of PRESETS) {
       const candidates = candidatesFromList(p.colors)
@@ -109,7 +111,7 @@ describe('contrast level — monotone in the theme it builds', () => {
           let prev: Record<string, number> | null = null
           for (let k = 0; k <= 10; k++) {
             const r = generateTheme({ candidates, fidelity, separation, contrast: k / 10 })
-            const cur = { ...prefix('light', textPairs(r, 'light')), ...prefix('dark', textPairs(r, 'dark')) }
+            const cur = { ...prefix('light', checkedPairs(r, 'light')), ...prefix('dark', checkedPairs(r, 'dark')) }
             if (prev)
               for (const key of Object.keys(prev))
                 if (cur[key] < prev[key] - 0.005)
@@ -141,16 +143,23 @@ describe('contrast level — every preset at medium and high', () => {
       }
   })
 
-  it('at taste 1 the only miss is the primary fill against the page — taste, not a ceiling', () => {
+  it('at taste 1 the only misses are the primary fill held where you put it — taste, not a ceiling', () => {
+    const misses: string[] = []
     for (const p of PRESETS)
       for (const contrast of [0.5, 1]) {
         const r = generateTheme({ candidates: candidatesFromList(p.colors), contrast, fidelity: 1 })
         for (const mode of MODES)
           for (const f of r[mode].report.filter((x) => !x.pass)) {
-            expect(`${f.token}/${f.background}`, `${p.name} ${mode}`).toBe('primary/background')
+            expect(['primary/background', 'primary-foreground/primary']).toContain(`${f.token}/${f.background}`)
             expect(f.unreachable).toBeUndefined()
+            misses.push(`${p.name} ${mode} c${contrast} ${f.token}/${f.background}`)
           }
       }
+    // A pale primary that never stood off the page at standard is held, not
+    // lightened into it: its page contrast is exactly what it was at standard.
+    const sky = (c: number) => generateTheme({ candidates: candidatesFromList(PRESETS[1].colors), contrast: c, fidelity: 1 }).light
+    expect(sky(1).tokens.primary).toBe(sky(0).tokens.primary)
+    expect(misses).toMatchSnapshot()
   })
 
   it('a dark-mode fill crosses to the other ink rather than sinking into the page', () => {

@@ -35,8 +35,8 @@ const SERIES_SLOTS = 5
  * L .45–.73 at 7:1, L .37–.83 at 10:1, only a sliver at 4.5:1 — and fleeing
  * the ink from inside it can drag the fill straight into the page (a
  * dark-mode primary at L .68 under white text sinks toward the near-black
- * page). See `crossesBand` for when a raised fill crosses to the other ink
- * instead. At standard the historical rule runs unchanged.
+ * page). See `chooseSide` for which way a raised fill moves, and when it
+ * holds. At standard the historical rule runs unchanged.
  */
 export function compliantSolid(
   hex: string,
@@ -48,7 +48,7 @@ export function compliantSolid(
    * the surface (WCAG). Raised by the contrast level.
    */
   minimums: { text: number; pop: number; textLc?: number } = { text: 4.5, pop: 3 },
-): { bg: string; fg: string; textOk: boolean } {
+): { bg: string; fg: string; textOk: boolean; held?: true } {
   const STEP = 0.012
   const raised = minimums.textLc != null
   /** Raised by `crossesBand`: a crossing must not leave the label weaker than it was. */
@@ -61,40 +61,43 @@ export function compliantSolid(
     return toHex(toGamut({ l: c.l + dl, c: c.c, h: c.h }))
   }
   /**
-   * Whether a raised fill leaves the band on the FAR side (the other ink)
-   * rather than fleeing its current ink.
+   * Which way a raised fill moves to carry its label: 1 lighter, -1 darker,
+   * or 0 to HOLD where it is.
    *
-   * Only to keep standing it already has: a fill that clears the standard 3:1
-   * off its surface, which fleeing its ink would cost and crossing would not.
-   * A fill with no standing to keep (taste held it, or it never had any) flees
-   * its ink as at standard, and its pop miss is reported — crossing to GAIN
-   * pop would spend drift taste never granted.
+   * The rule is that raising the level never lowers a checked pair, and the
+   * fill is in two of them: its label, and its standing off the surface. So:
+   *
+   * - Fleeing its current ink is taken whenever that doesn't move it toward
+   *   the surface — both pairs only rise.
+   * - When fleeing WOULD sink it toward the surface, it crosses to the other
+   *   ink instead (away from the surface), walking on until the label is at
+   *   least as strong as it was. It crosses when it has standing to keep (it
+   *   clears the standard 3:1, so crossing protects a passing check), or when
+   *   what is left of taste's budget pays for the distance.
+   * - Otherwise it holds: the colour stays where taste put it and the label
+   *   miss is reported. Taste 1 on a fill that never stood off the page — a
+   *   pale sky blue on white — is the case: moving it either way would spend
+   *   drift taste never granted or sink it into the page.
    *
    * Judged at the TOP of the scale (the widest band), so every raised level
-   * exits the same way and only the distance grows with the slider; judged
+   * makes the same choice and only the distance grows with the slider; judged
    * per level, the side flips as the band widens and a button jumps from dark
-   * to light mid-drag. And a crossing walks on until the label is at least as
-   * strong as it was, so raising the level never weakens it.
+   * to light mid-drag.
    */
-  const crossesBand = (from: string, flee: number): boolean => {
-    if (surfaceHex == null || popRatio(from) < 3) return false
+  const chooseSide = (from: string, flee: number, budget: number): number => {
+    if (surfaceHex == null) return flee
+    if (popRatio(nudge(from, flee * STEP)) >= popRatio(from)) return flee
     const top = fillMinimums(contrastTargets(1), 1)
-    const keep = Math.min(popRatio(from), top.pop)
-    const exit = (dir: number) => {
-      let h = from
-      for (let k = 1; k <= 60; k++) {
-        const next = nudge(h, dir * STEP)
-        if (next === h) return null // pinned at the end of the lightness range
-        h = next
-        const ink = bestForeground(h, tintHue)
-        if (wcagRatio(ink, h) >= top.text && apcaLc(ink, h) >= top.textLc!) return h
-      }
-      return null
+    let h = from
+    for (let k = 1; k <= 60; k++) {
+      const next = nudge(h, -flee * STEP)
+      if (next === h) break // pinned at the end of the lightness range
+      h = next
+      const ink = bestForeground(h, tintHue)
+      if (wcagRatio(ink, h) >= top.text && apcaLc(ink, h) >= top.textLc!)
+        return popRatio(from) >= 3 || k * STEP <= budget + 1e-9 ? -flee : 0
     }
-    const fled = exit(flee)
-    if (fled && popRatio(fled) >= keep) return false
-    const crossed = exit(-flee)
-    return crossed != null && popRatio(crossed) >= keep
+    return 0
   }
 
   let bg = hex
@@ -115,12 +118,11 @@ export function compliantSolid(
       // Decided once, so the walk can't dither inside the band.
       if (textDir == null) {
         const flee = parseColor(fg)!.l > 0.5 ? -1 : 1
-        textDir = flee
-        if (crossesBand(bg, flee)) {
-          textDir = -flee
+        textDir = chooseSide(bg, flee, maxSurfaceDrift - popDrift)
+        if (textDir === -flee)
           floor = { wcag: Math.max(floor.wcag, wcagRatio(fg, bg)), lc: Math.max(floor.lc, apcaLc(fg, bg)) }
-        }
       }
+      if (textDir === 0) return { bg, fg, textOk: false, held: true }
       away = textDir < 0
     } else {
       away = parseColor(fg)!.l > 0.5 // then away from the text color
@@ -304,13 +306,14 @@ export function buildMode(
     ['input', 'neutral', 6],
   ]
   for (const [token, role, step] of RAMP_SOLVED) if (unreachedSteps[role].includes(step)) unreached.add(token)
-  const fills: Array<[token: string, solid: { textOk: boolean }]> = [
+  const fills: Array<[token: string, solid: { textOk: boolean; held?: true }]> = [
     ['primary-foreground', primarySolid],
     ['destructive-foreground', dangerSolid],
     ['success-foreground', successSolid],
     ['warning-foreground', warningSolid],
   ]
-  for (const [token, solid] of fills) if (!solid.textOk) unreached.add(token)
+  // A held fill missed by taste's choice, not a ceiling: not `unreachable`.
+  for (const [token, solid] of fills) if (!solid.textOk && !solid.held) unreached.add(token)
 
   const tokens: Record<string, string> = {
     background: N[0],
