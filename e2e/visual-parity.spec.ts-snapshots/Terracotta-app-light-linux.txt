@@ -13,6 +13,8 @@ div.bench-drawer height: 0px;
 div.dial-track-wrap --v: 50%;
 input.dial-slider 
 span.sep-thumb --sep-i: 1;
+div.ctr-track-wrap --v: 0%;
+input.ctr-slider 
 input. 
 div.preview-root.relative.flex.min-h-[680px].overflow-hidden.bg-background.text-sm.text-foreground --background: #fdfae3; --foreground: #1f1e16; --card: #f9f6df; --card-foreground: #1f1e16; --popover: #f9f6df; --popover-foreground: #1f1e16; --primary: #606c38; --primary-foreground: #f9fbf7; --secondary: #f0ecd6; --secondary-foreground: #1f1e16; --muted: #f0ecd6; --muted-foreground: #6b6960; --accent: #ffe9d9; --accent-foreground: #371900; --accent-strong: #cc7a36; --link: #956643; --destructive: #bd4600; --destructive-foreground: #fdf9f7; --destructive-subtle: #fff5f1; --destructive-subtle-foreground: #a15537; --success: #567d37; --success-foreground: #f9fbf7; --success-subtle: #f2faef; --success-subtle-foreground: #59724c; --warning: #dda15e; --warning-foreground: #100d09; --warning-subtle: #fff6ec; --warning-subtle-foreground: #856441; --border: #d0cdb9; --input: #bebbaa; --ring: #cc7a36; --chart-1: #c87732; --chart-2: #3f5328; --chart-3: #5182c1; --chart-4: #8a70b8; --chart-5: #ae648f; --sidebar: #f9f6df; --sidebar-foreground: #1f1e16; --sidebar-primary: #606c38; --sidebar-primary-foreground: #f9fbf7; --sidebar-accent: #ffe9d9; --sidebar-accent-foreground: #371900; --sidebar-border: #d0cdb9; --sidebar-ring: #cc7a36; --elevation-1: 0px 1px 2px 0px rgb(30 27 10 / 0.03), 0px 2px 6px -1px rgb(30 27 10 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(30 27 10 / 0.05), 0px 8px 20px -6px rgb(30 27 10 / 0.09); --elevation-3: 0px 1px 2px 0px rgb(30 27 10 / 0.08), 0px 24px 48px -12px rgb(30 27 10 / 0.18); --scrim: rgb(30 27 10 / 0.32);
 div.flex-1.rounded-t-sm height: 40%; background: var(--chart-1);
@@ -92,6 +94,14 @@ layered
 lifted
 
 the familiar stack — the card sits a step off the page, with hairline and shadow sharing the work
+
+contrast
+Lc 62 · 4.5:1
+STANDARD
+MEDIUM
+HIGH
+
+every text pair clears Lc 62 · 4.5:1; focus ring and marks 3:1; hairlines as separation sets them
 
 all 40 checks pass
 report

@@ -15,6 +15,8 @@ i. background: rgb(208, 215, 222);
 div.dial-track-wrap --v: 50%;
 input.dial-slider 
 span.sep-thumb --sep-i: 1;
+div.ctr-track-wrap --v: 0%;
+input.ctr-slider 
 input. 
 div.preview-root.relative.flex.min-h-[680px].overflow-hidden.bg-background.text-sm.text-foreground.dark --background: #101214; --foreground: #e8eaec; --card: #161719; --card-foreground: #e8eaec; --popover: #161719; --popover-foreground: #e8eaec; --primary: #2d6ed7; --primary-foreground: #f8fafe; --secondary: #1e1f21; --secondary-foreground: #e8eaec; --muted: #1e1f21; --muted-foreground: #b7b8bb; --accent: #121f34; --accent-foreground: #deebff; --accent-strong: #5a97f1; --link: #9db9e2; --destructive: #c5445f; --destructive-foreground: #fdf9f9; --destructive-subtle: #201314; --destructive-subtle-foreground: #eaa6ad; --success: #2f7f63; --success-foreground: #f7fbf9; --success-subtle: #101a15; --success-subtle-foreground: #9ac1ae; --warning: #c9ac36; --warning-foreground: #0f0d08; --warning-subtle: #1a170b; --warning-subtle-foreground: #c7b883; --border: #36383a; --input: #494a4d; --ring: #5a97f1; --chart-1: #7292b5; --chart-2: #fc65b7; --chart-3: #ff7453; --chart-4: #d59800; --chart-5: #8cb600; --sidebar: #161719; --sidebar-foreground: #e8eaec; --sidebar-primary: #2d6ed7; --sidebar-primary-foreground: #f8fafe; --sidebar-accent: #121f34; --sidebar-accent-foreground: #deebff; --sidebar-border: #36383a; --sidebar-ring: #5a97f1; --elevation-1: 0px 1px 2px 0px rgb(0 0 0 / 0.18), 0px 2px 6px -1px rgb(0 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(0 0 0 / 0.28), 0px 8px 20px -6px rgb(0 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(0 0 0 / 0.38), 0px 24px 48px -12px rgb(0 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(0 0 0 / 0.58);
 div.flex-1.rounded-t-sm height: 40%; background: var(--chart-1);
@@ -95,6 +97,14 @@ layered
 lifted
 
 the familiar stack — the card sits a step off the page, with hairline and shadow sharing the work
+
+contrast
+Lc 62 · 4.5:1
+STANDARD
+MEDIUM
+HIGH
+
+every text pair clears Lc 62 · 4.5:1; focus ring and marks 3:1; hairlines as separation sets them
 
 all 40 checks pass
 report

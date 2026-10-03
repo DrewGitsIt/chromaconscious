@@ -13,6 +13,8 @@ div.bench-drawer height: 0px;
 div.dial-track-wrap --v: 50%;
 input.dial-slider 
 span.sep-thumb --sep-i: 1;
+div.ctr-track-wrap --v: 0%;
+input.ctr-slider 
 input. 
 div.brand-board --elevation-1: 0px 1px 2px 0px rgb(38 21 26 / 0.03), 0px 2px 6px -1px rgb(38 21 26 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(38 21 26 / 0.05), 0px 8px 20px -6px rgb(38 21 26 / 0.09); --elevation-3: 0px 1px 2px 0px rgb(38 21 26 / 0.08), 0px 24px 48px -12px rgb(38 21 26 / 0.18); --scrim: rgb(38 21 26 / 0.32); --bb-paper: #fff6f8; --bb-ink: #20171a; --bb-ink-subtle: #716668; --bb-line: #ead0d6; --bb-wash: #fff4f7; --bb-brand: #e00072; --bb-brand-ink: #fdf9fa; --bb-accent: #720bb8; --bb-accent-ink: #fbf9fd;
 div.bb-chip-fill background: rgb(224, 0, 114);
@@ -80,6 +82,14 @@ layered
 lifted
 
 the familiar stack — the card sits a step off the page, with hairline and shadow sharing the work
+
+contrast
+Lc 62 · 4.5:1
+STANDARD
+MEDIUM
+HIGH
+
+every text pair clears Lc 62 · 4.5:1; focus ring and marks 3:1; hairlines as separation sets them
 
 all 40 checks pass
 report

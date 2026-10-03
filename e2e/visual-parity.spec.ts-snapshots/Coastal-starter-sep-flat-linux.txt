@@ -13,6 +13,8 @@ div.bench-drawer height: 0px;
 div.dial-track-wrap --v: 50%;
 input.dial-slider 
 span.sep-thumb --sep-i: 0;
+div.ctr-track-wrap --v: 0%;
+input.ctr-slider 
 input. 
 div.preview-root.relative.flex.min-h-[680px].overflow-hidden.bg-background.text-sm.text-foreground.dark --background: #131911; --foreground: #e5ede3; --card: #131911; --card-foreground: #e5ede3; --popover: #131911; --popover-foreground: #e5ede3; --primary: #ce412e; --primary-foreground: #fdf9f8; --secondary: #1d241b; --secondary-foreground: #e5ede3; --muted: #1d241b; --muted-foreground: #b4bbb1; --accent: #152129; --accent-foreground: #d5eeff; --accent-strong: #659dc2; --link: #a2baca; --destructive: #c74647; --destructive-foreground: #fdf9f8; --destructive-subtle: #201312; --destructive-subtle-foreground: #eaa8a2; --success: #5c7d48; --success-foreground: #f9fbf7; --success-subtle: #141911; --success-subtle-foreground: #aabf9f; --warning: #e89a46; --warning-foreground: #100c09; --warning-subtle: #1e150c; --warning-subtle-foreground: #dab189; --border: #394036; --input: #4a5147; --ring: #659dc2; --chart-1: #8fcacc; --chart-2: #7591b8; --chart-3: #00c18d; --chart-4: #00b9d0; --chart-5: #61a7ff; --sidebar: #131911; --sidebar-foreground: #e5ede3; --sidebar-primary: #ce412e; --sidebar-primary-foreground: #fdf9f8; --sidebar-accent: #152129; --sidebar-accent-foreground: #d5eeff; --sidebar-border: #394036; --sidebar-ring: #659dc2; --elevation-1: 0 0 #0000; --elevation-2: 0px 1px 2px 0px rgb(0 0 0 / 0.2), 0px 8px 20px -6px rgb(0 0 0 / 0.28); --elevation-3: 0px 1px 2px 0px rgb(0 0 0 / 0.3), 0px 24px 48px -12px rgb(0 0 0 / 0.45); --scrim: rgb(0 0 0 / 0.58);
 div.flex-1.rounded-t-sm height: 40%; background: var(--chart-1);
@@ -92,6 +94,14 @@ layered
 lifted
 
 card and page meet at one level — the hairline does the separating, and nothing casts a shadow at rest
+
+contrast
+Lc 62 · 4.5:1
+STANDARD
+MEDIUM
+HIGH
+
+every text pair clears Lc 62 · 4.5:1; focus ring and marks 3:1; hairlines as separation sets them
 
 all 40 checks pass
 report
