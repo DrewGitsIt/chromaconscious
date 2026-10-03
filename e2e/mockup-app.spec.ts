@@ -12,7 +12,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/')
 })
 
-/** Boot past the hero into a forged theme, with frame A on the app mockup. */
+/** Boot past the hero into a built theme, with frame A on the app mockup. */
 const boot = async (page: Page) => {
   await page.getByRole('button', { name: 'Coastal starter' }).click()
   await page.locator('.frame-mockup').first().selectOption('app')

@@ -2,7 +2,7 @@
 
 /* The chart series tray: a pooled seat set, so a wide card of swatches rather
    than a single slot, laid out as one continuous strip. Dashed inner edge =
-   the smith computed it; the colour itself is always shown at full strength. */
+   the engine computed it; the colour itself is always shown at full strength. */
 @layer chrome {
   .tray {
     border: 1px solid var(--line-card);
@@ -132,7 +132,7 @@
     box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.55);
   }
 
-  /* derived: the smith's, and therefore provisional — dashed, colour pooled
+  /* derived: the engine's, and therefore provisional — dashed, colour pooled
      behind it rather than stated flat. Same language the slots use. */
   .series.derived::after {
     content: '';

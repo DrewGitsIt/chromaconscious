@@ -66,7 +66,7 @@ const frameState = (label: 'A' | 'B'): string => {
 const boardState = (): Record<string, string> =>
   Object.fromEntries(ROLE_SEATS.map((r) => [r, `${hexOf(r)} ${tagOf(r)}`]))
 const seatHexes = (): (string | null)[] => ROLE_SEATS.map(hexOf)
-/** Seats whose lock is the `keep` verb — i.e. the ones the smith still owns. */
+/** Seats whose lock is the `keep` verb — i.e. the ones the engine still owns. */
 const keepPins = (): RoleSeat[] => ROLE_SEATS.filter((r) => seat(r).querySelector('.rb-keep'))
 /** The one control that decides what riff may move, read off every seat. */
 const lockOf = (role: RoleSeat): string | null =>
@@ -143,7 +143,7 @@ const bootCoastal = () => {
   render(<App />)
   fireEvent.click(screen.getByRole('button', { name: 'Coastal starter' }))
 }
-/** Boot with a single user color, so five seats are the smith's. */
+/** Boot with a single user color, so five seats are the engine's. */
 const bootOneColor = (hex = '#7c3aed') => {
   render(<App />)
   fireEvent.change(screen.getByPlaceholderText(/or type/), { target: { value: hex } })
@@ -298,12 +298,12 @@ describe('the role board', () => {
     bootOneColor()
     const slots = [...document.querySelectorAll('.rb-slot')]
     expect(slots.map((s) => s.getAttribute('data-role'))).toEqual([...ROLE_SEATS])
-    // one purple cannot fill six seats — the smith fills the rest, so there is
+    // one purple cannot fill six seats — the engine fills the rest, so there is
     // no such thing as an empty seat once colors exist
     for (const role of ROLE_SEATS) expect(hexOf(role)).toMatch(/^#[0-9a-f]{6}$/)
   })
 
-  it('shows provenance on every seat: your color reads yours, the smith derived reads derived', () => {
+  it('shows provenance on every seat: your color reads yours, the engine derived reads derived', () => {
     bootOneColor()
     expect(tagOf('primary')).toBe('yours')
     expect(originOf('primary')).toBe('#7c3aed')
@@ -375,7 +375,7 @@ describe('the role board', () => {
 
   it('a chart swatch of yours carries the same lock; a derived fill has none', () => {
     bootCoastal()
-    // coastal charts two of your colors; the smith invents the other three
+    // coastal charts two of your colors; the engine invents the other three
     expect(seriesLocks()).toEqual(['false', 'false', null, null, null])
     fireEvent.click(document.querySelector('.tray-set .series-lock') as HTMLElement)
     expect(seriesLocks()[0]).toBe('true')
@@ -395,7 +395,7 @@ describe('the role board', () => {
   it('chart is a pooled series tray, not a seat', () => {
     bootCoastal()
     expect(document.querySelectorAll('.tray-set > *')).toHaveLength(5)
-    // two coastal colors chart today; the rest of the series is the smith's
+    // two coastal colors chart today; the rest of the series is the engine's
     expect(document.querySelector('.tray-cap')?.textContent).toBe('2 of 5')
     fireEvent.click(document.querySelector('.tray-name') as HTMLElement)
     expect(document.querySelector('.rp-tip-name')?.textContent).toBe('Chart series')
@@ -477,7 +477,7 @@ describe('assigning a seat', () => {
     expect(benchHexes()).toEqual(['#457b9d'])
   })
 
-  it('only when nothing of yours can step in does it promise the smith', () => {
+  it('only when nothing of yours can step in does it promise the engine', () => {
     bootOneColor()
     openAssign('primary')
     // one color, and it is in this seat: there is no successor
@@ -485,19 +485,19 @@ describe('assigning a seat', () => {
     expect(document.querySelector('.rp-asg-empty')?.textContent).toContain(
       'no other colors of yours to put here',
     )
-    expect(freeHint()).toBe('the smith derives it')
+    expect(freeHint()).toBe('the engine derives it')
     freeSeat()
     expect(tagOf('primary')).toBe('derived')
     expect(benchHexes()).toEqual(['#7c3aed'])
   })
 
-  it('a seat freed with a spare color of yours is not promised to the smith', () => {
+  it('a seat freed with a spare color of yours is not promised to the engine', () => {
     bootCoastal()
     // #18aa66 lands in success; coastal has nothing left to fill it after
     addColors('#18aa66')
     expect(boardState().success).toBe('#18aa66 yours')
     openAssign('success')
-    expect(freeHint()).toBe('the smith derives it')
+    expect(freeHint()).toBe('the engine derives it')
     // whereas primary, with spares around, names its successor
     fireEvent.keyDown(document, { key: 'Escape' })
     openAssign('primary')
@@ -602,7 +602,7 @@ describe('riff', () => {
   it('is disabled only once every seat is locked', () => {
     bootCoastal()
     expect(riffBtn().disabled).toBe(false)
-    // lock the three seats of yours, keep (= lock) the three the smith owns…
+    // lock the three seats of yours, keep (= lock) the three the engine owns…
     for (const role of ROLE_SEATS) toggleLock(role)
     expect(lockedSeats()).toEqual([...ROLE_SEATS])
     // …and lock the two colours of yours sitting in the chart tray
@@ -616,7 +616,7 @@ describe('riff', () => {
 })
 
 describe('placements', () => {
-  it('reset appears only once you have placed something, and restores the smith casting', () => {
+  it('reset appears only once you have placed something, and restores the engine casting', () => {
     bootCoastal()
     const canonical = boardState()
     expect(screen.queryByTitle(/clear your placements/)).toBeNull()

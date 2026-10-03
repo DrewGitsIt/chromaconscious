@@ -7,7 +7,7 @@
    is what genuinely belongs to the page rather than to a component.
 
    Every colour here is a token, and every token is a grey: engaged states
-   are drawn in ink, never in the palette being forged. */
+   are drawn in ink, never in the palette being built. */
 @layer chrome-base, chrome;
 
 @layer chrome {

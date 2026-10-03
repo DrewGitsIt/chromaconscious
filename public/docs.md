@@ -1,6 +1,6 @@
 # ChromaConscious API
 
-ChromaConscious forges a complete UI color theme from any colors you give it:
+ChromaConscious builds a complete UI color theme from any colors you give it:
 - six role seats: primary, accent, neutral, danger, success, warning
 - five chart colors
 - about 44 shadcn-style tokens for light mode and again for dark

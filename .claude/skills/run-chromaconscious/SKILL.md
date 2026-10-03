@@ -1,9 +1,9 @@
 ---
 name: run-chromaconscious
-description: Build, run, and drive ChromaConscious (a React/Vite color-theme generator). Use when asked to start ChromaConscious, run its dev server, take a screenshot of its UI, or click through the theme-forging flow (presets, riff, pin colors).
+description: Build, run, and drive ChromaConscious (a React/Vite color-theme generator). Use when asked to start ChromaConscious, run its dev server, take a screenshot of its UI, or click through the theme-building flow (presets, riff, pin colors).
 ---
 
-ChromaConscious is a Vite + React 19 SPA (no backend) that forges a UI color theme from a seed color, image, or preset. Drive it via the REPL driver at `.claude/skills/run-chromaconscious/driver.mjs` — a small Playwright wrapper (the system `google-chrome`, no `chromium-cli` in this container) that reads one command per line from stdin.
+ChromaConscious is a Vite + React 19 SPA (no backend) that builds a UI color theme from a seed color, image, or preset. Drive it via the REPL driver at `.claude/skills/run-chromaconscious/driver.mjs` — a small Playwright wrapper (the system `google-chrome`, no `chromium-cli` in this container) that reads one command per line from stdin.
 
 All paths below are relative to the repo root (`chromaconscious/`).
 

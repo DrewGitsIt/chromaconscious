@@ -86,7 +86,7 @@ test.describe('seats explain themselves', () => {
     await expect(seat(page, 'accent').locator('.rb-tag')).toHaveText('yours')
   })
 
-  test('a derived seat says the smith owns it, and offers your colors instead', async ({ page }) => {
+  test('a derived seat says the engine owns it, and offers your colors instead', async ({ page }) => {
     await bootPicnic(page)
     const neutral = seat(page, 'neutral')
     await expect(neutral.locator('.rb-tag')).toHaveText('derived')

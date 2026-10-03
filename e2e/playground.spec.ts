@@ -45,7 +45,7 @@ const seatFrom = (page: Page, role: string, hex: string) =>
   expect(seat(page, role).locator('.rb-body')).toHaveAttribute('title', new RegExp(hex))
 
 test.describe('first run', () => {
-  test('boots into the hero; a preset card forges the first theme', async ({ page }) => {
+  test('boots into the hero; a preset card builds the first theme', async ({ page }) => {
     await expect(page.getByText('Start with anything')).toBeVisible()
     await expect(page.locator('.role-board')).toHaveCount(0)
     await bootCoastal(page)
@@ -54,7 +54,7 @@ test.describe('first run', () => {
     await seatFrom(page, 'primary', '#e63946')
   })
 
-  test('typing colors into the hero forges a theme from them', async ({ page }) => {
+  test('typing colors into the hero builds a theme from them', async ({ page }) => {
     await page.getByPlaceholder(/or type/).fill('#101010 #ababab')
     await page.getByRole('button', { name: 'Add', exact: true }).click()
     await expect(page.locator('.role-board')).toHaveAttribute('class', /role-board/)
@@ -79,7 +79,7 @@ test.describe('color input', () => {
     const hex = await page.locator('.picker-pop input').inputValue()
     expect(hex).toMatch(/^#[0-9a-f]{6}$/)
     await page.getByRole('button', { name: 'Add', exact: true }).click()
-    // one color, so it takes primary and the smith derives the rest
+    // one color, so it takes primary and the engine derives the rest
     await seatFrom(page, 'primary', hex)
   })
 
