@@ -1,7 +1,7 @@
-span.rail-thumb top: 0px; height: 495.291px;
-button.rail-tick.here top: 2.76313px;
-button.rail-tick top: 311.543px;
-button.rail-tick top: 629.303px;
+span.rail-thumb top: 0px; height: 406.631px;
+button.rail-tick.here top: 2.26851px;
+button.rail-tick top: 255.775px;
+button.rail-tick top: 641.421px;
 div.rb-slot.rb-yours --c: #ee5d30; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
 div.rb-slot.rb-derived --c: #998b00; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
 div.rb-slot.rb-yours --c: #1d1417; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
@@ -25,6 +25,10 @@ input.dial-slider
 span.sep-thumb --sep-i: 1;
 div.ctr-track-wrap --v: 0%;
 input.ctr-slider 
+div.pg-track-wrap --v: 50%;
+input.pg-slider 
+span.pg-fn font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; font-weight: 400;
+input. clip-path: inset(50%); overflow: hidden; white-space: nowrap; border: 0px; padding: 0px; width: 1px; height: 1px; margin: -1px; position: fixed; top: 0px; left: 0px;
 input. 
 div.preview-root.relative.flex.min-h-[680px].overflow-hidden.bg-background.text-sm.text-foreground.dark --background: #180f12; --foreground: #f3e7ea; --card: #1d1417; --card-foreground: #f3e7ea; --popover: #1d1417; --popover-foreground: #f3e7ea; --primary: #c54b27; --primary-foreground: #fdf9f8; --secondary: #261c1f; --secondary-foreground: #f3e7ea; --muted: #261c1f; --muted-foreground: #c1b5b8; --accent: #232007; --accent-foreground: #f0ecbe; --accent-strong: #a6981f; --link: #bdb88c; --destructive: #c8472c; --destructive-foreground: #fdf9f8; --destructive-subtle: #201411; --destructive-subtle-foreground: #e9a999; --success: #547b42; --success-foreground: #f8fbf8; --success-subtle: #131911; --success-subtle-foreground: #a7c09e; --warning: #e69447; --warning-foreground: #110c09; --warning-subtle: #1f150d; --warning-subtle-foreground: #dcb08b; --border: #3f3538; --input: #52474a; --ring: #a6981f; --chart-1: #9c9236; --chart-2: #84b800; --chart-3: #00c09b; --chart-4: #00b7d9; --chart-5: #72a3ff; --sidebar: #1d1417; --sidebar-foreground: #f3e7ea; --sidebar-primary: #c54b27; --sidebar-primary-foreground: #fdf9f8; --sidebar-accent: #232007; --sidebar-accent-foreground: #f0ecbe; --sidebar-border: #3f3538; --sidebar-ring: #a6981f; --elevation-1: 0px 1px 2px 0px rgb(1 0 0 / 0.18), 0px 2px 6px -1px rgb(1 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(1 0 0 / 0.28), 0px 8px 20px -6px rgb(1 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(1 0 0 / 0.38), 0px 24px 48px -12px rgb(1 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(1 0 0 / 0.58);
 div.flex-1.rounded-t-sm height: 40%; background: var(--chart-1);
@@ -53,11 +57,11 @@ div.rounded-full.motion-safe:transition-opacity flex: 27 0 0px; background: var(
 div.rounded-full.motion-safe:transition-opacity flex: 18 0 0px; background: var(--chart-3); opacity: 1;
 div.rounded-full.motion-safe:transition-opacity flex: 13 0 0px; background: var(--chart-4); opacity: 1;
 div.rounded-full.motion-safe:transition-opacity flex: 8 0 0px; background: var(--chart-5); opacity: 1;
-span.size-2.shrink-0.rounded-[2px] background: var(--chart-1);
-span.size-2.shrink-0.rounded-[2px] background: var(--chart-2);
-span.size-2.shrink-0.rounded-[2px] background: var(--chart-3);
-span.size-2.shrink-0.rounded-[2px] background: var(--chart-4);
-span.size-2.shrink-0.rounded-[2px] background: var(--chart-5);
+span.size-2.shrink-0.rounded-[calc(var(--radius)*0.2)] background: var(--chart-1);
+span.size-2.shrink-0.rounded-[calc(var(--radius)*0.2)] background: var(--chart-2);
+span.size-2.shrink-0.rounded-[calc(var(--radius)*0.2)] background: var(--chart-3);
+span.size-2.shrink-0.rounded-[calc(var(--radius)*0.2)] background: var(--chart-4);
+span.size-2.shrink-0.rounded-[calc(var(--radius)*0.2)] background: var(--chart-5);
 ---
 ChromaConscious
 
@@ -122,6 +126,16 @@ HIGH
 
 every text pair clears 4.5:1 · Lc 62; focus ring and marks 3:1; hairlines as separation sets them
 
+page
+preview only · rides the share link · not exported
+corners
+10px
+SHARP
+DEFAULT
+ROUND
+type
+System UI
+native interface
 3
 RIFF
 hop 1

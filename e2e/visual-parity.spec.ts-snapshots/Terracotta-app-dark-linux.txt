@@ -1,7 +1,7 @@
-span.rail-thumb top: 0px; height: 495.291px;
-button.rail-tick.here top: 2.76313px;
-button.rail-tick top: 311.543px;
-button.rail-tick top: 629.303px;
+span.rail-thumb top: 0px; height: 406.631px;
+button.rail-tick.here top: 2.26851px;
+button.rail-tick top: 255.775px;
+button.rail-tick top: 641.421px;
 div.rb-slot.rb-yours --c: #606c38; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
 div.rb-slot.rb-yours --c: #c87732; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
 div.rb-slot.rb-yours --c: #fdfae3; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12); --well-strong: rgba(0,0,0,0.22);
@@ -19,6 +19,10 @@ input.dial-slider
 span.sep-thumb --sep-i: 1;
 div.ctr-track-wrap --v: 0%;
 input.ctr-slider 
+div.pg-track-wrap --v: 50%;
+input.pg-slider 
+span.pg-fn font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; font-weight: 400;
+input. clip-path: inset(50%); overflow: hidden; white-space: nowrap; border: 0px; padding: 0px; width: 1px; height: 1px; margin: -1px; position: fixed; top: 0px; left: 0px;
 input. 
 div.preview-root.relative.flex.min-h-[680px].overflow-hidden.bg-background.text-sm.text-foreground.dark --background: #151203; --foreground: #ecebdf; --card: #1a1708; --card-foreground: #ecebdf; --popover: #1a1708; --popover-foreground: #ecebdf; --primary: #6e7750; --primary-foreground: #f9fbf7; --secondary: #222011; --secondary-foreground: #ecebdf; --muted: #222011; --muted-foreground: #bab9ae; --accent: #2d1a0b; --accent-foreground: #ffe5d3; --accent-strong: #d5833f; --link: #d5af93; --destructive: #c44d18; --destructive-foreground: #fdf9f7; --destructive-subtle: #20140f; --destructive-subtle-foreground: #e7aa92; --success: #5c7d48; --success-foreground: #f9fbf7; --success-subtle: #141911; --success-subtle-foreground: #aabf9f; --warning: #d6a46c; --warning-foreground: #100d09; --warning-subtle: #1d160e; --warning-subtle-foreground: #cfb497; --border: #3b382b; --input: #4d4b3c; --ring: #d5833f; --chart-1: #c27d47; --chart-2: #839770; --chart-3: #74a7e8; --chart-4: #af95df; --chart-5: #d688b5; --sidebar: #1a1708; --sidebar-foreground: #ecebdf; --sidebar-primary: #6e7750; --sidebar-primary-foreground: #f9fbf7; --sidebar-accent: #2d1a0b; --sidebar-accent-foreground: #ffe5d3; --sidebar-border: #3b382b; --sidebar-ring: #d5833f; --elevation-1: 0px 1px 2px 0px rgb(0 0 0 / 0.18), 0px 2px 6px -1px rgb(0 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(0 0 0 / 0.28), 0px 8px 20px -6px rgb(0 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(0 0 0 / 0.38), 0px 24px 48px -12px rgb(0 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(0 0 0 / 0.58);
 div.flex-1.rounded-t-sm height: 40%; background: var(--chart-1);
@@ -47,11 +51,11 @@ div.rounded-full.motion-safe:transition-opacity flex: 27 0 0px; background: var(
 div.rounded-full.motion-safe:transition-opacity flex: 18 0 0px; background: var(--chart-3); opacity: 1;
 div.rounded-full.motion-safe:transition-opacity flex: 13 0 0px; background: var(--chart-4); opacity: 1;
 div.rounded-full.motion-safe:transition-opacity flex: 8 0 0px; background: var(--chart-5); opacity: 1;
-span.size-2.shrink-0.rounded-[2px] background: var(--chart-1);
-span.size-2.shrink-0.rounded-[2px] background: var(--chart-2);
-span.size-2.shrink-0.rounded-[2px] background: var(--chart-3);
-span.size-2.shrink-0.rounded-[2px] background: var(--chart-4);
-span.size-2.shrink-0.rounded-[2px] background: var(--chart-5);
+span.size-2.shrink-0.rounded-[calc(var(--radius)*0.2)] background: var(--chart-1);
+span.size-2.shrink-0.rounded-[calc(var(--radius)*0.2)] background: var(--chart-2);
+span.size-2.shrink-0.rounded-[calc(var(--radius)*0.2)] background: var(--chart-3);
+span.size-2.shrink-0.rounded-[calc(var(--radius)*0.2)] background: var(--chart-4);
+span.size-2.shrink-0.rounded-[calc(var(--radius)*0.2)] background: var(--chart-5);
 ---
 ChromaConscious
 
@@ -113,6 +117,16 @@ HIGH
 
 every text pair clears 4.5:1 · Lc 62; focus ring and marks 3:1; hairlines as separation sets them
 
+page
+preview only · rides the share link · not exported
+corners
+10px
+SHARP
+DEFAULT
+ROUND
+type
+System UI
+native interface
 3
 RIFF
 as derived
