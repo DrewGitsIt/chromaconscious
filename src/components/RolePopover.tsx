@@ -1,9 +1,13 @@
 /**
- * The two popovers a seat on the role board can open.
+ * The popovers a colour row can open.
  *
- * A seat has two targets, and each answers a different question:
- *   the LABEL teaches   → <RoleTooltip>   "what is this role for?"
- *   the COLOUR reassigns → <AssignPopover> "what fills this seat?"
+ * A row has three targets, and each answers a different question:
+ *   the LABEL teaches         → <RoleTooltip>   "what is this role for?"
+ *   YOUR colour (or + add)    → <AssignPopover> "what fills this seat?" — your
+ *                               colours, a picker that sets your input (the
+ *                               engine derives from it), and freeing the seat
+ *   the colour that SHIPS     → <ShipPopover>   set it, locked as typed
+ * and an unused colour opens <PlacePopover>: "put it in a seat".
  *
  * Both are `position: fixed` and measured off their anchor's viewport rect, so
  * no ancestor's `overflow` can clip them — the sidebar body scrolls, and an
@@ -19,6 +23,8 @@ import type { CSSProperties, RefObject } from 'react'
 import { HexColorInput, HexColorPicker } from 'react-colorful'
 import { Check, SlidersHorizontal } from 'lucide-react'
 import type { Role } from '../engine'
+import type { Preset } from '../presets'
+import { PresetDots } from './PresetDots'
 import { EyeDropperButton } from './ColorSwatchPicker'
 import { useDismiss } from './useDismiss'
 import './RolePopover.css'
@@ -192,8 +198,11 @@ export interface AssignPopoverProps {
   takeOver: { hex: string } | null
   anchor: HTMLElement
   onPick: (candidateIndex: number) => void
-  /** Commit a hand-picked colour for this seat; the theme rebuilds around it. */
-  onAdjust: (hex: string) => void
+  /**
+   * Commit a hand-picked colour as YOUR colour for this seat. The engine
+   * derives from it at the current taste (and any lock is released).
+   */
+  onInput: (hex: string) => void
   onFree: () => void
   onClose: () => void
 }
@@ -219,15 +228,17 @@ export function AssignPopover({
   takeOver,
   anchor,
   onPick,
-  onAdjust,
+  onInput,
   onFree,
   onClose,
 }: AssignPopoverProps) {
   const { ref, style } = usePopover(anchor, onClose)
   const current = hex.toLowerCase()
-  // The adjust drawer's working colour. Nothing regenerates while it changes —
-  // the engine only hears about it on apply, which is the whole submit contract.
-  const [adjusting, setAdjusting] = useState(false)
+  const derived = provenance === 'derived'
+  // The picker's working colour. Nothing regenerates while it changes — the
+  // engine only hears about it on apply, which is the whole submit contract.
+  // Opened from "+ add" there is no colour of yours yet, so it starts open.
+  const [adjusting, setAdjusting] = useState(derived)
   const [draft, setDraft] = useState(hex)
 
   return (
@@ -272,9 +283,9 @@ export function AssignPopover({
         )}
       </div>
 
-      {/* Adjusting is a third act, distinct from reassigning and freeing: the
-          colour itself changes. The drawer edits a draft; only apply hands it
-          to the engine. */}
+      {/* Changing your colour is a third act, distinct from reassigning and
+          freeing. The drawer edits a draft; only apply hands it to the engine,
+          which derives from it — the right-hand chip shows what it made. */}
       <button
         type="button"
         className="rp-opt rp-adjust-toggle"
@@ -286,8 +297,8 @@ export function AssignPopover({
       >
         <SlidersHorizontal className="rp-adjust-icon" size={13} strokeWidth={1.75} />
         <span className="rp-opt-txt">
-          <span className="rp-opt-name">adjust this color</span>
-          <span className="rp-opt-hint">pick a new value for {role}</span>
+          <span className="rp-opt-name">{derived ? `give ${role} a color of yours` : 'change your color'}</span>
+          <span className="rp-opt-hint">the engine derives {role} from it</span>
         </span>
       </button>
       {adjusting && (
@@ -300,11 +311,11 @@ export function AssignPopover({
               prefixed
               aria-label={`new color for ${role}`}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') onAdjust(draft)
+                if (e.key === 'Enter') onInput(draft)
               }}
             />
             <EyeDropperButton onPick={setDraft} />
-            <button type="button" className="rp-adjust-apply" onClick={() => onAdjust(draft)}>
+            <button type="button" className="rp-adjust-apply" onClick={() => onInput(draft)}>
               apply
             </button>
           </div>
@@ -313,16 +324,179 @@ export function AssignPopover({
 
       {/* The one line that must not lie: with colors to spare, freeing a seat
           lets another of yours step in — only name the engine when it truly
-          has nothing left to cast. */}
-      <button type="button" className="rp-opt rp-free" onClick={onFree}>
-        <span className="rp-opt-sw rp-opt-sw--auto" />
-        <span className="rp-opt-txt">
-          <span className="rp-opt-name">free this seat</span>
-          <span className="rp-opt-hint">
-            {takeOver ? `${takeOver.hex} takes over` : 'the engine derives it'}
+          has nothing left to cast. A derived seat has nothing to free. */}
+      {!derived && (
+        <button type="button" className="rp-opt rp-free" onClick={onFree}>
+          <span className="rp-opt-sw rp-opt-sw--auto" />
+          <span className="rp-opt-txt">
+            <span className="rp-opt-name">free this seat</span>
+            <span className="rp-opt-hint">
+              {takeOver ? `${takeOver.hex} takes over` : 'the engine derives it'}
+            </span>
+          </span>
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// The shipped colour, or a chart row's input: one picker and its promise
+
+export interface ShipPopoverProps {
+  /** "primary", "chart 2". */
+  name: string
+  hex: string
+  /**
+   * `output` sets what ships, locked as typed; `input` sets your colour and
+   * the engine derives from it. The seats' input side uses AssignPopover.
+   */
+  side: 'input' | 'output'
+  anchor: HTMLElement
+  onApply: (hex: string) => void
+  onClose: () => void
+}
+
+/** Set the colour a row ships (or, on a chart row, your colour behind it). */
+export function ShipPopover({ name, hex, side, anchor, onApply, onClose }: ShipPopoverProps) {
+  const { ref, style } = usePopover(anchor, onClose)
+  const [draft, setDraft] = useState(hex)
+  const output = side === 'output'
+  return (
+    <div
+      ref={ref}
+      className="rp-pop rp-asg rp-ship"
+      style={style}
+      role="dialog"
+      aria-label={output ? `Set the color ${name} ships` : `Your color for ${name}`}
+    >
+      <div className="rp-asg-head">
+        <span className="rp-asg-sw" style={{ background: hex }} />
+        <span className="rp-asg-head-txt">
+          <span className="rp-asg-q">{output ? `${name} ships as ${hex}` : `your ${name}`}</span>
+          <span className="rp-asg-sub">
+            {output
+              ? 'Set the color that ships. It is locked as typed: taste and riff leave it alone, and your color takes the same value.'
+              : 'Change what you supplied. The color that ships follows, at the current taste.'}
           </span>
         </span>
+      </div>
+      <div className="rp-adjust">
+        <HexColorPicker color={draft} onChange={setDraft} />
+        <div className="rp-adjust-row">
+          <HexColorInput
+            color={draft}
+            onChange={setDraft}
+            prefixed
+            aria-label={output ? `color ${name} ships` : `your color for ${name}`}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') onApply(draft)
+            }}
+          />
+          <EyeDropperButton onPick={setDraft} />
+          <button type="button" className="rp-adjust-apply" onClick={() => onApply(draft)}>
+            {output ? 'lock' : 'apply'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// An unused colour: where does it go?
+
+export interface PlaceOption {
+  /** A role, or the chart series. */
+  target: Role | 'chart'
+  /** What that seat ships now (a swatch of the series for chart). */
+  hex: string
+  /** Who holds it now: your hex, "derived", or for chart "N of 5 yours". */
+  holder: string
+}
+
+export interface PlacePopoverProps {
+  hex: string
+  options: PlaceOption[]
+  anchor: HTMLElement
+  onPlace: (target: Role | 'chart') => void
+  /** Drop the colour from your set altogether. */
+  onRemove: () => void
+  onClose: () => void
+}
+
+/** Put an unused colour in a seat — whatever is there moves to unused. */
+export function PlacePopover({ hex, options, anchor, onPlace, onRemove, onClose }: PlacePopoverProps) {
+  const { ref, style } = usePopover(anchor, onClose)
+  return (
+    <div ref={ref} className="rp-pop rp-asg rp-place" style={style} role="dialog" aria-label={`Place ${hex}`}>
+      <div className="rp-asg-head">
+        <span className="rp-asg-sw" style={{ background: hex }} />
+        <span className="rp-asg-head-txt">
+          <span className="rp-asg-q rp-mono">{hex}</span>
+          <span className="rp-asg-sub">Put it in a seat. Whatever is there now moves to unused.</span>
+        </span>
+      </div>
+      <div className="rp-asg-list">
+        {options.map((o) => (
+          <button key={o.target} type="button" className="rp-opt" onClick={() => onPlace(o.target)}>
+            <span className="rp-opt-sw" style={{ background: o.hex }} />
+            <span className="rp-opt-txt">
+              <span className="rp-opt-name">{o.target === 'chart' ? 'chart series' : o.target}</span>
+              <span className="rp-opt-hint">{o.holder}</span>
+            </span>
+          </button>
+        ))}
+      </div>
+      <button type="button" className="rp-opt rp-free rp-remove" onClick={onRemove}>
+        <span className="rp-opt-sw rp-opt-sw--auto" />
+        <span className="rp-opt-txt">
+          <span className="rp-opt-name">remove {hex}</span>
+          <span className="rp-opt-hint">drop it from your colors</span>
+        </span>
       </button>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Start over from a preset, from the foot of the colours section
+
+export interface PresetPopoverProps {
+  presets: Preset[]
+  /** The preset the set still belongs to, if any. */
+  current: string | null
+  anchor: HTMLElement
+  onPick: (preset: Preset) => void
+  onClose: () => void
+}
+
+export function PresetPopover({ presets, current, anchor, onPick, onClose }: PresetPopoverProps) {
+  const { ref, style } = usePopover(anchor, onClose)
+  return (
+    <div ref={ref} className="rp-pop rp-asg rp-presets" style={style} role="dialog" aria-label="Start over from a preset">
+      <div className="rp-asg-head">
+        <span className="rp-asg-head-txt">
+          <span className="rp-asg-q">Start over from a preset</span>
+          <span className="rp-asg-sub">Replaces your colors; undo is one click. Tuning stays.</span>
+        </span>
+      </div>
+      <div className="rp-asg-list">
+        {presets.map((p) => (
+          <button
+            key={p.name}
+            type="button"
+            className={p.name === current ? 'rp-opt rp-opt--cur' : 'rp-opt'}
+            onClick={() => onPick(p)}
+          >
+            <PresetDots colors={p.colors} />
+            <span className="rp-opt-txt">
+              <span className="rp-opt-name">{p.name}</span>
+            </span>
+            {p.name === current && <Check className="rp-opt-check" size={13} strokeWidth={1.75} />}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

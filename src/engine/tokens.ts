@@ -272,6 +272,25 @@ export function buildMode(
     ),
   )
 
+  // The status colours' solid working tones, for non-text marks: status dots,
+  // icons, a star rating. Same solve and same target as accent-strong — the
+  // contrast level's `mark` (3:1 at standard, 4.5:1 at high) off BOTH page and
+  // card. The fills themselves can't do this job: `warning` is solved to carry
+  // its label, not to stand off the page, so a yellow dot on a light page sat
+  // near 1.3:1 at every level, and at raised contrast the danger and success
+  // fills darken under white labels until they sink into a dark page. Hue and
+  // chroma stay the role's own, so a dot still reads as its status; under the
+  // mono lock the status seeds are already the base's hue and the floor drops.
+  const statusStrong = (token: string, seed: Oklch) =>
+    toHex(
+      solveOnSurfaces(token, [N[0], N[1]], targets.mark.lc, targets.mark.wcag, seed.h, () =>
+        Math.min(monoSeed ? seed.c : Math.max(seed.c, 0.08), 0.2),
+      ),
+    )
+  const destructiveStrong = statusStrong('destructive-strong', seeds.danger)
+  const successStrong = statusStrong('success-strong', seeds.success)
+  const warningStrong = statusStrong('warning-strong', seeds.warning)
+
   // Link text: the accent as running-text color. Same APCA + WCAG double gate
   // as ramp text steps (Lc 62 / 4.5:1 at standard), solved against every
   // surface links actually sit on — page, card, and the success banner's wash.
@@ -340,14 +359,19 @@ export function buildMode(
     'destructive-foreground': dangerSolid.fg,
     'destructive-subtle': D[1],
     'destructive-subtle-foreground': D[10],
+    // Non-text status marks (dots, icons), solved like accent-strong. Additive:
+    // every token above is unchanged by their existence.
+    'destructive-strong': destructiveStrong,
     success: successSolid.bg,
     'success-foreground': successSolid.fg,
     'success-subtle': S[1],
     'success-subtle-foreground': S[10],
+    'success-strong': successStrong,
     warning: warningSolid.bg,
     'warning-foreground': warningSolid.fg,
     'warning-subtle': W[1],
     'warning-subtle-foreground': W[10],
+    'warning-strong': warningStrong,
     border: N[5],
     input: N[6],
     ring,
@@ -404,14 +428,17 @@ export function buildMode(
     'destructive-foreground': fromRole('danger'),
     'destructive-subtle': fromRole('danger'),
     'destructive-subtle-foreground': fromRole('danger'),
+    'destructive-strong': fromRole('danger'),
     success: fromRole('success'),
     'success-foreground': fromRole('success'),
     'success-subtle': fromRole('success'),
     'success-subtle-foreground': fromRole('success'),
+    'success-strong': fromRole('success'),
     warning: fromRole('warning'),
     'warning-foreground': fromRole('warning'),
     'warning-subtle': fromRole('warning'),
     'warning-subtle-foreground': fromRole('warning'),
+    'warning-strong': fromRole('warning'),
     border: fromRole('neutral'),
     input: fromRole('neutral'),
     ring: fromRole('accent'),
@@ -489,6 +516,14 @@ const TEXT_PAIRS: Array<[fg: string, bg: string, gate: Gate]> = [
   ['accent-strong', 'card', 'mark'],
   // Non-text "pop": the primary fill must stand off the page (WCAG 1.4.11).
   ['primary', 'background', 'pop'],
+  // The status marks: dots and icons on the page and on cards. Appended, so
+  // every row above keeps its place.
+  ['destructive-strong', 'background', 'mark'],
+  ['destructive-strong', 'card', 'mark'],
+  ['success-strong', 'background', 'mark'],
+  ['success-strong', 'card', 'mark'],
+  ['warning-strong', 'background', 'mark'],
+  ['warning-strong', 'card', 'mark'],
 ]
 
 /**

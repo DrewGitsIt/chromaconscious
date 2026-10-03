@@ -794,7 +794,7 @@ function Thin({
 }) {
   return (
     <div className="an-empty flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border px-4 py-10 text-center">
-      <TriangleAlert className="size-5 text-warning" aria-hidden />
+      <TriangleAlert className="size-5 text-warning-strong" aria-hidden />
       <p className="text-sm font-medium">Not enough data</p>
       <p className="max-w-64 text-xs text-muted-foreground">
         {segment.label} has {segment.history} days of history. The {days}-day range needs{' '}

@@ -1,26 +1,52 @@
-span.rail-thumb top: 0px; height: 495.291px;
-button.rail-tick.here top: 2.76313px;
-button.rail-tick top: 311.543px;
-button.rail-tick top: 629.303px;
-div.rb-slot.rb-yours --c: #cf5800; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-yours --c: #4982b3; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-yours --c: #ecf5dc; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12); --well-strong: rgba(0,0,0,0.22);
-div.rb-slot.rb-derived --c: #c0182c; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-derived --c: #617e23; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-derived --c: #f79441; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12); --well-strong: rgba(0,0,0,0.22);
-span.series.yours --c: #6594be;
-span.series.yours --c: #a4d0c2;
-span.series.yours --c: #778dc6;
-span.series.derived --c: #00b5e6;
-span.series.derived --c: #849eff;
-div.bench-drawer height: 0px;
+span.rail-thumb top: 0px; height: 401.083px;
+button.rail-tick.here top: 2.23756px;
+button.rail-tick top: 385.42px;
+button.rail-tick top: 642.18px;
+div.rb-slot.rb-yours 
+button.rb-chip.rb-in --c: #e63946; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+span.dc.dc-moved --len: 40px;
+button.rb-chip.rb-body --c: #cf5800; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.rb-slot.rb-yours 
+button.rb-chip.rb-in --c: #457b9d; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+span.dc.dc-moved --len: 19.062179203443964px;
+button.rb-chip.rb-body --c: #4982b3; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.rb-slot.rb-yours 
+button.rb-chip.rb-in --c: #f1faee; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
+span.dc.dc-moved --len: 14px;
+button.rb-chip.rb-body --c: #ecf5dc; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
+div.rb-slot.rb-derived 
+button.rb-chip.rb-body.is-derived --c: #c0182c; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.rb-slot.rb-derived 
+button.rb-chip.rb-body.is-derived --c: #617e23; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.rb-slot.rb-derived 
+button.rb-chip.rb-body.is-derived --c: #f79441; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
+i. background: rgb(101, 148, 190);
+i. background: rgb(164, 208, 194);
+i. background: rgb(119, 141, 198);
+i. background: rgb(0, 181, 230);
+i. background: rgb(132, 158, 255);
+div.series.led --c: #6594be;
+span.dc.dc-derived 
+button.rb-chip.series-out.is-derived --c: #6594be; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.series.yours --c: #a4d0c2;
+button.rb-chip.series-in --c: #a8dadc; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
+span.dc.dc-moved --len: 20.38858419198659px;
+button.rb-chip.series-out --c: #a4d0c2; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
+div.series.yours --c: #778dc6;
+button.rb-chip.series-in --c: #1d3557; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+span.dc.dc-moved --len: 40px;
+button.rb-chip.series-out --c: #778dc6; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.series.derived --c: #00b5e6;
+button.rb-chip.series-out.is-derived --c: #00b5e6; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
+div.series.derived --c: #849eff;
+button.rb-chip.series-out.is-derived --c: #849eff; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
 div.dial-track-wrap --v: 50%;
 input.dial-slider 
 span.sep-thumb --sep-i: 1;
 div.ctr-track-wrap --v: 0%;
 input.ctr-slider 
 input. 
-div.preview-root.relative.flex.min-h-[680px].overflow-hidden.bg-background.text-sm.text-foreground.dark --background: #0f1405; --foreground: #e7ece1; --card: #15190b; --card-foreground: #e7ece1; --popover: #15190b; --popover-foreground: #e7ece1; --primary: #bb551f; --primary-foreground: #fdf9f7; --secondary: #1d2114; --secondary-foreground: #e7ece1; --muted: #1d2114; --muted-foreground: #b6baaf; --accent: #14212c; --accent-foreground: #d9edff; --accent-strong: #629cce; --link: #a0bad1; --destructive: #ca4347; --destructive-foreground: #fdf9f8; --destructive-subtle: #201312; --destructive-subtle-foreground: #eaa7a3; --success: #63782f; --success-foreground: #f9fbf7; --success-subtle: #15190f; --success-subtle-foreground: #aebe98; --warning: #ee9a58; --warning-foreground: #110c09; --warning-subtle: #1f150d; --warning-subtle-foreground: #dcaf8e; --border: #353a2d; --input: #484d3e; --ring: #629cce; --chart-1: #6594be; --chart-2: #a4d0c2; --chart-3: #778dc6; --chart-4: #00b5e6; --chart-5: #849eff; --sidebar: #15190b; --sidebar-foreground: #e7ece1; --sidebar-primary: #bb551f; --sidebar-primary-foreground: #fdf9f7; --sidebar-accent: #14212c; --sidebar-accent-foreground: #d9edff; --sidebar-border: #353a2d; --sidebar-ring: #629cce; --elevation-1: 0px 1px 2px 0px rgb(0 0 0 / 0.18), 0px 2px 6px -1px rgb(0 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(0 0 0 / 0.28), 0px 8px 20px -6px rgb(0 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(0 0 0 / 0.38), 0px 24px 48px -12px rgb(0 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(0 0 0 / 0.58);
+div.preview-root.relative.flex.min-h-[680px].overflow-hidden.bg-background.text-sm.text-foreground.dark --background: #0f1405; --foreground: #e7ece1; --card: #15190b; --card-foreground: #e7ece1; --popover: #15190b; --popover-foreground: #e7ece1; --primary: #bb551f; --primary-foreground: #fdf9f7; --secondary: #1d2114; --secondary-foreground: #e7ece1; --muted: #1d2114; --muted-foreground: #b6baaf; --accent: #14212c; --accent-foreground: #d9edff; --accent-strong: #629cce; --link: #a0bad1; --destructive: #ca4347; --destructive-foreground: #fdf9f8; --destructive-subtle: #201312; --destructive-subtle-foreground: #eaa7a3; --destructive-strong: #ff5e5f; --success: #63782f; --success-foreground: #f9fbf7; --success-subtle: #15190f; --success-subtle-foreground: #aebe98; --success-strong: #83a149; --warning: #ee9a58; --warning-foreground: #110c09; --warning-subtle: #1f150d; --warning-subtle-foreground: #dcaf8e; --warning-strong: #de7e24; --border: #353a2d; --input: #484d3e; --ring: #629cce; --chart-1: #6594be; --chart-2: #a4d0c2; --chart-3: #778dc6; --chart-4: #00b5e6; --chart-5: #849eff; --sidebar: #15190b; --sidebar-foreground: #e7ece1; --sidebar-primary: #bb551f; --sidebar-primary-foreground: #fdf9f7; --sidebar-accent: #14212c; --sidebar-accent-foreground: #d9edff; --sidebar-border: #353a2d; --sidebar-ring: #629cce; --elevation-1: 0px 1px 2px 0px rgb(0 0 0 / 0.18), 0px 2px 6px -1px rgb(0 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(0 0 0 / 0.28), 0px 8px 20px -6px rgb(0 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(0 0 0 / 0.38), 0px 24px 48px -12px rgb(0 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(0 0 0 / 0.58);
 div.flex-1.rounded-t-sm height: 40%; background: var(--chart-1);
 div.flex-1.rounded-t-sm height: 65%; background: var(--chart-1);
 div.flex-1.rounded-t-sm height: 45%; background: var(--chart-1);
@@ -61,36 +87,64 @@ any colors in, working theme out
 2 · tuning
 3 · riff
 1
-COLORS
+colors
 3 yours · 3 derived
 start over
 ?
 mono
 reset
+yours
+derived
 primary
+#e63946
+ΔE .087
+hue +24°
 #cf5800
-YOURS
 accent
+#457b9d
+ΔE .037
+lighter
 #4982b3
-YOURS
 neutral
+#f1faee
+ΔE .025
+darker
 #ecf5dc
-YOURS
 danger
+add
+derived
 #c0182c
-DERIVED
 success
+add
+derived
 #617e23
-DERIVED
 warning
+add
+derived
 #f79441
-DERIVED
-chart series
-3 of 5
-bench · 0 colors not in play
+unused
+none · drop a seat here to park it
+chart
+2 of 5 yours
+accent leads
+from accent
+#6594be
+#a8dadc
+ΔE .039
+#a4d0c2
+#1d3557
+ΔE .322
+#778dc6
+add
+derived
+#00b5e6
+add
+derived
+#849eff
 add a color
+presets
 2
-TUNING
+tuning
 0.50 · layered · standard
 taste
 0.50
@@ -114,11 +168,11 @@ HIGH
 every text pair clears 4.5:1 · Lc 62; focus ring and marks 3:1; hairlines as separation sets them
 
 3
-RIFF
+riff
 hop 2
 riff
 2
 back
-all 40 checks pass
+all 52 checks pass
 report
 Copy CSS variables

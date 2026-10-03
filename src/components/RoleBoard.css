@@ -1,49 +1,37 @@
 @layer chrome-base, chrome;
 
-/* RoleBoard-owned chrome: the seats, their two targets, the lock, and the riff
-   bounce.
+/* The colour rows (RoleBoard) and the middle cell they share with the chart
+   rows (DeltaCell).
 
-   TWO languages, kept apart on purpose. A dashed inner edge says where a
-   colour came from (derived = the engine's; no edge = yours/kept). The lock
-   badge says whether riff may move it. The dashed seat used to mean both,
-   which is how a colour you dragged in became silently un-riffable.
-
-   Every seat is painted at full strength, derived included. Derived seats used
-   to be pooled at 20% behind a dashed border, which meant judging a colour you
-   could not actually see. */
+   One grid for every seat: [yours] [what happened] [what ships]. The chips
+   carry the colour; the row itself is chrome. Two visual languages stay apart:
+   a dashed inner edge on the shipped chip says the engine derived it (no
+   colour of yours behind it); the lock button and the "locked" state text say
+   whether riff and taste may move it. Neither is said by colour alone. */
 @layer chrome {
   .role-board {
+    display: flex;
+    flex-direction: column;
+  }
+  .rb-cols {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--gap-s);
+    grid-template-columns: 1fr 64px 1fr;
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+    margin: 0 0 6px;
   }
 
   .rb-slot {
     position: relative;
-    height: 60px;
-    border-radius: 9px;
-    padding: 8px 10px 7px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+    border-radius: 8px;
     transition:
-      box-shadow var(--d-base) var(--ease),
       transform var(--d-fast) var(--ease),
-      background var(--d-slow) var(--ease),
-      border-color var(--d-base) var(--ease);
+      box-shadow var(--d-base) var(--ease),
+      opacity var(--d-base) var(--ease);
   }
-
-  /* Every seat: the colour fills it. The inset ring keeps a near-black seat
-     from dissolving into the panel. */
-  .rb-slot {
-    background: var(--c);
-    color: var(--ink-on);
-    border: 1px solid transparent;
-    box-shadow:
-      inset 0 0 0 1px rgb(255 255 255 / 0.14),
-      0 1px 3px rgb(0 0 0 / 0.4);
+  .rb-slot + .rb-slot {
+    margin-top: 12px;
   }
-  /* YOURS / KEPT — and only these can be dragged out */
   .rb-slot.rb-yours,
   .rb-slot.rb-kept {
     cursor: grab;
@@ -52,229 +40,299 @@
   .rb-slot.rb-kept:active {
     cursor: grabbing;
   }
-
-  /* DERIVED — the engine's own colour, so it must never read as settled. The
-     edge is drawn in the seat's own ink, so it holds on any colour. */
-  .rb-slot.rb-derived::after {
-    content: '';
-    position: absolute;
-    inset: 3px;
-    border-radius: 6px;
-    border: 1px dashed var(--ink-on);
-    opacity: 0.35;
-    pointer-events: none;
-  }
-
-  /* the mono base wears a second ring in its own ink, plus the anchor badge */
-  .rb-slot.is-anchored {
-    box-shadow:
-      inset 0 0 0 2px var(--ink-on),
-      0 1px 3px rgb(0 0 0 / 0.4);
-  }
-
   .rb-slot.is-dragging {
     opacity: 0.35;
   }
   .rb-slot.drop-ok {
-    transform: scale(1.03);
-    box-shadow:
-      0 0 0 2px var(--accent),
-      0 6px 18px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 0 1px var(--line-active);
   }
 
+  /* ---- the label line: name, state, lock ---- */
   .rb-top {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
+    height: 20px;
+    margin-bottom: 4px;
   }
-
-  /* the LABEL teaches — its own target, deliberately not the colour's */
-  .rb-slot .rb-name {
+  .rb-name {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    height: 17px;
-    padding: 0 5px 0 4px;
-    margin-left: -4px;
-    border-radius: var(--radius-pill);
-    font: inherit;
-    font-size: var(--fs-m);
-    font-weight: 600;
-    line-height: 1;
-    letter-spacing: -0.005em;
-    background: transparent;
     border: 0;
-    color: inherit;
-    opacity: 0.95;
-    cursor: pointer;
-    transition:
-      background var(--d-fast) var(--ease),
-      opacity var(--d-fast) var(--ease),
-      color var(--d-fast) var(--ease);
+    padding: 0 2px;
+    margin-left: -2px;
+    background: none;
+    border-radius: 4px;
+    font: inherit;
+    font-size: var(--fs-s);
+    color: var(--ink);
+    cursor: help;
   }
-  .rb-slot .rb-name svg {
-    opacity: 0.55;
+  .rb-name svg {
+    color: var(--ink-faint);
+    opacity: 0;
     transition: opacity var(--d-fast) var(--ease);
   }
-  .rb-slot .rb-name:hover svg {
+  .rb-name:hover svg,
+  .rb-name.open svg,
+  .rb-name:focus-visible svg {
     opacity: 1;
   }
-  .rb-slot .rb-name:hover {
-    background: var(--well);
-    opacity: 1;
-  }
-  .rb-slot .rb-name.open {
-    background: var(--ink-on);
-    color: var(--c);
-    opacity: 1;
-  }
-
   .rb-anchor {
-    display: flex;
-    margin-left: auto;
-    opacity: 0.8;
+    display: inline-grid;
+    place-items: center;
+    color: var(--ink-muted);
   }
-
-  /* the COLOUR BODY assigns — "what fills this seat?" */
-  .rb-slot .rb-body {
-    display: flex;
-    align-items: flex-end;
-    gap: 5px;
-    width: 100%;
-    height: auto;
-    padding: 0;
-    background: transparent;
-    border: 0;
-    border-radius: 5px;
-    color: inherit;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-  }
-  .rb-hex {
-    font-family: var(--font-code);
-    font-size: var(--fs-s);
-    font-weight: 450;
-    opacity: 0.9;
-  }
-  .rb-slot .rb-body:hover .rb-hex {
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-  .rb-tag {
-    display: inline-flex;
-    align-items: center;
+  .rb-state {
     margin-left: auto;
     font-family: var(--font-code);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    opacity: 0.72;
+    font-size: 10.5px;
+    color: var(--ink-faint);
     white-space: nowrap;
   }
-  /* LOCK — the control that decides what riff may touch. On a derived seat it
-     is also `keep`, since locking one has to materialise a colour first. */
-  .rb-slot .rb-lock {
-    position: absolute;
-    right: 5px;
-    top: 5px;
-    width: 18px;
-    height: 18px;
+  .rb-lock {
+    flex: none;
+    width: 24px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    border: 0;
     padding: 0;
-    display: inline-flex;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--ink-faint);
+    cursor: pointer;
+  }
+  .rb-lock:hover {
+    background: var(--surface-3);
+    color: var(--ink);
+  }
+  .rb-lock[data-locked='true'] {
+    color: var(--ink);
+  }
+
+  /* ---- the pair ---- */
+  .rb-pair {
+    display: grid;
+    grid-template-columns: 1fr 64px 1fr;
+    align-items: stretch;
+    height: 38px;
+  }
+  .rb-chip {
+    position: relative;
+    min-width: 0;
+    border: 0;
+    padding: 0;
+    border-radius: 8px;
+    background: var(--c);
+    color: var(--ink-on);
+    text-align: left;
+    cursor: pointer;
+    /* the inset ring keeps a near-black chip from dissolving into the pane */
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.07);
+    transition:
+      box-shadow var(--d-fast) var(--ease),
+      background-color var(--d-base) var(--ease);
+  }
+  .rb-chip:hover {
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.07),
+      0 0 0 1px var(--line-active);
+  }
+  .rb-chip .rb-hex,
+  .rb-chip .rb-chip-hex {
+    position: absolute;
+    left: 8px;
+    bottom: 6px;
+    font-family: var(--font-code);
+    font-size: 11px;
+    line-height: 14px;
+    white-space: nowrap;
+  }
+  /* derived with nothing behind it: the shipped dashed inner edge, drawn in
+     the chip's own ink so it holds on any colour */
+  .rb-chip.is-derived::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1.5px dashed var(--ink-on);
+    border-radius: 6px;
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  /* the empty input cell is the add verb, not a placeholder */
+  .rb-add {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px;
+    border: 1px dashed var(--line-ctl);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink-faint);
+    font: inherit;
+    font-size: 11.5px;
+    cursor: pointer;
+  }
+  .rb-add:hover,
+  .rb-add:focus-visible {
+    border-color: var(--line-active);
+    color: var(--ink);
+  }
+
+  /* the mono base: a second ring on what ships, plus the anchor badge */
+  .rb-slot.is-anchored .rb-body {
+    box-shadow: inset 0 0 0 2px var(--ink-on);
+  }
+
+  /* ---- the line under a failing lock ---- */
+  .rb-fail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: var(--ink-muted);
+  }
+  .rb-fail > svg {
+    flex: none;
+    color: var(--warn);
+  }
+  .rb-derive {
+    margin-left: auto;
+    flex: none;
+    height: 26px;
+    padding: 0 9px;
+    border-radius: 7px;
+    border: 1px solid var(--line-ctl);
+    background: var(--surface-3);
+    color: var(--ink);
+    font: inherit;
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: background var(--d-fast) var(--ease);
+  }
+  .rb-derive:hover {
+    background: var(--surface-4);
+  }
+
+  .rb-slot :where(.rb-name, .rb-chip, .rb-add, .rb-lock, .rb-derive):focus-visible {
+    outline: 1px solid var(--line-active);
+    outline-offset: 2px;
+  }
+
+  /* ---- the middle cell (DeltaCell), shared with the chart rows ---- */
+  .dc {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    border: 0;
-    border-radius: 50%;
-    background: var(--surface-4);
-    color: var(--ink);
-    cursor: pointer;
-    opacity: 0;
-    transform: scale(0.7);
+    gap: 3px;
+    overflow: hidden;
+    font-family: var(--font-code);
+  }
+  /* "=" and "→" are one glyph: two bars that part into an equals sign when
+     nothing moved, and close into a shaft (and grow a head) when something did */
+  .dc-shaft {
+    position: relative;
+    height: 9px;
+    width: var(--len, 24px);
+    transition: width var(--d-base) var(--ease);
+  }
+  .dc-shaft i {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 4px;
+    height: 1px;
+    background: var(--ink-muted);
     transition:
-      opacity var(--d-fast) var(--ease),
-      transform var(--d-fast) var(--ease-back),
-      background var(--d-fast) var(--ease),
-      color var(--d-fast) var(--ease);
+      transform var(--d-base) var(--ease),
+      opacity var(--d-base) var(--ease);
   }
-  /* A LOCKED seat says so without being hovered. Six seats each wearing an open
-     padlock is noise, but "which of these will riff move?" has to be answerable
-     at a glance — so only the locked state stays on screen. */
-  .rb-slot .rb-lock[data-locked='true'],
-  .rb-slot:hover .rb-lock,
-  .rb-slot .rb-lock:focus-visible {
-    opacity: 1;
-    transform: scale(1);
+  .dc-shaft .dc-hd {
+    left: auto;
+    right: 0;
+    top: 1px;
+    width: 6px;
+    height: 6px;
+    background: none;
+    border-top: 1px solid var(--ink-muted);
+    border-right: 1px solid var(--ink-muted);
+    transform: rotate(45deg);
   }
-  /* Filled, in the seat's own ink (every seat defines --ink-on/--c). */
-  .rb-slot .rb-lock[data-locked='true'] {
-    background: var(--ink-on);
-    color: var(--c);
+  .dc-same .dc-b1 {
+    transform: translateY(-2.5px);
   }
-  .rb-slot .rb-lock:hover {
-    background: var(--ink-on);
-    color: var(--c);
+  .dc-same .dc-b2 {
+    transform: translateY(2.5px);
   }
-  /* keep, on a derived seat: claiming the engine's colour is a gain, not a freeze */
-  .rb-slot .rb-lock.rb-keep:hover {
-    background: var(--ok);
-    color: var(--stage);
+  .dc-same .dc-hd {
+    opacity: 0;
+  }
+  .dc-why {
+    font-size: 9.5px;
+    line-height: 1.15;
+    color: var(--ink-faint);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .dc-why b {
+    display: block;
+    font-weight: 400;
+    color: var(--ink-muted);
+  }
+  .dc-derived {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    color: var(--ink-faint);
+  }
+  .dc-fail {
+    gap: 1px;
+    color: var(--warn);
+    font-size: 9.5px;
   }
 
-  /* the second, quieter half of the same signal: the seat itself is ringed, in
-     a way that composes with the mono-base ring rather than replacing it */
-  .rb-slot.is-locked {
-    outline: 1px solid color-mix(in srgb, var(--ink-on) 55%, transparent);
-    outline-offset: -3px;
-  }
-
-  .rb-slot :where(.rb-name, .rb-body, .rb-lock):focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
-  }
-
-  /* riff bounce — every seat riff moved, which is now every unlocked seat.
-     Delay is set inline, staggered 55ms by index. */
+  /* riff bounce — every row riff moved. Delay is set inline, staggered 55ms
+     by index. Piece 3 replaces this with a cross-fade on the shipped chip. */
   @keyframes rb-reroll {
     0% {
-      transform: translateY(0) scale(1);
+      transform: translateY(0);
     }
     40% {
-      transform: translateY(-4px) scale(1.04);
+      transform: translateY(-3px);
     }
     100% {
-      transform: translateY(0) scale(1);
+      transform: translateY(0);
     }
   }
-  .rb-slot.is-rerolling {
+  .rb-slot.is-rerolling .rb-body {
     animation: rb-reroll var(--d-slow) var(--ease-back) both;
+    animation-delay: inherit;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .rb-slot,
-    .rb-slot .rb-name,
-    .rb-slot .rb-name svg,
-    .rb-slot .rb-lock {
-      transition: none;
-    }
-    .rb-slot.is-rerolling {
-      animation: none;
-    }
-    .rb-slot.drop-ok {
-      transform: none;
-    }
-    .rb-slot .rb-lock {
-      transform: none;
-    }
-  }
-}
-
-@layer chrome {
-  /* pick mode: every seat is a target, and says so */
+  /* pick mode (mono): every row is a target, and says so */
   .role-board .rb-slot.is-picking {
     cursor: pointer;
   }
   .role-board .rb-slot.is-picking:hover {
-    box-shadow: 0 0 0 2px var(--accent);
+    box-shadow: 0 0 0 1px var(--line-active);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rb-slot,
+    .rb-chip,
+    .rb-name svg,
+    .dc-shaft,
+    .dc-shaft i {
+      transition: none;
+    }
+    .rb-slot.is-rerolling .rb-body {
+      animation: none;
+    }
   }
 }

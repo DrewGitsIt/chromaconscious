@@ -1,27 +1,46 @@
-span.rail-thumb top: 0px; height: 495.291px;
-button.rail-tick.here top: 2.76313px;
-button.rail-tick top: 311.543px;
-button.rail-tick top: 629.303px;
+span.rail-thumb top: 0px; height: 401.083px;
+button.rail-tick.here top: 2.23756px;
+button.rail-tick top: 385.42px;
+button.rail-tick top: 642.18px;
 i.mono-dot background: rgb(230, 57, 70);
-div.rb-slot.rb-yours.is-anchored --c: #bb0028; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-yours --c: #e3827f; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-yours --c: #745d5b; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-derived --c: #810018; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-derived --c: #c65959; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-derived --c: #ffaaa6; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12); --well-strong: rgba(0,0,0,0.22);
-span.series.yours --c: #6c151b;
-span.series.yours --c: #913839;
-span.series.derived --c: #b75a59;
-span.series.derived --c: #de7d7b;
-span.series.derived --c: #ffa5a1;
-div.bench-drawer height: 0px;
+button.rb-chip.rb-in --c: #e63946; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+span.dc.dc-moved --len: 40px;
+button.rb-chip.rb-body --c: #bb0028; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+button.rb-chip.rb-in --c: #457b9d; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+span.dc.dc-moved --len: 40px;
+button.rb-chip.rb-body --c: #e3827f; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+button.rb-chip.rb-in --c: #f1faee; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
+span.dc.dc-moved --len: 40px;
+button.rb-chip.rb-body --c: #745d5b; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+button.rb-chip.rb-body.is-derived --c: #810018; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+button.rb-chip.rb-body.is-derived --c: #c65959; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+button.rb-chip.rb-body.is-derived --c: #ffaaa6; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
+i. background: rgb(108, 21, 27);
+i. background: rgb(145, 56, 57);
+i. background: rgb(183, 90, 89);
+i. background: rgb(222, 125, 123);
+i. background: rgb(255, 165, 161);
+div.series.yours --c: #6c151b;
+button.rb-chip.series-in --c: #a8dadc; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
+span.dc.dc-moved --len: 40px;
+button.rb-chip.series-out --c: #6c151b; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.series.yours --c: #913839;
+button.rb-chip.series-in --c: #1d3557; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+span.dc.dc-moved --len: 40px;
+button.rb-chip.series-out --c: #913839; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.series.derived --c: #b75a59;
+button.rb-chip.series-out.is-derived --c: #b75a59; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.series.derived --c: #de7d7b;
+button.rb-chip.series-out.is-derived --c: #de7d7b; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.series.derived --c: #ffa5a1;
+button.rb-chip.series-out.is-derived --c: #ffa5a1; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
 div.dial-track-wrap --v: 50%;
 input.dial-slider 
 span.sep-thumb --sep-i: 1;
 div.ctr-track-wrap --v: 0%;
 input.ctr-slider 
 input. 
-div.preview-root.relative.flex.min-h-[680px].overflow-hidden.bg-background.text-sm.text-foreground.dark --background: #1d0c0b; --foreground: #f4e7e6; --card: #231211; --card-foreground: #f4e7e6; --popover: #231211; --popover-foreground: #f4e7e6; --primary: #ce3e46; --primary-foreground: #fdf9f8; --secondary: #2b1a1a; --secondary-foreground: #f4e7e6; --muted: #2b1a1a; --muted-foreground: #c2b5b5; --accent: #2e1817; --accent-foreground: #ffe4e2; --accent-strong: #db7b78; --link: #d9aca9; --destructive: #bc4f54; --destructive-foreground: #fdf9f8; --destructive-subtle: #201313; --destructive-subtle-foreground: #e6a9a6; --success: #b45558; --success-foreground: #fdf9f8; --success-subtle: #201313; --success-subtle-foreground: #e1aba8; --warning: #ffaaa6; --warning-foreground: #110c0b; --warning-subtle: #201313; --warning-subtle-foreground: #e1aba8; --border: #433332; --input: #574544; --ring: #db7b78; --chart-1: #6c151b; --chart-2: #913839; --chart-3: #b75a59; --chart-4: #de7d7b; --chart-5: #ffa5a1; --sidebar: #231211; --sidebar-foreground: #f4e7e6; --sidebar-primary: #ce3e46; --sidebar-primary-foreground: #fdf9f8; --sidebar-accent: #2e1817; --sidebar-accent-foreground: #ffe4e2; --sidebar-border: #433332; --sidebar-ring: #db7b78; --elevation-1: 0px 1px 2px 0px rgb(1 0 0 / 0.18), 0px 2px 6px -1px rgb(1 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(1 0 0 / 0.28), 0px 8px 20px -6px rgb(1 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(1 0 0 / 0.38), 0px 24px 48px -12px rgb(1 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(1 0 0 / 0.58);
+div.preview-root.relative.flex.min-h-[680px].overflow-hidden.bg-background.text-sm.text-foreground.dark --background: #1d0c0b; --foreground: #f4e7e6; --card: #231211; --card-foreground: #f4e7e6; --popover: #231211; --popover-foreground: #f4e7e6; --primary: #ce3e46; --primary-foreground: #fdf9f8; --secondary: #2b1a1a; --secondary-foreground: #f4e7e6; --muted: #2b1a1a; --muted-foreground: #c2b5b5; --accent: #2e1817; --accent-foreground: #ffe4e2; --accent-strong: #db7b78; --link: #d9aca9; --destructive: #bc4f54; --destructive-foreground: #fdf9f8; --destructive-subtle: #201313; --destructive-subtle-foreground: #e6a9a6; --destructive-strong: #ef6d6d; --success: #b45558; --success-foreground: #fdf9f8; --success-subtle: #201313; --success-subtle-foreground: #e1aba8; --success-strong: #e57573; --warning: #ffaaa6; --warning-foreground: #110c0b; --warning-subtle: #201313; --warning-subtle-foreground: #e1aba8; --warning-strong: #e57573; --border: #433332; --input: #574544; --ring: #db7b78; --chart-1: #6c151b; --chart-2: #913839; --chart-3: #b75a59; --chart-4: #de7d7b; --chart-5: #ffa5a1; --sidebar: #231211; --sidebar-foreground: #f4e7e6; --sidebar-primary: #ce3e46; --sidebar-primary-foreground: #fdf9f8; --sidebar-accent: #2e1817; --sidebar-accent-foreground: #ffe4e2; --sidebar-border: #433332; --sidebar-ring: #db7b78; --elevation-1: 0px 1px 2px 0px rgb(1 0 0 / 0.18), 0px 2px 6px -1px rgb(1 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(1 0 0 / 0.28), 0px 8px 20px -6px rgb(1 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(1 0 0 / 0.38), 0px 24px 48px -12px rgb(1 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(1 0 0 / 0.58);
 div.flex-1.rounded-t-sm height: 40%; background: var(--chart-1);
 div.flex-1.rounded-t-sm height: 65%; background: var(--chart-1);
 div.flex-1.rounded-t-sm height: 45%; background: var(--chart-1);
@@ -62,36 +81,64 @@ any colors in, working theme out
 2 · tuning
 3 · riff
 1
-COLORS
+colors
 3 yours · 3 derived
 start over
 ?
 mono
 reset
+yours
+derived
 primary
+#e63946
+ΔE .112
+darker
 #bb0028
-YOURS
 accent
+#457b9d
+ΔE .242
+hue +144°
 #e3827f
-YOURS
 neutral
+#f1faee
+ΔE .476
+darker
 #745d5b
-YOURS
 danger
+add
+derived
 #810018
-DERIVED
 success
+add
+derived
 #c65959
-DERIVED
 warning
+add
+derived
 #ffaaa6
-DERIVED
-chart series
-2 of 5
-bench · 0 colors not in play
+unused
+none · drop a seat here to park it
+chart
+2 of 5 yours
+#a8dadc
+ΔE .532
+#6c151b
+#1d3557
+ΔE .218
+#913839
+add
+derived
+#b75a59
+add
+derived
+#de7d7b
+add
+derived
+#ffa5a1
 add a color
+presets
 2
-TUNING
+tuning
 0.50 · layered · standard
 taste
 0.50
@@ -115,10 +162,10 @@ HIGH
 every text pair clears 4.5:1 · Lc 62; focus ring and marks 3:1; hairlines as separation sets them
 
 3
-RIFF
+riff
 as derived
 riff
 back
-all 40 checks pass
+all 52 checks pass
 report
 Copy CSS variables

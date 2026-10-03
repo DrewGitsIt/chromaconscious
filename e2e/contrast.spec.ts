@@ -68,7 +68,7 @@ test('the contrast slider raises measured contrast on real token pairs, in both 
     await expect(page.locator('.ctr-caption')).toContainText('every text pair clears 10:1 · Lc 88')
     await expect(slider).toHaveAttribute('aria-valuetext', /^high/)
     // The status chip is the sidebar's verdict on the same report.
-    await expect(page.locator('.status-chip')).toContainText('all 48 checks pass')
+    await expect(page.locator('.status-chip')).toContainText('all 60 checks pass')
 
     const after = await Promise.all(PAIRS.map(([fg, bg]) => pair(page, fg, bg)))
     for (let i = 0; i < PAIRS.length; i++)

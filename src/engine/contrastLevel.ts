@@ -41,7 +41,7 @@ export interface ContrastTargets {
    * solved for it too.
    */
   text: LcTarget
-  /** Non-text marks — focus ring, accent-strong (WCAG 1.4.11 at standard). */
+  /** Non-text marks — focus ring, accent-strong, the status -strong marks (WCAG 1.4.11 at standard). */
   mark: LcTarget
   /** The primary fill against the page ("pop"), spent from taste's budget. */
   pop: number

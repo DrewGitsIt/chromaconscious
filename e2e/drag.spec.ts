@@ -1,8 +1,9 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 
 /**
- * Drag and drop between the seats, the series tray and the bench.
+ * Drag and drop between the seats, the series tray and "unused" (which
+ * appears as a drop target while a drag is in flight, even when empty).
  *
  * This is the one interaction the unit suite cannot reach — jsdom has no real
  * `dataTransfer`, so App.test.tsx skips it and points here. Placement is now
@@ -19,7 +20,6 @@ test.beforeEach(async ({ page }) => {
 
 const seat = (page: Page, role: string) => page.locator(`.rb-slot[data-role="${role}"]`)
 const hexOf = (page: Page, role: string) => seat(page, role).locator('.rb-hex')
-const tagOf = (page: Page, role: string) => seat(page, role).locator('.rb-tag')
 const lockOf = (page: Page, role: string) => seat(page, role).locator('.rb-lock')
 
 /**
@@ -39,39 +39,46 @@ const boot = async (page: Page) => {
   await expect(page.locator('.role-board')).toBeVisible()
 }
 
-const openBench = async (page: Page) => {
-  const bar = page.locator('.bench-bar')
-  if ((await bar.getAttribute('aria-expanded')) !== 'true') await bar.click()
-  await expect(page.locator('.bench-drawer')).toBeVisible()
+/**
+ * Drag with both ends already on screen. The rows are taller than the old
+ * 2×3 grid, so "unused" and the tray sit below the sidebar's fold; letting
+ * dragTo scroll the pane between mouse-down and drop cancels the native drag.
+ */
+const drag = async (from: Locator, to: Locator) => {
+  // the higher of the two at the top of the pane, so the lower one is in view
+  const [a, b] = [await from.boundingBox(), await to.boundingBox()]
+  await (a!.y <= b!.y ? from : to).evaluate((el) => el.scrollIntoView({ block: 'start' }))
+  await from.dragTo(to)
 }
+
+/** A colour of yours sitting in the "unused" row. */
+const unusedChip = (page: Page, hex: string) => page.locator('.unused-chip', { hasText: hex })
 
 test.describe('drag and drop', () => {
   test('dragging a seat onto the bench parks it, and the seat is re-cast', async ({ page }) => {
     await boot(page)
     const before = await sourceOf(page, 'accent')
 
-    await seat(page, 'accent').dragTo(page.locator('.bench-bar'))
+    await drag(seat(page, 'accent'), page.locator('.unused'))
 
     // the color left the seat
     expect(await sourceOf(page, 'accent')).not.toBe(before)
-    // ...and is now findable on the bench, which names your colours as you gave them
-    await openBench(page)
-    await expect(page.locator('.benched', { hasText: before })).toBeVisible()
+    // ...and is now findable in "unused", which names your colours as you gave them
+    await expect(unusedChip(page, before)).toBeVisible()
   })
 
   test('dragging a benched color onto a seat fills that seat with it', async ({ page }) => {
     await boot(page)
     // park danger's neighbour first so the bench has something in it
     const parked = await sourceOf(page, 'neutral')
-    await seat(page, 'neutral').dragTo(page.locator('.bench-bar'))
-    await openBench(page)
-    const chip = page.locator('.benched', { hasText: parked })
+    await drag(seat(page, 'neutral'), page.locator('.unused'))
+    const chip = unusedChip(page, parked)
     await expect(chip).toBeVisible()
 
-    await chip.dragTo(seat(page, 'success'))
+    await drag(chip, seat(page, 'success'))
 
     expect(await sourceOf(page, 'success')).toBe(parked)
-    await expect(tagOf(page, 'success')).toHaveText('yours')
+    await expect(seat(page, 'success')).toHaveClass(/\brb-yours\b/)
     // ...and placing it says nothing about riff: a pin is not a lock
     await expect(lockOf(page, 'success')).toHaveAttribute('data-locked', 'false')
   })
@@ -87,8 +94,7 @@ test.describe('drag and drop', () => {
     await seat(page, 'primary').dragTo(seat(page, 'accent'))
 
     expect(await sourceOf(page, 'accent')).toBe(moving)
-    await openBench(page)
-    await expect(page.locator('.benched', { hasText: displaced })).toBeVisible()
+    await expect(unusedChip(page, displaced)).toBeVisible()
   })
 
   test('dragging a seat into the series tray adds it to the pool', async ({ page }) => {
@@ -99,7 +105,8 @@ test.describe('drag and drop', () => {
     const movingRole = (await source.getAttribute('data-role'))!
     const moving = await sourceOf(page, movingRole)
 
-    await source.dragTo(page.locator('.tray-set'))
+    // the whole tray takes the drop, folded or not
+    await drag(source, page.locator('.tray-top'))
 
     // The tray gained one of yours; `N of 5` counts only non-derived entries.
     // Don't match on `moving` here: a tray swatch shows the CHART-ADJUSTED

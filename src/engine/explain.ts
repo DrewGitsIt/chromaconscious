@@ -166,9 +166,10 @@ export const JOB_TOKENS: Record<string, string[]> = {
     'destructive-foreground',
     'destructive-subtle',
     'destructive-subtle-foreground',
+    'destructive-strong',
   ],
-  'success alerts': ['success', 'success-foreground', 'success-subtle', 'success-subtle-foreground'],
-  'warning alerts': ['warning', 'warning-foreground', 'warning-subtle', 'warning-subtle-foreground'],
+  'success alerts': ['success', 'success-foreground', 'success-subtle', 'success-subtle-foreground', 'success-strong'],
+  'warning alerts': ['warning', 'warning-foreground', 'warning-subtle', 'warning-subtle-foreground', 'warning-strong'],
 }
 
 /**

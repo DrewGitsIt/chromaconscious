@@ -115,11 +115,11 @@ for (const preset of ['Coastal starter', 'Neon arcade', 'Mono + ember']) {
 
   test(`${preset} · assign popover and compare`, async ({ page }) => {
     await boot(page, preset)
-    await page.locator('.rb-slot[data-role="danger"] .rb-body').click()
+    await page.locator('.rb-slot[data-role="danger"] :is(.rb-in, .rb-add)').click()
     await expect(page.locator('.rp-asg')).toBeVisible()
     await shot(page, `${preset}-assign-danger`)
     await page.keyboard.press('Escape')
-    await page.locator('.rb-slot[data-role="neutral"] .rb-body').click()
+    await page.locator('.rb-slot[data-role="neutral"] :is(.rb-in, .rb-add)').click()
     await expect(page.locator('.rp-asg')).toBeVisible()
     await shot(page, `${preset}-assign-neutral`)
     await page.keyboard.press('Escape')

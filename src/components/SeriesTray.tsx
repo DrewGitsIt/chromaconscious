@@ -1,53 +1,38 @@
 /**
- * The chart series tray.
+ * The chart series: five rows with the same grid as the seats —
+ * `[your colour] [what happened] [what ships]` — folded by default under one
+ * line that carries a swatch strip of what ships, so the folded state still
+ * shows the series.
  *
- * Chart is a pooled seat set — several colours at once — so it can't be a
- * single slot. It's a wide tray that takes drops anywhere on itself, and each
- * swatch says whether the engine computed it (dashed) or you did (solid).
+ * Edits make the seats' two promises: your colour derives, the shipped colour
+ * locks as typed. A row led by a role (chart-1 wearing the accent) is not a
+ * series colour of its own; it changes through that role's row, and says so in
+ * its middle cell instead of offering an edit that would unseat the accent.
  *
- * A swatch of yours also carries a lock, the only thing that stops riff moving
- * it. A derived fill has none: there is no candidate behind it to hang a lock
- * on, and unlike a role seat there is no `keep` verb here to materialise one —
- * so it is always riffable, and showing an inert padlock would only lie.
+ * A row of yours also carries a lock, the only thing that stops riff moving
+ * it. A derived row has none: there is no candidate behind it to hang a lock
+ * on, so it is always riffable, and an inert padlock would only lie. Setting
+ * its shipped colour is what makes one.
  */
 import { useCallback, useState } from 'react'
 import type { CSSProperties, DragEvent, ReactElement } from 'react'
-import { HelpCircle, Lock, LockOpen } from 'lucide-react'
+import { ChevronDown, HelpCircle, Lock, LockOpen, Plus } from 'lucide-react'
 import type { SeriesEntry } from '../board'
-import { SERIES_SEATS } from '../board'
+import { seatDelta } from '../board'
 import type { DragPayload } from '../board'
+import { DeltaCell } from './DeltaCell'
+import { chipStyle, readPayload } from './chips'
 import './SeriesTray.css'
 
 const DRAG_MIME = 'application/json'
 
-function writeDragPayload(e: DragEvent, payload: DragPayload): void {
-  e.dataTransfer.setData(DRAG_MIME, JSON.stringify(payload))
-  e.dataTransfer.effectAllowed = 'move'
-}
-
-function readDragPayload(e: DragEvent): DragPayload | null {
-  const raw = e.dataTransfer.getData(DRAG_MIME)
-  if (!raw) return null
-  try {
-    const parsed: unknown = JSON.parse(raw)
-    if (typeof parsed === 'object' && parsed !== null && 'kind' in parsed) {
-      return parsed as DragPayload
-    }
-    return null
-  } catch {
-    return null
-  }
-}
-
-/** What a swatch is, in one word — provenance only; the lock speaks for itself. */
-const ORIGIN: Record<SeriesEntry['provenance'], string> = {
-  derived: 'the engine computed this',
-  kept: 'kept as yours',
-  yours: 'yours',
-}
-
 export interface SeriesTrayProps {
   series: SeriesEntry[]
+  /** Unfolded. Folded by default; App owns it so a drop can open it. */
+  open: boolean
+  onToggle: () => void
+  onEditInput: (slot: number, anchor: HTMLElement) => void
+  onEditOutput: (slot: number, anchor: HTMLElement) => void
   onDropInSeries: (payload: DragPayload) => void
   onDragStartSeries: (slot: number) => void
   /** Flip whether riff may move this slot's colour. Only sent for slots of yours. */
@@ -57,6 +42,10 @@ export interface SeriesTrayProps {
 
 export function SeriesTray({
   series,
+  open,
+  onToggle,
+  onEditInput,
+  onEditOutput,
   onDropInSeries,
   onDragStartSeries,
   onToggleLock,
@@ -65,99 +54,167 @@ export function SeriesTray({
   const [dropOk, setDropOk] = useState(false)
   const [dragSlot, setDragSlot] = useState<number | null>(null)
 
-  const handleDragOver = useCallback((e: DragEvent): void => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    setDropOk(true)
-  }, [])
-
-  const handleDragLeave = useCallback((e: DragEvent): void => {
-    // Ignore the leave events fired while crossing between swatches.
-    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
-    setDropOk(false)
-  }, [])
-
   const handleDrop = useCallback(
-    (e: DragEvent): void => {
+    (e: DragEvent<HTMLElement>): void => {
       e.preventDefault()
       setDropOk(false)
-      const payload = readDragPayload(e)
+      const payload = readPayload(e)
       if (payload) onDropInSeries(payload)
     },
     [onDropInSeries],
   )
 
   // "N of 5" counts colours you own — a derived fill is the engine's, not yours.
-  const yours = series.filter((entry) => entry.provenance !== 'derived').length
+  const yours = series.filter((e) => e.provenance !== 'derived' && e.leadsFrom == null).length
 
   return (
     <div
-      className={dropOk ? 'tray drop-ok' : 'tray'}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
+      className={['tray', open ? 'open' : '', dropOk ? 'drop-ok' : ''].filter(Boolean).join(' ')}
+      onDragOver={(e) => {
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'move'
+        setDropOk(true)
+      }}
+      onDragLeave={(e) => {
+        // Ignore the leave events fired while crossing between rows.
+        if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+        setDropOk(false)
+      }}
       onDrop={handleDrop}
     >
       <div className="tray-top">
         <button
           type="button"
-          className="tray-name"
+          className="tray-toggle"
+          aria-expanded={open}
+          onClick={onToggle}
+          title={open ? 'fold the chart series' : 'show the chart series, one row per color'}
+        >
+          <span className="tray-name">chart</span>
+          <span className="tray-cap">
+            {yours} of {series.length} yours
+          </span>
+          {/* What ships, even folded: the strip is the series in miniature. */}
+          <span className="tray-sum" aria-hidden="true">
+            {series.map((e) => (
+              <i key={e.slot} style={{ background: e.hex }} />
+            ))}
+          </span>
+          <ChevronDown className="tray-chev" size={12} strokeWidth={1.75} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          className="tray-help"
+          title="what is the chart series?"
+          aria-label="what is the chart series?"
           onClick={(e) => onExplain(e.currentTarget)}
         >
-          chart series
-          <HelpCircle size={9} strokeWidth={1.75} aria-hidden="true" />
+          <HelpCircle size={11} strokeWidth={1.75} aria-hidden="true" />
         </button>
-        <span className="tray-cap">
-          {yours} of {SERIES_SEATS}
-        </span>
       </div>
 
-      <div className="tray-set">
-        {series.map((entry) => (
-          <span
-            key={entry.slot}
-            className={[
-              'series',
-              entry.provenance,
-              entry.locked ? 'is-locked' : '',
-              dragSlot === entry.slot ? 'dragging' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            style={{ '--c': entry.hex } as CSSProperties}
-            draggable
-            title={`${entry.hex} — ${ORIGIN[entry.provenance]}`}
-            onDragStart={(e) => {
-              writeDragPayload(e, { kind: 'series', slot: entry.slot })
-              setDragSlot(entry.slot)
-              onDragStartSeries(entry.slot)
-            }}
-            onDragEnd={() => setDragSlot(null)}
-          >
-            {entry.candidateIndex == null ? null : (
-              <button
-                type="button"
-                className="series-lock"
-                data-locked={entry.locked ? 'true' : 'false'}
-                // the swatch is the drag source; the badge must press, not drag
-                draggable={false}
-                title={
-                  entry.locked
-                    ? 'locked — riff will not move this'
-                    : 'unlocked — riff may move this'
-                }
-                aria-pressed={entry.locked}
-                aria-label={`${entry.locked ? 'unlock' : 'lock'} chart ${entry.slot}`}
-                onClick={() => onToggleLock(entry.slot)}
+      <div className="tray-reveal">
+        <div className="tray-set" inert={!open}>
+          {series.map((entry) => {
+            const own = entry.candidateIndex != null && entry.leadsFrom == null
+            const delta = entry.inputHex && own ? seatDelta(entry.inputHex, entry.hex) : null
+            const name = `chart ${entry.slot}`
+            return (
+              <div
+                key={entry.slot}
+                className={[
+                  'series',
+                  entry.leadsFrom ? 'led' : entry.provenance,
+                  entry.locked ? 'is-locked' : '',
+                  delta?.same ? 'is-same' : '',
+                  dragSlot === entry.slot ? 'dragging' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                data-slot={entry.slot}
+                style={{ '--c': entry.hex } as CSSProperties}
+                draggable={own}
+                onDragStart={(e) => {
+                  if (!own) return
+                  e.dataTransfer.setData(DRAG_MIME, JSON.stringify({ kind: 'series', slot: entry.slot }))
+                  e.dataTransfer.effectAllowed = 'move'
+                  setDragSlot(entry.slot)
+                  onDragStartSeries(entry.slot)
+                }}
+                onDragEnd={() => setDragSlot(null)}
               >
-                {entry.locked ? (
-                  <Lock size={9} strokeWidth={1.75} aria-hidden="true" />
+                {entry.leadsFrom ? (
+                  <span className="series-led">{entry.leadsFrom} leads</span>
+                ) : own && entry.inputHex ? (
+                  <button
+                    type="button"
+                    className="rb-chip series-in"
+                    style={chipStyle(entry.inputHex)}
+                    draggable={false}
+                    title={`your ${name}: ${entry.inputHex}. Change it and the engine derives from it.`}
+                    aria-label={`your ${name} is ${entry.inputHex} — change it`}
+                    onClick={(e) => onEditInput(entry.slot, e.currentTarget)}
+                  >
+                    <span className="rb-chip-hex">{entry.inputHex}</span>
+                  </button>
                 ) : (
-                  <LockOpen size={9} strokeWidth={1.75} aria-hidden="true" />
+                  <button
+                    type="button"
+                    className="rb-add series-add"
+                    draggable={false}
+                    title="add a chart color of yours"
+                    aria-label={`add a color of yours for ${name}`}
+                    onClick={(e) => onEditInput(entry.slot, e.currentTarget)}
+                  >
+                    <Plus size={11} strokeWidth={1.75} aria-hidden="true" />
+                    add
+                  </button>
                 )}
-              </button>
-            )}
-          </span>
-        ))}
+                <DeltaCell
+                  delta={delta}
+                  name={name}
+                  derivedLabel={entry.leadsFrom ? `from ${entry.leadsFrom}` : undefined}
+                />
+                <button
+                  type="button"
+                  className={`rb-chip series-out${own ? '' : ' is-derived'}`}
+                  style={chipStyle(entry.hex)}
+                  draggable={false}
+                  disabled={entry.leadsFrom != null}
+                  title={
+                    entry.leadsFrom
+                      ? `${entry.hex} — chart 1 wears ${entry.leadsFrom}; change it in the ${entry.leadsFrom} row`
+                      : `${entry.hex} — ${own ? 'yours' : 'derived'}. Set the color ${name} ships; it locks as typed.`
+                  }
+                  aria-label={`${name} ships as ${entry.hex}${entry.leadsFrom ? `, led by ${entry.leadsFrom}` : ' — set it'}`}
+                  onClick={(e) => onEditOutput(entry.slot, e.currentTarget)}
+                >
+                  <span className="rb-chip-hex">{entry.hex}</span>
+                </button>
+                {own ? (
+                  <button
+                    type="button"
+                    className="series-lock"
+                    data-locked={entry.locked ? 'true' : 'false'}
+                    draggable={false}
+                    title={entry.locked ? 'locked — riff will not move this' : 'unlocked — riff may move this'}
+                    aria-pressed={entry.locked}
+                    aria-label={`${entry.locked ? 'unlock' : 'lock'} chart ${entry.slot}`}
+                    onClick={() => onToggleLock(entry.slot)}
+                  >
+                    {entry.locked ? (
+                      <Lock size={10} strokeWidth={1.75} aria-hidden="true" />
+                    ) : (
+                      <LockOpen size={10} strokeWidth={1.75} aria-hidden="true" />
+                    )}
+                  </button>
+                ) : (
+                  <span />
+                )}
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
