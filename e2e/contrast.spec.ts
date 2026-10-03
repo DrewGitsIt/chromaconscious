@@ -42,7 +42,18 @@ test('the contrast slider raises measured contrast on real token pairs, in both 
 
   const slider = page.getByRole('slider', { name: 'contrast' })
   await expect(slider).toHaveValue('0')
-  await expect(page.locator('.ctr-value')).toHaveText('Lc 62 · 4.5:1')
+  await expect(page.locator('.ctr-ratio')).toHaveText('4.5:1')
+  await expect(page.locator('.ctr-lc')).toHaveText('Lc 62')
+
+  // The Lc explanation reaches the keyboard, not just a hovering pointer.
+  const tip = page.getByRole('tooltip')
+  await expect(tip).toBeHidden()
+  await slider.focus()
+  await page.keyboard.press('Shift+Tab') // back from the slider lands on the Lc
+  await expect(page.locator('.ctr-lc')).toBeFocused()
+  await expect(tip).toBeVisible()
+  await expect(page.locator('.ctr-lc')).toHaveAccessibleDescription(/^APCA lightness contrast: the engine aims for this/)
+  await page.locator('.ctr-lc').blur()
 
   for (const mode of ['dark', 'light'] as const) {
     if (mode === 'light') {
@@ -52,7 +63,9 @@ test('the contrast slider raises measured contrast on real token pairs, in both 
     const before = await Promise.all(PAIRS.map(([fg, bg]) => pair(page, fg, bg)))
 
     await slider.fill('1')
-    await expect(page.locator('.ctr-value')).toHaveText('Lc 88 · 10:1')
+    await expect(page.locator('.ctr-ratio')).toHaveText('10:1')
+    await expect(page.locator('.ctr-lc')).toHaveText('Lc 88')
+    await expect(page.locator('.ctr-caption')).toContainText('every text pair clears 10:1 · Lc 88')
     await expect(slider).toHaveAttribute('aria-valuetext', /^high/)
     // The status chip is the sidebar's verdict on the same report.
     await expect(page.locator('.status-chip')).toContainText('all 48 checks pass')
