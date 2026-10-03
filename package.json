@@ -9,7 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "e2e": "playwright test",
-    "build:cf": "tsc -b && vite build --base=/chromaconscious/ --outDir dist-cf/chromaconscious --emptyOutDir",
+    "build:cf": "node -e \"require('fs').rmSync('dist-cf',{recursive:true,force:true})\" && tsc -b && vite build --base=/chromaconscious/ --outDir dist-cf/chromaconscious --emptyOutDir",
     "dev:cf": "npm run build:cf && wrangler dev",
     "deploy": "npm run build:cf && wrangler deploy"
   },

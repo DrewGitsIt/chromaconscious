@@ -1,5 +1,7 @@
 # ChromaConscious remote API — spec (draft 3)
 
+> Renamed from themesmith to ChromaConscious on 2026-10-03. The legacy names keep working: the `/api/themesmith/v1` base, `/themesmith*` app paths (301), the `THEMESMITH_API_KEYS` secret (fallback) and the `$extensions.themesmith` key. See src/api/handler.ts.
+
 Status: 2026-09-26. Phase 1 and the core of phase 2 are built on the `phase1/core` branch (worktree `../themesmith-phase1`); not merged, not deployed. See [Phases](#phases).
 
 ## Decisions so far

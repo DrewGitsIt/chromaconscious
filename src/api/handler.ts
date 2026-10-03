@@ -28,9 +28,24 @@ export interface Env {
    * needs none. Unset means nobody may create — the API fails closed.
    */
   CHROMACONSCIOUS_API_KEYS?: string
+  /** The legacy secret name from before the rename, read only when the new one is unset. */
+  THEMESMITH_API_KEYS?: string // legacy
 }
 
-const BASE = '/api/chromaconscious/v1'
+/** The API's base path. The legacy themesmith path stays an alias, so existing clients keep working. */
+const BASES = ['/api/chromaconscious/v1', '/api/themesmith/v1' /* legacy */]
+
+/**
+ * The app moved to /chromaconscious. Old share links under the legacy /themesmith path
+ * (legacy form: /themesmith#t_…) get a 301. The browser never sends the
+ * #fragment, and it carries it over to a Location that has none, so the theme
+ * id survives the hop. Other paths that merely start with the old name are not ours.
+ */
+export function legacyAppRedirect(url: URL): string | null {
+  const m = /^\/themesmith(\/.*)?$/.exec(url.pathname) // legacy
+  if (!m) return null
+  return `${url.origin}/chromaconscious${m[1] ?? '/'}${url.search}`
+}
 
 class HttpError extends Error {
   readonly status: number
@@ -99,7 +114,8 @@ function sameKey(a: string, b: string): boolean {
 
 /** Creating a theme writes to KV, so it needs a key; reading one does not. */
 function requireKey(req: Request, env: Env) {
-  const keys = (env.CHROMACONSCIOUS_API_KEYS ?? '').split(',').map((k) => k.trim()).filter(Boolean)
+  const keys = (env.CHROMACONSCIOUS_API_KEYS ?? env.THEMESMITH_API_KEYS ?? '') // legacy secret name as fallback
+    .split(',').map((k) => k.trim()).filter(Boolean)
   const given = /^Bearer\s+(.+)$/i.exec(req.headers.get('authorization') ?? '')?.[1]?.trim()
   if (!given) throw new HttpError(401, 'creating themes needs a key — send the header "Authorization: Bearer <key>"')
   if (!keys.some((k) => sameKey(k, given))) throw new HttpError(403, 'that key is not valid for this API')
@@ -107,8 +123,9 @@ function requireKey(req: Request, env: Env) {
 
 async function route(req: Request, env: Env): Promise<Response> {
   const url = new URL(req.url)
-  if (!url.pathname.startsWith(BASE)) throw new HttpError(404, 'not found')
-  const path = url.pathname.slice(BASE.length) || '/'
+  const base = BASES.find((b) => url.pathname === b || url.pathname.startsWith(b + '/'))
+  if (!base) throw new HttpError(404, 'not found')
+  const path = url.pathname.slice(base.length) || '/'
   const q = url.searchParams
 
   switch (path) {
@@ -159,10 +176,12 @@ async function route(req: Request, env: Env): Promise<Response> {
       }
       if (format === 'json') {
         const doc = JSON.parse(themeTokensJson(result)) as Record<string, unknown>
+        const ext = { id: t.id, url: `${url.origin}/chromaconscious#${t.id}` }
         const mode = q.get('mode') ?? 'both'
         if (mode !== 'both' && mode !== 'light' && mode !== 'dark') throw new QueryError('mode is light, dark or both')
         const body = {
-          $extensions: { chromaconscious: { id: t.id, url: `${url.origin}/chromaconscious#${t.id}` } },
+          // Both keys, so readers written against the legacy name still find the id.
+          $extensions: { chromaconscious: ext, themesmith: ext /* legacy */ },
           ...(mode === 'both' ? doc : { ...(doc.$meta ? { $meta: doc.$meta } : {}), [mode]: doc[mode] }),
         }
         return text(JSON.stringify(body, null, 2), 200, 'application/json')
@@ -199,6 +218,8 @@ export function warmUp(rounds = 6) {
 
 export async function handle(req: Request, env: Env): Promise<Response> {
   if (req.method === 'OPTIONS') return text('', 204)
+  const moved = legacyAppRedirect(new URL(req.url))
+  if (moved) return Response.redirect(moved, 301)
   if (req.method !== 'GET') return text('GET only for now\n', 405)
   try {
     return await route(req, env)

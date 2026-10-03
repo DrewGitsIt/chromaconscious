@@ -7,7 +7,7 @@ description: Generate, riff, lock and export UI color themes (light + dark, cont
 
 ChromaConscious turns a few colors into a complete UI theme: six role seats (primary, accent, neutral, danger, success, warning), five chart colors, and ~44 tokens per mode, all checked for contrast in light and dark.
 
-Base URL: `https://drewkidwell.com/api/chromaconscious/v1`
+Base URL: `https://drewkidwell.com/api/chromaconscious/v1` (the legacy `/api/themesmith/v1` base still works too)
 
 ## The loop
 
@@ -24,8 +24,8 @@ Every call returns a **new** id; nothing changes in place. To go back, use an ol
 ## Rules that matter
 
 - **Use `curl -s`, not a summarizing web fetch.** Exports must arrive byte-exact.
-- **Continue existing work.** If the project already has a ChromaConscious export, its first line reads `/* ChromaConscious t_… */`. Continue from that id with `/generate?from=t_…` instead of starting over.
-- **Creating needs a key; reading doesn't.** `/generate`, `/riff` and `/back` need `Authorization: Bearer $CHROMACONSCIOUS_API_KEY`. `/theme`, `/export`, `/state` and `/presets` are open.
+- **Continue existing work.** If the project already has a ChromaConscious export, its first line reads `/* ChromaConscious t_… */` (older files have the legacy `/* themesmith t_… */` header; read either). Continue from that id with `/generate?from=t_…` instead of starting over.
+- **Creating needs a key; reading doesn't.** `/generate`, `/riff` and `/back` need `Authorization: Bearer $CHROMACONSCIOUS_API_KEY`. A key kept in the legacy `$THEMESMITH_API_KEY` variable still works; only the variable name changed. `/theme`, `/export`, `/state` and `/presets` are open.
 - **`taste`** runs from 0 to 1 (default 0.5). Below 1, a color outside its role's range (too dark, too muted…) is pulled toward it, and colors too close to a neighbor are pushed apart. At 1 your colors stay as typed; if two end up too close, the `spacing` line says so instead of fixing it.
 - **What `taste=1` doesn't stop:** riff moves unlocked colors (lock what must hold), and chart colors keep a lightness floor and ceiling so a series stays visible.
 - **Exact brand colors everywhere?** `taste=1` plus `lock=` keeps the *seat* exact. The exported variables are derived from the seats and solved for contrast in each mode, so `--primary`, `--accent-strong` and the rest can differ from the seat's hex in light mode as well as dark. Tell the user this if they asked for exact colors everywhere.
