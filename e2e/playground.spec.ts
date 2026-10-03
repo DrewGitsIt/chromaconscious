@@ -362,40 +362,28 @@ test.describe('report', () => {
 
 test.describe('export', () => {
   /**
-   * The "… copied" confirmation clears itself after 1600ms, so asserting it is
-   * a race against a wall clock: under a loaded suite the window can close
-   * before the first poll, and this test failed roughly two runs in five.
-   * Faking the clock makes the transient hold until the test advances time,
-   * which tests the same thing without depending on how busy the machine is.
+   * The footer's split button became one Export button and a dialog (see
+   * export.spec.ts for keyboard, focus and backdrop). This keeps the old
+   * test's promise: every code format reaches the clipboard, in its shape.
    */
-  test('the split button copies, and the format menu copies + is remembered', async ({
-    page,
-    context,
-  }) => {
+  test('Export copies each code format from the dialog', async ({ page, context }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write'])
-    await page.clock.install()
     await bootCoastal(page)
+    await page.locator('.sidebar-shell').getByRole('button', { name: 'Export' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Export' })
+    await expect(dialog.locator('.xd-id')).toHaveText(/^t_/)
+    const copyAs = async (name: RegExp) => {
+      await dialog.getByRole('tab', { name }).click()
+      await dialog.getByRole('button', { name: 'Copy', exact: true }).click()
+      await expect(dialog.getByRole('status')).toHaveText('copied')
+      return page.evaluate(() => navigator.clipboard.readText())
+    }
 
-    await page.getByRole('button', { name: /Copy CSS variables/ }).click()
-    await expect(page.getByText(/CSS variables copied/)).toBeVisible()
-    const clip = await page.evaluate(() => navigator.clipboard.readText())
+    const clip = await copyAs(/CSS variables/)
     expect(clip).toContain(':root')
     expect(clip).toContain('.dark')
-    await page.clock.runFor(2000) // let the confirmation clear on cue
-
-    await page.getByRole('button', { name: 'choose export format' }).click()
-    await page.getByRole('menuitem', { name: 'Tailwind v4 CSS' }).click()
-    await expect(page.getByText(/Tailwind v4 CSS copied/)).toBeVisible()
-    const tw = await page.evaluate(() => navigator.clipboard.readText())
-    expect(tw).toContain('@theme inline')
-    // the main button remembers the last-used format
-    await page.clock.runFor(2000)
-    await expect(page.getByRole('button', { name: /Copy Tailwind v4 CSS/ })).toBeVisible()
-
-    await page.getByRole('button', { name: 'choose export format' }).click()
-    await page.getByRole('menuitem', { name: 'Design tokens JSON' }).click()
-    await expect(page.getByText(/Design tokens JSON copied/)).toBeVisible()
-    const json = await page.evaluate(() => navigator.clipboard.readText())
+    expect(await copyAs(/Tailwind v4/)).toContain('@theme inline')
+    const json = await copyAs(/Design tokens/)
     expect(JSON.parse(json).light.primary.$type).toBe('color')
   })
 })
