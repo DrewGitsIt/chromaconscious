@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8" />
-<title>themesmith — tool vs. bench, and the config panel</title>
+<title>ChromaConscious — tool vs. bench, and the config panel</title>
 <style>
   /* ============================================================
      Two questions on one sheet:
@@ -400,7 +400,7 @@
 <body>
 
 <div class="sheet-head">
-  <h1>themesmith — tool vs. bench</h1>
+  <h1>ChromaConscious — tool vs. bench</h1>
   <span class="sub">the same session, drawn three ways · the dashboard inside the frame is unchanged on purpose</span>
   <div class="ctl"><span class="ctl-key">view</span>
     <div class="seg" data-ctl="view">
@@ -531,7 +531,7 @@ function current(){
   const frames = state.frames===2 ? mock(state.pal)+mock(PAL_ORDER[(PAL_ORDER.indexOf(state.pal)+2)%4]) : mock(state.pal);
   return `<div class="app">
     <aside class="cur">
-      <div class="cur-head"><h2>themesmith</h2><p>any colors in, working theme out</p></div>
+      <div class="cur-head"><h2>ChromaConscious</h2><p>any colors in, working theme out</p></div>
       <div class="cur-body">
         <div class="cur-sec"><b>canvas</b><i></i><span>◫ split frame</span></div>
         <div class="cur-select"><em>A</em>App dashboard<span style="margin-left:auto;color:var(--ink-faint)">▾ ☼</span></div>
@@ -583,7 +583,7 @@ function tool(){
   const t = state.taste;
   const cap = CAPTIONS.find(([v])=>t<v)[1];
   return `<aside class="tool">
-    <div class="t-head"><span class="t-word">themesmith</span><span class="t-ver">v2.4.1</span></div>
+    <div class="t-head"><span class="t-word">ChromaConscious</span><span class="t-ver">v2.4.1</span></div>
     <div class="t-body">
       <section class="t-sec">
         <div class="t-sec-head"><span class="t-label">colors <b>· 6</b></span><span class="rule"></span>

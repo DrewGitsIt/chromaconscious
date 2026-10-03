@@ -14,7 +14,7 @@ Status: 2026-10-01. Not started.
 
 ## Goal
 
-themesmith exists because picking a palette is hard when you're colorblind. This feature works the other way round. It shows a person with typical color vision what their theme looks like to someone with each of the three core types of colorblindness, while they're picking it, so a collision shows up as two identical swatches on screen and not as a number in a report.
+ChromaConscious exists because picking a palette is hard when you're colorblind. This feature works the other way round. It shows a person with typical color vision what their theme looks like to someone with each of the three core types of colorblindness, while they're picking it, so a collision shows up as two identical swatches on screen and not as a number in a report.
 
 The three types (common published estimates):
 
@@ -36,7 +36,7 @@ Red-green (protan + deutan) covers ~8% of men and ~0.5% of women. Most of those 
 
 **Unity has no built-in mode.** The common approaches are a post-processing pass or a full-screen render feature that multiplies each pixel in linear RGB by a 3×3 matrix (Machado 2009, with a severity value s from 0 to 1). Some packages use a Channel Mixer preset instead; those presets are the old Coblis "ColorMatrix" numbers and are inaccurate (see below).
 
-**The pipeline you described is RGB → LMS → deficiency → daltonization.** Simulation is the first half of it: linear RGB → LMS → project out what the missing cone would have told you → back to RGB. Daltonization adds a second half: take the error between the original and the simulation, then push it into channels the viewer can still see. For showing sighted people what colorblind people see, **we stop after the deficiency step**. Daltonization isn't the reverse of simulation; it's a correction applied on top of it, and themesmith doesn't need it: the filter is view-only.
+**The pipeline you described is RGB → LMS → deficiency → daltonization.** Simulation is the first half of it: linear RGB → LMS → project out what the missing cone would have told you → back to RGB. Daltonization adds a second half: take the error between the original and the simulation, then push it into channels the viewer can still see. For showing sighted people what colorblind people see, **we stop after the deficiency step**. Daltonization isn't the reverse of simulation; it's a correction applied on top of it, and ChromaConscious doesn't need it: the filter is view-only.
 
 ## Algorithms
 
@@ -64,7 +64,7 @@ Vision becomes a per-frame view setting, like light/dark:
 - **Labeling:** when vision isn't typical, the label row shows it as text, e.g. `deutan · full` or `protan · 60%`. That way a screenshot or a glance can never pass a simulation off as the real palette. The label row is outside `.frame`, so it stays unfiltered, which the existing design already guarantees.
 - **Compare is the main flow.** Frame A stays typical and frame B shows deutan, both on the same theme, side by side. That needs nothing new beyond the per-frame setting. "Copy A → B" copies vision the way it already copies mode.
 - **Keyboard:** `v` cycles the active frame through typical → protan → deutan → tritan. Add it to `SHORTCUTS` so the tooltip and flyout pick it up.
-- **Links:** opening `/themesmith#t_…&vision=deutan` (optionally `&strength=60`, a percent; default 100) opens the theme in **compare**: frame A typical, frame B with that vision. Side by side, so the link shows the simulation next to the real palette instead of quietly replacing it. The app reads the hash as it does today (`isThemeId` on the part before the first `&`). Nothing about it touches the theme id or the API; an agent can append it to the summary's `open` link by hand, and docs.md says so.
+- **Links:** opening `/chromaconscious#t_…&vision=deutan` (optionally `&strength=60`, a percent; default 100) opens the theme in **compare**: frame A typical, frame B with that vision. Side by side, so the link shows the simulation next to the real palette instead of quietly replacing it. The app reads the hash as it does today (`isThemeId` on the part before the first `&`). Nothing about it touches the theme id or the API; an agent can append it to the summary's `open` link by hand, and docs.md says so.
 - **Embed (drewkidwell.com):** included as well. It's one control and costs nothing.
 - **Not filtered:** the sidebar, the board swatches and the stage chrome. They're the tool, not the user's UI, and filtering them would make the controls themselves hard to read. (A "filter the board too" option could come later if people want to compare raw swatches.)
 

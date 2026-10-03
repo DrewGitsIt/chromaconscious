@@ -358,7 +358,7 @@ export default function App() {
     }
   }
 
-  // ---- open a theme by id: /themesmith#t_… --------------------------------
+  // ---- open a theme by id: /chromaconscious#t_… --------------------------------
   // Every API summary links here, so an agent can hand a person the exact
   // theme it made. The state comes from the same API; this app runs the
   // engine itself, so what opens is rebuilt locally from that state.
@@ -367,7 +367,7 @@ export default function App() {
     if (!link) return
     const { id, vision } = link
     let live = true
-    fetch(`/api/themesmith/v1/state?theme=${id}`)
+    fetch(`/api/chromaconscious/v1/state?theme=${id}`)
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`theme ${id} not found`))))
       .then((text) => {
         if (!live) return
@@ -679,7 +679,7 @@ export default function App() {
       }}
     >
       <SidebarShell
-        title="themesmith"
+        title="ChromaConscious"
         tagline="any colors in, working theme out"
         footer={
           emptyFrame && !split ? null : (

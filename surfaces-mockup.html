@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8" />
-<title>themesmith — what separation & tint do to the frame</title>
+<title>ChromaConscious — what separation & tint do to the frame</title>
 <style>
   /* ============================================================
      The board's 74px surface preview was a toy. This is the real
@@ -220,7 +220,7 @@
 <body>
 
 <div class="sheet-head">
-  <h1>themesmith — separation &amp; tint, on a real frame</h1>
+  <h1>ChromaConscious — separation &amp; tint, on a real frame</h1>
   <span class="sub">the App-dashboard mockup, painted entirely from derived surface tokens</span>
   <span class="ctl"><span class="ctl-key">separation</span>
     <span class="seg" id="segSep"></span></span>
@@ -267,7 +267,7 @@
     </table>
 
     <h3>the thing the code told us</h3>
-    <p>themesmith's current rule is <b>one step inward from the page extreme</b>.
+    <p>ChromaConscious's current rule is <b>one step inward from the page extreme</b>.
       Measured on a real palette:</p>
     <div class="rule-box">
       light — page <code>#f6fff3</code>, card <code>#f2fbef</code> · card is <b>darker</b><br>
@@ -295,7 +295,7 @@
       <tr><td>now</td><td>top step pinned at 98.5, light stack held inside ~93–98.5</td></tr>
     </table>
     <p>Root cause: the plans were hardcoded absolutes instead of being anchored
-      to the range the engine emits. <b>themesmith never emits pure white</b> —
+      to the range the engine emits. <b>ChromaConscious never emits pure white</b> —
       and it shouldn't, because a tinted neutral needs headroom to carry chroma.</p>
 
     <h3>the honest problem with lifted</h3>
@@ -322,7 +322,7 @@
       sidebar and the secondary button, but the large card fields are where it
       turns muddy first. The cap matters more than the curve.</p>
     <p><span class="try">try</span>Compare <b>none</b> and <b>subtle</b> at
-      layered. It's a small move, and it's roughly where themesmith already sits
+      layered. It's a small move, and it's roughly where ChromaConscious already sits
       — the neutral's own hue leaks in through the ramp whether or not we expose
       a control. So <b>none</b> is a genuinely new capability: it's the only way
       to get true greys out of a tinted neutral.</p>
@@ -347,7 +347,7 @@
       <li>Every shadow here is <b>tinted by the neutral's hue</b> — light mode
         uses <code>rgba(33,58,59,…)</code>, not black, because a pure-black
         shadow over a warm or cool theme reads dirty. That tint comes free from
-        the ramp themesmith already builds; it needs no new user input.</li>
+        the ramp ChromaConscious already builds; it needs no new user input.</li>
       <li>The alphas are <b>mode-derived</b>, and they have to be. Dark has almost
         no absolute luminance room — page L .006 to card L .013 — so dark shadows
         run 5–8× the light alphas just to register.</li>
@@ -445,7 +445,7 @@ const satFor = (l, spread) => {
      · the top step is 98.5, never 100. At pure white there is no gamut room for
        chroma, so a flat/100 plan silently kills the tint lever.
      · the light stack stays inside ~93–98.5 so light mode reads near-WHITE,
-       which is themesmith's identity. `lifted` dips the page only ~2 points and
+       which is ChromaConscious's identity. `lifted` dips the page only ~2 points and
        leans on shadow for the rest — see the note on elevation. */
 const TOP = 98.5;
 const PLAN = {

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// REPL driver for themesmith: reads commands from stdin, one per line.
+// REPL driver for ChromaConscious: reads commands from stdin, one per line.
 // Playwright + the system `chrome` channel (no chromium-cli in this container).
-// Usage: node .claude/skills/run-themesmith/driver.mjs <<'EOF'
+// Usage: node .claude/skills/run-chromaconscious/driver.mjs <<'EOF'
 //   nav /
 //   wait-for text=Start with anything
 //   screenshot /tmp/out.png
@@ -10,7 +10,7 @@
 import { chromium } from '@playwright/test'
 import readline from 'node:readline'
 
-const BASE_URL = process.env.THEMESMITH_URL || 'http://localhost:5199'
+const BASE_URL = process.env.CHROMACONSCIOUS_URL || 'http://localhost:5199'
 const consoleErrors = []
 
 const browser = await chromium.launch({ channel: 'chrome', headless: true })
@@ -106,7 +106,7 @@ const run = async (line) => {
         break
       }
       case 'screenshot': {
-        const path = rest[0] || `/tmp/themesmith-${Date.now()}.png`
+        const path = rest[0] || `/tmp/chromaconscious-${Date.now()}.png`
         await page.screenshot({ path, fullPage: rest[1] === 'full' })
         console.log('OK screenshot', path)
         break

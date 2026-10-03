@@ -1,11 +1,11 @@
 ---
-name: run-themesmith
-description: Build, run, and drive themesmith (a React/Vite color-theme generator). Use when asked to start themesmith, run its dev server, take a screenshot of its UI, or click through the theme-forging flow (presets, riff, pin colors).
+name: run-chromaconscious
+description: Build, run, and drive ChromaConscious (a React/Vite color-theme generator). Use when asked to start ChromaConscious, run its dev server, take a screenshot of its UI, or click through the theme-forging flow (presets, riff, pin colors).
 ---
 
-themesmith is a Vite + React 19 SPA (no backend) that forges a UI color theme from a seed color, image, or preset. Drive it via the REPL driver at `.claude/skills/run-themesmith/driver.mjs` — a small Playwright wrapper (the system `google-chrome`, no `chromium-cli` in this container) that reads one command per line from stdin.
+ChromaConscious is a Vite + React 19 SPA (no backend) that forges a UI color theme from a seed color, image, or preset. Drive it via the REPL driver at `.claude/skills/run-chromaconscious/driver.mjs` — a small Playwright wrapper (the system `google-chrome`, no `chromium-cli` in this container) that reads one command per line from stdin.
 
-All paths below are relative to the repo root (`themesmith/`).
+All paths below are relative to the repo root (`chromaconscious/`).
 
 ## Prerequisites
 
@@ -27,7 +27,7 @@ npm install
 
 ```bash
 lsof -ti:5199 -sTCP:LISTEN | xargs -r kill 2>/dev/null   # free the port if a stale server is running
-nohup npm run dev -- --port 5199 > /tmp/themesmith-dev.log 2>&1 &
+nohup npm run dev -- --port 5199 > /tmp/chromaconscious-dev.log 2>&1 &
 disown
 timeout 30 bash -c 'until curl -sf http://localhost:5199 >/dev/null; do sleep 1; done'
 ```
@@ -35,7 +35,7 @@ timeout 30 bash -c 'until curl -sf http://localhost:5199 >/dev/null; do sleep 1;
 2. Pipe commands to the driver, one per line:
 
 ```bash
-node .claude/skills/run-themesmith/driver.mjs <<'EOF'
+node .claude/skills/run-chromaconscious/driver.mjs <<'EOF'
 nav /
 wait-for text=Start with anything
 screenshot /tmp/shots/01-hero.png
@@ -61,7 +61,7 @@ Screenshots land wherever you point `screenshot` (make the directory first — t
 
 | command | what it does |
 |---|---|
-| `nav <path-or-url>` | Goes to `path` under `http://localhost:5199` (or `$THEMESMITH_URL`), or an absolute URL. `nav /` for the hero. |
+| `nav <path-or-url>` | Goes to `path` under `http://localhost:5199` (or `$CHROMACONSCIOUS_URL`), or an absolute URL. `nav /` for the hero. |
 | `wait-for <selector>` | Waits (10s timeout) for the first match. |
 | `click <selector>` | Clicks the first match. |
 | `fill <selector> <value...>` | Fills the first match. |
@@ -136,7 +136,7 @@ npm run e2e      # Playwright e2e — spins up its own dev server on :5199
 
 ## Gotchas
 
-- **The driver must resolve `@playwright/test` from the repo's `node_modules`.** Node's ESM resolver walks up from the *script's own* directory, not `cwd` — since `driver.mjs` lives under `themesmith/.claude/skills/run-themesmith/`, it finds `themesmith/node_modules` automatically. Don't copy the driver out to `/tmp` and run it there; it'll throw `ERR_MODULE_NOT_FOUND`.
+- **The driver must resolve `@playwright/test` from the repo's `node_modules`.** Node's ESM resolver walks up from the *script's own* directory, not `cwd` — since `driver.mjs` lives under `chromaconscious/.claude/skills/run-chromaconscious/`, it finds `chromaconscious/node_modules` automatically. Don't copy the driver out to `/tmp` and run it there; it'll throw `ERR_MODULE_NOT_FOUND`.
 - **A single preset click is enough to prove the app works.** Clicking a preset (e.g. `role=button:Coastal starter`) replaces the entire hero with a live dashboard mockup styled from the generated theme, a six-seat role board with a chart tray and a bench under it, and a contrast report ("all 40 checks pass"). If that mockup doesn't render, something's actually broken — it's not a slow-load flake.
 - **Every glyph is a lucide icon now, so the section tools have no text to match.** `⚄ riff`, `↻ start over` and friends are gone; the tools in `.sec-act` are icon-only `.mini` buttons, and the only stable handle is their `title`: `.ctl-row .ctl[title*="walk the palette"]` (riff), `.ctl-row .ctl[title*="back one riff"]`, `[title="start over"]`, `[title*="lock the theme"]` / `[title*="unlock"]` (mono lock), `[title*="clear your placements"]` (reset), `[title*="compare two frames"]` / `[title*="close frame B"]`. Don't reach for `role=button:…` here — a button with no text takes its accessible name from `title`, but the riff button grows a seed count ("1", "2") the moment you use it and the name changes under you.
 - **`riff` walks the whole palette; a lock is the only thing that stops it.** The riff button only exists once a theme exists (click a preset or `Add` a color first). Every hop moves every seat — including colors you supplied — except the ones carrying `.rb-lock[data-locked="true"]`. It goes disabled with `title="nothing to riff — every seat is locked"` only when all six seats *and* every chart color of yours are locked.

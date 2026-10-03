@@ -32,7 +32,7 @@ function DialogOverlay({
       data-slot="dialog-overlay"
       /* Deliberately NOT `--scrim`, even though a modal scrim is exactly what
          that token is for. This backdrop is `fixed inset-0` — viewport scope,
-         not frame scope — so inside themesmith's preview harness a mockup's
+         not frame scope — so inside ChromaConscious's preview harness a mockup's
          dialog dims the app's own sidebar, including the colour swatches the
          user is judging the palette with. That makes the reference frame lie;
          an earlier build measured a full-viewport scrim dimming it ~27%.

@@ -129,7 +129,7 @@ export function summarize(
     pass: result[mode].report.filter((r) => r.pass).length,
     total: result[mode].report.length,
   })
-  const api = `${origin}/api/themesmith/v1`
+  const api = `${origin}/api/chromaconscious/v1`
   return {
     theme: id,
     parent,
@@ -163,7 +163,7 @@ export function summarize(
     spacing: result.repairs.map((r) => ({ pair: r.label, deltaE: +r.deltaE.toFixed(3), required: r.required })),
     judge: +result.judge.score.toFixed(2),
     links: {
-      open: `${origin}/themesmith#${id}`,
+      open: `${origin}/chromaconscious#${id}`,
       export: `${api}/export?theme=${id}&format=css`,
     },
   }

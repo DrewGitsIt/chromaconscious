@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8" />
-<title>themesmith — config panel redesign mockup</title>
+<title>ChromaConscious — config panel redesign mockup</title>
 <style>
   /* ============================================================
      Live mockup. All three panels are driven by the SAME JS, so the
@@ -660,7 +660,7 @@
 <body>
 
 <div class="sheet-head">
-  <h1>themesmith — config panel</h1>
+  <h1>ChromaConscious — config panel</h1>
   <span class="sub">all three panels run the same JS. only the design and the motion differ.</span>
   <button class="tog" id="slowmo" aria-pressed="false"><span class="dot"></span> slow-mo 4×</button>
   <button class="tog" id="nomotion" aria-pressed="false"><span class="dot"></span> reduced motion</button>
@@ -955,7 +955,7 @@ function toastHTML(s) {
 /* ---------- CURRENT: reproduces the shipped panel, glyphs and all ---------- */
 function renderCurrent(s) {
   return `
-    <h1>themesmith</h1>
+    <h1>ChromaConscious</h1>
     <p class="tagline">any colors in, working theme out</p>
     <div class="stagger">
       <section>
@@ -1018,7 +1018,7 @@ function renderCurrent(s) {
 /* ---------- A: conservative ---------- */
 function renderA(s) {
   return `
-    <h1>themesmith</h1>
+    <h1>ChromaConscious</h1>
     <p class="tagline">any colors in, working theme out</p>
     <div class="stagger">
       <section>
@@ -1090,7 +1090,7 @@ function renderB(s) {
   const spine = `linear-gradient(180deg, ${s.rows.map(r => r.hex).join(', ')})`;
   return `
     <div class="b-head">
-      <div class="b-wordmark">themesmith</div>
+      <div class="b-wordmark">ChromaConscious</div>
       <p class="b-tagline">any colors in, working theme out</p>
     </div>
     <div class="b-body" data-scroll>

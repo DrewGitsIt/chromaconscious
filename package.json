@@ -1,5 +1,5 @@
 {
-  "name": "themesmith",
+  "name": "chromaconscious",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,7 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "e2e": "playwright test",
-    "build:cf": "tsc -b && vite build --base=/themesmith/ --outDir dist-cf/themesmith --emptyOutDir",
+    "build:cf": "tsc -b && vite build --base=/chromaconscious/ --outDir dist-cf/chromaconscious --emptyOutDir",
     "dev:cf": "npm run build:cf && wrangler dev",
     "deploy": "npm run build:cf && wrangler deploy"
   },
