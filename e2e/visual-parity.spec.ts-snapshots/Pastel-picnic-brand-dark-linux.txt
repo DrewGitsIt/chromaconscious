@@ -1,7 +1,7 @@
-span.rail-thumb top: 0px; height: 495.291px;
-button.rail-tick.here top: 2.76313px;
-button.rail-tick top: 311.543px;
-button.rail-tick top: 629.303px;
+span.rail-thumb top: 0px; height: 391.346px;
+button.rail-tick.here top: 2.18324px;
+button.rail-tick top: 246.161px;
+button.rail-tick top: 643.511px;
 div.rb-slot.rb-yours --c: #e69696; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12); --well-strong: rgba(0,0,0,0.22);
 div.rb-slot.rb-yours --c: #8baee8; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12); --well-strong: rgba(0,0,0,0.22);
 div.rb-slot.rb-derived --c: #715e5e; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
@@ -19,6 +19,10 @@ input.dial-slider
 span.sep-thumb --sep-i: 1;
 div.ctr-track-wrap --v: 0%;
 input.ctr-slider 
+div.pg-track-wrap --v: 50%;
+input.pg-slider 
+span.pg-fn font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; font-weight: 400;
+input. clip-path: inset(50%); overflow: hidden; white-space: nowrap; border: 0px; padding: 0px; width: 1px; height: 1px; margin: -1px; position: fixed; top: 0px; left: 0px;
 input. 
 div.brand-board --elevation-1: 0px 1px 2px 0px rgb(1 0 0 / 0.18), 0px 2px 6px -1px rgb(1 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(1 0 0 / 0.28), 0px 8px 20px -6px rgb(1 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(1 0 0 / 0.38), 0px 24px 48px -12px rgb(1 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(1 0 0 / 0.58); --bb-paper: #1b0d0d; --bb-ink: #f4e7e6; --bb-ink-subtle: #c3b5b5; --bb-line: #392929; --bb-wash: #1e1414; --bb-brand: #de9a9a; --bb-brand-ink: #110c0b; --bb-accent: #90aee0; --bb-accent-ink: #0b0d12;
 div.bb-chip-fill background: rgb(222, 154, 154);
@@ -100,6 +104,19 @@ MEDIUM
 HIGH
 
 every text pair clears 4.5:1 · Lc 62; focus ring and marks 3:1; hairlines as separation sets them
+
+page
+preview only · rides the share link · not exported
+corners
+10px
+SHARP
+DEFAULT
+ROUND
+type
+System UI
+native interface
+
+the brand board is print: it keeps its own corners and type
 
 3
 RIFF

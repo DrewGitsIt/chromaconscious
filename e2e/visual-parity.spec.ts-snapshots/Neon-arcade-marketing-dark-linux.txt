@@ -1,7 +1,7 @@
-span.rail-thumb top: 0px; height: 495.291px;
-button.rail-tick.here top: 2.76313px;
-button.rail-tick top: 311.543px;
-button.rail-tick top: 629.303px;
+span.rail-thumb top: 0px; height: 406.631px;
+button.rail-tick.here top: 2.26851px;
+button.rail-tick top: 255.775px;
+button.rail-tick top: 641.421px;
 div.rb-slot.rb-yours --c: #f52d85; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
 div.rb-slot.rb-yours --c: #720bb8; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
 div.rb-slot.rb-derived --c: #725c62; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
@@ -19,6 +19,10 @@ input.dial-slider
 span.sep-thumb --sep-i: 1;
 div.ctr-track-wrap --v: 0%;
 input.ctr-slider 
+div.pg-track-wrap --v: 50%;
+input.pg-slider 
+span.pg-fn font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; font-weight: 400;
+input. clip-path: inset(50%); overflow: hidden; white-space: nowrap; border: 0px; padding: 0px; width: 1px; height: 1px; margin: -1px; position: fixed; top: 0px; left: 0px;
 input. 
 div.preview-root.@container.flex.min-h-[680px].flex-col.bg-background.text-sm.text-foreground.dark --background: #1c0c11; --foreground: #f4e7ea; --card: #221216; --card-foreground: #f4e7ea; --popover: #221216; --popover-foreground: #f4e7ea; --primary: #d12f70; --primary-foreground: #fdf9fa; --secondary: #2a1a1f; --secondary-foreground: #f4e7ea; --muted: #2a1a1f; --muted-foreground: #c1b5b8; --accent: #241931; --accent-foreground: #f0e6ff; --accent-strong: #b27feb; --link: #c4ade3; --destructive: #c6445c; --destructive-foreground: #fdf9f9; --destructive-subtle: #201314; --destructive-subtle-foreground: #eaa6ac; --success: #5c7d48; --success-foreground: #f9fbf7; --success-subtle: #141911; --success-subtle-foreground: #aabf9f; --warning: #e89a46; --warning-foreground: #100c09; --warning-subtle: #1e150c; --warning-subtle-foreground: #dab189; --border: #423337; --input: #56454a; --ring: #b27feb; --chart-1: #a86de8; --chart-2: #837df4; --chart-3: #6485f9; --chart-4: #5fc2e2; --chart-5: #00b5e5; --sidebar: #221216; --sidebar-foreground: #f4e7ea; --sidebar-primary: #d12f70; --sidebar-primary-foreground: #fdf9fa; --sidebar-accent: #241931; --sidebar-accent-foreground: #f0e6ff; --sidebar-border: #423337; --sidebar-ring: #b27feb; --elevation-1: 0px 1px 2px 0px rgb(1 0 0 / 0.18), 0px 2px 6px -1px rgb(1 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(1 0 0 / 0.28), 0px 8px 20px -6px rgb(1 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(1 0 0 / 0.38), 0px 24px 48px -12px rgb(1 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(1 0 0 / 0.58);
 div.flex-1.rounded-t-sm height: 52%; background: var(--chart-1);
@@ -94,6 +98,16 @@ HIGH
 
 every text pair clears 4.5:1 · Lc 62; focus ring and marks 3:1; hairlines as separation sets them
 
+page
+preview only · rides the share link · not exported
+corners
+10px
+SHARP
+DEFAULT
+ROUND
+type
+System UI
+native interface
 3
 RIFF
 as derived

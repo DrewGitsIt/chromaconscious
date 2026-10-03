@@ -5,6 +5,8 @@ import { Analytics } from './components/Analytics'
 import { BrandBoard } from './components/BrandBoard'
 import { Marketing } from './components/Marketing'
 import { Preview } from './components/Preview'
+import type { PageSettings } from './pageSettings'
+import { DEFAULT_PAGE, pageVars } from './pageSettings'
 
 export interface MockupProps {
   result: ThemeResult
@@ -18,6 +20,8 @@ export interface MockupProps {
    * candidate, but they still own tokens.
    */
   locateTarget?: TokenAncestor | null
+  /** Corners and type for the preview (pageSettings.ts). Global view state, never theme state. */
+  page?: PageSettings
 }
 
 export interface Mockup {
@@ -25,6 +29,8 @@ export interface Mockup {
   name: string
   /** Print-like spaces have no dark mode; the frame's toggle disables. */
   supportsDark: boolean
+  /** Whether the page settings (corners, type) reach this space. */
+  followsPage: boolean
   Component: (props: MockupProps) => React.ReactNode
 }
 
@@ -48,6 +54,11 @@ export interface TokenSpaceProps {
    * `shadow-[var(--elevation-2)]`. They are NOT tokens — they carry alpha and
    * multiple layers — and locate mode deliberately leaves them lit, because a
    * shadow is not one of the palette's colours.
+   *
+   * The page settings ride here too (`pageVars`): `--radius`, the faces and
+   * the heading weight. Empty at the defaults. They have to be in this same
+   * object, because it is the one thing every portalled menu and dialog is
+   * handed, and a portal never sees the frame's own styles.
    */
   effects: Record<string, string>
 }
@@ -61,7 +72,7 @@ export interface TokenSpaceProps {
  * own vocabulary (paper/ink) and runs its own substitution via brandAncestry.
  */
 function tokenSpace(Component: (props: TokenSpaceProps) => React.ReactNode) {
-  return function TokenSpaceMockup({ result, mode, uid, locateTarget = null }: MockupProps) {
+  return function TokenSpaceMockup({ result, mode, uid, locateTarget = null, page = DEFAULT_PAGE }: MockupProps) {
     const tokens = useMemo(() => {
       const base = result[mode].tokens
       // `ancestry` is already keyed by role/chart-slot — no candidate lookup.
@@ -71,7 +82,10 @@ function tokenSpace(Component: (props: TokenSpaceProps) => React.ReactNode) {
     }, [result, mode, locateTarget])
     // Serialized by the engine, not here, so the preview shows exactly the
     // string the CSS export contains.
-    const effects = useMemo(() => effectVars(result[mode].effects), [result, mode])
+    const effects = useMemo(
+      () => ({ ...effectVars(result[mode].effects), ...pageVars(page) }),
+      [result, mode, page],
+    )
     return <Component tokens={tokens} mode={mode} uid={uid} effects={effects} />
   }
 }
@@ -82,24 +96,30 @@ export const MOCKUPS: Mockup[] = [
     id: 'app',
     name: 'App dashboard',
     supportsDark: true,
+    followsPage: true,
     Component: tokenSpace(Preview),
   },
   {
     id: 'analytics',
     name: 'Analytics console',
     supportsDark: true,
+    followsPage: true,
     Component: tokenSpace(Analytics),
   },
   {
     id: 'marketing',
     name: 'Marketing page',
     supportsDark: true,
+    followsPage: true,
     Component: tokenSpace(Marketing),
   },
   {
     id: 'brand',
     name: 'Brand board',
     supportsDark: true,
+    // Print, in its own paper/ink vocabulary: its Georgia display lines and
+    // its corners are the board's design, not a UI's, so neither follows.
+    followsPage: false,
     Component: BrandBoard,
   },
 ]

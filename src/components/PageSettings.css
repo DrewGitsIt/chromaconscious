@@ -1,0 +1,304 @@
+@layer chrome-base, chrome;
+
+/* PAGE — the tuning section's preview-only group. Set off by a rule and a
+   caption that says what it is NOT (theme state), so the two controls never
+   read as part of the palette. The corners slider is the contrast control's
+   instrument (a ruled scale, a 2px rail, a hairline needle) with its own
+   class names, because tests address `.ctr-slider` as one control. */
+@layer chrome {
+  .pg {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line-card);
+  }
+  .pg-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .pg-head b {
+    font-size: var(--fs-m);
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .pg-head span {
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+  }
+
+  .pg-row + .pg-row {
+    margin-top: 16px;
+  }
+  .pg-read {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .pg-name {
+    font-size: var(--fs-m);
+    color: var(--ink);
+  }
+  .pg-value {
+    font-family: var(--font-code);
+    font-size: var(--fs-s);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+
+  .pg-track-wrap {
+    position: relative;
+    height: 30px;
+  }
+  .pg-ticks {
+    position: absolute;
+    inset: 0 2px auto;
+    height: 14px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+  .pg-ticks i {
+    display: block;
+    width: 1px;
+    height: 6px;
+    background: var(--line-ctl);
+  }
+  .pg-ticks i.major {
+    height: 10px;
+    background: var(--line-active);
+  }
+  .pg-ticks i.detent {
+    height: 14px;
+    background: var(--ink-muted);
+  }
+  .pg-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    position: absolute;
+    top: 8px;
+    left: 0;
+    width: 100%;
+    height: 20px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    cursor: ew-resize;
+  }
+  .pg-slider::-webkit-slider-runnable-track {
+    height: 2px;
+    border-radius: 1px;
+    background: linear-gradient(90deg, var(--ink) 0 var(--v), var(--line-ctl) var(--v) 100%);
+  }
+  .pg-slider::-moz-range-track {
+    height: 2px;
+    border-radius: 1px;
+    background: var(--line-ctl);
+  }
+  .pg-slider::-moz-range-progress {
+    height: 2px;
+    border-radius: 1px;
+    background: var(--ink);
+  }
+  .pg-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 4px;
+    height: 16px;
+    margin-top: -7px;
+    border-radius: 2px;
+    background: var(--ink-bright);
+    border: 0;
+    box-shadow: 0 0 0 3px var(--surface-1);
+    transition: box-shadow var(--d-fast) var(--ease);
+  }
+  .pg-slider::-moz-range-thumb {
+    width: 4px;
+    height: 16px;
+    border-radius: 2px;
+    background: var(--ink-bright);
+    border: 0;
+    box-shadow: 0 0 0 3px var(--surface-1);
+    transition: box-shadow var(--d-fast) var(--ease);
+  }
+  .pg-slider:active::-webkit-slider-thumb,
+  .pg-slider:focus-visible::-webkit-slider-thumb {
+    box-shadow:
+      0 0 0 3px var(--surface-1),
+      0 0 0 5px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  .pg-slider:active::-moz-range-thumb,
+  .pg-slider:focus-visible::-moz-range-thumb {
+    box-shadow:
+      0 0 0 3px var(--surface-1),
+      0 0 0 5px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+
+  /* sharp · default · round, under the two ends and the detent. Each end
+     carries a corner drawn the way it means, so the words are not the only
+     cue. The stop in force reads in full ink. */
+  .pg-ends {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    align-items: center;
+    font-family: var(--font-code);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .pg-ends span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .pg-ends span:nth-child(2) {
+    justify-content: center;
+  }
+  .pg-ends span:nth-child(3) {
+    justify-content: flex-end;
+  }
+  .pg-ends span.on {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .pg-corner {
+    width: 10px;
+    height: 10px;
+    border-top: 1.5px solid currentColor;
+    border-left: 1.5px solid currentColor;
+  }
+  .pg-corner.round {
+    border-left: 0;
+    border-right: 1.5px solid currentColor;
+    border-top-right-radius: 8px;
+  }
+
+  /* the type trigger: the current face's name, set in that face */
+  .sidebar-shell .pg-font {
+    width: 100%;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 10px 0 12px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .sidebar-shell .pg-font:hover,
+  .sidebar-shell .pg-font[data-popup-open] {
+    border-color: var(--line-active);
+  }
+  .sidebar-shell .pg-font:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .pg-font svg {
+    flex: none;
+    color: var(--ink-faint);
+  }
+  .pg-fn {
+    font-size: 16px;
+    line-height: 1.2;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .pg-fu {
+    margin-left: auto;
+    font-family: var(--font-ui);
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+
+  .pg-note {
+    margin: 12px 0 0;
+    font-size: var(--fs-s);
+    line-height: 1.5;
+    color: var(--ink-faint);
+  }
+
+  /* the menu: portalled to <body>, so it is never clipped by the sidebar's
+     scroller and no transform left behind by an entrance animation can
+     re-anchor it. Base UI clamps it to the viewport. */
+  .pg-font-pos {
+    z-index: 60;
+    outline: none;
+  }
+  .pg-font-pop {
+    width: var(--anchor-width);
+    min-width: 280px;
+    max-height: min(440px, var(--available-height));
+    overflow-y: auto;
+    padding: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-active);
+    border-radius: var(--radius-card);
+    box-shadow: 0 16px 40px -12px rgb(0 0 0 / 0.8);
+    font-family: var(--font-ui);
+    color: var(--ink);
+    outline: none;
+    scrollbar-width: thin;
+    transform-origin: var(--transform-origin);
+    transition:
+      opacity var(--d-fast) var(--ease),
+      transform var(--d-fast) var(--ease);
+  }
+  .pg-font-pop[data-starting-style],
+  .pg-font-pop[data-ending-style] {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  .pg-fgroup {
+    padding: 9px 8px 4px;
+    font-family: var(--font-code);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .pg-fopt {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-height: 34px;
+    padding: 6px 8px;
+    border-radius: 7px;
+    cursor: default;
+    outline: none;
+  }
+  .pg-fopt[data-highlighted] {
+    background: var(--surface-4);
+  }
+  /* the pick is told by a check AND a ring, never by tint alone */
+  .pg-fopt[data-selected] {
+    box-shadow: inset 0 0 0 1px var(--line-active);
+  }
+  .pg-fopt .pg-fu {
+    font-size: 10.5px;
+  }
+  .pg-fcheck {
+    width: 10px;
+    font-size: var(--fs-s);
+    color: var(--ink);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-slider::-webkit-slider-thumb {
+    transition: none;
+  }
+  .pg-slider::-moz-range-thumb {
+    transition: none;
+  }
+  .pg-font-pop {
+    transition: none;
+  }
+}
