@@ -35,6 +35,9 @@
     border: 1px solid var(--line-ctl);
     border-radius: 12px;
     box-shadow: 0 24px 60px rgb(0 0 0 / 0.6);
+    /* no shadow on the pane side: it fell across the colour rows, darkening
+       the swatches you judge colour with by up to 7/255 at their right edge */
+    clip-path: inset(-90px -90px -90px 0);
     color: var(--ink);
     font-family: var(--font-ui);
     /* rises from the footer, where Export is */

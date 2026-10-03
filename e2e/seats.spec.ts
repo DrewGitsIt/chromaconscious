@@ -38,11 +38,11 @@ test.describe('seats explain themselves', () => {
     await expect(tip.locator('.rp-tip-job', { hasText: 'links' })).toBeVisible()
   })
 
-  test('the seat color asks what fills it, and every option states its consequence', async ({
+  test('your colour asks what fills the seat, and every option states its consequence', async ({
     page,
   }) => {
     await bootPicnic(page)
-    await seat(page, 'accent').locator('.rb-body').click()
+    await seat(page, 'accent').locator('.rb-in, .rb-add').click()
     const asg = page.locator('.rp-asg')
     await expect(asg).toBeVisible()
     await expect(asg.locator('.rp-asg-q')).toHaveText('What fills accent?')
@@ -61,42 +61,41 @@ test.describe('seats explain themselves', () => {
 
   test('picking an option seats that color and benches the one it displaced', async ({ page }) => {
     await bootPicnic(page)
-    await seat(page, 'accent').locator('.rb-body').click()
+    await seat(page, 'accent').locator('.rb-in, .rb-add').click()
     // "benches #a0c4ff · frees primary for #ffd6a5" — hold the popover to it
     await options(page).filter({ hasText: '#ffadad' }).click()
     await expect(page.locator('.rp-asg')).toHaveCount(0)
     await seatFrom(page, 'accent', '#ffadad')
-    await expect(seat(page, 'accent').locator('.rb-tag')).toHaveText('yours')
+    await expect(seat(page, 'accent')).toHaveClass(/\brb-yours\b/)
     await seatFrom(page, 'primary', '#ffd6a5')
-    // the displaced color parks on the bench rather than vanishing
-    await expect(page.locator('.bench-bar')).toContainText('1 color not in play')
-    await page.locator('.bench-bar').click()
-    await expect(page.locator('.benched', { hasText: '#a0c4ff' })).toBeVisible()
+    // the displaced color parks in "unused" rather than vanishing
+    await expect(page.locator('.unused-chip')).toHaveCount(1)
+    await expect(page.locator('.unused-chip', { hasText: '#a0c4ff' })).toBeVisible()
   })
 
   test('freeing a seat names its successor, and the successor really takes over', async ({
     page,
   }) => {
     await bootPicnic(page)
-    await seat(page, 'accent').locator('.rb-body').click()
+    await seat(page, 'accent').locator('.rb-in, .rb-add').click()
     // the one line that must not lie
     await expect(page.locator('.rp-free .rp-opt-hint')).toHaveText('#9bf6ff takes over')
     await page.locator('.rp-free').click()
     await seatFrom(page, 'accent', '#9bf6ff')
-    await expect(seat(page, 'accent').locator('.rb-tag')).toHaveText('yours')
+    await expect(seat(page, 'accent')).toHaveClass(/\brb-yours\b/)
   })
 
   test('a derived seat says the engine owns it, and offers your colors instead', async ({ page }) => {
     await bootPicnic(page)
     const neutral = seat(page, 'neutral')
-    await expect(neutral.locator('.rb-tag')).toHaveText('derived')
-    await neutral.locator('.rb-body').click()
+    await expect(neutral).toHaveClass(/\brb-derived\b/)
+    await neutral.locator('.rb-in, .rb-add').click()
     await expect(page.locator('.rp-asg-sub')).toHaveText('derived — riff re-rolls it')
     const pick = options(page).first()
     // the option names the CANDIDATE, so the seat is matched by what it came from
     const hex = await pick.locator('.rp-opt-name').textContent()
     await pick.click()
     await seatFrom(page, 'neutral', hex!)
-    await expect(neutral.locator('.rb-tag')).toHaveText('yours')
+    await expect(neutral).toHaveClass(/\brb-yours\b/)
   })
 })

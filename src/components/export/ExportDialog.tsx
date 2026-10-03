@@ -12,6 +12,12 @@ export interface ExportDialogProps {
   ctx: ExportContext | null
   /** Failing checks. Information only: a palette that fails still exports. */
   issues: number
+  /**
+   * The locked seats among those failures — exactly the rows wearing the
+   * warning triangle in the colours section (App's `failures`), so the note
+   * names every one of them. Each is counted in `issues` too.
+   */
+  kept?: Array<{ role: string; short: string }>
   /** Which frame this exports, when there are two. */
   frameLabel: string | null
   /** Focus goes back here on close. */
@@ -109,6 +115,7 @@ export function ExportDialog({
   formats,
   ctx,
   issues,
+  kept = [],
   frameLabel,
   returnFocus,
   onClose,
@@ -251,6 +258,8 @@ export function ExportDialog({
             <TriangleAlert size={13} strokeWidth={1.75} aria-hidden />
             <span>
               exports as you set it — {issues} check{issues > 1 ? 's' : ''} to review
+              {kept.length > 0 &&
+                ` · locked as typed: ${kept.map((k) => `${k.role} ${k.short}`).join(', ')}; derive safely is on ${kept.length > 1 ? 'their rows' : 'its row'}`}
             </span>
           </p>
         )}

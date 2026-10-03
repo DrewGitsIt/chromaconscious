@@ -6,8 +6,9 @@ import './sections.css'
 
 /**
  * Section 1 before any colour exists, labelled "input". It becomes "colors"
- * the moment one lands. The three doors are the first-run hero's, unchanged,
- * set into the pane; the stage meanwhile holds only a quiet placeholder.
+ * the moment one lands, and these ways in fold into its foot. A quiet list —
+ * field, image, presets — rather than boxed cards; the stage meanwhile holds
+ * only a quiet placeholder.
  */
 export interface InputSectionBodyProps {
   onAddColors: (inputs: string[]) => void

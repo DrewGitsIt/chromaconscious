@@ -260,6 +260,19 @@
         "hex": "#eaa8a2"
       }
     },
+    "destructive-strong": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.9882352941176471,
+          0.3803921568627451,
+          0.3686274509803922
+        ],
+        "alpha": 1,
+        "hex": "#fc615e"
+      }
+    },
     "success": {
       "$type": "color",
       "$value": {
@@ -312,6 +325,19 @@
         "hex": "#aabf9f"
       }
     },
+    "success-strong": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.4627450980392157,
+          0.6392156862745098,
+          0.3607843137254902
+        ],
+        "alpha": 1,
+        "hex": "#76a35c"
+      }
+    },
     "warning": {
       "$type": "color",
       "$value": {
@@ -362,6 +388,19 @@
         ],
         "alpha": 1,
         "hex": "#dab189"
+      }
+    },
+    "warning-strong": {
+      "$type": "color",
+      "$value": {
+        "colorSpace": "srgb",
+        "components": [
+          0.8470588235294118,
+          0.5098039215686274,
+          0
+        ],
+        "alpha": 1,
+        "hex": "#d88200"
       }
     },
     "border": {

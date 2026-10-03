@@ -900,7 +900,7 @@ export function Preview({ tokens, mode, uid, effects }: TokenSpaceProps) {
                           }`}
                         >
                           {allowed ? (
-                            <Check className="size-3.5 shrink-0 text-success" />
+                            <Check className="size-3.5 shrink-0 text-success-strong" />
                           ) : (
                             <X className="size-3.5 shrink-0" />
                           )}
@@ -1002,15 +1002,20 @@ function TabIndicator() {
   )
 }
 
-/** Status/severity in one glyph. Reserved status colors, never series colors. */
+/**
+ * Status/severity in one glyph. Reserved status colors, never series colors —
+ * and the -strong marks, not the fills: a fill is solved to carry its own
+ * label, so the warning fill sat near 1.3:1 on a light page, and at raised
+ * contrast the danger and success fills sink into a dark one.
+ */
 function LevelDot({ level }: { level: Level }) {
   const tone =
     level === 'ok'
-      ? 'bg-success'
+      ? 'bg-success-strong'
       : level === 'warn'
-        ? 'bg-warning'
+        ? 'bg-warning-strong'
         : level === 'error'
-          ? 'bg-destructive'
+          ? 'bg-destructive-strong'
           : 'bg-muted-foreground'
   return <span aria-hidden className={`size-2 shrink-0 rounded-full ${tone}`} />
 }
@@ -1470,11 +1475,11 @@ function ToastStack({
           className="app-toast flex items-center gap-2 rounded-lg border border-border bg-popover px-3 py-2 text-popover-foreground shadow-[shadow:var(--elevation-2)] motion-safe:animate-in motion-safe:slide-in-from-bottom-2"
         >
           {t.level === 'ok' ? (
-            <CircleCheck className="size-4 shrink-0 text-success" />
+            <CircleCheck className="size-4 shrink-0 text-success-strong" />
           ) : t.level === 'error' ? (
-            <CircleAlert className="size-4 shrink-0 text-destructive" />
+            <CircleAlert className="size-4 shrink-0 text-destructive-strong" />
           ) : t.level === 'warn' ? (
-            <TriangleAlert className="size-4 shrink-0 text-warning-subtle-foreground" />
+            <TriangleAlert className="size-4 shrink-0 text-warning-strong" />
           ) : (
             <Archive className="size-4 shrink-0 text-muted-foreground" />
           )}
