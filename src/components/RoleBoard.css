@@ -125,7 +125,7 @@
     border: 0;
     padding: 0;
     border-radius: 8px;
-    background: var(--c);
+    background: var(--c-from, var(--c));
     color: var(--ink-on);
     text-align: left;
     cursor: pointer;
@@ -141,7 +141,8 @@
       0 0 0 1px var(--line-active);
   }
   .rb-chip .rb-hex,
-  .rb-chip .rb-chip-hex {
+  .rb-chip .rb-chip-hex,
+  .rb-chip .fc-out {
     position: absolute;
     left: 8px;
     bottom: 6px;
@@ -241,7 +242,10 @@
     position: relative;
     height: 9px;
     width: var(--len, 24px);
-    transition: width var(--d-base) var(--ease);
+    opacity: var(--dc-o, 1);
+    transition:
+      width var(--d-arrow) var(--ease),
+      opacity var(--d-arrow) var(--ease);
   }
   .dc-shaft i {
     position: absolute;
@@ -251,8 +255,8 @@
     height: 1px;
     background: var(--ink-muted);
     transition:
-      transform var(--d-base) var(--ease),
-      opacity var(--d-base) var(--ease);
+      transform var(--d-arrow) var(--ease),
+      opacity var(--d-arrow) var(--ease);
   }
   .dc-shaft .dc-hd {
     left: auto;
@@ -297,22 +301,34 @@
     font-size: 9.5px;
   }
 
-  /* riff bounce — every row riff moved. Delay is set inline, staggered 55ms
-     by index. Piece 3 replaces this with a cross-fade on the shipped chip. */
-  @keyframes rb-reroll {
-    0% {
-      transform: translateY(0);
-    }
-    40% {
-      transform: translateY(-3px);
-    }
-    100% {
-      transform: translateY(0);
+  /* riff: the shipped colour cross-fades (FadeChip). The incoming colour is
+     a layer over the outgoing one; the hexes swap the same way. A chip whose
+     colour did not change has no layer at all, so a locked seat is still. */
+  .rb-chip .fc-in {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--c);
+    pointer-events: none;
+    animation: fc-in var(--d-xfade) var(--ease) both;
+  }
+  .rb-chip .fc-out {
+    color: var(--ink-on);
+    animation: fc-out var(--d-xfade) var(--ease) both;
+  }
+  .rb-chip .fc-new {
+    z-index: 1;
+    animation: fc-in var(--d-xfade) var(--ease) both;
+  }
+  @keyframes fc-in {
+    from {
+      opacity: 0;
     }
   }
-  .rb-slot.is-rerolling .rb-body {
-    animation: rb-reroll var(--d-slow) var(--ease-back) both;
-    animation-delay: inherit;
+  @keyframes fc-out {
+    to {
+      opacity: 0;
+    }
   }
 
   /* pick mode (mono): every row is a target, and says so */
@@ -331,7 +347,9 @@
     .dc-shaft i {
       transition: none;
     }
-    .rb-slot.is-rerolling .rb-body {
+    .rb-chip .fc-in,
+    .rb-chip .fc-out,
+    .rb-chip .fc-new {
       animation: none;
     }
   }

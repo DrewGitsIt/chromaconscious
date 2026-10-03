@@ -37,3 +37,6 @@ export function readPayload(e: DragEvent<HTMLElement>): DragPayload | null {
 export const chipStyle = (hex: string): CSSProperties =>
   ({ '--c': hex, '--ink-on': readableInk(hex), '--well': wellOn(hex) }) as CSSProperties
 
+
+/** The riff cross-fade's length; matches --d-xfade in styles/tokens.css. */
+export const XFADE_MS = 420

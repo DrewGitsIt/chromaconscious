@@ -125,3 +125,47 @@ describe('ops', () => {
     }
   })
 })
+
+describe('hop — the riff trail jumps straight to a hop', () => {
+  const seeds = (s: ThemeState) => {
+    const r = buildTheme(s)!
+    return r.assignments.map((a) => `${a.role}:${a.seed.l.toFixed(6)},${a.seed.c.toFixed(6)},${a.seed.h.toFixed(4)}`)
+  }
+
+  it('lands exactly where that many riffs would', () => {
+    let walked = coastal()
+    for (let i = 0; i < 7; i++) walked = applyOp(walked, { op: 'riff' }, light)
+    const jumped = applyOp(coastal(), { op: 'hop', hop: 7 }, light)
+    expect(jumped.seed).toBe(7)
+    expect(buildTheme(jumped)!.css).toBe(buildTheme(walked)!.css)
+  })
+
+  it('jumps back to hop 0, which is the un-riffed theme byte for byte', () => {
+    const s = applyOp(coastal(), { op: 'riff', hops: 9 }, light)
+    const home = applyOp(s, { op: 'hop', hop: 0 }, light)
+    expect(home.seed).toBe(0)
+    expect(seeds(home)).toEqual(seeds(coastal()))
+    expect(buildTheme(home)!.css).toBe(buildTheme(coastal())!.css)
+  })
+
+  it('jumps backward mid-trail, and back and riff carry on from there', () => {
+    const s = applyOp(coastal(), { op: 'riff', hops: 10 }, light)
+    const at4 = applyOp(s, { op: 'hop', hop: 4 }, light)
+    expect(applyOp(at4, { op: 'back' }, light).seed).toBe(3)
+    const fwd = applyOp(at4, { op: 'riff' }, light)
+    expect(buildTheme(fwd)!.css).toBe(buildTheme(applyOp(coastal(), { op: 'riff', hops: 5 }, light))!.css)
+  })
+
+  it('a locked seat is the same at every hop the trail can jump to', () => {
+    const locked = applyOp(coastal(), { op: 'lock', role: 'accent' }, light)
+    const at = (h: number) => buildTheme(applyOp(locked, { op: 'hop', hop: h }, light))!.assignments.find((a) => a.role === 'accent')!.seed
+    for (const h of [0, 3, 9]) expect(at(h)).toEqual(at(0))
+  })
+
+  it('ignores nonsense: negative clamps to 0, the same hop changes nothing', () => {
+    const s = applyOp(coastal(), { op: 'riff', hops: 2 }, light)
+    expect(applyOp(s, { op: 'hop', hop: -3 }, light).seed).toBe(0)
+    expect(applyOp(s, { op: 'hop', hop: 2 }, light)).toBe(s)
+    expect(applyOp(s, { op: 'hop', hop: Number.NaN }, light)).toBe(s)
+  })
+})
