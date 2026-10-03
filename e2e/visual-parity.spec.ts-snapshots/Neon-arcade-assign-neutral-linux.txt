@@ -1,3 +1,7 @@
+span.rail-thumb top: 0px; height: 495.291px;
+button.rail-tick.here top: 2.76313px;
+button.rail-tick top: 311.543px;
+button.rail-tick top: 629.303px;
 div.rb-slot.rb-yours --c: #f52d85; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
 div.rb-slot.rb-yours --c: #720bb8; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
 div.rb-slot.rb-derived --c: #725c62; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
@@ -60,13 +64,16 @@ ChromaConscious
 
 any colors in, working theme out
 
+1 · colors
+2 · tuning
+3 · riff
+1
 COLORS
+2 yours · 4 derived
 start over
 ?
 mono
 reset
-riff
-back
 primary
 #f52d85
 YOURS
@@ -89,7 +96,9 @@ chart series
 4 of 5
 bench · 0 colors not in play
 add a color
+2
 TUNING
+0.50 · layered · standard
 taste
 0.50
 ENGINE
@@ -111,6 +120,11 @@ HIGH
 
 every text pair clears 4.5:1 · Lc 62; focus ring and marks 3:1; hairlines as separation sets them
 
+3
+RIFF
+as derived
+riff
+back
 all 40 checks pass
 report
 Copy CSS variables
