@@ -49,6 +49,7 @@ Reading an existing theme (`/theme`, `/export`, `/state`, `/presets`) needs no k
 | `add` | list | | Append colors instead of replacing them. With `from`, this is how to change one thing and keep the rest. `chart:hex` colors fill the chart slots after `chart-1`. |
 | `taste` | 0–1 | | How freely the engine may adjust your colors. `0` adjusts freely to fit their roles; `1` keeps them as typed. Default `0.5`. See [Adjustments](#adjustments). |
 | `separation` | enum | | `flat`, `layered` (default) or `lifted`: how strongly surfaces separate from each other. |
+| `contrast` | enum \| 0–1 | | `standard` (default), `medium` or `high`, or a number from `0` to `1` (`0.5` is medium). Raises every contrast target the theme is solved for; doesn't change which color sits where. See [Contrast level](#contrast-level). |
 | `mono` | hex \| `off` | | Mono lock. That color's hue rules every seat. |
 | `lock` / `unlock` | list | | Roles or `chart-N`. Locking a seat the engine derived keeps it as your color first. |
 | `bench` | list | | Colors (by role or hex) to take out of play. |
@@ -65,7 +66,7 @@ curl -s -H "Authorization: Bearer $KEY" \
 ```
 
 ```
-theme t_levvog6reokv   (riff 0 · taste 0.60 · separation layered)
+theme t_levvog6reokv   (riff 0 · taste 0.60 · separation layered · contrast standard)
 
 seats
   primary   #294266  yours    from #1d3557
@@ -79,7 +80,7 @@ bench       —
 adjusted    primary   #1d3557 → #294266  too dark and too muted for primary (lightness 0.328, range 0.45–0.68; chroma 0.068, range 0.07–0.23) · taste=1 keeps it as typed
 adjusted    neutral   #a8dadc → #b1d8d9  too vivid for neutral (chroma 0.052, range 0–0.025) · taste=1 keeps it as typed
 
-contrast  light 20/20 · dark 20/20
+contrast  light 20/20 · dark 20/20   (text ≥ Lc 62 · 4.5:1)
 spacing   ok
 judge     0.85
 
@@ -95,7 +96,7 @@ export   https://drewkidwell.com/api/chromaconscious/v1/export?theme=t_levvog6re
   - `from` shows the color you typed, when the seat moved off it (because of taste, spacing repair or riff).
 - **`bench`** lists colors that didn't win a seat, and why.
 - **`adjusted`** lists each color you supplied that the theme doesn't hold as typed: what you typed, what it holds, why it moved, and the fix. `—` means nothing moved.
-- **`contrast`** counts the text pairings that pass, per mode. Any failures are listed below it.
+- **`contrast`** counts the text pairings that pass, per mode, and states the floor every text pair is held to at this contrast level. Any failures are listed below it. A failure marked `unreachable` is a ceiling: the engine pushed that color as far as its hue goes on that surface and it still fell short, so only a different color fixes it.
 - **`spacing`** lists pairs of seats the engine couldn't push far enough apart to tell apart.
 - **`judge`** scores the palette's harmony from 0 to 1.
 - **`open`** is a link that opens this exact theme in the app. Append `&vision=deutan` (or `protan`, `tritan`; optionally `&strength=60`, a percent) to open it side by side with a colorblind simulation of itself: frame A as typed, frame B as someone with that type of colorblindness sees it. View-only; it doesn't change the theme or its id.
@@ -113,6 +114,20 @@ Every color you supply goes through these steps, in order. The `adjusted` line n
 | Chart floor | Chart colors stay between lightness 0.45 and 0.8 at any taste, so a series stays visible. | Choose a lighter or darker color |
 
 A color inside its range, with no close neighbor, isn't touched at any taste.
+
+### Contrast level
+
+`contrast` raises the targets every token is solved for, like Material 3's contrast levels. It never changes which color sits in which seat, and it doesn't change what `taste` means: taste still decides how far *your* color may move to stand off the page. A fill must always carry readable text, at any taste.
+
+| target | `standard` (0) | `medium` (0.5) | `high` (1) |
+|---|---|---|---|
+| Every text pair (body, muted, links, text on fills) | Lc 62 · 4.5:1 | Lc 75 · 7:1 | Lc 88 · 10:1 |
+| Body text (step 12), solved for | Lc 92 · 7:1 | Lc 94 · 10:1 | Lc 95 · 13:1 |
+| Focus ring and `accent-strong` | Lc 45 · 3:1 | Lc 55 · 3.75:1 | Lc 65 · 4.5:1 |
+| `primary` against the page | 3:1 | 3.75:1 | 4.5:1 |
+| `border` / `input` against page and card | separation decides | 2:1 / 3:1 | 3:1 / 4.5:1 |
+
+Numbers between the named levels interpolate. A pair passes on WCAG at `standard`, and on WCAG plus the APCA floor above it; the summary's `contrast` line states the floor. Above `standard`, `border` and `input` get floors and join the checks, so the check count rises from 20 to 24 per mode. Separation still shapes surfaces; at higher levels the hairlines meet the floor whatever the separation. `standard` is the default and is omitted from the theme's state, so ids made before this parameter existed are unchanged.
 
 **The exported variables are a separate step.** Every token, `--primary` included, is derived from the seats and solved for contrast in each mode. So even an exact seat can appear as a different hex in the export, in light mode as well as dark.
 
@@ -133,7 +148,7 @@ curl -s -H "Authorization: Bearer $KEY" \
 ```
 
 ```
-theme t_fxhcneuortx6   (from t_levvog6reokv · riff 1 · taste 0.60 · separation layered)
+theme t_fxhcneuortx6   (from t_levvog6reokv · riff 1 · taste 0.60 · separation layered · contrast standard)
 
 seats
   primary   #294266  yours    from #1d3557  locked

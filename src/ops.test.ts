@@ -31,6 +31,19 @@ describe('ops', () => {
     expect(applyOp(s, { op: 'unlock', role: 'primary' }, light).preset).toBe(PRESETS[0].name)
   })
 
+  it('contrast is theme state: clamped, kept across a preset, and reaches the engine', () => {
+    const s = coastal()
+    expect(s.contrast).toBe(0)
+    expect(applyOp(s, { op: 'contrast', value: 0 }, light)).toBe(s)
+    const high = applyOp(s, { op: 'contrast', value: 1 }, light)
+    expect(high.contrast).toBe(1)
+    expect(applyOp(s, { op: 'contrast', value: 9 }, light).contrast).toBe(1)
+    expect(applyOp(s, { op: 'contrast', value: Number.NaN }, light).contrast).toBe(0)
+    expect(applyOp(high, { op: 'preset', name: 'Ink & sky', colors: ['#0f172a', '#38bdf8'] }, light).contrast).toBe(1)
+    expect(buildTheme(high)!.contrast).toBe(1)
+    expect(buildTheme(high)!.light.tokens.foreground).not.toBe(buildTheme(s)!.light.tokens.foreground)
+  })
+
   it('start and preset replace the set and reset riff + mono, keeping taste and separation', () => {
     const s = { ...coastal(), seed: 7, monoBase: 2, fidelity: 0.8, separation: 'lifted' as const }
     const p = applyOp(s, { op: 'preset', name: 'Ink & sky', colors: ['#0f172a', '#38bdf8'] }, light)

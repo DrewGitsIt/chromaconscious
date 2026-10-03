@@ -141,6 +141,13 @@ export interface GenerateOptions {
   seed?: number
   /** Surface separation. Defaults to `layered`, which is the historical output. */
   separation?: Separation
+  /**
+   * Contrast level, 0..1: 0 standard (the historical targets, the default),
+   * 0.5 medium, 1 high, linear between. Raises every solved target — text,
+   * fills, focus ring, hairlines — and leaves taste's budgets alone. See
+   * contrastLevel.ts.
+   */
+  contrast?: number
 }
 
 /** Radix-style 12-step ramp. Index 0 = step 1 (app bg) ... index 11 = step 12 (high-contrast text). */
@@ -203,7 +210,19 @@ export interface ContrastReport {
   wcag: number
   apca: number
   requiredWcag: number
+  /**
+   * The APCA Lc the contrast level promises this pair, present only above
+   * standard (where it joins `requiredWcag` in deciding `pass`).
+   */
+  requiredLc?: number
   pass: boolean
+  /**
+   * Set only on a failing row whose foreground was solved as far as its hue
+   * can go on this background and still fell short — the target is out of
+   * reach, typically at a raised contrast level. Absent on a miss that taste
+   * chose (a colour held near what you typed).
+   */
+  unreachable?: true
 }
 
 /**
@@ -266,6 +285,12 @@ export interface ThemeResult {
   monoBase: number | null
   /** The surface separation this theme was built at. */
   separation: Separation
+  /**
+   * The contrast level this theme was built at, present only above standard —
+   * absent means 0, so a standard theme's result is byte-identical to before
+   * the level existed.
+   */
+  contrast?: number
   /** How many riff hops this theme stands from the cookbook (0 = the cookbook). */
   seed: number
   /**

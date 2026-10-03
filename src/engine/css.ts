@@ -117,7 +117,7 @@ function hex8(color: string, alpha: number): string {
 
 /** DTCG-style design tokens: each token as { $type, $value } per mode. */
 export function themeTokensJson(
-  result: Pick<ThemeResult, 'light' | 'dark'> & { seed?: number; separation?: Separation },
+  result: Pick<ThemeResult, 'light' | 'dark'> & { seed?: number; separation?: Separation; contrast?: number },
 ): string {
   const block = ({ tokens, effects }: ExportableMode) => ({
     ...Object.fromEntries(Object.entries(tokens).map(([k, v]) => [k, { $type: 'color', $value: v }])),
@@ -130,7 +130,7 @@ export function themeTokensJson(
         }
       : {}),
   })
-  // seed 0 and `layered` are the canonical settings — an export made with
+  // seed 0, `layered` and standard contrast are the canonical settings — an export made with
   // anything else carries it so the theme is reproducible, and one made with
   // the defaults stays byte-identical to before $meta existed.
   const meta = {
@@ -138,6 +138,7 @@ export function themeTokensJson(
     ...(result.separation && result.separation !== 'layered'
       ? { separation: result.separation }
       : {}),
+    ...(result.contrast ? { contrast: result.contrast } : {}),
   }
   return JSON.stringify(
     {

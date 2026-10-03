@@ -13,7 +13,7 @@
  * against the exact state it was read from.
  */
 import type { ColorCandidate, Role, Separation, ThemeResult } from './engine'
-import { candidatesFromList, generateTheme, parseColor } from './engine'
+import { candidatesFromList, generateTheme, normalizeContrast, parseColor } from './engine'
 import type { BoardView } from './board'
 import {
   adjustRole,
@@ -44,6 +44,12 @@ export interface ThemeState {
   /** Riff hops from the cookbook; 0 = the cookbook. */
   seed: number
   separation: Separation
+  /**
+   * Contrast level 0..1 (0 standard, 0.5 medium, 1 high). Exported theme
+   * state like separation — it changes the colours you ship — unlike the
+   * colourblind preview, which is view state and never reaches here.
+   */
+  contrast: number
   /** Name of the applied preset; cleared once candidates diverge from it. */
   preset: string | null
 }
@@ -54,6 +60,7 @@ export const emptyThemeState = (): ThemeState => ({
   monoBase: null,
   seed: 0,
   separation: 'layered',
+  contrast: 0,
   preset: null,
 })
 
@@ -84,6 +91,8 @@ export type Op =
   | { op: 'mono'; index: number | null }
   | { op: 'fidelity'; value: number }
   | { op: 'separation'; value: Separation }
+  /** Contrast level 0..1; clamped. */
+  | { op: 'contrast'; value: number }
 
 export interface OpContext {
   /**
@@ -103,6 +112,7 @@ export function buildTheme(state: ThemeState): ThemeResult | null {
     monoBase: state.monoBase ?? undefined,
     seed: state.seed,
     separation: state.separation,
+    contrast: state.contrast,
   })
 }
 
@@ -203,5 +213,9 @@ export function applyOp<S extends ThemeState>(state: S, op: Op, ctx: OpContext):
       return { ...state, fidelity: op.value }
     case 'separation':
       return { ...state, separation: op.value }
+    case 'contrast': {
+      const value = normalizeContrast(op.value)
+      return value === state.contrast ? state : { ...state, contrast: value }
+    }
   }
 }

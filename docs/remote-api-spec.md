@@ -12,7 +12,7 @@ Status: 2026-09-26. Phase 1 and the core of phase 2 are built on the `phase1/cor
 | Audience | the owner's agents first; public later, including site visitors playing with it |
 | Agent access | a skill, loaded just in time: a SKILL.md that points to hosted docs, with calls made by `curl`. MCP later, if ever, as a thin wrapper. |
 | Old links | re-solved on the current engine, silently |
-| Vocabulary | the UI's words: `taste`, `riff`, `lock`, `separation`, `mono` |
+| Vocabulary | the UI's words: `taste`, `riff`, `lock`, `separation`, `contrast`, `mono` |
 | Plan/pricing | owner's call, pending (see [Cloudflare budget](#cloudflare-budget)) |
 
 ## Goal
@@ -30,13 +30,13 @@ Agents drive the same engine a person drives in the UI, and they use the same ve
 
 The engine and the board verbs are **pure and deterministic**:
 
-- `generateTheme` is a pure function of `{candidates, fidelity, seed, monoBase, separation}`. It takes no clock and no randomness: `random.ts` hashes keyed draws, and riff is a step count.
+- `generateTheme` is a pure function of `{candidates, fidelity, seed, monoBase, separation, contrast}`. It takes no clock and no randomness: `random.ts` hashes keyed draws, and riff is a step count.
 - The verbs in `board.ts` map `candidates[] → candidates[]`.
 - A warm call takes about 2 ms at riff 0; see [Performance](#performance).
 
 So a theme is a small value, about 1 KB of state, and the API treats it like a git commit:
 
-- **A theme ID** (`t_k3v9x2…`) names one immutable snapshot of the state: colors, placements, taste, riff count, mono, separation and **locks**.
+- **A theme ID** (`t_k3v9x2…`) names one immutable snapshot of the state: colors, placements, taste, riff count, mono, separation, contrast level and **locks**.
   - The ID is a hash of the canonical state (below), so the same state always gets the same ID and storing it twice is harmless.
   - KV maps ID → state.
 - **Every call that changes something creates a new snapshot** and returns its ID. The input snapshot never changes, so going back is just reusing the old ID.
@@ -90,6 +90,7 @@ GET  /presets
   - A lock freezes the color *where it currently stands*. That can be several riff hops from what you typed.
   - Locking a seat the engine derived first keeps that color as yours (`keepRole`), as in the UI.
   - `lock` and `unlock` are accepted on `/riff` and `/generate?from=`.
+- **`contrast`** is `standard` (the default), `medium`, `high`, or a number from `0` to `1` (0, 0.5 and 1 are the named levels; targets interpolate between). It is exported theme state, like `separation`: it raises every solved contrast target (text steps, links, text on fills, the primary's pop, focus ring, and floors for `border`/`input`) and leaves casting and taste's budgets alone. The table lives in `public/docs.md` and `engine/contrastLevel.ts`. Unlike `vision` on an `open` link, which is view-only, it changes the colours you ship.
 - **`mode`** is not theme state. Every theme contains light and dark, and `mode` only chooses what `/export` and `/preview` show. As built, `/export` honours it for `json` only; CSS and Tailwind always carry both modes (`:root` and `.dark`), which is what a stylesheet wants.
 - **`mono`** takes the hex of the color whose hue rules the theme, or `off`.
 - **`format`** on `/export`:
@@ -108,7 +109,7 @@ Placement verbs the UI has but the parameters above don't cover are handled in p
 Agents read text better than nested JSON, and a human can read it in a terminal. The default response is a compact plain-text summary. `Accept: application/json`, or `?as=json`, returns the same content structured. The values below are illustrative.
 
 ```
-theme t_k3v9x2   (from t_8b2mq1 · riff 3 · taste 0.50 · separation layered)
+theme t_k3v9x2   (from t_8b2mq1 · riff 3 · taste 0.50 · separation layered · contrast standard)
 
 seats
   primary   #e03a47  yours    from #e63946   locked
@@ -120,7 +121,7 @@ seats
 chart       #457b9d yours · #a8dadc yours · #8a6fd1 derived · #c77d3a derived · #5aa05a derived
 bench       #f1faee  — lost neutral to #1d3557 by 0.04
 
-contrast  light 43/44 · dark 44/44
+contrast  light 19/20 · dark 20/20   (text ≥ Lc 62 · 4.5:1)
   fail  light  muted-foreground on muted  4.1 (needs 4.5)
 spacing   ok
 judge     0.71
@@ -142,13 +143,14 @@ preview  …/preview?theme=t_k3v9x2&mockup=app&mode=light&as=png
     { "color": "#e63946", "pin": "primary", "locked": true,
       "lockedColor": [0.6312398, 0.2011204, 25.1400131], "benched": true, "origin": "invented" }
   ],
-  "fidelity": 0.5, "seed": 3, "monoBase": null, "separation": "layered",
+  "fidelity": 0.5, "seed": 3, "monoBase": null, "separation": "layered", "contrast": 0.5,
   "parent": "t_8b2mq1"     // provenance only; not part of the hash
 }
 ```
 
 - **Canonical form.** Fixed key order, defaults and false flags dropped. **Nothing is rounded**: a lock names an exact colour and taste 0.8 must stay 0.8, and JSON numbers round-trip exactly. (Draft 2 proposed 4-decimal rounding; that would have moved locked colours.)
   - `id = "t_" + base32(sha256(canonical))[:12]` — 60 bits.
+  - New state keys are added as defaults-dropped optionals so old ids still hash the same: `contrast` is omitted at `0` (standard), which is every theme stored before it existed. Unit-enforced against a recorded id.
   - Stored beside it in KV, outside the hash: `parent`, and the riff walk checkpoint (below).
 - **No engine version in the ID.** Old IDs re-solve on the current engine, as decided.
 - **`lockedColor` is stored as an `[l, c, h]` number array.** Hex would round it, and `oklch()` text would need a parse round-trip that isn't exact at chroma 0.
