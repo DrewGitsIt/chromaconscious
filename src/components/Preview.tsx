@@ -1082,7 +1082,7 @@ function TrafficCard({
               >
                 <span
                   aria-hidden
-                  className="size-2 shrink-0 rounded-[2px]"
+                  className="size-2 shrink-0 rounded-[calc(var(--radius)*0.2)]"
                   style={{ background: `var(--${t.token})` }}
                 />
                 {t.label}

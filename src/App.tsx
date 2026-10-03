@@ -58,6 +58,7 @@ import { useDismiss } from './components/useDismiss'
 import { EMBED, embedPreset, fullAppHref } from './embed'
 import { decodeState } from './api/state'
 import { parseThemeHash } from './visionLink'
+import { usePageSettings } from './usePageSettings'
 import type { Vision } from './engine/cvd'
 import { VISIONS } from './engine/cvd'
 import { VisionFilter } from './components/VisionFilter'
@@ -202,6 +203,8 @@ export default function App() {
   // the canvas splits when a second frame exists. Frames boot empty — the
   // first move belongs to the user, made in the stage's start hero.
   const [frames, setFrames] = useState<FrameState[]>(() => [initialFrame()])
+  // Corners and type: view state for both frames, never theme state.
+  const { page, setRadius, setFont } = usePageSettings()
   const [active, setActive] = useState(0)
   const [reportOpen, setReportOpen] = useState(false)
   // Mono lock pick mode: the padlock was clicked, the board is the menu.
@@ -392,6 +395,8 @@ export default function App() {
     const link = parseThemeHash(location.hash)
     if (!link) return
     const { id, vision } = link
+    if (link.page.radius !== undefined) setRadius(link.page.radius)
+    if (link.page.font !== undefined) setFont(link.page.font)
     let live = true
     fetch(`/api/chromaconscious/v1/state?theme=${id}`)
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`theme ${id} not found`))))
@@ -417,7 +422,7 @@ export default function App() {
     return () => {
       live = false
     }
-  }, [])
+  }, [setRadius, setFont])
 
   const undoStartOver = () => {
     if (toast?.undo) updateFrame(toast.undo.frameIndex, toast.undo.prev)
@@ -877,6 +882,7 @@ export default function App() {
             onFidelity={(v) => dispatch({ op: 'fidelity', value: v })}
             onSeparation={(v) => dispatch({ op: 'separation', value: v })}
             onContrast={(v) => dispatch({ op: 'contrast', value: v })}
+            page={{ page, onRadius: setRadius, onFont: setFont, applies: mockupById(frame.mockup).followsPage }}
           />
         ),
       },
@@ -1117,6 +1123,7 @@ export default function App() {
                           mode={f.mode}
                           uid={FRAME_LABEL[i].toLowerCase()}
                           locateTarget={active === i ? locating : null}
+                          page={page}
                         />
                       </PreviewBoundary>
                     ) : (

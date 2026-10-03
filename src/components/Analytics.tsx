@@ -360,7 +360,7 @@ export function Analytics({ tokens, mode, uid, effects }: TokenSpaceProps) {
             <div className="text-xs tracking-wide text-muted-foreground uppercase">
               Acme analytics
             </div>
-            <h1 className="font-heading text-lg font-semibold">Acquisition channels</h1>
+            <h1 className="font-heading text-lg font-[var(--font-heading-weight,600)]">Acquisition channels</h1>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -740,7 +740,7 @@ function Panel({
     >
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h2 id={`${slot}-title-${uid}`} className="font-heading text-sm font-semibold">
+          <h2 id={`${slot}-title-${uid}`} className="font-heading text-sm font-[var(--font-heading-weight,600)]">
             {title}
           </h2>
           <p className="mt-0.5 truncate text-xs text-muted-foreground">{note}</p>
@@ -768,8 +768,8 @@ function ColdLoad() {
             className="rounded-xl border border-border bg-card p-3 shadow-[shadow:var(--elevation-1)]"
           >
             <div className="h-2.5 w-20 animate-pulse rounded-full bg-muted motion-reduce:animate-none" />
-            <div className="mt-3 h-5 w-16 animate-pulse rounded bg-muted motion-reduce:animate-none" />
-            <div className="mt-3 h-6 w-full animate-pulse rounded bg-muted motion-reduce:animate-none" />
+            <div className="mt-3 h-5 w-16 animate-pulse rounded-[calc(var(--radius)*0.4)] bg-muted motion-reduce:animate-none" />
+            <div className="mt-3 h-6 w-full animate-pulse rounded-[calc(var(--radius)*0.4)] bg-muted motion-reduce:animate-none" />
           </div>
         ))}
       </div>
@@ -1530,7 +1530,7 @@ function Donut({
             >
               <span
                 aria-hidden
-                className="size-2 shrink-0 rounded-[2px]"
+                className="size-2 shrink-0 rounded-[calc(var(--radius)*0.2)]"
                 style={{ background: `var(--${a.s.token})` }}
               />
               <span className="truncate text-muted-foreground group-hover/share:text-accent-foreground group-focus-visible/share:text-accent-foreground">
@@ -1667,7 +1667,7 @@ function Heatmap({ uid, slice }: { uid: string; slice: Slice }) {
           <span
             key={s}
             aria-hidden
-            className="h-3 flex-1 rounded-[2px]"
+            className="h-3 flex-1 rounded-[calc(var(--radius)*0.2)]"
             style={{ background: heatFill(s) }}
           />
         ))}
@@ -1806,7 +1806,7 @@ function DrillPanel({
             />
             <span className="text-xs text-muted-foreground">Channel detail</span>
           </span>
-          <h3 id={`drill-title-${uid}`} className="font-heading text-base font-semibold">
+          <h3 id={`drill-title-${uid}`} className="font-heading text-base font-[var(--font-heading-weight,600)]">
             {series.label}
           </h3>
           <p className="text-xs text-muted-foreground">
