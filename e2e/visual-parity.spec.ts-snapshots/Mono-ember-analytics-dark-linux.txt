@@ -142,7 +142,7 @@ span.h-3.flex-1.rounded-[2px] background: color-mix(in oklab, color-mix(in oklab
 span.h-3.flex-1.rounded-[2px] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 81%, var(--card));
 span.h-3.flex-1.rounded-[2px] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 100%, var(--card));
 ---
-themesmith
+ChromaConscious
 
 any colors in, working theme out
 
@@ -181,7 +181,7 @@ add a color
 TUNING
 taste
 0.50
-SMITH
+ENGINE
 RAW
 your colors already sit well — nothing to tune
 separation

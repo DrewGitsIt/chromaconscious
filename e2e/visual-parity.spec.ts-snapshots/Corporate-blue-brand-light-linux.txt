@@ -37,7 +37,7 @@ div. flex-basis: 60%; background: rgb(243, 248, 255);
 div. flex-basis: 30%; background: rgb(26, 107, 231);
 div. flex-basis: 10%; background: rgb(53, 113, 205);
 ---
-themesmith
+ChromaConscious
 
 any colors in, working theme out
 
@@ -74,7 +74,7 @@ add a color
 TUNING
 taste
 0.50
-SMITH
+ENGINE
 RAW
 your colors already sit well — nothing to tune
 separation

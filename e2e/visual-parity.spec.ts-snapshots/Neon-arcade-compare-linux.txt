@@ -79,7 +79,7 @@ span.size-2.shrink-0.rounded-[2px] background: var(--chart-3);
 span.size-2.shrink-0.rounded-[2px] background: var(--chart-4);
 span.size-2.shrink-0.rounded-[2px] background: var(--chart-5);
 ---
-themesmith
+ChromaConscious
 
 any colors in, working theme out
 
@@ -115,7 +115,7 @@ add a color
 TUNING
 taste
 0.50
-SMITH
+ENGINE
 RAW
 your colors already sit well — nothing to tune
 separation
