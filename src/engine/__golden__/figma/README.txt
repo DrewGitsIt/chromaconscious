@@ -13,8 +13,8 @@ Each .json file is one mode, in Figma's DTCG variable format:
 light / dark are the theme at standard contrast; -medium and -high are the
 same theme at the contrast slider's other two settings.
 
-Every file defines the same 117 colour variables:
-  color/...   45 theme tokens (background, primary, ...; color/scrim has alpha)
+Every file defines the same 120 colour variables:
+  color/...   48 theme tokens (background, primary, ...; color/scrim has alpha)
   ramp/...    72 ramp steps (ramp/primary/1 ... ramp/primary/12, per ramp)
 
 

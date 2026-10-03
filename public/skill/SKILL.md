@@ -5,7 +5,7 @@ description: Generate, riff, lock and export UI color themes (light + dark, cont
 
 # ChromaConscious
 
-ChromaConscious turns a few colors into a complete UI theme: six role seats (primary, accent, neutral, danger, success, warning), five chart colors, and ~44 tokens per mode, all checked for contrast in light and dark.
+ChromaConscious turns a few colors into a complete UI theme: six role seats (primary, accent, neutral, danger, success, warning), five chart colors, and ~47 tokens per mode, all checked for contrast in light and dark.
 
 Base URL: `https://drewkidwell.com/api/chromaconscious/v1` (the legacy `/api/themesmith/v1` base still works too)
 

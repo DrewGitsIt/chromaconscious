@@ -30,7 +30,7 @@ export type ShortcutId =
   | 'back'
   | 'reset'
   | 'startOver'
-  | 'bench'
+  | 'chart'
   | 'vision'
   | 'help'
 
@@ -42,7 +42,7 @@ export const SHORTCUTS: Shortcut[] = [
   { id: 'back', key: 'z', label: 'back one riff', section: 'riff' },
   { id: 'reset', key: 'x', label: 'clear your placements', section: 'colors' },
   { id: 'startOver', key: 'o', label: 'start over', section: 'colors' },
-  { id: 'bench', key: 'b', label: 'show the bench', section: 'colors' },
+  { id: 'chart', key: 'c', label: 'show or fold the chart series', section: 'colors' },
   { id: 'vision', key: 'v', label: 'vision — cycle typical, protan, deutan, tritan' },
   // the flyout hangs off the colors header, which a fold hides
   { id: 'help', key: '?', label: 'this list', section: 'colors' },

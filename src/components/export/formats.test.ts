@@ -82,6 +82,24 @@ describe('the Export dialog matches the API byte for byte', () => {
     })
   }
 
+  it('every code format carries the three status marks, in both modes', async () => {
+    const ctx = await appContext(presetState())
+    const css = copied('css', ctx)
+    const tw = copied('tailwind', ctx)
+    const dtcg = JSON.parse(copied('json', ctx))
+    const text = JSON.stringify(dtcg)
+    for (const t of ['destructive-strong', 'success-strong', 'warning-strong']) {
+      for (const mode of ['light', 'dark'] as const) {
+        const hex = ctx.result[mode].tokens[t]
+        expect(hex, `${t} ${mode}`).toMatch(/^#[0-9a-f]{6}$/)
+        expect(css, `css ${t} ${mode}`).toContain(`--${t}: ${hex};`)
+        expect(text, `dtcg ${t} ${mode}`).toContain(hex)
+      }
+      expect(tw, `tailwind bridge ${t}`).toContain(`--color-${t}: var(--${t});`)
+      expect(text).toContain(`"${t}"`)
+    }
+  })
+
   it('the download is the copied text, under a name that carries the id', async () => {
     const ctx = await appContext(presetState())
     for (const [id, ext] of [['css', '.css'], ['tailwind', '.tailwind.css'], ['json', '.tokens.json']]) {

@@ -792,7 +792,7 @@ export function Marketing({ tokens, mode, uid, effects }: TokenSpaceProps) {
             <div className="mt-4 flex items-center gap-2">
               <span className="flex" aria-hidden>
                 {[0, 1, 2, 3, 4].map((i) => (
-                  <Star key={i} className="size-4 fill-warning text-warning" />
+                  <Star key={i} className="size-4 fill-warning-strong text-warning-strong" />
                 ))}
               </span>
               <span className="text-xs text-muted-foreground">
@@ -1048,7 +1048,7 @@ export function Marketing({ tokens, mode, uid, effects }: TokenSpaceProps) {
                 Privacy
               </a>
               <span className="inline-flex items-center gap-1.5">
-                <span className="size-1.5 rounded-full bg-success" aria-hidden />
+                <span className="size-1.5 rounded-full bg-success-strong" aria-hidden />
                 All systems normal
               </span>
             </span>

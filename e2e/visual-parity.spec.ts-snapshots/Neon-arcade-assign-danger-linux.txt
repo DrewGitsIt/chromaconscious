@@ -1,19 +1,38 @@
-span.rail-thumb top: 0px; height: 406.631px;
-button.rail-tick.here top: 2.26851px;
-button.rail-tick top: 255.775px;
-button.rail-tick top: 641.421px;
-div.rb-slot.rb-yours --c: #f52d85; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-yours --c: #720bb8; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-derived --c: #725c62; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-derived --c: #c72c4f; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-derived --c: #54803a; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-derived --c: #f29520; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12); --well-strong: rgba(0,0,0,0.22);
-span.series.yours --c: #a86de8;
-span.series.yours --c: #837df4;
-span.series.yours --c: #6485f9;
-span.series.yours --c: #5fc2e2;
-span.series.derived --c: #00b5e5;
-div.bench-drawer height: 0px;
+span.rail-thumb top: 0px; height: 340.661px;
+button.rail-tick.here top: 1.90048px;
+button.rail-tick top: 327.357px;
+button.rail-tick top: 650.438px;
+button.rb-chip.rb-in --c: #f72585; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+span.dc.dc-moved --len: 14px;
+button.rb-chip.rb-body --c: #f52d85; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+button.rb-chip.rb-in --c: #7209b7; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+span.dc.dc-same --len: 12px;
+button.rb-chip.rb-body --c: #720bb8; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+button.rb-chip.rb-body.is-derived --c: #725c62; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+button.rb-chip.rb-body.is-derived --c: #c72c4f; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+button.rb-chip.rb-body.is-derived --c: #54803a; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+button.rb-chip.rb-body.is-derived --c: #f29520; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
+i. background: rgb(168, 109, 232);
+i. background: rgb(131, 125, 244);
+i. background: rgb(100, 133, 249);
+i. background: rgb(95, 194, 226);
+i. background: rgb(0, 181, 229);
+div.series.led --c: #a86de8;
+button.rb-chip.series-out.is-derived --c: #a86de8; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.series.yours --c: #837df4;
+button.rb-chip.series-in --c: #3a0ca3; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+span.dc.dc-moved --len: 40px;
+button.rb-chip.series-out --c: #837df4; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.series.yours --c: #6485f9;
+button.rb-chip.series-in --c: #4361ee; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+span.dc.dc-moved --len: 40px;
+button.rb-chip.series-out --c: #6485f9; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.series.yours --c: #5fc2e2;
+button.rb-chip.series-in --c: #4cc9f0; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
+span.dc.dc-moved --len: 14px;
+button.rb-chip.series-out --c: #5fc2e2; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
+div.series.derived --c: #00b5e5;
+button.rb-chip.series-out.is-derived --c: #00b5e5; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
 div.dial-track-wrap --v: 50%;
 input.dial-slider 
 span.sep-thumb --sep-i: 1;
@@ -24,14 +43,20 @@ input.pg-slider
 span.pg-fn font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; font-weight: 400;
 input. clip-path: inset(50%); overflow: hidden; white-space: nowrap; border: 0px; padding: 0px; width: 1px; height: 1px; margin: -1px; position: fixed; top: 0px; left: 0px;
 input. 
-div.rp-pop.rp-asg left: 173.5px; top: 280px; visibility: visible; transform-origin: left top;
+div.rp-pop.rp-asg left: 20px; top: 331px; visibility: visible; transform-origin: left top;
 span.rp-asg-sw background: rgb(199, 44, 79);
 span.rp-opt-sw background: rgb(247, 37, 133);
 span.rp-opt-sw background: rgb(114, 9, 183);
 span.rp-opt-sw background: rgb(58, 12, 163);
 span.rp-opt-sw background: rgb(67, 97, 238);
 span.rp-opt-sw background: rgb(76, 201, 240);
-div.preview-root.relative.flex.min-h-[680px].overflow-hidden.bg-background.text-sm.text-foreground.dark --background: #1c0c11; --foreground: #f4e7ea; --card: #221216; --card-foreground: #f4e7ea; --popover: #221216; --popover-foreground: #f4e7ea; --primary: #d12f70; --primary-foreground: #fdf9fa; --secondary: #2a1a1f; --secondary-foreground: #f4e7ea; --muted: #2a1a1f; --muted-foreground: #c1b5b8; --accent: #241931; --accent-foreground: #f0e6ff; --accent-strong: #b27feb; --link: #c4ade3; --destructive: #c6445c; --destructive-foreground: #fdf9f9; --destructive-subtle: #201314; --destructive-subtle-foreground: #eaa6ac; --success: #5c7d48; --success-foreground: #f9fbf7; --success-subtle: #141911; --success-subtle-foreground: #aabf9f; --warning: #e89a46; --warning-foreground: #100c09; --warning-subtle: #1e150c; --warning-subtle-foreground: #dab189; --border: #423337; --input: #56454a; --ring: #b27feb; --chart-1: #a86de8; --chart-2: #837df4; --chart-3: #6485f9; --chart-4: #5fc2e2; --chart-5: #00b5e5; --sidebar: #221216; --sidebar-foreground: #f4e7ea; --sidebar-primary: #d12f70; --sidebar-primary-foreground: #fdf9fa; --sidebar-accent: #241931; --sidebar-accent-foreground: #f0e6ff; --sidebar-border: #423337; --sidebar-ring: #b27feb; --elevation-1: 0px 1px 2px 0px rgb(1 0 0 / 0.18), 0px 2px 6px -1px rgb(1 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(1 0 0 / 0.28), 0px 8px 20px -6px rgb(1 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(1 0 0 / 0.38), 0px 24px 48px -12px rgb(1 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(1 0 0 / 0.58);
+div.react-colorful__saturation background-color: rgb(255, 0, 59);
+div.react-colorful__pointer.react-colorful__saturation-pointer top: 22%; left: 78%;
+div.react-colorful__pointer-fill background-color: rgb(201, 44, 81);
+div.react-colorful__pointer.react-colorful__hue-pointer top: 50%; left: 96.1111%;
+div.react-colorful__pointer-fill background-color: rgb(255, 0, 59);
+input. 
+div.preview-root.relative.flex.min-h-[680px].overflow-hidden.bg-background.text-sm.text-foreground.dark --background: #1c0c11; --foreground: #f4e7ea; --card: #221216; --card-foreground: #f4e7ea; --popover: #221216; --popover-foreground: #f4e7ea; --primary: #d12f70; --primary-foreground: #fdf9fa; --secondary: #2a1a1f; --secondary-foreground: #f4e7ea; --muted: #2a1a1f; --muted-foreground: #c1b5b8; --accent: #241931; --accent-foreground: #f0e6ff; --accent-strong: #b27feb; --link: #c4ade3; --destructive: #c6445c; --destructive-foreground: #fdf9f9; --destructive-subtle: #201314; --destructive-subtle-foreground: #eaa6ac; --destructive-strong: #fb5f78; --success: #5c7d48; --success-foreground: #f9fbf7; --success-subtle: #141911; --success-subtle-foreground: #aabf9f; --success-strong: #76a35c; --warning: #e89a46; --warning-foreground: #100c09; --warning-subtle: #1e150c; --warning-subtle-foreground: #dab189; --warning-strong: #d88200; --border: #423337; --input: #56454a; --ring: #b27feb; --chart-1: #a86de8; --chart-2: #837df4; --chart-3: #6485f9; --chart-4: #5fc2e2; --chart-5: #00b5e5; --sidebar: #221216; --sidebar-foreground: #f4e7ea; --sidebar-primary: #d12f70; --sidebar-primary-foreground: #fdf9fa; --sidebar-accent: #241931; --sidebar-accent-foreground: #f0e6ff; --sidebar-border: #423337; --sidebar-ring: #b27feb; --elevation-1: 0px 1px 2px 0px rgb(1 0 0 / 0.18), 0px 2px 6px -1px rgb(1 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(1 0 0 / 0.28), 0px 8px 20px -6px rgb(1 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(1 0 0 / 0.38), 0px 24px 48px -12px rgb(1 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(1 0 0 / 0.58);
 div.flex-1.rounded-t-[min(var(--radius)*0.6,6px)] height: 40%; background: var(--chart-1);
 div.flex-1.rounded-t-[min(var(--radius)*0.6,6px)] height: 65%; background: var(--chart-1);
 div.flex-1.rounded-t-[min(var(--radius)*0.6,6px)] height: 45%; background: var(--chart-1);
@@ -72,36 +97,62 @@ any colors in, working theme out
 2 · tuning
 3 · riff
 1
-COLORS
+colors
 2 yours · 4 derived
 start over
 ?
 mono
 reset
+yours
+derived
 primary
+#f72585
+ΔE .007
+nudged
 #f52d85
-YOURS
 accent
+#7209b7
+same
 #720bb8
-YOURS
 neutral
+add
+derived
 #725c62
-DERIVED
 danger
+add
+derived
 #c72c4f
-DERIVED
 success
+add
+derived
 #54803a
-DERIVED
 warning
+add
+derived
 #f29520
-DERIVED
-chart series
-4 of 5
-bench · 0 colors not in play
+unused
+none · drop a seat here to park it
+chart
+3 of 5 yours
+accent leads
+from accent
+#a86de8
+#3a0ca3
+ΔE .291
+#837df4
+#4361ee
+ΔE .101
+#6485f9
+#4cc9f0
+ΔE .024
+#5fc2e2
+add
+derived
+#00b5e5
 add a color
+presets
 2
-TUNING
+tuning
 0.50 · layered · standard
 taste
 0.50
@@ -135,10 +186,10 @@ type
 System UI
 native interface
 3
-RIFF
+riff
 as derived
 riff
 back
-all 40 checks pass
+all 52 checks pass
 report
 Export

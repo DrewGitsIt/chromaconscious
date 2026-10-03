@@ -456,6 +456,54 @@ describe('accent jobs: link, ring, accent-strong, chart-1', () => {
   })
 })
 
+describe('status marks: destructive-strong, success-strong, warning-strong', () => {
+  const MARKS = ['destructive-strong', 'success-strong', 'warning-strong'] as const
+  const FILL = { 'destructive-strong': 'destructive', 'success-strong': 'success', 'warning-strong': 'warning' }
+  const PALETTES = [
+    PALETTE,
+    ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff'],
+    ['#0f172a', '#38bdf8'],
+    ['#dc2626', '#16a34a', '#f59e0b', '#2563eb'],
+  ]
+
+  it('stand off page and card at every contrast level, in both modes, as their own hue', () => {
+    for (const colors of PALETTES)
+      for (const contrast of [0, 0.5, 1])
+        for (const fidelity of [0, 0.5, 1]) {
+          const result = generateTheme({ candidates: candidatesFromList(colors), contrast, fidelity })
+          for (const modeName of ['light', 'dark'] as const) {
+            const mode = result[modeName]
+            for (const token of MARKS) {
+              for (const background of ['background', 'card']) {
+                const row = mode.report.find((r) => r.token === token && r.background === background)
+                const at = `${colors[0]} c${contrast} f${fidelity} ${modeName}: ${token} on ${background}`
+                expect(row, `${at} must be audited`).toBeTruthy()
+                expect(row!.pass || row!.unreachable === true, `${at} (${row!.fg} on ${row!.bg})`).toBe(true)
+              }
+              // still reads as its status: the hue is the fill's, within a few degrees
+              const mark = parseColor(mode.tokens[token])!
+              const fill = parseColor(mode.tokens[FILL[token]])!
+              if (fill.c > 0.04) expect(hueDistance(mark.h, fill.h), `${token} keeps its hue`).toBeLessThan(12)
+            }
+          }
+        }
+  })
+
+  it('fix what the fills could not: the warning fill fails as a mark on a light page', () => {
+    const result = generateTheme({ candidates: candidatesFromList(PALETTE) })
+    const t = result.light.tokens
+    expect(wcagRatio(t.warning, t.background)).toBeLessThan(3)
+    expect(wcagRatio(t['warning-strong'], t.background)).toBeGreaterThanOrEqual(3)
+  })
+
+  it('descend from their role, so locating a seat lights its marks', () => {
+    const result = generateTheme({ candidates: candidatesFromList(PALETTE) })
+    expect(result.light.ancestry['destructive-strong']).toEqual({ kind: 'role', role: 'danger' })
+    expect(result.light.ancestry['success-strong']).toEqual({ kind: 'role', role: 'success' })
+    expect(result.dark.ancestry['warning-strong']).toEqual({ kind: 'role', role: 'warning' })
+  })
+})
+
 describe('brand adapter', () => {
   it('resolves a paper/ink vocabulary with solved contrast', () => {
     const result = generateTheme({ candidates: candidatesFromList(PALETTE) })

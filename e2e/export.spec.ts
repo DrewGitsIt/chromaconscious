@@ -142,6 +142,22 @@ test('a failing check is a note, never a gate', async ({ page, context }) => {
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain(':root {')
 })
 
+test('the note names every locked seat that warns in its row, and counts it', async ({ page }) => {
+  await boot(page)
+  // lock primary as typed at a near-white: its row warns (triangle + ratio)
+  await page.locator('.rb-slot[data-role="primary"] .rb-body').click()
+  await page.locator('.rp-ship').getByLabel('color primary ships').fill('f8f8f8')
+  await page.locator('.rp-ship').getByRole('button', { name: 'lock' }).click()
+  const short = await page.locator('.rb-slot[data-role="primary"] .dc-short').textContent()
+  const warned = await page.locator('.rb-slot .dc-fail').count()
+  expect(warned).toBe(1)
+  await expect(page.locator('.status-chip')).toContainText('1 issue')
+  await open(page)
+  await expect(dialog(page).locator('.xd-note')).toHaveText(
+    `exports as you set it — 1 check to review · locked as typed: primary ${short}; derive safely is on its row`,
+  )
+})
+
 test('it opens beside the pane; the backdrop leaves the swatches exactly as they were', async ({ page }) => {
   await boot(page)
   const swatches = page.locator('.sidebar-shell .rb-body')
@@ -152,6 +168,10 @@ test('it opens beside the pane; the backdrop leaves the swatches exactly as they
         return [cs.backgroundColor, cs.filter, cs.opacity].join('|')
       }),
     )
+  // park the pointer on bare stage: the preset click left it resting over a
+  // colour row, and that row's hover ring is not what this test is about
+  await page.mouse.move(900, 6)
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'))
   const before = await read()
   const shot = await page.locator('.sidebar-shell .role-board').screenshot()
   await open(page)

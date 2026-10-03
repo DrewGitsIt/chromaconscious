@@ -221,9 +221,9 @@ test.describe('portalled popovers after folds while scrolled', () => {
     await settle(page)
     await page.locator('.sb-body').evaluate((b) => b.scrollTo(0, 120))
     await settle(page)
-    await page.locator('.rb-slot[data-role="danger"] .rb-body').click()
+    await page.locator('.rb-slot[data-role="danger"] .rb-add').click()
     await expect(page.locator('.rp-asg')).toBeVisible()
-    await expectBesideAnchor(page, '.rp-asg', '.rb-slot[data-role="danger"] .rb-body')
+    await expectBesideAnchor(page, '.rp-asg', '.rb-slot[data-role="danger"] .rb-add')
   })
 
   test('the + add popover opens at its button', async ({ page }) => {

@@ -1,79 +1,79 @@
 {
  "Coastal starter": {
-  "zip": "c3a9a516101a7d531848",
-  "light.json": "5005e4f609f58e418801",
-  "dark.json": "7992ae2b92faa7481773",
-  "light-high.json": "e779fa8b8c8eeeb0b0a3",
-  "dark-high.json": "050171b8ed37ea2f7a14"
+  "zip": "00d7f61717d5d7fcef82",
+  "light.json": "0bd08131510b01f9d7f9",
+  "dark.json": "0d8da68fa6a34cb231de",
+  "light-high.json": "e7232fc9a636ff358711",
+  "dark-high.json": "4d78089b708e25cfd569"
  },
  "Ink & sky": {
-  "zip": "6d61297f705d040b846f",
-  "light.json": "d5a6926cec864165e2f9",
-  "dark.json": "c48e804f993afd2089d1",
-  "light-high.json": "685822f8a810e655297d",
-  "dark-high.json": "bb3a3c8d127de5ebd495"
+  "zip": "a34fdbb9f1360e707c20",
+  "light.json": "24935c596921271dfd9f",
+  "dark.json": "8d5e8711e19055e97483",
+  "light-high.json": "cfa2c10a00301147f3af",
+  "dark-high.json": "14faab0f1a02fec3004e"
  },
  "Pastel picnic": {
-  "zip": "c763871c0a015e35142a",
-  "light.json": "e28555e9e60ef2a26dce",
-  "dark.json": "05cfa18b7bd9f2f5161c",
-  "light-high.json": "4cfec1e0a4dcf2bdb7af",
-  "dark-high.json": "2b8c05c9692237ca9abf"
+  "zip": "a88b61740eac7d57f5f0",
+  "light.json": "0574169a81ff3af724f7",
+  "dark.json": "4d7b1bcc2f7d42ea9d7d",
+  "light-high.json": "cc45177e945cb92ace5f",
+  "dark-high.json": "48dcb2ad2780ea8d6c35"
  },
  "Neon arcade": {
-  "zip": "440f569f6165832e6bf6",
-  "light.json": "a66213ee031b4ea0bda9",
-  "dark.json": "463d5a31227a606333ad",
-  "light-high.json": "aa04976e5bc7cd4e0c0f",
-  "dark-high.json": "b7690dda2209de520b2d"
+  "zip": "b4e9fcb5eec7760933f0",
+  "light.json": "4457e203e6c9a7b16040",
+  "dark.json": "fc61d5da332a9c3f48cd",
+  "light-high.json": "b1520ee5dbe9268660a6",
+  "dark-high.json": "466fe4dd0cf883beb478"
  },
  "Mono + ember": {
-  "zip": "6611a5dc834dc7132aea",
-  "light.json": "a9834af279031b410667",
-  "dark.json": "047d6c59fec2e3393e93",
-  "light-high.json": "3870da3f1ee21398763e",
-  "dark-high.json": "4b20dbdb9d5da8052932"
+  "zip": "6f1f04149499f645193f",
+  "light.json": "ccadae672419805576bf",
+  "dark.json": "0407f9ffa13308c6f252",
+  "light-high.json": "fff6d6e9d815b6e6f655",
+  "dark-high.json": "5f5dc78af0c5bbb5c829"
  },
  "Terracotta": {
-  "zip": "bb2218f2794fb95b1626",
-  "light.json": "e8cc98f8b272aade4c47",
-  "dark.json": "2b0a9bebc7985ff35eb8",
-  "light-high.json": "670c4b5cdc2d517805fd",
-  "dark-high.json": "eb854e2898f1e2a06578"
+  "zip": "d752598a33f9e09be948",
+  "light.json": "344b8a6b5bbeb2dc08fb",
+  "dark.json": "bd54264e0783e1dd81a1",
+  "light-high.json": "976eec12829e88f8680f",
+  "dark-high.json": "24af5e8b4c0404dc4225"
  },
  "Corporate blue": {
-  "zip": "01479c90fe7a066c9c8c",
-  "light.json": "7539fcd4af2707acd26a",
-  "dark.json": "2156d101d85bcab323d0",
-  "light-high.json": "8cd82a5ff221dec2430f",
-  "dark-high.json": "cf3def76558c8c765f0e"
+  "zip": "f068cda0c4e0687a8d09",
+  "light.json": "1c68b61904c1c5be6d4c",
+  "dark.json": "375b9e9558bea4e65847",
+  "light-high.json": "5ea895302474fe89c759",
+  "dark-high.json": "3addb2fd19c202561d8a"
  },
  "single": {
-  "zip": "d551fd9360ca817e97dd",
-  "light.json": "8df22f3301aaea911ea8",
-  "dark.json": "e30960844c6ee0defd6f",
-  "light-high.json": "0b44b16a3941635e934b",
-  "dark-high.json": "bd52de49b0395b2c082b"
+  "zip": "0c1081d7b424db860db9",
+  "light.json": "20a1f38102b91f1eb613",
+  "dark.json": "8291d320b7c0a54e20ad",
+  "light-high.json": "aa983329174d4b3a05d5",
+  "dark-high.json": "69be32186cc7e8c451b5"
  },
  "greys": {
-  "zip": "20de1814810b42210f93",
-  "light.json": "695fc7a732f77750c8b4",
-  "dark.json": "a03290fe682bca3431e6",
-  "light-high.json": "975cf922641e5c08d4c8",
-  "dark-high.json": "18e924b180eee853528c"
+  "zip": "08d48853790a7478b25b",
+  "light.json": "74c51f5cf7b2ff9f2f84",
+  "dark.json": "e80f97321b6fe278234d",
+  "light-high.json": "6b59f8ed66ba88903d01",
+  "dark-high.json": "0e9eda17c5a290309c02"
  },
  "out-of-gamut": {
-  "zip": "9046f6a67ba9d37b0ea3",
-  "light.json": "71ed256372323c6b60c4",
-  "dark.json": "396bfca22ac58065bc6a",
-  "light-high.json": "6200e7c0ec8c7b657f74",
-  "dark-high.json": "57dc2a07e7252f1b7b37"
+  "zip": "0800409b02529f485af5",
+  "light.json": "7fcd75537d8199e3b07b",
+  "dark.json": "3f5ce4f0c753eb70862c",
+  "light-high.json": "8effbefa4e3f2285a3ec",
+  "dark-high.json": "400fc24ac8f2516db236"
  },
  "riffed-locked-flat": {
-  "zip": "577db965e927021262ed",
-  "light.json": "345e63aa78266d5556b5",
-  "dark.json": "55eb83a2b7efca460cbb",
-  "light-high.json": "11cbf556e43303421fe1",
-  "dark-high.json": "0b5d956ec2cdd3cf280c"
+  "zip": "2aa59110dc3613668792",
+  "light.json": "63551062fe4b2850b869",
+  "dark.json": "6dfe9b62c5a8369bec1e",
+  "light-high.json": "25dc35e49fa9fd85cdf1",
+  "dark-high.json": "8049ce7d82f8b4270d24"
  }
 }

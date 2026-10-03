@@ -1,19 +1,44 @@
-span.rail-thumb top: 0px; height: 406.631px;
-button.rail-tick.here top: 2.26851px;
-button.rail-tick top: 255.775px;
-button.rail-tick top: 641.421px;
-div.rb-slot.rb-yours --c: #da3b4d; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-yours --c: #a008b2; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-derived --c: #6d5161; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-derived --c: #b8002f; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-derived --c: #537614; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999); --well-strong: rgba(255,255,255,0.24);
-div.rb-slot.rb-derived --c: #f08f38; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12); --well-strong: rgba(0,0,0,0.22);
-span.series.yours --c: #c261d0;
-span.series.yours --c: #5f8de5;
-span.series.yours --c: #9c70f2;
-span.series.yours --c: #43bdc6;
-span.series.derived --c: #39adff;
-div.bench-drawer height: 0px;
+span.rail-thumb top: 0px; height: 340.661px;
+button.rail-tick.here top: 1.90048px;
+button.rail-tick top: 327.357px;
+button.rail-tick top: 650.438px;
+div.rb-slot.rb-yours 
+button.rb-chip.rb-in --c: #f72585; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+span.dc.dc-moved --len: 40px;
+button.rb-chip.rb-body --c: #da3b4d; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.rb-slot.rb-yours 
+button.rb-chip.rb-in --c: #7209b7; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+span.dc.dc-moved --len: 40px;
+button.rb-chip.rb-body --c: #a008b2; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.rb-slot.rb-derived 
+button.rb-chip.rb-body.is-derived --c: #6d5161; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.rb-slot.rb-derived 
+button.rb-chip.rb-body.is-derived --c: #b8002f; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.rb-slot.rb-derived 
+button.rb-chip.rb-body.is-derived --c: #537614; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.rb-slot.rb-derived 
+button.rb-chip.rb-body.is-derived --c: #f08f38; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
+i. background: rgb(194, 97, 208);
+i. background: rgb(95, 141, 229);
+i. background: rgb(156, 112, 242);
+i. background: rgb(67, 189, 198);
+i. background: rgb(57, 173, 255);
+div.series.led --c: #c261d0;
+button.rb-chip.series-out.is-derived --c: #c261d0; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.series.yours --c: #5f8de5;
+button.rb-chip.series-in --c: #3a0ca3; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+span.dc.dc-moved --len: 40px;
+button.rb-chip.series-out --c: #5f8de5; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.series.yours --c: #9c70f2;
+button.rb-chip.series-in --c: #4361ee; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+span.dc.dc-moved --len: 40px;
+button.rb-chip.series-out --c: #9c70f2; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
+div.series.yours --c: #43bdc6;
+button.rb-chip.series-in --c: #4cc9f0; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
+span.dc.dc-moved --len: 33.10865764040563px;
+button.rb-chip.series-out --c: #43bdc6; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
+div.series.derived --c: #39adff;
+button.rb-chip.series-out.is-derived --c: #39adff; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
 div.dial-track-wrap --v: 50%;
 input.dial-slider 
 span.sep-thumb --sep-i: 1;
@@ -24,7 +49,7 @@ input.pg-slider
 span.pg-fn font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; font-weight: 400;
 input. clip-path: inset(50%); overflow: hidden; white-space: nowrap; border: 0px; padding: 0px; width: 1px; height: 1px; margin: -1px; position: fixed; top: 0px; left: 0px;
 input. 
-div.preview-root.relative.flex.min-h-[680px].overflow-hidden.bg-background.text-sm.text-foreground.dark --background: #1b0c15; --foreground: #f2e7ed; --card: #20121b; --card-foreground: #f2e7ed; --popover: #20121b; --popover-foreground: #f2e7ed; --primary: #c84351; --primary-foreground: #fdf9f9; --secondary: #281a23; --secondary-foreground: #f2e7ed; --muted: #281a23; --muted-foreground: #c0b5bb; --accent: #29182c; --accent-foreground: #fce2ff; --accent-strong: #ca77d5; --link: #d2a9d8; --destructive: #ca4250; --destructive-foreground: #fdf9f9; --destructive-subtle: #201313; --destructive-subtle-foreground: #eaa7a6; --success: #5f792e; --success-foreground: #f9fbf7; --success-subtle: #14190f; --success-subtle-foreground: #acbf98; --warning: #e79451; --warning-foreground: #110c09; --warning-subtle: #1f150d; --warning-subtle-foreground: #dcaf8e; --border: #41333b; --input: #54454e; --ring: #ca77d5; --chart-1: #c261d0; --chart-2: #5f8de5; --chart-3: #9c70f2; --chart-4: #43bdc6; --chart-5: #39adff; --sidebar: #20121b; --sidebar-foreground: #f2e7ed; --sidebar-primary: #c84351; --sidebar-primary-foreground: #fdf9f9; --sidebar-accent: #29182c; --sidebar-accent-foreground: #fce2ff; --sidebar-border: #41333b; --sidebar-ring: #ca77d5; --elevation-1: 0px 1px 2px 0px rgb(1 0 0 / 0.18), 0px 2px 6px -1px rgb(1 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(1 0 0 / 0.28), 0px 8px 20px -6px rgb(1 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(1 0 0 / 0.38), 0px 24px 48px -12px rgb(1 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(1 0 0 / 0.58);
+div.preview-root.relative.flex.min-h-[680px].overflow-hidden.bg-background.text-sm.text-foreground.dark --background: #1b0c15; --foreground: #f2e7ed; --card: #20121b; --card-foreground: #f2e7ed; --popover: #20121b; --popover-foreground: #f2e7ed; --primary: #c84351; --primary-foreground: #fdf9f9; --secondary: #281a23; --secondary-foreground: #f2e7ed; --muted: #281a23; --muted-foreground: #c0b5bb; --accent: #29182c; --accent-foreground: #fce2ff; --accent-strong: #ca77d5; --link: #d2a9d8; --destructive: #ca4250; --destructive-foreground: #fdf9f9; --destructive-subtle: #201313; --destructive-subtle-foreground: #eaa7a6; --destructive-strong: #ff5c68; --success: #5f792e; --success-foreground: #f9fbf7; --success-subtle: #14190f; --success-subtle-foreground: #acbf98; --success-strong: #7da347; --warning: #e79451; --warning-foreground: #110c09; --warning-subtle: #1f150d; --warning-subtle-foreground: #dcaf8e; --warning-strong: #dd7e21; --border: #41333b; --input: #54454e; --ring: #ca77d5; --chart-1: #c261d0; --chart-2: #5f8de5; --chart-3: #9c70f2; --chart-4: #43bdc6; --chart-5: #39adff; --sidebar: #20121b; --sidebar-foreground: #f2e7ed; --sidebar-primary: #c84351; --sidebar-primary-foreground: #fdf9f9; --sidebar-accent: #29182c; --sidebar-accent-foreground: #fce2ff; --sidebar-border: #41333b; --sidebar-ring: #ca77d5; --elevation-1: 0px 1px 2px 0px rgb(1 0 0 / 0.18), 0px 2px 6px -1px rgb(1 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(1 0 0 / 0.28), 0px 8px 20px -6px rgb(1 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(1 0 0 / 0.38), 0px 24px 48px -12px rgb(1 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(1 0 0 / 0.58);
 div.flex-1.rounded-t-[min(var(--radius)*0.6,6px)] height: 40%; background: var(--chart-1);
 div.flex-1.rounded-t-[min(var(--radius)*0.6,6px)] height: 65%; background: var(--chart-1);
 div.flex-1.rounded-t-[min(var(--radius)*0.6,6px)] height: 45%; background: var(--chart-1);
@@ -65,36 +90,63 @@ any colors in, working theme out
 2 · tuning
 3 · riff
 1
-COLORS
+colors
 2 yours · 4 derived
 start over
 ?
 mono
 reset
+yours
+derived
 primary
+#f72585
+ΔE .099
+hue +19°
 #da3b4d
-YOURS
 accent
+#7209b7
+ΔE .098
+lighter
 #a008b2
-YOURS
 neutral
+add
+derived
 #6d5161
-DERIVED
 danger
+add
+derived
 #b8002f
-DERIVED
 success
+add
+derived
 #537614
-DERIVED
 warning
+add
+derived
 #f08f38
-DERIVED
-chart series
-4 of 5
-bench · 0 colors not in play
+unused
+none · drop a seat here to park it
+chart
+3 of 5 yours
+accent leads
+from accent
+#c261d0
+#3a0ca3
+ΔE .302
+#5f8de5
+#4361ee
+ΔE .136
+#9c70f2
+#4cc9f0
+ΔE .064
+#43bdc6
+add
+derived
+#39adff
 add a color
+presets
 2
-TUNING
+tuning
 0.50 · layered · standard
 taste
 0.50
@@ -128,11 +180,11 @@ type
 System UI
 native interface
 3
-RIFF
+riff
 hop 3
 riff
 3
 back
-all 40 checks pass
+all 52 checks pass
 report
 Export

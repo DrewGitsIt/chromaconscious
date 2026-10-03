@@ -46,7 +46,7 @@ const seatFrom = (page: Page, role: string, hex: string) =>
 
 test.describe('first run', () => {
   test('boots into the hero; a preset card builds the first theme', async ({ page }) => {
-    await expect(page.getByText('Start with anything')).toBeVisible()
+    await expect(page.getByText('a single color is enough')).toBeVisible()
     await expect(page.locator('.role-board')).toHaveCount(0)
     await bootCoastal(page)
     await expect(page.locator('.start-hero')).toHaveCount(0)
@@ -104,7 +104,7 @@ test.describe('color input', () => {
     await expect(page.locator('.menu-cap')).toContainText('replaces your current 1 color')
   })
 
-  test('the + popover grows an existing set additively; the extras park on the bench', async ({
+  test('the + popover grows an existing set additively; the extras land in unused', async ({
     page,
   }) => {
     await bootCoastal(page)
@@ -114,11 +114,10 @@ test.describe('color input', () => {
     await page.getByRole('button', { name: 'add 2 colors' }).click()
     await expect(page.locator('.pk-pop')).toHaveCount(0)
     await seatFrom(page, 'primary', '#e63946')
-    // neither newcomer wins a seat, so the bench says where they went
-    await expect(page.locator('.bench-bar')).toContainText('2 colors not in play')
-    await page.locator('.bench-bar').click()
-    await expect(page.locator('.benched', { hasText: '#101010' })).toBeVisible()
-    await expect(page.locator('.benched', { hasText: '#ababab' })).toBeVisible()
+    // neither newcomer wins a seat, so "unused" says where they went
+    await expect(page.locator('.unused-chip')).toHaveCount(2)
+    await expect(page.locator('.unused-chip', { hasText: '#101010' })).toBeVisible()
+    await expect(page.locator('.unused-chip', { hasText: '#ababab' })).toBeVisible()
   })
 
   test('a functional colour syntax survives being typed', async ({ page }) => {
@@ -138,7 +137,7 @@ test.describe('color input', () => {
 
     // and a second functional syntax adds a real second colour, not nothing
     const mine = () =>
-      page.locator('.rb-tag').evaluateAll((els) => els.filter((e) => e.textContent === 'yours').length)
+      page.locator('.rb-slot.rb-yours').count()
     expect(await mine()).toBe(1)
     await openAddPopover(page)
     await page.getByPlaceholder(/add a color/).fill('oklch(0.7 0.12 250)')
@@ -162,10 +161,9 @@ test.describe('color input', () => {
     await page.getByRole('button', { name: 'add #101010' }).click()
     await expect(field).toHaveValue('wrong')
     await expect(page.locator('.pk-pop')).toBeVisible()
-    // the colour really did land — the board was full, so it is on the bench
+    // the colour really did land — the board was full, so it is in "unused"
     await page.keyboard.press('Escape')
-    await page.locator('.bench-bar').click()
-    await expect(page.locator('.benched', { hasText: '#101010' })).toBeVisible()
+    await expect(page.locator('.unused-chip', { hasText: '#101010' })).toBeVisible()
   })
 
   test('the + popover stays whole at any sidebar scroll offset', async ({ page }) => {
@@ -215,7 +213,7 @@ test.describe('start over', () => {
     await tool(page, 'start over').click()
     await expect(page.locator('.menu-cap')).toContainText('replaces your current 5 colors')
     await page.getByRole('button', { name: 'start empty' }).click()
-    await expect(page.getByText('Start with anything')).toBeVisible()
+    await expect(page.getByText('a single color is enough')).toBeVisible()
     await expect(page.locator('.toast')).toContainText('cleared 5 colors')
     await page.getByRole('button', { name: 'undo' }).click()
     await seatFrom(page, 'primary', '#e63946')

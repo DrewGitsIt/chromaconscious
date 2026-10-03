@@ -94,7 +94,7 @@ describe('api — contrast parameter', () => {
     const high = await summary(env, '/generate?preset=coastal-starter&contrast=high')
     expect(high.contrastLevel).toMatchObject({ level: 1, name: 'high', text: { lc: 88, wcag: 10 } })
     expect(high.theme).not.toBe(base.theme)
-    expect(high.contrast.light.total).toBe(24)
+    expect(high.contrast.light.total).toBe(30)
     const text = (await call(env, `/theme?theme=${high.theme}`)).body
     expect(text).toMatch(/^theme t_\w+ +\(riff 0 · taste 0\.50 · separation layered · contrast high\)/)
     expect(text).toMatch(/\(text ≥ Lc 88 · 10:1\)/)

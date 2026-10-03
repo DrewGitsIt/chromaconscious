@@ -123,11 +123,11 @@ A color inside its range, with no close neighbor, isn't touched at any taste.
 |---|---|---|---|
 | Every text pair (body, muted, links, text on fills) | Lc 62 · 4.5:1 | Lc 75 · 7:1 | Lc 88 · 10:1 |
 | Body text (step 12), solved for | Lc 92 · 7:1 | Lc 94 · 10:1 | Lc 95 · 13:1 |
-| Focus ring and `accent-strong` | Lc 45 · 3:1 | Lc 55 · 3.75:1 | Lc 65 · 4.5:1 |
+| Focus ring, `accent-strong` and the status marks (`destructive-strong`, `success-strong`, `warning-strong`) | Lc 45 · 3:1 | Lc 55 · 3.75:1 | Lc 65 · 4.5:1 |
 | `primary` against the page | 3:1 | 3.75:1 | 4.5:1 |
 | `border` / `input` against page and card | separation decides | 2:1 / 3:1 | 3:1 / 4.5:1 |
 
-Numbers between the named levels interpolate. A pair passes on WCAG at `standard`, and on WCAG plus the APCA floor above it; the summary's `contrast` line states the floor. Above `standard`, `border` and `input` get floors and join the checks, so the check count rises from 20 to 24 per mode. Separation still shapes surfaces; at higher levels the hairlines meet the floor whatever the separation. `standard` is the default and is omitted from the theme's state, so ids made before this parameter existed are unchanged.
+Numbers between the named levels interpolate. A pair passes on WCAG at `standard`, and on WCAG plus the APCA floor above it; the summary's `contrast` line states the floor. Above `standard`, `border` and `input` get floors and join the checks, so the check count rises from 26 to 30 per mode. Separation still shapes surfaces; at higher levels the hairlines meet the floor whatever the separation. `standard` is the default and is omitted from the theme's state, so ids made before this parameter existed are unchanged.
 
 **The exported variables are a separate step.** Every token, `--primary` included, is derived from the seats and solved for contrast in each mode. So even an exact seat can appear as a different hex in the export, in light mode as well as dark.
 
@@ -212,6 +212,7 @@ Exports made before the rename start with the legacy `/* themesmith t_… */` he
 | `--accent`, `--accent-foreground` | A **subtle** hover and selected tint, as in shadcn. |
 | `--accent-strong`, `--link` | The bold accent color, and link text. |
 | `--destructive`, `--success`, `--warning` | Status colors. Each has `-foreground`, plus `-subtle` and `-subtle-foreground` for alert and badge backgrounds. |
+| `--destructive-strong`, `--success-strong`, `--warning-strong` | Status **marks**: dots, icons, a star rating. Use these, not the fills, for anything that isn't a filled shape carrying a label. A fill is solved for the text on it, so `--warning` can sit near 1.3:1 on a light page; the `-strong` marks are solved to stand 3:1 off page and card, more at higher contrast levels. |
 | `--border`, `--input`, `--ring` | Lines, field borders, focus rings. |
 | `--chart-1` … `--chart-5` | Data series. |
 | `--sidebar-*` | A sidebar's own surface, text, primary, accent, border and ring. |

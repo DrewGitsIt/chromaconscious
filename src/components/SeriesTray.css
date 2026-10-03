@@ -1,162 +1,180 @@
 @layer chrome-base, chrome;
 
-/* The chart series tray: a pooled seat set, so a wide card of swatches rather
-   than a single slot, laid out as one continuous strip. Dashed inner edge =
-   the engine computed it; the colour itself is always shown at full strength. */
+/* The chart series: the seats' row grid, folded under one line that carries a
+   swatch strip of what ships. Chips, "+ add" and the middle cell are styled
+   in RoleBoard.css and shared. */
 @layer chrome {
   .tray {
-    border: 1px solid var(--line-card);
-    border-radius: 9px;
-    padding: 8px 10px 10px;
-    background: var(--surface-3);
-    transition: box-shadow var(--d-fast) var(--ease);
+    margin-top: 16px;
+    border-radius: 8px;
+    transition: box-shadow var(--d-base) var(--ease);
   }
   .tray.drop-ok {
-    box-shadow: 0 0 0 2px var(--accent);
+    box-shadow: 0 0 0 1px var(--line-active);
   }
-
   .tray-top {
     display: flex;
     align-items: center;
     gap: 4px;
-    margin-bottom: 8px;
   }
-
-  /* the label is the teacher — its own target, separate from the colours */
-  .tray-name {
-    display: inline-flex;
+  .tray-toggle {
+    flex: 1;
+    min-width: 0;
+    display: flex;
     align-items: center;
-    gap: 4px;
-    height: 17px;
-    padding: 0 5px 0 4px;
-    margin-left: -4px;
+    gap: 8px;
+    height: 30px;
     border: 0;
-    border-radius: var(--radius-pill);
-    background: transparent;
-    color: var(--ink-muted);
+    padding: 0;
+    background: none;
     font: inherit;
     font-size: var(--fs-s);
+    color: var(--ink-muted);
+    text-align: left;
     cursor: pointer;
-    transition:
-      background var(--d-fast) var(--ease),
-      color var(--d-fast) var(--ease);
   }
-  .tray-name:hover {
-    background: var(--surface-4);
+  .tray-toggle:hover {
     color: var(--ink);
   }
-  .tray-name:focus-visible {
-    outline: 2px solid var(--accent);
+  .tray-toggle:focus-visible,
+  .tray-help:focus-visible {
+    outline: 1px solid var(--line-active);
     outline-offset: 2px;
+    border-radius: 4px;
   }
-  .tray-name svg {
-    opacity: 0.55;
+  .tray-name {
+    color: inherit;
   }
-  .tray-name:hover svg {
-    opacity: 1;
-  }
-
   .tray-cap {
-    margin-left: auto;
     font-family: var(--font-code);
     font-size: var(--fs-xs);
     color: var(--ink-faint);
   }
-
-  .tray-set {
+  .tray-sum {
     display: flex;
-    align-items: center;
     gap: 3px;
+    margin-left: auto;
+    transition: opacity var(--d-base) var(--ease);
+  }
+  .tray-sum i {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.07);
+  }
+  .tray.open .tray-sum {
+    opacity: 0;
+  }
+  .tray-chev {
+    flex: none;
+    color: var(--ink-faint);
+    transform: rotate(-90deg);
+    transition: transform var(--d-base) var(--ease);
+  }
+  .tray.open .tray-chev {
+    transform: none;
+  }
+  .tray-help {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    padding: 0;
+    border-radius: 6px;
+    background: none;
+    color: var(--ink-faint);
+    cursor: help;
+  }
+  .tray-help:hover {
+    background: var(--surface-3);
+    color: var(--ink);
   }
 
-  /* ---- a series swatch ---- */
+  /* fold: rows stay mounted (and inert) so opening is a reveal, not a remount */
+  .tray-reveal {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows var(--d-stage) var(--ease);
+  }
+  .tray.open .tray-reveal {
+    grid-template-rows: 1fr;
+  }
+  .tray-set {
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .series {
-    position: relative;
-    flex: 1;
-    min-width: 0;
-    height: 28px;
-    border-radius: 5px;
-    cursor: grab;
-    background: var(--c);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
-    transition:
-      transform var(--d-fast) var(--ease),
-      opacity var(--d-fast) var(--ease);
-  }
-  .series:hover {
-    transform: translateY(-2px);
-  }
-  .series:active {
-    cursor: grabbing;
+    display: grid;
+    grid-template-columns: 1fr 64px 1fr 22px;
+    gap: 0;
+    align-items: stretch;
+    height: 26px;
+    margin-top: 8px;
   }
   .series.dragging {
     opacity: 0.35;
   }
-
-  /* the lock badge — centred, because a strip swatch has no corner big enough
-     to hit. Dark-on-colour is safe here: chartAdjust clamps a series colour's
-     lightness into [0.45, 0.8], so none of them is ever near-black. */
-  .series-lock {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 16px;
-    height: 16px;
-    padding: 0;
-    display: inline-flex;
+  .series.yours,
+  .series.kept {
+    cursor: grab;
+  }
+  .series .rb-chip {
+    border-radius: 6px;
+  }
+  .series .rb-chip .rb-chip-hex {
+    left: 7px;
+    bottom: 5px;
+    font-size: 10px;
+    line-height: 12px;
+  }
+  .series .rb-add {
+    font-size: 11px;
+    padding: 0 8px;
+    border-radius: 6px;
+  }
+  .series .rb-chip:disabled {
+    cursor: default;
+  }
+  .series .dc-why {
+    font-size: 9px;
+  }
+  .series .dc-why span {
+    display: none; /* a 26px row has room for the number, not the words */
+  }
+  .series-led {
+    display: flex;
     align-items: center;
-    justify-content: center;
+    padding: 0 8px;
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+  .series-lock {
+    width: 22px;
+    display: grid;
+    place-items: center;
     border: 0;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.6);
-    color: #fff;
+    padding: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--ink-faint);
     cursor: pointer;
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.7);
-    transition:
-      opacity var(--d-fast) var(--ease),
-      transform var(--d-fast) var(--ease-back);
   }
-  /* a LOCKED swatch states it unhovered — that is the whole point of the mark */
-  .series:hover .series-lock,
-  .series-lock[data-locked='true'],
-  .series-lock:focus-visible {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+  .series-lock:hover {
+    background: var(--surface-3);
+    color: var(--ink);
   }
-  .series-lock:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
-  }
-  .series.is-locked {
-    box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.55);
-  }
-
-  /* derived: the engine's, and therefore provisional — dashed, colour pooled
-     behind it rather than stated flat. Same language the slots use. */
-  .series.derived::after {
-    content: '';
-    position: absolute;
-    inset: 3px;
-    border-radius: 3px;
-    border: 1px dashed rgb(0 0 0 / 0.45);
-    pointer-events: none;
+  .series-lock[data-locked='true'] {
+    color: var(--ink);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .tray,
-    .tray-name,
-    .series,
-    .series-lock {
+    .tray-reveal,
+    .tray-sum,
+    .tray-chev {
       transition: none;
-    }
-    .series:hover {
-      transform: none;
-    }
-    .series-lock,
-    .series:hover .series-lock,
-    .series-lock[data-locked='true'] {
-      transform: translate(-50%, -50%);
     }
   }
 }

@@ -81,7 +81,7 @@ describe('contrast level — the zero point', () => {
         expect(JSON.stringify(zero)).toBe(JSON.stringify(plain))
         // …and carries no trace of the level: no key, no Lc gate, no hairline rows.
         expect('contrast' in zero).toBe(false)
-        expect(zero.light.report).toHaveLength(20)
+        expect(zero.light.report).toHaveLength(26)
         expect(zero.light.report.some((r) => 'requiredLc' in r)).toBe(false)
       }
     }
@@ -136,7 +136,7 @@ describe('contrast level — every preset at medium and high', () => {
           const fails = r[mode].report.filter((x) => !x.pass)
           expect(fails.map((f) => `${f.token}/${f.background}`), `${p.name} ${mode} c${contrast}`).toEqual([])
           // The hairlines and the APCA floor joined the checks.
-          expect(r[mode].report).toHaveLength(24)
+          expect(r[mode].report).toHaveLength(30)
           const fg = r[mode].report.find((x) => x.token === 'foreground')!
           expect(fg.requiredLc).toBe(contrastTargets(contrast).text.lc)
         }

@@ -13,47 +13,35 @@ interface Props {
 }
 
 /**
- * The first-run state: with zero candidates there is no theme to preview, so
- * the stage hosts the three ways in — large and undistracted. It yields to
- * the live mockup the moment a first color, image, or preset lands. The only
- * time controls live in the canvas, and only while there's nothing to show.
+ * The first-run state, set into the pane as "1 input": the three ways in as a
+ * quiet list — a field, one line for an image, the presets as rows. It was
+ * three boxed cards, sized for the stage it used to fill; in a 320px pane the
+ * boxes were most of what you saw. Once a colour lands, the same three ways
+ * fold into the foot of "1 colors".
  */
 export function StartHero({ onAddColors, onImage, onPreset }: Props) {
   return (
     <div className="start-hero">
-      <h2>Start with anything</h2>
-      <p className="hero-sub">a single color, a photo, or a ready-made palette</p>
-      <div className="hero-cards">
-        <div className="hero-card">
-          <h3>Pick a color</h3>
-          <div className="hero-color">
-            <ColorAddField
-              placeholder="or type — #e63946, oklch(…)"
-              has={() => false}
-              onAdd={onAddColors}
-              layout="hero"
-            />
-          </div>
-          <p className="hero-hint">ChromaConscious builds a full theme from even one color</p>
-        </div>
-        <div className="hero-card">
-          <h3>Drop an image</h3>
-          <ImageDrop onExtract={onImage} />
-          <p className="hero-hint">pulls the strongest colors out of a photo, logo, or screenshot</p>
-        </div>
-        <div className="hero-card">
-          <h3>Start from a preset</h3>
-          <div className="hero-presets">
-            {PRESETS.map((p) => (
-              <button key={p.name} className="preset-card" onClick={() => onPreset(p)}>
-                <PresetDots colors={p.colors} />
-                {p.name}
-              </button>
-            ))}
-          </div>
-        </div>
+      <p className="si-k">a single color is enough</p>
+      <div className="si-add">
+        <ColorAddField
+          placeholder="or type — #e63946, oklch(…)"
+          has={() => false}
+          onAdd={onAddColors}
+          layout="hero"
+        />
       </div>
-      <p className="hero-foot">tip: you can drop an image anywhere in the window, any time</p>
+      <ImageDrop onExtract={onImage} />
+      <div className="si-presets">
+        <p className="si-k">or start from a preset</p>
+        {PRESETS.map((p) => (
+          <button key={p.name} className="preset-card" onClick={() => onPreset(p)}>
+            <PresetDots colors={p.colors} />
+            {p.name}
+          </button>
+        ))}
+      </div>
+      <p className="si-foot">you can drop an image anywhere in the window, any time</p>
     </div>
   )
 }

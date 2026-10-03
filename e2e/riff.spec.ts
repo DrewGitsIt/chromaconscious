@@ -56,7 +56,7 @@ const board = (page: Page) =>
   page.locator('.rb-slot').evaluateAll((els) =>
     els.map(
       (el) =>
-        `${el.getAttribute('data-role')}=${el.querySelector('.rb-hex')?.textContent}/${el.querySelector('.rb-tag')?.textContent}`,
+        `${el.getAttribute('data-role')}=${el.querySelector('.rb-hex')?.textContent}/${/\brb-(yours|kept|derived)\b/.exec(el.className)?.[1]}`,
     ),
   )
 
@@ -115,7 +115,7 @@ test.describe('riff', () => {
     // lock the colour you supplied, and keep (= lock) one the engine derived
     await lock(page, 'primary').click()
     await seat(page, 'warning').locator('.rb-keep').click()
-    await expect(seat(page, 'warning').locator('.rb-tag')).toHaveText('kept')
+    await expect(seat(page, 'warning')).toHaveClass(/\brb-kept\b/)
     await expect(lock(page, 'warning')).toHaveAttribute('data-locked', 'true')
 
     const frozen = await seatsBy(page, true)
@@ -138,24 +138,24 @@ test.describe('riff', () => {
     await bootSingle(page)
     const primary = lock(page, 'primary')
     await expect(primary).toHaveAttribute('data-locked', 'false')
-    await expect(primary).toHaveAttribute('title', 'unlocked — riff may move this')
+    await expect(primary).toHaveAttribute('title', 'unlocked — riff and taste may move this')
 
     await primary.click()
     await expect(primary).toHaveAttribute('data-locked', 'true')
-    await expect(primary).toHaveAttribute('title', 'locked — riff will not move this')
+    await expect(primary).toHaveAttribute('title', 'locked — riff and taste will not move this')
     await expect(seat(page, 'primary')).toHaveClass(/is-locked/)
 
     // unlocking leaves the colour exactly where it sits — it is not a bench
     await primary.click()
     await expect(primary).toHaveAttribute('data-locked', 'false')
-    await expect(seat(page, 'primary').locator('.rb-tag')).toHaveText('yours')
-    await expect(page.locator('.bench-bar')).toContainText('0 colors not in play')
+    await expect(seat(page, 'primary')).toHaveClass(/\brb-yours\b/)
+    await expect(page.locator('.unused-chip')).toHaveCount(0)
   })
 
   test('keep freezes a derived seat where it stands, and shows as locked', async ({ page }) => {
     await bootSingle(page)
     const warning = seat(page, 'warning')
-    await expect(warning.locator('.rb-tag')).toHaveText('derived')
+    await expect(warning).toHaveClass(/\brb-derived\b/)
     await expect(lock(page, 'warning')).toHaveAttribute('data-locked', 'false')
     const kept = await warning.locator('.rb-hex').textContent()
 
@@ -163,7 +163,7 @@ test.describe('riff', () => {
 
     // the color does not move — only who owns it, and whether riff may touch it
     await expect(warning.locator('.rb-hex')).toHaveText(kept!)
-    await expect(warning.locator('.rb-tag')).toHaveText('kept')
+    await expect(warning).toHaveClass(/\brb-kept\b/)
     await expect(lock(page, 'warning')).toHaveAttribute('data-locked', 'true')
     // a kept seat has an ordinary lock now; there is nothing left to claim
     await expect(warning.locator('.rb-keep')).toHaveCount(0)
@@ -213,7 +213,7 @@ test.describe('riff', () => {
     // exact state the old rule called "nothing to riff"
     await expect(page.locator('.rb-slot.rb-derived')).toHaveCount(0)
     await expect(page.locator('.tray-set .series.derived')).toHaveCount(0)
-    await expect(page.locator('.tray-cap')).toHaveText('5 of 5')
+    await expect(page.locator('.tray-cap')).toHaveText('5 of 5 yours')
 
     await expect(riff(page)).toBeEnabled()
     const hop0 = await board(page)
@@ -236,9 +236,13 @@ test.describe('riff', () => {
 
     // a tray swatch can share its candidate with a seat, in which case locking
     // the seat already locked it and clicking again would undo that
-    await expect(page.locator('.series-lock')).toHaveCount(5)
-    for (let i = 0; i < 5; i++) {
-      const l = page.locator('.tray-set .series').nth(i).locator('.series-lock')
+    // (a row led by a seat — chart-1 wearing the accent — has no lock of its
+    // own: it changes, and locks, through that seat)
+    await page.locator('.tray-toggle').click()
+    const own = await page.locator('.tray-set .series:not(.led)').count()
+    await expect(page.locator('.series-lock')).toHaveCount(own)
+    for (let i = 0; i < own; i++) {
+      const l = page.locator('.tray-set .series-lock').nth(i)
       if ((await l.getAttribute('data-locked')) === 'false') await l.click()
     }
     await expect(page.locator('.series-lock[data-locked="false"]')).toHaveCount(0)

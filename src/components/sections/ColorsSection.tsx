@@ -1,20 +1,20 @@
 import type { ReactElement } from 'react'
-import { Blend, RotateCcw } from 'lucide-react'
-import type { BenchProps } from '../Bench'
-import { Bench } from '../Bench'
+import { Blend, Image as ImageIcon, RotateCcw } from 'lucide-react'
 import { ColorAddField } from '../ColorAddField'
 import type { RoleBoardProps } from '../RoleBoard'
 import { RoleBoard } from '../RoleBoard'
 import type { SeriesTrayProps } from '../SeriesTray'
 import { SeriesTray } from '../SeriesTray'
+import type { UnusedRowProps } from '../UnusedRow'
+import { UnusedRow } from '../UnusedRow'
 import { withKey } from '../../shortcuts'
 import './sections.css'
 
 /**
- * Section 1, once colours exist. The seam for the colour-rows rebuild: the
- * shell renders whatever this returns, and App hands it the board, tray,
- * bench and add-field props whole, so a replacement can take the same
- * object and lay it out differently.
+ * Section 1, once colours exist: one row per seat (your colour → what ships),
+ * the unused colours under them, the chart series folded below, and the ways
+ * in — add, image, presets — folded into the foot, where "1 input" put them
+ * before there was anything to show.
  */
 export interface ColorsSectionBodyProps {
   controls: {
@@ -31,16 +31,21 @@ export interface ColorsSectionBodyProps {
   }
   board: RoleBoardProps
   tray: SeriesTrayProps
-  bench: BenchProps
+  unused: UnusedRowProps
   add: {
     has: (hex: string) => boolean
     onAdd: (inputs: string[]) => void
     open: boolean
     onOpenChange: (open: boolean) => void
   }
+  /** The other two ways in; both replace the set, and both are undoable. */
+  input: {
+    onImage: () => void
+    onPresets: (anchor: HTMLElement) => void
+  }
 }
 
-export function ColorsSectionBody({ controls, board, tray, bench, add }: ColorsSectionBodyProps): ReactElement {
+export function ColorsSectionBody({ controls, board, tray, unused, add, input }: ColorsSectionBodyProps): ReactElement {
   const { locked, picking, baseHex, hasPlacements, onMono, onReset } = controls
   return (
     <>
@@ -84,16 +89,35 @@ export function ColorsSectionBody({ controls, board, tray, bench, add }: ColorsS
       </div>
       {picking && <div className="pick-hint">click a seat to lock its hue · esc to cancel</div>}
       <RoleBoard {...board} />
+      <UnusedRow {...unused} />
       <SeriesTray {...tray} />
-      <Bench {...bench} />
-      {/* No wrapper: the control lays out its own row. */}
-      <ColorAddField
-        placeholder="add a color — #e63946, oklch(…)"
-        has={add.has}
-        onAdd={add.onAdd}
-        open={add.open}
-        onOpenChange={add.onOpenChange}
-      />
+      <div className="colors-verbs">
+        {/* No wrapper: the control lays out its own row. */}
+        <ColorAddField
+          placeholder="add a color — #e63946, oklch(…)"
+          has={add.has}
+          onAdd={add.onAdd}
+          open={add.open}
+          onOpenChange={add.onOpenChange}
+        />
+        <button
+          type="button"
+          className="ctl colors-verb"
+          onClick={input.onImage}
+          title="replace your colors with an image's (undo is one click)"
+          aria-label="replace with an image's colors"
+        >
+          <ImageIcon size={12} strokeWidth={1.75} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          className="ctl colors-verb"
+          onClick={(e) => input.onPresets(e.currentTarget)}
+          title="replace your colors with a preset (undo is one click)"
+        >
+          presets
+        </button>
+      </div>
     </>
   )
 }

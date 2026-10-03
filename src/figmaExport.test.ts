@@ -127,7 +127,7 @@ describe('figma export: schema', () => {
         const { vars, collisions } = figmaRead(doc)
         expect(collisions, file).toEqual([])
         // 44 role tokens + the scrim, and 6 ramps × 12 steps.
-        expect(vars.size, file).toBe(45 + 72)
+        expect(vars.size, file).toBe(48 + 72)
         for (const [path, v] of vars) {
           expect(FIGMA_TYPES.has(v.type), `${file} ${path} $type ${v.type}`).toBe(true)
           expect(v.type).toBe('color')
