@@ -11,7 +11,17 @@ export interface Shortcut {
   key: string
   /** What it does, phrased as the button's own label reads. */
   label: string
+  /**
+   * The sidebar section whose control this key presses. A key aimed at a
+   * folded section opens it and scrolls it into view before acting, so the
+   * press is never silent and its result is on screen. Keys with no section
+   * act on the stage (vision) and need nothing opened.
+   */
+  section?: SectionId
 }
+
+/** The pane's sections, in order. `input` is what `colors` is called before any colour exists. */
+export type SectionId = 'input' | 'colors' | 'tuning' | 'riff' | 'compare'
 
 export type ShortcutId =
   | 'add'
@@ -25,16 +35,17 @@ export type ShortcutId =
   | 'help'
 
 export const SHORTCUTS: Shortcut[] = [
-  { id: 'add', key: 'a', label: 'add a color' },
-  { id: 'mono', key: 'm', label: "mono — lock the theme to one color's hue" },
-  { id: 'riff', key: 'r', label: 'riff — walk the palette one hop' },
+  { id: 'add', key: 'a', label: 'add a color', section: 'colors' },
+  { id: 'mono', key: 'm', label: "mono — lock the theme to one color's hue", section: 'colors' },
+  { id: 'riff', key: 'r', label: 'riff — walk the palette one hop', section: 'riff' },
   // z, not b: this is an undo, and it reads as one everywhere else.
-  { id: 'back', key: 'z', label: 'back one riff' },
-  { id: 'reset', key: 'x', label: 'clear your placements' },
-  { id: 'startOver', key: 'o', label: 'start over' },
-  { id: 'bench', key: 'b', label: 'show the bench' },
+  { id: 'back', key: 'z', label: 'back one riff', section: 'riff' },
+  { id: 'reset', key: 'x', label: 'clear your placements', section: 'colors' },
+  { id: 'startOver', key: 'o', label: 'start over', section: 'colors' },
+  { id: 'bench', key: 'b', label: 'show the bench', section: 'colors' },
   { id: 'vision', key: 'v', label: 'vision — cycle typical, protan, deutan, tritan' },
-  { id: 'help', key: '?', label: 'this list' },
+  // the flyout hangs off the colors header, which a fold hides
+  { id: 'help', key: '?', label: 'this list', section: 'colors' },
 ]
 
 const BY_ID = new Map(SHORTCUTS.map((s) => [s.id, s]))

@@ -1,5 +1,5 @@
-/* The sidebar frame: fixed header, scrolling body, pinned frosted footer,
-   plus the labelled section header that replaced the four <hr> dividers. */
+/* The sidebar frame: fixed header, a scrolling body of numbered, foldable
+   sections with a rail beside it, and a pinned frosted footer. */
 @layer chrome-base, chrome;
 
 @layer chrome {
@@ -38,28 +38,116 @@
     color: var(--ink-faint);
   }
 
-  /* ---------- body: the only thing that scrolls ---------- */
-  .sb-body {
+  /* ---------- middle: the rail and the scroller share one box ----------
+     The rail's coordinate frame IS the scroll viewport, so a tick's position
+     is its section's top scaled by one factor (see rail.ts). */
+  .sb-mid {
     flex: 1;
     min-height: 0;
+    position: relative;
+  }
+
+  /* ---------- body: the only thing that scrolls ---------- */
+  .sb-body {
+    position: absolute; /* also the sections' offsetParent: rail maths reads offsetTop */
+    inset: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 4px var(--pad-side) var(--pad-side);
-    scrollbar-width: thin;
-    scrollbar-color: var(--line-ctl) transparent;
+    /* the rail is the scrollbar; a native one beside it would be a second */
+    scrollbar-width: none;
   }
   .sb-body::-webkit-scrollbar {
-    width: 8px;
+    display: none;
   }
-  .sb-body::-webkit-scrollbar-track {
-    background: transparent;
+
+  /* ---------- the rail: one tick per section that exists ---------- */
+  .rail {
+    position: absolute;
+    left: 3px;
+    top: 10px;
+    bottom: 10px;
+    width: 14px;
+    z-index: 3;
   }
-  .sb-body::-webkit-scrollbar-thumb {
-    background: var(--line-ctl);
-    border-radius: var(--radius-pill);
+  .rail-line {
+    position: absolute;
+    left: 6px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--line-card);
   }
-  .sb-body::-webkit-scrollbar-thumb:hover {
-    background: var(--line-active);
+  /* No transition on the thumb or the ticks' position: they track the scroll
+     1:1. The mockup's v1 eased them, and 60ms of lag read as a bug. */
+  .rail-thumb {
+    position: absolute;
+    left: 5px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--ink-ghost);
+  }
+  .rail-tick {
+    position: absolute;
+    left: 0;
+    width: 14px;
+    height: 14px;
+    margin-top: -7px;
+    border: 0;
+    padding: 0;
+    background: none;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+  .rail-tick i {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+    box-shadow: 0 0 0 3px var(--surface-1);
+    transition:
+      transform var(--d-base) var(--ease),
+      background var(--d-base) var(--ease);
+    animation: tick-in var(--d-slow) var(--ease-out) backwards;
+  }
+  .rail-tick.here i {
+    background: var(--ink);
+    transform: scale(1.5);
+  }
+  .rail-tick:hover i,
+  .rail-tick:focus-visible i {
+    transform: scale(1.7);
+  }
+  .rail-tick:focus-visible {
+    outline: none;
+  }
+  .rail-tick:focus-visible i {
+    box-shadow: 0 0 0 3px var(--surface-1), 0 0 0 4px var(--line-active);
+  }
+  .rail-tip {
+    position: absolute;
+    left: 20px;
+    top: -1px;
+    font-size: var(--fs-xs);
+    color: var(--ink-muted);
+    background: var(--surface-2);
+    border: 1px solid var(--line-card);
+    border-radius: 6px;
+    padding: 1px 7px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--d-fast) var(--ease);
+  }
+  .rail-tick:hover .rail-tip,
+  .rail-tick:focus-visible .rail-tip {
+    opacity: 1;
+  }
+  @keyframes tick-in {
+    from {
+      transform: scale(0);
+    }
   }
 
   /* ---------- footer: pinned, frosted, shadowed only when earned ---------- */
@@ -86,23 +174,58 @@
     opacity: 0;
     transition: opacity var(--d-base) var(--ease);
   }
-  .sidebar-shell.scrolled .sb-foot::before {
+  .sidebar-shell.behind .sb-foot::before {
     opacity: 1;
   }
 
-  /* ---------- sections ---------- */
+  /* ---------- sections: numbered, each folds on its own ---------- */
+  /* A section that arrives animates in. Fill is `backwards`, never `both`:
+     a filled end state leaves `transform: matrix(1,0,0,1,0,0)` behind, and
+     even an identity transform makes the section a containing block for
+     every position:fixed descendant (the sidebar-controls trap). */
   .sec {
-    margin: 0 0 22px;
+    animation: sec-in var(--d-slow) var(--ease-out) backwards;
   }
-  .sec:last-child {
-    margin-bottom: 0;
+  .sec + .sec {
+    margin-top: 22px;
   }
   .sec-head {
+    position: relative;
     display: flex;
     align-items: center;
     gap: var(--gap-m);
     margin: 0 0 10px;
     min-height: 24px;
+  }
+  .sec.shut .sec-head {
+    margin-bottom: 0;
+  }
+  .sec-toggle {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--gap-m);
+    height: 24px;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .sec-toggle:focus-visible {
+    outline: 1px solid var(--line-active);
+    outline-offset: 3px;
+  }
+  .sec-n {
+    font-family: var(--font-code);
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+    min-width: 8px;
   }
   /* the instrument-panel voice: monospace, tracked out, quiet */
   .sec-label {
@@ -111,8 +234,11 @@
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.14em;
-    color: var(--ink-faint);
+    color: var(--ink-muted);
     white-space: nowrap;
+  }
+  .sec-toggle:hover .sec-label {
+    color: var(--ink);
   }
   .sec-rule {
     flex: 1;
@@ -120,18 +246,75 @@
     height: 1px;
     background: var(--line-card);
   }
+  /* what you would see if it were open — only while it is not */
+  .sec-read {
+    font-family: var(--font-code);
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    max-width: 0;
+    opacity: 0;
+    transition: opacity var(--d-base) var(--ease);
+  }
+  .sec.shut .sec-read {
+    max-width: 200px;
+    opacity: 1;
+  }
+  .sec-chev {
+    flex: none;
+    color: var(--ink-faint);
+    transition: transform var(--d-base) var(--ease);
+  }
+  .sec.shut .sec-chev {
+    transform: rotate(-90deg);
+  }
   .sec-act {
     display: inline-flex;
     align-items: center;
     gap: var(--gap-s);
     flex-shrink: 0;
   }
+  /* The fold: a grid row animating between 1fr and 0fr needs no measured
+     height, and the content fades as it goes. */
+  .sec-body {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows var(--d-stage) var(--ease);
+  }
+  .sec.shut .sec-body {
+    grid-template-rows: 0fr;
+  }
+  .sec-clip {
+    min-height: 0;
+  }
+  /* clip only while folded or folding — never at rest, open */
+  .sec.shut .sec-clip,
+  .sec.moving .sec-clip {
+    overflow: hidden;
+  }
+  .sec-pad {
+    padding-bottom: 2px;
+    transition: opacity var(--d-stage) var(--ease);
+  }
+  .sec.shut .sec-pad {
+    opacity: 0;
+  }
 
   /* Belt and braces: the durations are already zeroed globally by
      styles/motion.css, this kills the transition outright. */
   @media (prefers-reduced-motion: reduce) {
-    .sb-foot::before {
+    .sb-foot::before,
+    .sec-pad,
+    .sec-read,
+    .sec-chev {
       transition: none;
+    }
+    .sec,
+    .rail-tick i {
+      animation: none;
     }
   }
 }

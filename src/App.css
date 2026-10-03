@@ -157,13 +157,28 @@
     gap: var(--gap-m);
   }
 
-  /* the sidebar before any colors exist: just the brand and a promise */
-  .controls-empty {
-    margin-top: 140px;
+  /* the stage before a frame has colors: the ways in are in the pane's
+     first section, so this only points there */
+  .stage-empty {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    place-items: center;
+    margin: 18px 28px 28px;
+    border: 1px dashed var(--line-ctl);
+    border-radius: var(--radius-card);
     text-align: center;
     font-size: var(--fs-s);
-    color: var(--ink-faint);
     line-height: 1.6;
+    color: var(--ink-faint);
+  }
+  .stage-empty p {
+    margin: 0;
+  }
+  .frame .stage-empty {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
   }
 
   /* ---------- start-over menu ---------- */

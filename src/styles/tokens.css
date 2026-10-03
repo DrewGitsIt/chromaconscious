@@ -31,6 +31,7 @@
   --ink: #ededee;
   --ink-muted: #a3a3a8;
   --ink-faint: #6e6e74;
+  --ink-ghost: #46464b; /* the rail's thumb: present, never louder than content */
 
   /* accents. --accent is a light grey, not a hue: selection and focus are
      drawn in ink. */
@@ -74,6 +75,7 @@
   --d-fast: 120ms; /* hovers, menu open, caption cross-fade */
   --d-base: 200ms; /* state changes: reorder, remove, toast in */
   --d-slow: 340ms; /* the ones that carry meaning: riff, first-paint stagger */
+  --d-stage: 300ms; /* a sidebar section folding open or shut */
   --ease: cubic-bezier(0.2, 0.8, 0.3, 1); /* default: quick out, soft landing */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* entrances — decelerate hard */
   --ease-back: cubic-bezier(0.34, 1.4, 0.64, 1); /* overshoot, for lifts */
