@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ROLES, candidatesFromList, generateTheme, parseColor, toHex } from './engine'
+import { applyOp, emptyThemeState } from './ops'
 import { PRESETS } from './presets'
 import type { ColorCandidate } from './engine'
 import {
@@ -9,6 +10,10 @@ import {
   hasRiffableSeats,
   keepRole,
   lockRole,
+  lockedFailure,
+  seatDelta,
+  setRoleInput,
+  setSeriesColor,
   lockSeries,
   placeInRole,
   describePlacement,
@@ -401,6 +406,201 @@ describe('adjustRole — hand-picking a new colour for a seat', () => {
     const role = v.slots.find((s) => s.candidateIndex === 0)!.role
     const next = adjustRole(c, role, parseColor('#00a651')!, '#00a651', v)
     expect(next[0].source).toBe('manual')
+  })
+})
+
+describe('the two edits — your colour derives, the shipped colour locks as typed', () => {
+  const coastal = () => candidatesFromList(PRESETS[0].colors)
+
+  it('editing YOUR seat\'s output locks it as typed — taste, riff and repair can no longer pull it', () => {
+    // The bug: a seat holding your colour got the pin and nothing else, while
+    // a derived seat got kept (locked). Same gesture, two promises.
+    const c = coastal()
+    const v = board(c)
+    const accent = v.slots.find((s) => s.role === 'accent')!
+    expect(accent.provenance).toBe('yours')
+    const next = adjustRole(c, 'accent', parseColor('#3f8f6a')!, '#3f8f6a', v)
+    const cand = next[accent.candidateIndex!]
+    expect(cand.locked).toBe(true)
+    expect(toHex(cand.lockedColor!)).toBe('#3f8f6a')
+    // the input takes the same value, so the row reads "="
+    expect(toHex(cand.color)).toBe('#3f8f6a')
+    for (const fidelity of [0, 0.5]) {
+      for (const seed of [0, 4]) {
+        const r = generateTheme({ candidates: next, fidelity, seed })
+        const after = readBoard(r, next, 'light').slots.find((s) => s.role === 'accent')!
+        expect(after.hex, `taste ${fidelity}, hop ${seed}`).toBe('#3f8f6a')
+        expect(seatDelta(after.inputHex!, after.hex).same).toBe(true)
+      }
+    }
+  })
+
+  it('editing a DERIVED seat\'s output does the same: kept, locked, exact', () => {
+    const c = candidatesFromList(['#7832c3'])
+    const v = board(c)
+    const next = adjustRole(c, 'warning', parseColor('#c98a12')!, '#c98a12', v)
+    const after = seat(next, 'warning')
+    expect(after.locked).toBe(true)
+    expect(after.hex).toBe('#c98a12')
+    expect(after.inputHex).toBe('#c98a12')
+  })
+
+  it('editing your INPUT re-derives — and releases a lock, or the edit would change nothing that ships', () => {
+    const c = coastal()
+    const locked = lockRole(c, 'primary', board(c, 3))
+    const v = board(locked)
+    const i = v.slots.find((s) => s.role === 'primary')!.candidateIndex!
+    // a colour far outside primary's window, so taste has something to do
+    const next = setRoleInput(locked, 'primary', parseColor('#f4c2c2')!, '#f4c2c2', v)
+    expect(next[i].locked).toBe(false)
+    expect(next[i].lockedColor).toBeUndefined()
+    expect(next[i].pin).toBe('primary')
+    const after = seat(next, 'primary')
+    expect(after.inputHex).toBe('#f4c2c2')
+    expect(after.candidateIndex).toBe(i)
+    // at taste 0.5 the engine moves it, and the middle cell says so
+    expect(seatDelta(after.inputHex!, after.hex).same).toBe(false)
+  })
+
+  it('"+ add" on a derived seat creates a colour of yours there, unlocked', () => {
+    const c = candidatesFromList(['#7832c3'])
+    const v = board(c)
+    expect(v.slots.find((s) => s.role === 'success')!.inputHex).toBeNull()
+    const next = setRoleInput(c, 'success', parseColor('#2f9e5b')!, '#2f9e5b', v)
+    expect(next).toHaveLength(2)
+    const after = seat(next, 'success')
+    expect(after.provenance).toBe('yours')
+    expect(after.locked).toBe(false)
+    expect(after.inputHex).toBe('#2f9e5b')
+  })
+
+  it('a kept seat whose input you then edit becomes yours', () => {
+    const c = candidatesFromList(['#7832c3'])
+    const kept = adjustRole(c, 'danger', parseColor('#b3261e')!, '#b3261e', board(c))
+    const next = setRoleInput(kept, 'danger', parseColor('#c0392b')!, '#c0392b', board(kept))
+    expect(seat(next, 'danger').provenance).toBe('yours')
+  })
+
+  it('the ops run the same verbs: adjust locks as typed, input derives', () => {
+    const s = { ...emptyThemeState(), candidates: coastal() }
+    const ctx = { mode: 'light' as const }
+    const a = applyOp(s, { op: 'adjust', role: 'accent', color: '#3f8f6a' }, ctx)
+    const idx = board(s.candidates).slots.find((x) => x.role === 'accent')!.candidateIndex!
+    expect(a.candidates[idx].locked).toBe(true)
+    const b = applyOp(a, { op: 'input', role: 'accent', color: '#3f8f6a' }, ctx)
+    expect(b.candidates[idx].locked).toBe(false)
+  })
+
+  it('chart rows: input derives, output locks as typed, a role-led slot is left alone', () => {
+    const c = candidatesFromList(PRESETS[0].colors)
+    const v = board(c)
+    const own = v.series.find((e) => e.candidateIndex != null && e.leadsFrom == null)!
+    const out = setSeriesColor(c, own.slot, 'output', parseColor('#2a9d8f')!, '#2a9d8f', v)
+    expect(out[own.candidateIndex!].locked).toBe(true)
+    expect(out[own.candidateIndex!].pin).toBe('chart')
+    const back = setSeriesColor(out, own.slot, 'input', parseColor('#2a9d8f')!, '#2a9d8f', board(out))
+    expect(back[own.candidateIndex!].locked).toBe(false)
+    const led = v.series.find((e) => e.leadsFrom != null)
+    if (led) expect(setSeriesColor(c, led.slot, 'output', parseColor('#000000')!, '#000', v)).toBe(c)
+    const derived = v.series.find((e) => e.candidateIndex == null && e.leadsFrom == null)
+    if (derived) {
+      const added = setSeriesColor(c, derived.slot, 'input', parseColor('#e9c46a')!, '#e9c46a', v)
+      expect(added).toHaveLength(c.length + 1)
+      expect(added.at(-1)!.pin).toBe('chart')
+    }
+  })
+})
+
+describe('seatDelta — the middle cell, in words', () => {
+  it('reads "same" for one colour, or anything under ΔE .004', () => {
+    expect(seatDelta('#457b9d', '#457b9d')).toMatchObject({ same: true, text: 'same' })
+    expect(seatDelta('#457b9d', '#457b9e').same).toBe(true)
+  })
+
+  it('names the dominant direction beside the ΔE', () => {
+    const lighter = seatDelta('#7a2b2b', '#b04040')
+    expect(lighter.same).toBe(false)
+    expect(lighter.words).toBe('lighter')
+    expect(lighter.text).toMatch(/^ΔE \.\d{3} · lighter$/)
+    expect(seatDelta('#b04040', '#7a2b2b').words).toBe('darker')
+  })
+
+  it('says "more vivid" / "softer" when chroma is what moved', () => {
+    const grey = 'oklch(0.6 0.04 250)'
+    const vivid = 'oklch(0.6 0.15 250)'
+    expect(seatDelta(toHex(parseColor(grey)!), toHex(parseColor(vivid)!)).words).toBe('more vivid')
+    expect(seatDelta(toHex(parseColor(vivid)!), toHex(parseColor(grey)!)).words).toBe('softer')
+  })
+
+  it('says the hue turn in degrees, signed, with a real minus', () => {
+    const a = toHex(parseColor('oklch(0.62 0.15 30)')!)
+    const b = toHex(parseColor('oklch(0.62 0.15 49)')!)
+    expect(seatDelta(a, b).words).toMatch(/^hue \+1[89]°$/)
+    expect(seatDelta(b, a).words).toMatch(/^hue −1[89]°$/)
+  })
+
+  it('never names a hue on a near-grey, where there is none to see', () => {
+    const a = toHex(parseColor('oklch(0.6 0.01 30)')!)
+    const b = toHex(parseColor('oklch(0.6 0.01 200)')!)
+    expect(seatDelta(a, b).words).not.toMatch(/hue/)
+  })
+
+  it('formats ΔE without the leading zero', () => {
+    expect(seatDelta('#000000', '#ffffff').text).toBe('ΔE 1.000 · lighter')
+    expect(seatDelta('#e63946', '#f34a36').text).toMatch(/^ΔE \.0\d\d · /)
+  })
+})
+
+describe('lockedFailure — a lock that fails a check, and "derive safely"', () => {
+  // A near-white primary locked as typed: at taste 0.5 the engine can only
+  // spend so much lightness on standing it off the page, and the lock keeps
+  // taste from pulling it into primary's window — so the pop pair fails.
+  const failing = () => {
+    const c = candidatesFromList(PRESETS[0].colors)
+    return adjustRole(c, 'primary', parseColor('#f8f8f8')!, '#f8f8f8', board(c))
+  }
+
+  it('reads the failing report row descending from the seat, with ratio and reason', () => {
+    const c = failing()
+    const r = theme(c)
+    const f = lockedFailure(r, 'primary', 'dark')!
+    expect(f).not.toBeNull()
+    const row = r.light.report.find((x) => x.token === 'primary' && x.background === 'background')!
+    expect(row.pass).toBe(false)
+    expect(f.short).toBe(`${(Math.floor(row.wcag * 10) / 10).toFixed(1)}:1`)
+    // it fails in light; the frame is dark, so the reason names the mode
+    expect(f.reason).toBe(`${f.short} on the light page; a primary fill needs 3:1`)
+  })
+
+  it('stays quiet on a seat that passes', () => {
+    const c = candidatesFromList(PRESETS[0].colors)
+    const r = theme(c)
+    for (const role of ROLES) expect(lockedFailure(r, role, 'light'), role).toBeNull()
+  })
+
+  it('names a pair the repair pass could not hold apart', () => {
+    const c = candidatesFromList(PRESETS[0].colors)
+    // danger locked on primary's own red: the engine can't separate them
+    const next = adjustRole(c, 'danger', parseColor('#e63946')!, '#e63946', board(c))
+    const f = lockedFailure(theme(next), 'danger', 'light')!
+    expect(f.short).toBe('≈ primary')
+    expect(f.reason).toMatch(/^danger must not read as primary: ΔE \.\d{3} apart, needs \.100$/)
+  })
+
+  it('"derive safely" is the unlock: the engine re-derives from your colour and the check passes', () => {
+    const c = failing()
+    const i = board(c).slots.find((s) => s.role === 'primary')!.candidateIndex!
+    const s = { ...emptyThemeState(), candidates: c }
+    const safe = applyOp(s, { op: 'unlock', role: 'primary' }, { mode: 'light' })
+    expect(safe.candidates[i].locked).toBe(false)
+    // your colour is still the input…
+    expect(toHex(safe.candidates[i].color)).toBe('#f8f8f8')
+    const r = theme(safe.candidates)
+    // …the engine moved the output, and every primary row passes
+    const after = readBoard(r, safe.candidates, 'light').slots.find((x) => x.role === 'primary')!
+    expect(seatDelta(after.inputHex!, after.hex).same).toBe(false)
+    expect(r.light.report.filter((x) => x.token === 'primary').every((x) => x.pass)).toBe(true)
+    expect(lockedFailure(r, 'primary', 'light')).toBeNull()
   })
 })
 

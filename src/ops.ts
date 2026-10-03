@@ -28,6 +28,8 @@ import {
   readBoard,
   remapAfterRemove,
   resetPlacements,
+  setRoleInput,
+  setSeriesColor,
   unbenchCandidate,
   unlockRole,
   unlockSeries,
@@ -77,8 +79,15 @@ export type Op =
   | { op: 'unbench'; index: number }
   /** Free a seat: its holder goes to the bench and the engine derives the role. */
   | { op: 'derive'; role: Role }
-  /** Set a seat's colour directly (the picker). A derived seat is kept first. */
+  /**
+   * Set the colour a seat SHIPS, locked as typed: the input takes the same
+   * value, and taste, riff and repair leave it alone. A derived seat is kept.
+   */
   | { op: 'adjust'; role: Role; color: string }
+  /** Set YOUR colour for a seat and let the engine derive from it (unlocks it). */
+  | { op: 'input'; role: Role; color: string }
+  /** A chart row's edit: your colour (derives) or the one that ships (locks as typed). */
+  | { op: 'seriesColor'; slot: number; side: 'input' | 'output'; color: string }
   /** Lock a seat where it stands. A derived seat is kept, which locks it. */
   | { op: 'lock'; role: Role }
   | { op: 'unlock'; role: Role }
@@ -168,6 +177,18 @@ export function applyOp<S extends ThemeState>(state: S, op: Op, ctx: OpContext):
       const view = board()
       const parsed = parseColor(op.color)
       return view && parsed ? withCandidates(adjustRole(state.candidates, op.role, parsed, op.color, view)) : state
+    }
+    case 'input': {
+      const view = board()
+      const parsed = parseColor(op.color)
+      return view && parsed ? withCandidates(setRoleInput(state.candidates, op.role, parsed, op.color, view)) : state
+    }
+    case 'seriesColor': {
+      const view = board()
+      const parsed = parseColor(op.color)
+      return view && parsed
+        ? withCandidates(setSeriesColor(state.candidates, op.slot, op.side, parsed, op.color, view))
+        : state
     }
     case 'lock': {
       // The lock is the only thing that stops riff moving a colour. A derived

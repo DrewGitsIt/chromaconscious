@@ -227,18 +227,19 @@
     color: var(--ink-faint);
     min-width: 8px;
   }
-  /* the instrument-panel voice: monospace, tracked out, quiet */
+  /* "1 colors": the section's name in the UI voice, lowercase, a step above
+     body text — the mockup's heading, not a tracked-out instrument label */
   .sec-label {
-    font-family: var(--font-code);
-    font-size: var(--fs-xs);
+    font-family: var(--font-ui);
+    font-size: var(--fs-m);
     font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: var(--ink-muted);
+    color: var(--ink);
     white-space: nowrap;
   }
   .sec-toggle:hover .sec-label {
-    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--ink-ghost);
+    text-underline-offset: 4px;
   }
   .sec-rule {
     flex: 1;

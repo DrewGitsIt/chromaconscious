@@ -40,8 +40,15 @@ const seat = (role: RoleSeat): HTMLElement =>
   document.querySelector(`.rb-slot[data-role="${role}"]`) as HTMLElement
 const hexOf = (role: RoleSeat): string | null =>
   seat(role).querySelector('.rb-hex')?.textContent ?? null
+/** Provenance, read off the row: `rb-yours`, `rb-kept` or `rb-derived`. */
 const tagOf = (role: RoleSeat): string | null =>
-  seat(role).querySelector('.rb-tag')?.textContent ?? null
+  /\brb-(yours|kept|derived)\b/.exec(seat(role).className)?.[1] ?? null
+/** The row's left cell: your colour, or null where it is the "+ add" verb. */
+const inputOf = (role: RoleSeat): string | null =>
+  seat(role).querySelector('.rb-in .rb-chip-hex')?.textContent ?? null
+/** The row's middle cell, as its kind: same, moved, derived or fail. */
+const deltaOf = (role: RoleSeat): string | null =>
+  seat(role).querySelector('.dc')?.getAttribute('data-kind') ?? null
 /**
  * A seat shows the SEED — the colour really in the theme — so it need not be
  * the string you typed. The input survives in the body tooltip as "from #…",
@@ -80,11 +87,18 @@ const seriesLocks = (): (string | null)[] =>
     (s) => s.querySelector('.series-lock')?.getAttribute('data-locked') ?? null,
   )
 
-const benchBar = (): HTMLElement => document.querySelector('.bench-bar') as HTMLElement
-const benchHexes = (): (string | null)[] =>
-  [...document.querySelectorAll('.benched .bench-hex')].map((e) => e.textContent)
+/** The "unused" row under the seats — colours of yours that hold no seat. */
+const unusedHexes = (): (string | null)[] =>
+  [...document.querySelectorAll('.unused-chip .unused-hex')].map((e) => e.textContent)
+const benchHexes = unusedHexes
+/** The chart rows' fold. */
+const chartToggle = (): HTMLElement => document.querySelector('.tray-toggle') as HTMLElement
 
+/** Your colour's side of a row (its chip, or "+ add"): what fills this seat. */
 const openAssign = (role: RoleSeat) =>
+  fireEvent.click(seat(role).querySelector('.rb-in, .rb-add') as HTMLElement)
+/** The shipped side: set it, locked as typed. */
+const openShip = (role: RoleSeat) =>
   fireEvent.click(seat(role).querySelector('.rb-body') as HTMLElement)
 const openTip = (role: RoleSeat) =>
   fireEvent.click(seat(role).querySelector('.rb-name') as HTMLElement)
@@ -372,13 +386,13 @@ describe('the role board', () => {
     expect(ROLE_SEATS.map(lockOf)).toEqual(Array(6).fill('false'))
     expect(lockedSeats()).toEqual([])
     const lock = seat('primary').querySelector('.rb-lock') as HTMLElement
-    expect(lock.getAttribute('title')).toBe('unlocked — riff may move this')
+    expect(lock.getAttribute('title')).toBe('unlocked — riff and taste may move this')
 
     toggleLock('primary')
     expect(lockedSeats()).toEqual(['primary'])
     expect(seat('primary').className).toContain('is-locked')
     expect(seat('primary').querySelector('.rb-lock')?.getAttribute('title')).toBe(
-      'locked — riff will not move this',
+      'locked — riff and taste will not move this',
     )
     // Unlocking is not a bench and not an unseat: the same colour of yours is
     // still in the same seat, it is simply riffable again. (Its rendered seed
@@ -415,8 +429,13 @@ describe('the role board', () => {
     bootCoastal()
     expect(document.querySelectorAll('.tray-set > *')).toHaveLength(5)
     // two coastal colors chart today; the rest of the series is the engine's
-    expect(document.querySelector('.tray-cap')?.textContent).toBe('2 of 5')
-    fireEvent.click(document.querySelector('.tray-name') as HTMLElement)
+    expect(document.querySelector('.tray-cap')?.textContent).toBe('2 of 5 yours')
+    // folded by default, with a strip of what ships standing in for the rows
+    expect(document.querySelector('.tray-toggle')?.getAttribute('aria-expanded')).toBe('false')
+    expect(document.querySelectorAll('.tray-sum i')).toHaveLength(5)
+    fireEvent.click(document.querySelector('.tray-toggle') as HTMLElement)
+    expect(document.querySelector('.tray-toggle')?.getAttribute('aria-expanded')).toBe('true')
+    fireEvent.click(document.querySelector('.tray-help') as HTMLElement)
     expect(document.querySelector('.rp-tip-name')?.textContent).toBe('Chart series')
     expect(document.querySelector('.rp-tip-gloss')?.textContent).toContain('Data series')
     expect([...document.querySelectorAll('.rp-tip-job')].map((e) => e.textContent)).toContain(
@@ -464,14 +483,13 @@ describe('assigning a seat', () => {
     expect(originOf('primary')).toBe('#457b9d')
     expect(tagOf('primary')).toBe('yours')
     expect(document.querySelector('.rp-asg')).toBeNull()
-    expect(benchBar().textContent).toContain('1 color not in play')
-    expect(benchHexes()).toEqual(['#e63946'])
+    expect(unusedHexes()).toEqual(['#e63946'])
   })
 
-  it('adjust hands the seat a hand-picked colour on apply — and only on apply', () => {
+  it('changing your colour hands the seat a new input on apply — and only on apply', () => {
     bootCoastal()
     openAssign('accent')
-    fireEvent.click(screen.getByRole('button', { name: /adjust this color/ }))
+    fireEvent.click(screen.getByRole('button', { name: /change your color/ }))
     const before = originOf('accent')
     fireEvent.change(screen.getByLabelText('new color for accent'), {
       target: { value: '00a651' },
@@ -609,7 +627,7 @@ describe('riff', () => {
     // just pulled out of an image and most wanted to explore.
     bootFullBoard()
     expect(ROLE_SEATS.map(tagOf).every((t) => t === 'yours')).toBe(true)
-    expect(document.querySelector('.tray-cap')?.textContent).toBe('5 of 5')
+    expect(document.querySelector('.tray-cap')?.textContent).toBe('5 of 5 yours')
     expect(lockedSeats()).toEqual([])
     expect(riffBtn().disabled).toBe(false)
 
@@ -644,35 +662,102 @@ describe('placements', () => {
     expect(boardState()).not.toEqual(canonical)
     fireEvent.click(screen.getByTitle(/clear your placements/))
     expect(boardState()).toEqual(canonical)
-    expect(benchBar().textContent).toContain('0 colors not in play')
+    expect(unusedHexes()).toEqual([])
     expect(screen.queryByTitle(/clear your placements/)).toBeNull()
   })
 })
 
-describe('the bench', () => {
-  it('starts collapsed, counts what is parked, and opens on click', () => {
+describe('unused', () => {
+  it('lists the colours that hold no seat, in a quiet row, each one the place verb', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'Mono + ember' }))
-    const bar = benchBar()
-    expect(bar.textContent).toContain('bench · 3 colors not in play')
-    expect(bar.getAttribute('aria-expanded')).toBe('false')
-    expect(document.querySelector('.bench-drawer')?.getAttribute('aria-hidden')).toBe('true')
-    // the collapsed bar still shows what is down there
-    expect(document.querySelectorAll('.bench-dots i')).toHaveLength(3)
-    fireEvent.click(bar)
-    expect(bar.getAttribute('aria-expanded')).toBe('true')
-    expect(document.querySelector('.bench-drawer')?.getAttribute('aria-hidden')).toBe('false')
-    expect(benchHexes()).toEqual(['#4d4d4d', '#9a9a9a', '#e8e8e8'])
+    expect(document.querySelector('.unused-lbl')?.textContent).toBe('unused')
+    expect(unusedHexes()).toEqual(['#4d4d4d', '#9a9a9a', '#e8e8e8'])
+    fireEvent.click(screen.getByRole('button', { name: 'put #9a9a9a in a seat' }))
+    expect(document.querySelector('.rp-place .rp-asg-q')?.textContent).toBe('#9a9a9a')
+    // every seat is offered, plus the chart series
+    const targets = [...document.querySelectorAll('.rp-place .rp-asg-list .rp-opt-name')].map((e) => e.textContent)
+    expect(targets).toEqual([...ROLE_SEATS, 'chart series'])
+    fireEvent.click(
+      [...document.querySelectorAll('.rp-place .rp-opt')].find(
+        (e) => e.querySelector('.rp-opt-name')?.textContent === 'accent',
+      ) as HTMLElement,
+    )
+    expect(inputOf('accent')).toBe('#9a9a9a')
+    expect(unusedHexes()).not.toContain('#9a9a9a')
   })
 
-  it('says so plainly when nothing is parked, and says it once', () => {
+  it('shrinks to one quiet line when every colour has a seat — still a place to park one', () => {
     bootCoastal()
-    expect(benchBar().textContent).toContain('bench · 0 colors not in play')
-    expect(document.querySelectorAll('.benched')).toHaveLength(0)
-    // The bar's own count is the whole message. A second line inside the
-    // drawer restating it was redundant; the bar is also the drop target, so
-    // an empty drawer costs nothing.
-    expect(document.querySelector('.bench-empty')).toBeNull()
+    expect(document.querySelectorAll('.unused-chip')).toHaveLength(0)
+    expect(document.querySelector('.unused-read')?.textContent).toBe('none · drop a seat here to park it')
+  })
+})
+
+describe('the colour rows', () => {
+  it('every row is [yours] [middle] [ships]; a derived seat\'s left cell is "+ add"', () => {
+    bootCoastal()
+    expect(inputOf('primary')).toBe('#e63946')
+    expect(inputOf('danger')).toBeNull()
+    expect(seat('danger').querySelector('.rb-add')?.textContent).toBe('add')
+    expect(deltaOf('danger')).toBe('derived')
+    // the shipped chip of a derived seat keeps the dashed inner edge
+    expect(seat('danger').querySelector('.rb-body')?.className).toContain('is-derived')
+    expect(seat('primary').querySelector('.rb-body')?.className).not.toContain('is-derived')
+    // both chips always show, even when nothing moved
+    expect(deltaOf('accent')).toBe('same')
+    expect(seat('accent').querySelectorAll('.rb-chip')).toHaveLength(2)
+    expect(seat('accent').querySelector('.dc-why')?.textContent).toBe('same')
+    // primary moved toward its role, and the cell says how, in words
+    expect(deltaOf('primary')).toBe('moved')
+    expect(seat('primary').querySelector('.dc-why')?.textContent).toMatch(/^ΔE \.\d{3}(lighter|darker|more vivid|softer|hue [+−]\d+°|nudged)$/)
+  })
+
+  it('editing the shipped colour locks it as typed: the input takes it, the cell reads "="', () => {
+    bootCoastal()
+    expect(deltaOf('primary')).toBe('moved')
+    openShip('primary')
+    fireEvent.change(screen.getByLabelText('color primary ships'), { target: { value: 'c0392b' } })
+    fireEvent.click(screen.getByRole('button', { name: 'lock' }))
+    expect(hexOf('primary')).toBe('#c0392b')
+    expect(inputOf('primary')).toBe('#c0392b')
+    expect(deltaOf('primary')).toBe('same')
+    expect(lockOf('primary')).toBe('true')
+    expect(seat('primary').querySelector('.rb-state')?.textContent).toBe('locked · as typed')
+    // and taste can no longer pull it
+    fireEvent.change(document.querySelector('.dial-slider') as HTMLInputElement, { target: { value: '0' } })
+    expect(hexOf('primary')).toBe('#c0392b')
+  })
+
+  it('"+ add" gives a derived seat a colour of yours, which the engine derives from', () => {
+    bootCoastal()
+    openAssign('success')
+    fireEvent.change(screen.getByLabelText('new color for success'), { target: { value: '2f9e5b' } })
+    fireEvent.click(screen.getByRole('button', { name: 'apply' }))
+    expect(inputOf('success')).toBe('#2f9e5b')
+    expect(tagOf('success')).toBe('yours')
+    expect(lockOf('success')).toBe('false')
+  })
+
+  it('a locked colour that fails a check warns in the row, and "derive safely" clears it', () => {
+    bootCoastal()
+    openShip('primary')
+    fireEvent.change(screen.getByLabelText('color primary ships'), { target: { value: 'f8f8f8' } })
+    fireEvent.click(screen.getByRole('button', { name: 'lock' }))
+    expect(deltaOf('primary')).toBe('fail')
+    expect(seat('primary').querySelector('.dc-short')?.textContent).toBe('2.1:1')
+    expect(seat('primary').querySelector('.rb-fail-why')?.textContent).toBe(
+      '2.1:1 on the light page; a primary fill needs 3:1',
+    )
+    // keeping it is the default: one button, and it is the fix
+    expect([...seat('primary').querySelectorAll('.rb-fail button')].map((b) => b.textContent)).toEqual([
+      'derive safely',
+    ])
+    fireEvent.click(screen.getByRole('button', { name: 'derive safely' }))
+    expect(seat('primary').querySelector('.rb-fail')).toBeNull()
+    expect(lockOf('primary')).toBe('false')
+    expect(inputOf('primary')).toBe('#f8f8f8')
+    expect(deltaOf('primary')).toBe('moved')
   })
 })
 
@@ -709,15 +794,15 @@ describe('color input', () => {
     expect(benchHexes()).not.toContain('#18aa66')
   })
 
-  it('a color removed from the bench can be added again', () => {
+  it('a color removed from unused can be added again', () => {
     bootCoastal()
     addColors('#18aa66')
-    // free its seat to park it, then drop it from the bench entirely
+    // free its seat to park it, then remove it from unused entirely
     openAssign('success')
     freeSeat()
     expect(benchHexes()).toEqual(['#18aa66'])
-    fireEvent.click(benchBar())
-    fireEvent.click(screen.getByLabelText('remove #18aa66'))
+    fireEvent.click(screen.getByRole('button', { name: 'put #18aa66 in a seat' }))
+    fireEvent.click(screen.getByRole('button', { name: /remove #18aa66/ }))
     expect(benchHexes()).toEqual([])
     expect(seatHexes()).not.toContain('#18aa66')
     addColors('#18aa66')
@@ -1099,16 +1184,16 @@ describe('keyboard', () => {
     expect(hop()).toBe('1')
   })
 
-  it('m opens the mono picker, b toggles the bench', () => {
+  it('m opens the mono picker, c unfolds the chart rows', () => {
     bootCoastal()
     press('m')
     expect(document.querySelector('.pick-hint')).toBeTruthy()
     press('Escape')
     expect(document.querySelector('.pick-hint')).toBeNull()
 
-    expect(benchBar().getAttribute('aria-expanded')).toBe('false')
-    press('b')
-    expect(benchBar().getAttribute('aria-expanded')).toBe('true')
+    expect(chartToggle().getAttribute('aria-expanded')).toBe('false')
+    press('c')
+    expect(chartToggle().getAttribute('aria-expanded')).toBe('true')
   })
 
   it('shift+? opens the map, and it lists every shortcut', () => {
@@ -1134,9 +1219,9 @@ describe('keyboard', () => {
     openAdd()
     const field = addField()
     fireEvent.keyDown(field, { key: 'r' })
-    fireEvent.keyDown(field, { key: 'b' })
+    fireEvent.keyDown(field, { key: 'c' })
     expect(hop()).toBeNull()
-    expect(benchBar().getAttribute('aria-expanded')).toBe('false')
+    expect(chartToggle().getAttribute('aria-expanded')).toBe('false')
   })
 
   it('a modifier hands the key back to the browser', () => {
@@ -1183,9 +1268,9 @@ describe('the pane sections', () => {
     fireEvent.keyDown(window, { key: 'z' })
     expect(hop()).toBeNull()
     expect(head('colors').getAttribute('aria-expanded')).toBe('false')
-    fireEvent.keyDown(window, { key: 'b' })
+    fireEvent.keyDown(window, { key: 'c' })
     expect(head('colors').getAttribute('aria-expanded')).toBe('true')
-    expect(benchBar().getAttribute('aria-expanded')).toBe('true')
+    expect(chartToggle().getAttribute('aria-expanded')).toBe('true')
   })
 
   it('compare exists only while the stage is split, as section 4', () => {

@@ -72,7 +72,7 @@ test.describe('color locator', () => {
   test('hovering a DERIVED seat locates it — provenance is not the question', async ({ page }) => {
     await bootPicnic(page)
     const neutral = seat(page, 'neutral')
-    await expect(neutral.locator('.rb-tag')).toHaveText('derived')
+    await expect(neutral).toHaveClass(/\brb-derived\b/)
     // the page background descends from the neutral, so it must stay verbatim
     const bgBefore = await rgbOf(page, '.preview-root', 'background-color')
     await neutral.hover()

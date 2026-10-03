@@ -21,10 +21,11 @@ import {
   themeTokensJson,
   toHex,
 } from './engine'
-import type { BoardView, DragPayload } from './board'
+import type { BoardView, DragPayload, SeatFailure } from './board'
 import {
   describePlacement,
   hasRiffableSeats,
+  lockedFailure,
   nameOf,
   readBoard,
   wouldTakeOver,
@@ -38,7 +39,7 @@ import { fileToCandidates } from './components/ImageDrop'
 import { PresetDots } from './components/PresetDots'
 import { PreviewBoundary } from './components/PreviewBoundary'
 import { ReportPanel } from './components/ReportPanel'
-import { AssignPopover, RoleTooltip } from './components/RolePopover'
+import { AssignPopover, PlacePopover, PresetPopover, RoleTooltip, ShipPopover } from './components/RolePopover'
 import type { PaneSection } from './components/SidebarShell'
 import { SidebarShell } from './components/SidebarShell'
 import { revealSection } from './components/rail'
@@ -92,8 +93,20 @@ interface Toast {
   undo: { frameIndex: number; prev: StartOverState } | null
 }
 
-/** Which popover is open, and off which element. */
-type SeatMenu = { kind: 'explain' | 'assign'; seat: Seat; anchor: HTMLElement }
+/**
+ * Which popover is open, and off which element.
+ *   explain — what a seat is for
+ *   assign  — your colour for a seat (your chip, or "+ add")
+ *   ship    — the colour a seat or chart row ships; `input` on a chart row
+ *   place   — an unused colour: which seat?
+ *   presets — start over from a preset, from the colours section's foot
+ */
+type SeatMenu =
+  | { kind: 'explain' | 'assign'; seat: Seat; anchor: HTMLElement }
+  | { kind: 'ship'; seat: Role; anchor: HTMLElement }
+  | { kind: 'series'; slot: number; side: 'input' | 'output'; anchor: HTMLElement }
+  | { kind: 'place'; candidateIndex: number; anchor: HTMLElement }
+  | { kind: 'presets'; anchor: HTMLElement }
 
 const FRAME_LABEL = ['A', 'B'] as const
 
@@ -217,11 +230,11 @@ export default function App() {
   const [toast, setToast] = useState<Toast | null>(null)
   const [exportFormat, setExportFormat] = useState<ExportFormat>('css')
   const [copied, setCopied] = useState(false)
-  // Board chrome: which popover is open, whether the bench is expanded, and
-  // which seats just re-rolled (so they bounce once, then stop).
+  // Board chrome: which popover is open, whether the chart rows are unfolded,
+  // and which seats just re-rolled (so they bounce once, then stop).
   const [seatMenu, setSeatMenu] = useState<SeatMenu | null>(null)
-  const [benchOpen, setBenchOpen] = useState(false)
-  const [benchFlash, setBenchFlash] = useState(false)
+  const [chartOpen, setChartOpen] = useState(false)
+  const [unusedFlash, setUnusedFlash] = useState(false)
   const [rerolled, setRerolled] = useState<Role[]>([])
   // The keyboard map's flyout, and the add popover — which a key can open, so
   // its open state has to live out here rather than inside the control.
@@ -329,13 +342,12 @@ export default function App() {
   const addCandidates = (inputs: string[]) => {
     const before = view
     if (!dispatch({ op: 'add', colors: inputs })) return
-    // A colour that lands on a collapsed bench would vanish silently, and with
-    // every seat already filled that is where it goes. Deliberately NOT
-    // `hasRiffableSeats` — this asks "is the board full", which is a question
-    // about seats, not about what riff may move.
+    // With every seat already filled a new colour lands in "unused"; pulse it
+    // so the add visibly went somewhere. Deliberately NOT `hasRiffableSeats` —
+    // this asks "is the board full", a question about seats, not about riff.
     if (before && boardIsFull(before)) {
-      setBenchFlash(true)
-      setTimeout(() => setBenchFlash(false), 1000)
+      setUnusedFlash(true)
+      setTimeout(() => setUnusedFlash(false), 1000)
     }
   }
   const inList = (hex: string) => {
@@ -631,8 +643,8 @@ export default function App() {
           setStartOverPage('root')
           setStartOverOpen((o) => !o)
           break
-        case 'bench':
-          setBenchOpen((o) => !o)
+        case 'chart':
+          setChartOpen((o) => !o)
           break
         case 'vision':
           setVision(active, VISIONS[(VISIONS.indexOf(frame.vision) + 1) % VISIONS.length], frame.strength)
@@ -677,6 +689,20 @@ export default function App() {
     const fails = rows.filter((r) => !r.pass).length
     return { total: rows.length, fails, issues: fails + clashes }
   }, [result, clashes])
+  // Locked seats that fail one of the engine's own checks — the contrast
+  // report or a repair residual (see board.lockedFailure). Keeping them is the
+  // default; the row warns and offers one fix.
+  const failures = useMemo(() => {
+    const out: Partial<Record<Role, SeatFailure>> = {}
+    if (!result || !view) return out
+    for (const s of view.slots) {
+      if (!s.locked) continue
+      const f = lockedFailure(result, s.role, frame.mode)
+      if (f) out[s.role] = f
+    }
+    return out
+  }, [result, view, frame.mode])
+
   const chipText = checkStats
     ? checkStats.issues === 0
       ? `all ${checkStats.total} checks pass`
@@ -827,7 +853,12 @@ export default function App() {
             }}
             board={{
               view,
-              openRole: seatMenu && seatMenu.seat !== 'chart' ? (seatMenu.seat as Role) : null,
+              failures,
+              openRole:
+                (seatMenu?.kind === 'explain' || seatMenu?.kind === 'assign' || seatMenu?.kind === 'ship') &&
+                seatMenu.seat !== 'chart'
+                  ? (seatMenu.seat as Role)
+                  : null,
               anchorRole,
               rerolled,
               picking,
@@ -837,7 +868,11 @@ export default function App() {
                 if (idx != null) dispatch({ op: 'mono', index: idx })
                 setPicking(false)
               },
-              onAssign: (role, anchor) => setSeatMenu({ kind: 'assign', seat: role, anchor }),
+              onEditInput: (role, anchor) => setSeatMenu({ kind: 'assign', seat: role, anchor }),
+              onEditOutput: (role, anchor) => setSeatMenu({ kind: 'ship', seat: role, anchor }),
+              // The one fix a failing lock offers: unlock, and the engine
+              // re-derives from your colour.
+              onDeriveSafely: (role) => dispatch({ op: 'unlock', role }),
               onExplain: (role, anchor) => setSeatMenu({ kind: 'explain', seat: role, anchor }),
               onToggleLock: toggleSeatLock,
               onDropInRole: (payload, role) => applyDrop(payload, { kind: 'role', role }),
@@ -846,21 +881,28 @@ export default function App() {
             }}
             tray={{
               series: view.series,
+              open: chartOpen,
+              onToggle: () => setChartOpen((o) => !o),
+              onEditInput: (slot, anchor) => setSeatMenu({ kind: 'series', slot, side: 'input', anchor }),
+              onEditOutput: (slot, anchor) => setSeatMenu({ kind: 'series', slot, side: 'output', anchor }),
               onDropInSeries: (payload) => applyDrop(payload, { kind: 'series' }),
               onDragStartSeries: () => setSeatMenu(null),
               onToggleLock: toggleSeriesLock,
               onExplain: (anchor) => setSeatMenu({ kind: 'explain', seat: 'chart', anchor }),
             }}
-            bench={{
+            unused={{
               entries: view.bench,
-              open: benchOpen,
-              flash: benchFlash,
-              onToggle: () => setBenchOpen((o) => !o),
+              extracted: frame.candidates.some((c) => c.source === 'image'),
+              flash: unusedFlash,
+              onPick: (candidateIndex, anchor) => setSeatMenu({ kind: 'place', candidateIndex, anchor }),
               onDropToBench: (payload) => applyDrop(payload, { kind: 'bench' }),
               onDragStartBench: () => setSeatMenu(null),
-              onRemove: (i) => dispatch({ op: 'drop', index: i }),
             }}
             add={{ has: inList, onAdd: addCandidates, open: addOpen, onOpenChange: setAddOpen }}
+            input={{
+              onImage: () => fileInputRef.current?.click(),
+              onPresets: (anchor) => setSeatMenu({ kind: 'presets', anchor }),
+            }}
           />
         ),
       },
@@ -981,7 +1023,7 @@ export default function App() {
       {seatMenu?.kind === 'assign' && seatMenu.seat !== 'chart' && seatOf(seatMenu.seat) && (
         <AssignPopover
           role={seatMenu.seat as Role}
-          hex={seatOf(seatMenu.seat)!.hex}
+          hex={seatOf(seatMenu.seat)!.inputHex ?? seatOf(seatMenu.seat)!.hex}
           provenance={seatOf(seatMenu.seat)!.provenance}
           options={assignOptions}
           takeOver={takeOver}
@@ -990,11 +1032,84 @@ export default function App() {
             dispatch({ op: 'place', index: idx, role: seatMenu.seat as Role })
             setSeatMenu(null)
           }}
-          onAdjust={(hex) => {
-            dispatch({ op: 'adjust', role: seatMenu.seat as Role, color: hex })
+          onInput={(hex) => {
+            dispatch({ op: 'input', role: seatMenu.seat as Role, color: hex })
             setSeatMenu(null)
           }}
           onFree={() => freeSeat(seatMenu.seat as Role)}
+          onClose={() => setSeatMenu(null)}
+        />
+      )}
+      {seatMenu?.kind === 'ship' && seatOf(seatMenu.seat) && (
+        <ShipPopover
+          key={`ship-${seatMenu.seat}`}
+          name={seatMenu.seat}
+          hex={seatOf(seatMenu.seat)!.hex}
+          side="output"
+          anchor={seatMenu.anchor}
+          onApply={(hex) => {
+            // locked as typed — the lock stays the only freeze
+            dispatch({ op: 'adjust', role: seatMenu.seat, color: hex })
+            setSeatMenu(null)
+          }}
+          onClose={() => setSeatMenu(null)}
+        />
+      )}
+      {seatMenu?.kind === 'series' && view && (
+        <ShipPopover
+          key={`series-${seatMenu.slot}-${seatMenu.side}`}
+          name={`chart ${seatMenu.slot}`}
+          hex={
+            (seatMenu.side === 'input'
+              ? view.series[seatMenu.slot - 1]?.inputHex
+              : view.series[seatMenu.slot - 1]?.hex) ?? view.series[seatMenu.slot - 1]?.hex ?? '#808080'
+          }
+          side={seatMenu.side}
+          anchor={seatMenu.anchor}
+          onApply={(hex) => {
+            dispatch({ op: 'seriesColor', slot: seatMenu.slot, side: seatMenu.side, color: hex })
+            setSeatMenu(null)
+          }}
+          onClose={() => setSeatMenu(null)}
+        />
+      )}
+      {seatMenu?.kind === 'place' && view && frame.candidates[seatMenu.candidateIndex] && (
+        <PlacePopover
+          hex={toHex(frame.candidates[seatMenu.candidateIndex].color)}
+          options={[
+            ...view.slots.map((s) => ({
+              target: s.role,
+              hex: s.hex,
+              holder: s.inputHex ?? 'derived',
+            })),
+            {
+              target: 'chart' as const,
+              hex: view.series.find((e) => e.candidateIndex == null)?.hex ?? view.series[0].hex,
+              holder: `${view.series.filter((e) => e.candidateIndex != null && e.leadsFrom == null).length} of ${view.series.length} yours`,
+            },
+          ]}
+          anchor={seatMenu.anchor}
+          onPlace={(target) => {
+            const index = seatMenu.candidateIndex
+            dispatch(target === 'chart' ? { op: 'series', index } : { op: 'place', index, role: target })
+            setSeatMenu(null)
+          }}
+          onRemove={() => {
+            dispatch({ op: 'drop', index: seatMenu.candidateIndex })
+            setSeatMenu(null)
+          }}
+          onClose={() => setSeatMenu(null)}
+        />
+      )}
+      {seatMenu?.kind === 'presets' && (
+        <PresetPopover
+          presets={PRESETS}
+          current={frame.preset}
+          anchor={seatMenu.anchor}
+          onPick={(p) => {
+            setSeatMenu(null)
+            startOverAt(active, candidatesFromList(p.colors), p.name, `started over with ${p.name}`)
+          }}
           onClose={() => setSeatMenu(null)}
         />
       )}

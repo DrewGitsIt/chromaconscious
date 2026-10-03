@@ -8,49 +8,153 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  /* ---------- 1 input: the first-run doors, set into the pane ----------
-     StartHero is unchanged; this re-lays its stage-sized blocks into one
-     280px column. */
+  /* ---------- 1 input: a quiet list, not three boxed cards ----------
+     A field, one dashed line for an image, and preset rows. Nothing is boxed:
+     before there are colours this is the whole pane, and it reads as a list
+     of ways in rather than a dashboard of panels. */
   .pane-start .start-hero {
-    padding: 0;
-    align-items: stretch;
-    justify-content: flex-start;
-  }
-  .pane-start .start-hero h2 {
-    font-size: var(--fs-m);
-    font-weight: 600;
-    margin: 0 0 2px;
-  }
-  .pane-start .hero-sub {
-    font-size: var(--fs-s);
-    color: var(--ink-faint);
-    margin: 0 0 12px;
-  }
-  .pane-start .hero-cards {
+    display: flex;
     flex-direction: column;
-    gap: 10px;
-    max-width: none;
+    padding: 0;
   }
-  .pane-start .hero-card {
+  .si-k {
+    margin: 0 0 6px;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+  }
+  /* the hero add field (swatch · text · Add) in one 32px row */
+  .si-add {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .si-add > .picker-anchor .swatch-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .si-add .hexfield {
+    flex: 1;
     min-width: 0;
-    padding: 12px;
-    gap: 8px;
   }
-  /* the stage hero opened its picker beside the card; in a 320px pane that
-     would be off the edge, so it drops below the swatch like everywhere else */
-  .pane-start .hero-color .picker-pop {
+  .si-add .hexfield input {
+    width: 100%;
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--line-ctl);
+    background: var(--surface-2);
+    font-family: var(--font-code);
+    font-size: var(--fs-s);
+    color: var(--ink);
+    outline: none;
+  }
+  .si-add .hexfield input::placeholder {
+    color: var(--ink-ghost);
+  }
+  .si-add .hexfield input:focus {
+    border-color: var(--line-active);
+  }
+  .si-add > button:last-child {
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid var(--line-ctl);
+    background: var(--surface-3);
+    color: var(--ink);
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .si-add > button:last-child:hover {
+    background: var(--surface-4);
+  }
+  /* the stage hero opened its picker beside the swatch; in a 320px pane that
+     would be off the edge, so it drops below like everywhere else */
+  .si-add .picker-pop {
     top: calc(100% + 6px);
     left: 0;
   }
-  .pane-start .hero-color > .picker-anchor .swatch-btn {
-    height: 40px;
+  /* the image door: one dashed line, its formats in small print */
+  .pane-start .image-drop {
+    margin-top: 10px;
+    min-height: 48px;
+    padding: 8px 12px;
+    border: 1px dashed var(--line-ctl);
+    border-radius: 10px;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    text-align: left;
   }
-  .pane-start .hero-card .image-drop {
-    min-height: 72px;
+  .pane-start .image-drop:hover,
+  .pane-start .image-drop.over {
+    border-color: var(--line-active);
+    color: var(--ink);
   }
-  .pane-start .hero-foot {
-    margin-top: 12px;
-    text-align: center;
+  .pane-start .image-drop-formats {
+    font-size: 10.5px;
+    color: var(--ink-faint);
+  }
+  .si-presets {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .si-presets .si-k {
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+    margin-bottom: 4px;
+  }
+  .pane-start .preset-card {
+    width: 100%;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    font: inherit;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    text-align: left;
+    cursor: pointer;
+  }
+  .pane-start .preset-card:hover,
+  .pane-start .preset-card:focus-visible {
+    background: var(--surface-3);
+    color: var(--ink);
+    outline: none;
+  }
+  .si-foot {
+    margin: 10px 0 0;
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+  }
+
+  /* ---------- 1 colors: the ways in, folded into the foot ---------- */
+  .colors-verbs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 16px;
+  }
+  .colors-verbs .addsw-row {
+    flex: 1;
+    min-width: 0;
+    margin-top: 0;
+  }
+  .colors-verbs .colors-verb {
+    flex: none;
+    height: 26px;
+    padding: 0 9px;
+    font-size: 11.5px;
   }
 
   /* ---------- 4 compare ---------- */
