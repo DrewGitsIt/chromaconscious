@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { candidatesFromList, clearWalkTrails, generateTheme } from '../engine'
 import { PRESETS } from '../presets'
 import type { Env } from './handler'
-import { handle } from './handler'
+import { handle, legacyAppRedirect } from './handler'
 import { decodeState, encodeState } from './state'
 import { applyOp, buildTheme, emptyThemeState } from '../ops'
 
@@ -201,5 +201,58 @@ describe('api', () => {
     const state = decodeState((await call(env, `/state?theme=${r.theme}`, false, null)).body)
     const css = (await call(env, `/export?theme=${r.theme}`)).body.split('\n').slice(1).join('\n')
     expect(buildTheme(state)!.css).toBe(css)
+  })
+})
+
+describe('the legacy name keeps working after the rename', () => {
+  const OLD = 'themesmith' // legacy: the name before ChromaConscious
+  const req = (path: string, key: string | null = KEY) =>
+    new Request(`https://drewkidwell.com${path}`, { headers: key ? { authorization: `Bearer ${key}` } : {}, redirect: 'manual' })
+
+  it('the old API base is an alias: same theme, same id, same export', async () => {
+    const env = memoryEnv()
+    const g = await summary(env, '/generate?preset=ink-sky')
+    const viaOld = await handle(req(`/api/${OLD}/v1/generate?preset=ink-sky&as=json`), env)
+    expect(viaOld.status).toBe(200)
+    expect((await viaOld.json()).theme).toBe(g.theme)
+    const oldCss = await (await handle(req(`/api/${OLD}/v1/export?theme=${g.theme}`, null), env)).text()
+    expect(oldCss).toBe((await call(env, `/export?theme=${g.theme}`)).body)
+    // a prefix that only looks like a base is not one
+    expect((await handle(req(`/api/${OLD}/v1x/presets`, null), env)).status).toBe(404)
+  })
+
+  it('JSON exports carry the id under both $extensions keys', async () => {
+    const env = memoryEnv()
+    const g = await summary(env, '/generate?preset=ink-sky')
+    const json = JSON.parse((await call(env, `/export?theme=${g.theme}&format=json`)).body)
+    expect(json.$extensions.chromaconscious.id).toBe(g.theme)
+    expect(json.$extensions[OLD]).toEqual(json.$extensions.chromaconscious)
+  })
+
+  it('reads the legacy secret name when the new one is unset, and prefers the new one', async () => {
+    const legacyOnly: Env = { THEMES: memoryEnv().THEMES, [`${OLD.toUpperCase()}_API_KEYS`]: KEY }
+    expect((await call(legacyOnly, '/generate?preset=ink-sky')).status).toBe(200)
+    const both: Env = { THEMES: memoryEnv().THEMES, CHROMACONSCIOUS_API_KEYS: 'new-key', [`${OLD.toUpperCase()}_API_KEYS`]: KEY }
+    expect((await call(both, '/generate?preset=ink-sky')).status).toBe(403)
+    expect((await call(both, '/generate?preset=ink-sky', false, 'new-key')).status).toBe(200)
+  })
+
+  it('old app links 301 to the new path, keeping the query; the #t_ fragment rides along in the browser', async () => {
+    const env = memoryEnv()
+    for (const [from, to] of [
+      [`/${OLD}`, '/chromaconscious/'],
+      [`/${OLD}/`, '/chromaconscious/'],
+      [`/${OLD}/?embed=1`, '/chromaconscious/?embed=1'],
+      [`/${OLD}/docs.md`, '/chromaconscious/docs.md'],
+      [`/${OLD}/skill/SKILL.md`, '/chromaconscious/skill/SKILL.md'],
+    ]) {
+      const res = await handle(req(from, null), env)
+      expect(res.status, from).toBe(301)
+      expect(res.headers.get('location'), from).toBe(`https://drewkidwell.com${to}`)
+    }
+    // no fragment in Location, so the browser keeps the one it had (RFC 9110 §10.2.2)
+    expect(legacyAppRedirect(new URL(`https://drewkidwell.com/${OLD}#t_levvog6reokv`))).toBe('https://drewkidwell.com/chromaconscious/')
+    expect(legacyAppRedirect(new URL(`https://drewkidwell.com/${OLD}x`))).toBeNull()
+    expect(legacyAppRedirect(new URL('https://drewkidwell.com/chromaconscious/'))).toBeNull()
   })
 })

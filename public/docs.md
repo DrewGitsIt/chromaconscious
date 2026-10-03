@@ -10,6 +10,7 @@ The API drives the same engine, with the same verbs, as the app at https://drewk
 
 - **Base URL:** `https://drewkidwell.com/api/chromaconscious/v1`
 - **Agent skill:** https://drewkidwell.com/chromaconscious/skill/SKILL.md
+- **Renamed from themesmith (legacy).** The legacy base `/api/themesmith/v1` still answers the same, and legacy `/themesmith#t_…` links redirect here.
 
 ## Concepts
 
@@ -174,6 +175,8 @@ Every export names its theme, so a file in a repo points back to the theme that 
 ```
 
 In JSON the id is at `$extensions.chromaconscious.id`.
+
+Exports made before the rename start with the legacy `/* themesmith t_… */` header. Read either prefix; the id after it is the same kind of id and still opens. JSON exports also carry the id under the legacy key `$extensions.themesmith.id`, so older readers keep working.
 
 **The variables** follow shadcn/ui naming. `:root` holds light and `.dark` holds dark.
 

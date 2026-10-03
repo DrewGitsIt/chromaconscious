@@ -6,7 +6,9 @@
 //   npm run deploy       build + deploy
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "themesmith",
+	// The Worker keeps its legacy name: renaming it would create a new script
+	// (and a new workers.dev host) for no user-visible gain.
+	"name": "themesmith", // legacy
 	"main": "src/api/worker.ts",
 	"compatibility_date": "2026-09-01",
 	// The app is built with base /chromaconscious/ into dist-cf/chromaconscious/, so a
@@ -16,7 +18,7 @@
 	"assets": {
 		"directory": "./dist-cf",
 		// Only the API runs code. Anything else that matches no file also falls
-		// through to the Worker, which answers 404.
+		// through to the Worker, which answers 404, or 301s a legacy app path.
 		"run_worker_first": [
 			"/api/*"
 		],
@@ -39,6 +41,17 @@
 		},
 		{
 			"pattern": "drewkidwell.com/api/chromaconscious/*",
+			"zone_name": "drewkidwell.com"
+		},
+		// Legacy routes from before the rename. Keep them: the Worker 301s the
+		// app's old paths to /chromaconscious (share links keep their #t_… fragment)
+		// and still serves the old API base as an alias. See src/api/handler.ts.
+		{
+			"pattern": "drewkidwell.com/themesmith*", // legacy
+			"zone_name": "drewkidwell.com"
+		},
+		{
+			"pattern": "drewkidwell.com/api/themesmith/*", // legacy
 			"zone_name": "drewkidwell.com"
 		},
 	],
