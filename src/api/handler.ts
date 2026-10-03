@@ -10,9 +10,11 @@ import { restoreWalkStop, themeTailwind, themeTokensJson, walkCheckpoint } from 
 import type { ThemeState } from '../ops'
 import { buildTheme, emptyThemeState } from '../ops'
 import { PRESETS } from '../presets'
+import { figmaExport } from '../figmaExport'
 import { QueryError, applyEdits, backOp, hopsParam, presetByName, riffOp, runOps } from './query'
 import { StateError, decodeState, encodeState, isThemeId, themeId } from './state'
 import { exportText } from './exports'
+import { FIGMA_MODE_NAMES, figmaModeFile, figmaZip } from './exportsFigma'
 import { summarize, summaryText } from './summary'
 
 /** The slice of Workers KV this needs; tests pass a Map-backed stand-in. */
@@ -75,9 +77,11 @@ async function load(env: Env, id: string | null): Promise<Stored & { id: string 
   return { id, state: decodeState(state), parent }
 }
 
+const noColors = () => new HttpError(422, 'a theme needs at least one color — pass colors= or preset=')
+
 const forge = (state: ThemeState): ThemeResult => {
   const result = buildTheme(state)
-  if (!result) throw new HttpError(422, 'a theme needs at least one color — pass colors= or preset=')
+  if (!result) throw noColors()
   return result
 }
 
@@ -168,10 +172,37 @@ async function route(req: Request, env: Env): Promise<Response> {
     }
     case '/export': {
       const t = await load(env, q.get('theme'))
-      const result = forge(t.state)
       const format = q.get('format') ?? 'css'
-      // The serializer is shared with the app's Export dialog (exports.ts),
-      // so what you copy there is byte-for-byte what this returns.
+      // Every format's bytes come from the serializer shared with the app's
+      // Export dialog (exports.ts, exportsFigma.ts): what you copy or download
+      // there is byte-for-byte what this returns.
+      // Figma before forge: its files build the theme at each contrast level
+      // themselves, and the Worker's CPU budget has no room for a fourth build.
+      if (format === 'figma') {
+        const mode = q.get('mode')
+        if (mode != null) {
+          if (!FIGMA_MODE_NAMES.includes(mode)) throw new QueryError(`mode is one of ${FIGMA_MODE_NAMES.join(', ')}`)
+          const file = figmaModeFile(t.state, t.id, mode)
+          if (!file) throw noColors()
+          return new Response(file.json, {
+            headers: {
+              'content-type': 'application/json',
+              'content-disposition': `attachment; filename="${file.download}"`,
+              'access-control-allow-origin': '*',
+            },
+          })
+        }
+        const zip = figmaZip(t.state, t.id)
+        if (!zip) throw noColors()
+        return new Response(zip.bytes as Uint8Array<ArrayBuffer>, {
+          headers: {
+            'content-type': 'application/zip',
+            'content-disposition': `attachment; filename="${zip.filename}"`,
+            'access-control-allow-origin': '*',
+          },
+        })
+      }
+      const result = forge(t.state)
       if (format === 'css' || format === 'tailwind') {
         return text(exportText(result, t.id, url.origin, format), 200, 'text/css; charset=utf-8')
       }
@@ -180,7 +211,7 @@ async function route(req: Request, env: Env): Promise<Response> {
         if (mode !== 'both' && mode !== 'light' && mode !== 'dark') throw new QueryError('mode is light, dark or both')
         return text(exportText(result, t.id, url.origin, 'json', mode), 200, 'application/json')
       }
-      throw new QueryError('format is css, tailwind or json')
+      throw new QueryError('format is css, tailwind, json or figma')
     }
     case '/presets':
       return text(PRESETS.map((p) => `${p.name.padEnd(18)} ${p.colors.map((c) => c.slice(1)).join(',')}`).join('\n') + '\n')
@@ -207,6 +238,9 @@ export function warmUp(rounds = 6) {
     summaryText(summarize('t_warmwarmwarm', null, round, result, 'https://warm.up'))
     themeTailwind(result)
     themeTokensJson(result)
+    // Once: the Figma zip's first call costs ~35 ms cold (its serializer and
+    // the deflater compiling) and ~25 ms after this, against ~9 ms warm.
+    if (i === 0) figmaExport(round)
   }
 }
 

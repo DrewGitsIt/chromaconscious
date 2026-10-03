@@ -194,3 +194,23 @@ test('narrow when the room beside the pane is tight', async ({ page }) => {
   await page.keyboard.press('ArrowRight')
   await expect(tab(page, /Tailwind v4/)).toHaveAttribute('aria-selected', 'true')
 })
+
+test('Figma variables: lists the zip, then downloads it', async ({ page }) => {
+  await boot(page)
+  await open(page)
+  const id = await dialog(page).locator('.xd-id').textContent()
+  await tab(page, /Figma variables/).click()
+  const files = dialog(page).getByRole('list', { name: 'files in the zip' })
+  await expect(files.getByRole('listitem')).toHaveCount(7)
+  await expect(files).toContainText('dark-high.json')
+  await expect(files).toContainText(/\d+ variables/)
+  await expect(dialog(page)).toContainText("On Figma's free plan, import each file as its own collection")
+  // download-only: no Copy
+  await expect(dialog(page).getByRole('button', { name: 'Copy', exact: true })).toHaveCount(0)
+  const [dl] = await Promise.all([
+    page.waitForEvent('download'),
+    dialog(page).getByRole('button', { name: 'Download' }).click(),
+  ])
+  expect(dl.suggestedFilename()).toBe(`chromaconscious-${id}-figma.zip`)
+  await expect(dialog(page).getByRole('status')).toHaveText(`downloaded chromaconscious-${id}-figma.zip`)
+})

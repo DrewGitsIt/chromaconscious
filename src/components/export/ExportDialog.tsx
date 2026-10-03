@@ -2,7 +2,7 @@ import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactElement, ReactNode, RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { Copy, Download, TriangleAlert, X } from 'lucide-react'
-import type { ExportContext, ExportFormat } from './formats'
+import type { ExportContext, ExportFormat, FileLine } from './formats'
 import { EXPORT_GROUPS } from './formats'
 import './ExportDialog.css'
 
@@ -48,6 +48,39 @@ function CodePreview({ text, label }: { text: string; label: string }) {
         <span className="xd-more">… {lines.length - PREVIEW_LINES} more lines</span>
       )}
     </pre>
+  )
+}
+
+/** A lazily built list of files: shows a quiet line until it lands. */
+function FilesPreview({ ctx, format }: { ctx: ExportContext; format: ExportFormat }) {
+  const [loaded, setState] = useState<{ ctx: ExportContext; lines: FileLine[] | null; error?: string } | null>(null)
+  const preview = format.preview
+  useEffect(() => {
+    if (preview?.kind !== 'files') return
+    let live = true
+    preview.load(ctx).then(
+      (lines) => live && setState({ ctx, lines }),
+      (err: unknown) => live && setState({ ctx, lines: null, error: err instanceof Error ? err.message : String(err) }),
+    )
+    return () => {
+      live = false
+    }
+  }, [ctx, preview])
+  if (preview?.kind !== 'files') return null
+  // a result for an older theme is not this theme's
+  const state = loaded?.ctx === ctx ? loaded : null
+  const lines = state?.lines
+  return (
+    <ul className="xd-files" aria-label={preview.label} aria-busy={!lines && !state?.error}>
+      {lines
+        ? lines.map((l) => (
+            <li key={l.name} className="xd-fileline">
+              <span>{l.name}</span>
+              <small>{l.detail}</small>
+            </li>
+          ))
+        : <li className="xd-fileline"><small>{state?.error ?? 'building the files…'}</small></li>}
+    </ul>
   )
 }
 
@@ -270,6 +303,7 @@ export function ExportDialog({
                 {format.preview.text(ctx)}
               </div>
             )}
+            {ctx && format.preview?.kind === 'files' && <FilesPreview ctx={ctx} format={format} />}
             {format.hint && <p className="xd-hint">{format.hint}</p>}
             <div className="xd-acts">
               {format.copy.map((a, i) => (
@@ -286,10 +320,14 @@ export function ExportDialog({
               {format.download && ctx && (
                 <button
                   className={`xd-btn${format.copy.length === 0 ? ' primary' : ''}`}
-                  onClick={() => {
+                  onClick={async () => {
                     const name = format.download!.filename(ctx)
-                    download(name, format.download!.blob(ctx))
-                    setSaid(`downloaded ${name}`)
+                    try {
+                      download(name, await format.download!.blob(ctx))
+                      setSaid(`downloaded ${name}`)
+                    } catch (err) {
+                      setSaid(err instanceof Error ? err.message : 'download failed')
+                    }
                   }}
                 >
                   <Download size={13} strokeWidth={1.75} aria-hidden />

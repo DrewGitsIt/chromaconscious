@@ -12,6 +12,7 @@ import type { ThemeResult } from '../../engine'
 import type { ThemeState } from '../../ops'
 import { API_BASE_PATH, appLink, exportText } from '../../api/exports'
 import type { ExportFormatId } from '../../api/exports'
+import { figmaFormat } from './figmaFormat'
 
 /** Everything a format may read. */
 export interface ExportContext {
@@ -32,6 +33,12 @@ export interface ExportContext {
 export type ExportGroup = 'code' | 'design' | 'links'
 export const EXPORT_GROUPS: ExportGroup[] = ['code', 'design', 'links']
 
+/** One line of a `files` preview. */
+export interface FileLine {
+  name: string
+  detail: string
+}
+
 export interface CopyAction {
   label: string
   /** What the live region says once it worked. */
@@ -51,12 +58,16 @@ export interface ExportFormat {
    * What the preview shows. `code` is the first lines with a swatch beside
    * each colour; `link` is one wrapped line. Absent: no preview.
    */
-  preview?: { kind: 'code' | 'link'; label: string; text: (ctx: ExportContext) => string }
+  preview?:
+    | { kind: 'code' | 'link'; label: string; text: (ctx: ExportContext) => string }
+    /** A list of files, built on demand (a lazy exporter). */
+    | { kind: 'files'; label: string; load: (ctx: ExportContext) => Promise<FileLine[]> }
   /** Copy buttons, primary first. */
   copy: CopyAction[]
   download?: {
     filename: (ctx: ExportContext) => string
-    blob: (ctx: ExportContext) => Blob
+    /** May be async, for an exporter that is loaded on first use. */
+    blob: (ctx: ExportContext) => Blob | Promise<Blob>
   }
   /** A quiet line under the actions. */
   hint?: string
@@ -139,14 +150,17 @@ export const EXPORT_FORMATS: ExportFormat[] = [
     '.tokens.json',
     'application/json',
   ),
-  // design: Figma variables slots in here (redesign/figma).
+  figmaFormat,
   {
     id: 'share',
     group: 'links',
     name: 'Share link',
-    sub: 'opens this theme',
+    sub: 'this theme, by id',
     about:
-      'Opens this exact theme in ChromaConscious. View settings such as a colorblind simulation ride along in the link; they never reach the exported code.',
+      // TODO(share-storage): the app doesn't store the theme yet, so this id
+      // only opens once something has saved it (Drew to decide how). Until
+      // then, don't promise that it opens.
+      'A link to this theme by its id. View settings such as a colorblind simulation ride along in the link; they never reach the exported code. The id is the same one the API gives this theme.',
     preview: {
       kind: 'link',
       label: 'share link',
