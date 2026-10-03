@@ -486,7 +486,7 @@ export function Marketing({ tokens, mode, uid, effects }: TokenSpaceProps) {
                     {[52, 74, 41, 88, 63, 96, 70, 58].map((h, i) => (
                       <div
                         key={i}
-                        className="flex-1 rounded-t-sm"
+                        className="flex-1 rounded-t-[min(var(--radius)*0.6,6px)]"
                         style={{
                           height: `${h}%`,
                           background: `var(--chart-${(i % 5) + 1})`,

@@ -25,7 +25,7 @@ export interface ExportContext {
   origin: string
   /**
    * View settings that ride the share link and never reach exported code:
-   * `vision`/`strength` now, page settings (radius, font) when they land.
+   * `vision`/`strength`, then the page settings (`radius`, `font`).
    */
   linkParams: Record<string, string>
 }
