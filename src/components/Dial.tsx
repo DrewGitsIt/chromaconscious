@@ -24,7 +24,7 @@ const prefersReducedMotion = () =>
 /**
  * The fidelity dial — the app's marquee control, drawn as an instrument: a
  * large numeric readout, a ruled scale with a detent at the default, and a
- * hairline needle. Left is the smith's judgment, right the user's raw colors.
+ * hairline needle. Left is the engine's judgment, right the user's raw colors.
  * The caption cross-fades so dragging never snaps text.
  */
 export function Dial({ value, caption, onChange }: DialProps): ReactElement {
@@ -73,7 +73,7 @@ export function Dial({ value, caption, onChange }: DialProps): ReactElement {
         />
       </div>
       <div className="dial-ends" aria-hidden>
-        <span>smith</span>
+        <span>engine</span>
         <span>raw</span>
       </div>
       <div className={`dial-caption${swapping ? ' swapping' : ''}`}>

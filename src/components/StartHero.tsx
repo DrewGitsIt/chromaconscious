@@ -34,7 +34,7 @@ export function StartHero({ onAddColors, onImage, onPreset }: Props) {
               layout="hero"
             />
           </div>
-          <p className="hero-hint">ChromaConscious forges a full theme from even one color</p>
+          <p className="hero-hint">ChromaConscious builds a full theme from even one color</p>
         </div>
         <div className="hero-card">
           <h3>Drop an image</h3>

@@ -11,7 +11,7 @@ import { expect, test } from '@playwright/test'
  * what you locked holds still, and a full board is fully riffable.
  */
 
-/** Boot from a single typed color — it takes primary, the smith derives the rest. */
+/** Boot from a single typed color — it takes primary, the engine derives the rest. */
 const bootSingle = async (page: Page) => {
   await page.goto('/')
   await page.getByPlaceholder(/or type/).fill('#7c3aed')
@@ -112,7 +112,7 @@ test.describe('riff', () => {
 
   test('a locked seat is byte-identical across hops while the rest walk', async ({ page }) => {
     await bootSingle(page)
-    // lock the colour you supplied, and keep (= lock) one the smith derived
+    // lock the colour you supplied, and keep (= lock) one the engine derived
     await lock(page, 'primary').click()
     await seat(page, 'warning').locator('.rb-keep').click()
     await expect(seat(page, 'warning').locator('.rb-tag')).toHaveText('kept')

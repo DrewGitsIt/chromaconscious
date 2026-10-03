@@ -178,7 +178,7 @@ export function placeInSeries(
  *
  * NOTE the contract is "this color leaves", not "the seat becomes derived".
  * With colors to spare the engine simply casts the next best one into it, so
- * UI must not promise "let the smith derive it" — name the color that would
+ * UI must not promise "let the engine derive it" — name the color that would
  * take over instead (see `wouldTakeOver`).
  */
 export function deriveRole(
@@ -351,7 +351,7 @@ export function dropCandidate(candidates: ColorCandidate[], i: number): ColorCan
  *
  * This has to travel with `dropCandidate`: the mono lock is stored as an index,
  * so splicing the array without remapping silently re-points the lock at a
- * different color and the whole theme re-forges around a hue nobody chose.
+ * different color and the whole theme rebuilds around a hue nobody chose.
  * Returns null when the removed candidate WAS the one being named.
  */
 export function remapAfterRemove(idx: number | null, removed: number): number | null {
@@ -407,7 +407,7 @@ export function describePlacement(
   const from = view.slots.find((s) => s.candidateIndex === candidateIndex)
   if (from && from.role !== role) {
     const now = after.slots.find((s) => s.role === from.role)
-    if (now?.provenance === 'derived') parts.push(`${from.role} goes to the smith`)
+    if (now?.provenance === 'derived') parts.push(`${from.role} goes to the engine`)
     else if (now) parts.push(`frees ${from.role} for ${nameOf(next, now.candidateIndex)}`)
   }
 

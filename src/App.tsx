@@ -567,7 +567,7 @@ export default function App() {
       const pressed = e.key === '/' && e.shiftKey ? '?' : e.key.toLowerCase()
       const hit = SHORTCUTS.find((s) => s.key === pressed)
       if (!hit) return
-      // Every branch below needs a forged theme; only help works without one.
+      // Every branch below needs a built theme; only help works without one.
       if (hit.id !== 'help' && (!view || emptyFrame)) return
       e.preventDefault()
       switch (hit.id) {
@@ -622,7 +622,7 @@ export default function App() {
   const clashes = result?.repairs.length ?? 0
   const clashSuffix = clashes ? ` · ${clashes} clash${clashes > 1 ? 'es' : ''} reported` : ''
   const caption = !result
-    ? 'add colors to forge a theme'
+    ? 'add colors to make a theme'
     : frame.fidelity >= 0.99
       ? `${locked ? 'mono · ' : ''}colors kept exactly${clashSuffix}`
       : locked

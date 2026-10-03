@@ -3,7 +3,7 @@
  *
  * Chart is a pooled seat set — several colours at once — so it can't be a
  * single slot. It's a wide tray that takes drops anywhere on itself, and each
- * swatch says whether the smith computed it (dashed) or you did (solid).
+ * swatch says whether the engine computed it (dashed) or you did (solid).
  *
  * A swatch of yours also carries a lock, the only thing that stops riff moving
  * it. A derived fill has none: there is no candidate behind it to hang a lock
@@ -41,7 +41,7 @@ function readDragPayload(e: DragEvent): DragPayload | null {
 
 /** What a swatch is, in one word — provenance only; the lock speaks for itself. */
 const ORIGIN: Record<SeriesEntry['provenance'], string> = {
-  derived: 'the smith computed this',
+  derived: 'the engine computed this',
   kept: 'kept as yours',
   yours: 'yours',
 }
@@ -87,7 +87,7 @@ export function SeriesTray({
     [onDropInSeries],
   )
 
-  // "N of 5" counts colours you own — a derived fill is the smith's, not yours.
+  // "N of 5" counts colours you own — a derived fill is the engine's, not yours.
   const yours = series.filter((entry) => entry.provenance !== 'derived').length
 
   return (

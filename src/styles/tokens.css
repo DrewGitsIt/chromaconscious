@@ -6,7 +6,7 @@
    zero-chroma grey, so the only colour on screen is the user's. The one
    exception is pass/warn/fail, which have to read at a glance. (These used to
    be Tokyo Night's palette, and its blue fought whatever primary was being
-   forged.) */
+   built.) */
 :root {
   /* surfaces, dark → light */
   --surface-0: #0d0d0e; /* report drawer */

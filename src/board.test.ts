@@ -352,7 +352,7 @@ describe('remapAfterRemove — the mono lock is an index', () => {
 })
 
 describe('adjustRole — hand-picking a new colour for a seat', () => {
-  it('edits the seated candidate in place and re-forges around it', () => {
+  it('edits the seated candidate in place and rebuilds around it', () => {
     const c = candidatesFromList(['#e63946', '#457b9d', '#f1faee'])
     const v = board(c)
     const before = v.slots.find((s) => s.role === 'accent')!

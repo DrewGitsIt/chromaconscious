@@ -4,7 +4,7 @@
    bounce.
 
    TWO languages, kept apart on purpose. A dashed inner edge says where a
-   colour came from (derived = the smith's; no edge = yours/kept). The lock
+   colour came from (derived = the engine's; no edge = yours/kept). The lock
    badge says whether riff may move it. The dashed seat used to mean both,
    which is how a colour you dragged in became silently un-riffable.
 
@@ -53,7 +53,7 @@
     cursor: grabbing;
   }
 
-  /* DERIVED — the smith's own colour, so it must never read as settled. The
+  /* DERIVED — the engine's own colour, so it must never read as settled. The
      edge is drawn in the seat's own ink, so it holds on any colour. */
   .rb-slot.rb-derived::after {
     content: '';
@@ -215,7 +215,7 @@
     background: var(--ink-on);
     color: var(--c);
   }
-  /* keep, on a derived seat: claiming the smith's colour is a gain, not a freeze */
+  /* keep, on a derived seat: claiming the engine's colour is a gain, not a freeze */
   .rb-slot .rb-lock.rb-keep:hover {
     background: var(--ok);
     color: var(--stage);

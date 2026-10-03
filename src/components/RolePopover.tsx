@@ -192,7 +192,7 @@ export interface AssignPopoverProps {
   takeOver: { hex: string } | null
   anchor: HTMLElement
   onPick: (candidateIndex: number) => void
-  /** Commit a hand-picked colour for this seat; the theme re-forges around it. */
+  /** Commit a hand-picked colour for this seat; the theme rebuilds around it. */
   onAdjust: (hex: string) => void
   onFree: () => void
   onClose: () => void
@@ -312,14 +312,14 @@ export function AssignPopover({
       )}
 
       {/* The one line that must not lie: with colors to spare, freeing a seat
-          lets another of yours step in — only name the smith when it truly
+          lets another of yours step in — only name the engine when it truly
           has nothing left to cast. */}
       <button type="button" className="rp-opt rp-free" onClick={onFree}>
         <span className="rp-opt-sw rp-opt-sw--auto" />
         <span className="rp-opt-txt">
           <span className="rp-opt-name">free this seat</span>
           <span className="rp-opt-hint">
-            {takeOver ? `${takeOver.hex} takes over` : 'the smith derives it'}
+            {takeOver ? `${takeOver.hex} takes over` : 'the engine derives it'}
           </span>
         </span>
       </button>
