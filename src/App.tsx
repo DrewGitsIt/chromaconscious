@@ -45,6 +45,7 @@ import { ReportPanel } from './components/ReportPanel'
 import { RoleBoard } from './components/RoleBoard'
 import { AssignPopover, RoleTooltip } from './components/RolePopover'
 import { SeparationControl } from './components/SeparationControl'
+import { ContrastControl } from './components/ContrastControl'
 import { SeriesTray } from './components/SeriesTray'
 import { Section, SidebarShell } from './components/SidebarShell'
 import { ShortcutsFlyout } from './components/Shortcuts'
@@ -931,6 +932,12 @@ export default function App() {
               <SeparationControl
                 value={frame.separation}
                 onChange={(s) => dispatch({ op: 'separation', value: s })}
+              />
+              {/* Theme state, like separation: it changes the colours you
+                  export. Per frame, so A and B can compare two levels. */}
+              <ContrastControl
+                value={frame.contrast}
+                onChange={(v) => dispatch({ op: 'contrast', value: v })}
               />
             </Section>
           )}
