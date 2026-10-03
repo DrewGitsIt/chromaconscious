@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8" />
-<title>themesmith — the role board</title>
+<title>ChromaConscious — the role board</title>
 <style>
   /* ============================================================
      Round 3. The inversion: instead of picking a role FOR a color,
@@ -461,7 +461,7 @@
 <body>
 
 <div class="sheet-head">
-  <h1>themesmith — the role board</h1>
+  <h1>ChromaConscious — the role board</h1>
   <span class="sub">round 3 · drag a bench color into a slot · click a label to learn · riff re-rolls only the smith's slots</span>
   <button class="tog" id="slowmo" aria-pressed="false"><span class="dot"></span> slow-mo 4×</button>
   <button class="tog" id="nomotion" aria-pressed="false"><span class="dot"></span> reduced motion</button>
@@ -680,7 +680,7 @@
         the collapsed bench bar grows into a full palette strip.</li>
       <li><b>Does "lifted" need a real elevation model?</b> Right now it lightens
         the popover; a proper implementation probably wants shadow tokens too,
-        which themesmith doesn't generate at all yet.</li>
+        which ChromaConscious doesn't generate at all yet.</li>
       <li><b>Six glosses to write.</b> The job lists derive themselves, but the
         one-line plain-English glosses are hand-written and will be read by every
         new user — worth drafting carefully rather than in a mockup.</li>
@@ -716,7 +716,7 @@ const isLight = (h) => lum(h) > 0.34;
 const inkOn = (h) => (isLight(h) ? 'rgba(0,0,0,.82)' : 'rgba(255,255,255,.95)');
 const wellOn = (h) => (isLight(h) ? 'rgba(0,0,0,.10)' : 'rgba(255,255,255,.14)');
 
-/* src/engine/types.ts — what themesmith actually steers */
+/* src/engine/types.ts — what ChromaConscious actually steers */
 const ROLES = ['primary', 'accent', 'neutral', 'danger', 'success', 'warning'];
 
 /* tweakcn's groups, for the granularity test. Note how many are TOKEN names
@@ -869,7 +869,7 @@ const dur = (ms) => (motionOff() ? 0 : ms * SPEED);
 
 /* ---------------- chrome ---------------- */
 const headHTML = () => `<div class="b-head">
-    <div class="b-wordmark">themesmith</div>
+    <div class="b-wordmark">ChromaConscious</div>
     <p class="b-tagline">any colors in, working theme out</p>
   </div>`;
 
@@ -1302,7 +1302,7 @@ class Board {
   }
 }
 
-// A — themesmith's own vocabulary, plus the surface control
+// A — ChromaConscious's own vocabulary, plus the surface control
 const board = new Board(document.getElementById('p1'), {
   roles: ROLES, gloss: GLOSS, jobs: JOBS, surfaces: true,
   placed: { primary: '#7832c3', neutral: '#316264', success: '#79f77a' },

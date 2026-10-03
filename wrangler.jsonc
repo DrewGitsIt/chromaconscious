@@ -1,7 +1,7 @@
-// themesmith on Cloudflare Workers: the React app as static assets, the API as
+// ChromaConscious on Cloudflare Workers: the React app as static assets, the API as
 // Worker code, one deploy. See docs/remote-api-spec.md.
 //
-//   npm run build:cf     build the app for /themesmith/
+//   npm run build:cf     build the app for /chromaconscious/
 //   npm run dev:cf       run it all locally in workerd (local KV)
 //   npm run deploy       build + deploy
 {
@@ -9,9 +9,9 @@
 	"name": "themesmith",
 	"main": "src/api/worker.ts",
 	"compatibility_date": "2026-09-01",
-	// The app is built with base /themesmith/ into dist-cf/themesmith/, so a
-	// request path maps straight onto a file: /themesmith/ → index.html,
-	// /themesmith/assets/… → the bundles. Asset requests are free and never run
+	// The app is built with base /chromaconscious/ into dist-cf/chromaconscious/, so a
+	// request path maps straight onto a file: /chromaconscious/ → index.html,
+	// /chromaconscious/assets/… → the bundles. Asset requests are free and never run
 	// the Worker.
 	"assets": {
 		"directory": "./dist-cf",
@@ -34,11 +34,11 @@
 	// Requires drewkidwell.com to be a zone on this Cloudflare account.
 	"routes": [
 		{
-			"pattern": "drewkidwell.com/themesmith*",
+			"pattern": "drewkidwell.com/chromaconscious*",
 			"zone_name": "drewkidwell.com"
 		},
 		{
-			"pattern": "drewkidwell.com/api/themesmith/*",
+			"pattern": "drewkidwell.com/api/chromaconscious/*",
 			"zone_name": "drewkidwell.com"
 		},
 	],

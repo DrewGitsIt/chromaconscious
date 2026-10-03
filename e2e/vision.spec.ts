@@ -93,7 +93,7 @@ test.describe('colorblind view', () => {
 
   // The API is not served by the dev server, so the theme comes from a stub.
   const stubTheme = (page: Page) =>
-    page.route('**/api/themesmith/v1/state*', (route) =>
+    page.route('**/api/chromaconscious/v1/state*', (route) =>
       route.fulfill({
         contentType: 'application/json',
         body: JSON.stringify({

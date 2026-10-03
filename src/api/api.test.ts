@@ -11,12 +11,12 @@ const memoryEnv = (): Env & { size: () => number } => {
   const m = new Map<string, string>()
   return {
     THEMES: { get: async (k) => m.get(k) ?? null, put: async (k, v) => void m.set(k, v) },
-    THEMESMITH_API_KEYS: `other-key, ${KEY}`,
+    CHROMACONSCIOUS_API_KEYS: `other-key, ${KEY}`,
     size: () => m.size,
   }
 }
 const call = async (env: Env, path: string, json = false, key: string | null = KEY) => {
-  const url = `https://drewkidwell.com/api/themesmith/v1${path}${json ? (path.includes('?') ? '&' : '?') + 'as=json' : ''}`
+  const url = `https://drewkidwell.com/api/chromaconscious/v1${path}${json ? (path.includes('?') ? '&' : '?') + 'as=json' : ''}`
   const res = await handle(new Request(url, { headers: key ? { authorization: `Bearer ${key}` } : {} }), env)
   return { status: res.status, body: await res.text() }
 }
@@ -105,11 +105,11 @@ describe('api', () => {
     const env = memoryEnv()
     const g = await summary(env, '/generate?preset=ink-sky')
     const css = await call(env, `/export?theme=${g.theme}`)
-    expect(css.body.split('\n')[0]).toBe(`/* themesmith ${g.theme} · https://drewkidwell.com/themesmith#${g.theme} */`)
+    expect(css.body.split('\n')[0]).toBe(`/* ChromaConscious ${g.theme} · https://drewkidwell.com/chromaconscious#${g.theme} */`)
     const tw = await call(env, `/export?theme=${g.theme}&format=tailwind`)
     expect(tw.body).toContain('@theme inline')
     const json = JSON.parse((await call(env, `/export?theme=${g.theme}&format=json&mode=dark`)).body)
-    expect(json.$extensions.themesmith.id).toBe(g.theme)
+    expect(json.$extensions.chromaconscious.id).toBe(g.theme)
     expect(Object.keys(json)).toEqual(['$extensions', 'dark'])
   })
 
@@ -163,7 +163,7 @@ describe('api', () => {
     for (const path of [`/theme?theme=${g.theme}`, `/export?theme=${g.theme}`, `/state?theme=${g.theme}`, '/presets'])
       expect((await call(env, path, false, null)).status, path).toBe(200)
     // unset secret: nobody may create
-    const closed = { ...env, THEMESMITH_API_KEYS: undefined }
+    const closed = { ...env, CHROMACONSCIOUS_API_KEYS: undefined }
     expect((await call(closed, '/generate?preset=ink-sky')).status).toBe(403)
   })
 

@@ -1,4 +1,4 @@
-# Themesmith remote API — spec (draft 3)
+# ChromaConscious remote API — spec (draft 3)
 
 Status: 2026-09-26. Phase 1 and the core of phase 2 are built on the `phase1/core` branch (worktree `../themesmith-phase1`); not merged, not deployed. See [Phases](#phases).
 
@@ -49,10 +49,10 @@ The real problem across sessions is remembering *which* ID you were on. There ar
 1. **Exports carry their own ID.** Every export starts with a header naming the theme:
 
    ```css
-   /* themesmith t_k3v9x2 · https://drewkidwell.com/themesmith#t_k3v9x2 */
+   /* ChromaConscious t_k3v9x2 · https://drewkidwell.com/chromaconscious#t_k3v9x2 */
    ```
 
-   The skill tells the agent: *if the project already has a themesmith export, read the ID from its header and continue with `from=`.* The file in the repo is its own pointer back to the theme.
+   The skill tells the agent: *if the project already has a ChromaConscious export, read the ID from its header and continue with `from=`.* The file in the repo is its own pointer back to the theme.
 2. **Named themes** *(later, key-only)*. `name=site-palette` is a movable pointer to the latest ID. This is the only per-user, changeable state in the design, so it's the only thing that needs authentication. Anonymous callers only ever deal in snapshot IDs.
 
 **Retention.**
@@ -61,7 +61,7 @@ The real problem across sessions is remembering *which* ID you were on. There ar
 
 ## Endpoints
 
-Base: `https://drewkidwell.com/api/themesmith/v1`. Everything an agent needs is a GET that can be typed as a `curl` one-liner. Image upload is the only POST.
+Base: `https://drewkidwell.com/api/chromaconscious/v1`. Everything an agent needs is a GET that can be typed as a `curl` one-liner. Image upload is the only POST.
 
 ```
 GET  /generate?colors=primary:1d3557,e63946,a8dadc&taste=0.5&separation=layered&mono=1d3557
@@ -95,7 +95,7 @@ GET  /presets
   - `tailwind` gives the Tailwind v4 `@theme` CSS
   - `json` gives DTCG tokens
 
-  Every format includes the ID header. JSON carries it as `$extensions.themesmith.id`.
+  Every format includes the ID header. JSON carries it as `$extensions.chromaconscious.id`.
 
 `/back` is the UI's "back one riff": the parent snapshot's state with the riff count one lower. An agent holding the old ID can use that ID directly.
 
@@ -123,7 +123,7 @@ contrast  light 43/44 · dark 44/44
 spacing   ok
 judge     0.71
 
-open     https://drewkidwell.com/themesmith#t_k3v9x2
+open     https://drewkidwell.com/chromaconscious#t_k3v9x2
 preview  …/preview?theme=t_k3v9x2&mockup=app&mode=light&as=png
 ```
 
@@ -154,14 +154,14 @@ preview  …/preview?theme=t_k3v9x2&mockup=app&mode=light&as=png
 ## Architecture
 
 ```
-@themesmith/core (pure TS, no DOM)
+@chromaconscious/core (pure TS, no DOM)
   engine/   board.ts          as today
   ops.ts    NEW   applyOp(state, op) → state — the ONE verb set; App.tsx dispatches it too
   state.ts  NEW   schema, canonicalize, id
   query.ts  NEW   parse the query string → ops (colors/role:hex/lock/…), with friendly errors
   summary.ts NEW  the text summary and its JSON twin
         ▲                        ▲
-   React UI                 Worker (/api/themesmith/v1/*) ── KV (snapshots)
+   React UI                 Worker (/api/chromaconscious/v1/*) ── KV (snapshots)
                                   ├─ Browser Rendering (preview png)
                                   └─ WASM image decode (extract)
 ```
@@ -170,18 +170,18 @@ preview  …/preview?theme=t_k3v9x2&mockup=app&mode=light&as=png
 
 ## Agent access: the skill
 
-A skill hosted on the site, e.g. `drewkidwell.com/themesmith/skill/SKILL.md`, which anyone can install:
+A skill hosted on the site, e.g. `drewkidwell.com/chromaconscious/skill/SKILL.md`, which anyone can install:
 
 ```markdown
 ---
-name: themesmith
-description: Generate, riff, lock and export UI color themes (light+dark, contrast-checked) via the themesmith API.
+name: chromaconscious
+description: Generate, riff, lock and export UI color themes (light+dark, contrast-checked) via the ChromaConscious API.
 ---
 Loop: /generate → read the summary → /riff (lock what you like) → /export.
 Every call returns a new theme id; keep the latest. If the project already has a
-themesmith export, read `t_…` from its header and continue with `from=`.
+ChromaConscious export, read `t_…` from its header and continue with `from=`.
 Use `curl -s`, not a summarising web fetch — exports must be byte-exact.
-Full parameters and examples: https://drewkidwell.com/themesmith/docs.md
+Full parameters and examples: https://drewkidwell.com/chromaconscious/docs.md
 ```
 
 - Only the `description` line sits in the agent's context until it's needed. The docs are read only when an agent needs a parameter.

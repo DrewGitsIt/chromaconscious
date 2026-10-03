@@ -1,15 +1,15 @@
-# themesmith API
+# ChromaConscious API
 
-themesmith forges a complete UI color theme from any colors you give it:
+ChromaConscious forges a complete UI color theme from any colors you give it:
 - six role seats: primary, accent, neutral, danger, success, warning
 - five chart colors
 - about 44 shadcn-style tokens for light mode and again for dark
 - a contrast check on every text pairing
 
-The API drives the same engine, with the same verbs, as the app at https://drewkidwell.com/themesmith/.
+The API drives the same engine, with the same verbs, as the app at https://drewkidwell.com/chromaconscious/.
 
-- **Base URL:** `https://drewkidwell.com/api/themesmith/v1`
-- **Agent skill:** https://drewkidwell.com/themesmith/skill/SKILL.md
+- **Base URL:** `https://drewkidwell.com/api/chromaconscious/v1`
+- **Agent skill:** https://drewkidwell.com/chromaconscious/skill/SKILL.md
 
 ## Concepts
 
@@ -60,7 +60,7 @@ At least one of `colors`, `preset` or `from` is required.
 
 ```
 curl -s -H "Authorization: Bearer $KEY" \
-  "https://drewkidwell.com/api/themesmith/v1/generate?colors=primary:1d3557,e63946,a8dadc&taste=0.6"
+  "https://drewkidwell.com/api/chromaconscious/v1/generate?colors=primary:1d3557,e63946,a8dadc&taste=0.6"
 ```
 
 ```
@@ -82,8 +82,8 @@ contrast  light 20/20 · dark 20/20
 spacing   ok
 judge     0.85
 
-open     https://drewkidwell.com/themesmith#t_levvog6reokv
-export   https://drewkidwell.com/api/themesmith/v1/export?theme=t_levvog6reokv&format=css
+open     https://drewkidwell.com/chromaconscious#t_levvog6reokv
+export   https://drewkidwell.com/api/chromaconscious/v1/export?theme=t_levvog6reokv&format=css
 ```
 
 **Reading the summary:**
@@ -128,7 +128,7 @@ Every unlocked seat takes a small step through color space, including colors you
 
 ```
 curl -s -H "Authorization: Bearer $KEY" \
-  "https://drewkidwell.com/api/themesmith/v1/riff?theme=t_levvog6reokv&lock=primary"
+  "https://drewkidwell.com/api/chromaconscious/v1/riff?theme=t_levvog6reokv&lock=primary"
 ```
 
 ```
@@ -165,7 +165,7 @@ Same parameters as `/riff`. `hops` steps back that many, stopping at riff 0. Goi
 Every export names its theme, so a file in a repo points back to the theme that made it:
 
 ```
-/* themesmith t_fxhcneuortx6 · https://drewkidwell.com/themesmith#t_fxhcneuortx6 */
+/* ChromaConscious t_fxhcneuortx6 · https://drewkidwell.com/chromaconscious#t_fxhcneuortx6 */
 :root {
   --background: #d0fcf8;
   --foreground: #040b0b;
@@ -173,7 +173,7 @@ Every export names its theme, so a file in a repo points back to the theme that 
   …
 ```
 
-In JSON the id is at `$extensions.themesmith.id`.
+In JSON the id is at `$extensions.chromaconscious.id`.
 
 **The variables** follow shadcn/ui naming. `:root` holds light and `.dark` holds dark.
 
@@ -189,7 +189,7 @@ In JSON the id is at `$extensions.themesmith.id`.
 | `--sidebar-*` | A sidebar's own surface, text, primary, accent, border and ring. |
 | `--elevation-1` … `--elevation-3`, `--scrim` | Box-shadows for raised surfaces, and the overlay behind dialogs. |
 
-themesmith makes **colors only**. Radius, spacing and type are up to you, and there are no hover tokens: derive them, for example `color-mix(in oklab, var(--primary) 88%, var(--foreground))`.
+ChromaConscious makes **colors only**. Radius, spacing and type are up to you, and there are no hover tokens: derive them, for example `color-mix(in oklab, var(--primary) 88%, var(--foreground))`.
 
 ### `GET /state`: a theme's inputs
 

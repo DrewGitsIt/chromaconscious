@@ -1,5 +1,5 @@
 /**
- * The themesmith HTTP API — a plain `fetch` handler, so the same code runs in
+ * The ChromaConscious HTTP API — a plain `fetch` handler, so the same code runs in
  * a Cloudflare Worker, in Node, and in tests.
  *
  * Every call that makes a theme stores an immutable snapshot and answers with
@@ -24,13 +24,13 @@ export interface Env {
   THEMES: ThemeStore
   /**
    * Comma-separated keys allowed to create themes (a Worker secret:
-   * `wrangler secret put THEMESMITH_API_KEYS`). Reading an existing theme
+   * `wrangler secret put CHROMACONSCIOUS_API_KEYS`). Reading an existing theme
    * needs none. Unset means nobody may create — the API fails closed.
    */
-  THEMESMITH_API_KEYS?: string
+  CHROMACONSCIOUS_API_KEYS?: string
 }
 
-const BASE = '/api/themesmith/v1'
+const BASE = '/api/chromaconscious/v1'
 
 class HttpError extends Error {
   readonly status: number
@@ -99,7 +99,7 @@ function sameKey(a: string, b: string): boolean {
 
 /** Creating a theme writes to KV, so it needs a key; reading one does not. */
 function requireKey(req: Request, env: Env) {
-  const keys = (env.THEMESMITH_API_KEYS ?? '').split(',').map((k) => k.trim()).filter(Boolean)
+  const keys = (env.CHROMACONSCIOUS_API_KEYS ?? '').split(',').map((k) => k.trim()).filter(Boolean)
   const given = /^Bearer\s+(.+)$/i.exec(req.headers.get('authorization') ?? '')?.[1]?.trim()
   if (!given) throw new HttpError(401, 'creating themes needs a key — send the header "Authorization: Bearer <key>"')
   if (!keys.some((k) => sameKey(k, given))) throw new HttpError(403, 'that key is not valid for this API')
@@ -140,7 +140,7 @@ async function route(req: Request, env: Env): Promise<Response> {
       return respondTheme(req, id, prior.id, state, result)
     }
     case '/state': {
-      // The theme's own state, so the app can open it: /themesmith#t_… .
+      // The theme's own state, so the app can open it: /chromaconscious#t_… .
       const t = await load(env, q.get('theme'))
       return text(encodeState(t.state), 200, 'application/json')
     }
@@ -152,7 +152,7 @@ async function route(req: Request, env: Env): Promise<Response> {
       const t = await load(env, q.get('theme'))
       const result = forge(t.state)
       const format = q.get('format') ?? 'css'
-      const header = `themesmith ${t.id} · ${url.origin}/themesmith#${t.id}`
+      const header = `ChromaConscious ${t.id} · ${url.origin}/chromaconscious#${t.id}`
       if (format === 'css' || format === 'tailwind') {
         const body = format === 'css' ? result.css : themeTailwind(result)
         return text(`/* ${header} */\n${body}`, 200, 'text/css; charset=utf-8')
@@ -162,7 +162,7 @@ async function route(req: Request, env: Env): Promise<Response> {
         const mode = q.get('mode') ?? 'both'
         if (mode !== 'both' && mode !== 'light' && mode !== 'dark') throw new QueryError('mode is light, dark or both')
         const body = {
-          $extensions: { themesmith: { id: t.id, url: `${url.origin}/themesmith#${t.id}` } },
+          $extensions: { chromaconscious: { id: t.id, url: `${url.origin}/chromaconscious#${t.id}` } },
           ...(mode === 'both' ? doc : { ...(doc.$meta ? { $meta: doc.$meta } : {}), [mode]: doc[mode] }),
         }
         return text(JSON.stringify(body, null, 2), 200, 'application/json')
@@ -172,7 +172,7 @@ async function route(req: Request, env: Env): Promise<Response> {
     case '/presets':
       return text(PRESETS.map((p) => `${p.name.padEnd(18)} ${p.colors.map((c) => c.slice(1)).join(',')}`).join('\n') + '\n')
     default:
-      throw new HttpError(404, `no endpoint ${path} — see ${url.origin}/themesmith/docs.md`)
+      throw new HttpError(404, `no endpoint ${path} — see ${url.origin}/chromaconscious/docs.md`)
   }
 }
 
