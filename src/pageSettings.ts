@@ -113,14 +113,22 @@ export function parsePageParams(params: URLSearchParams): Partial<PageSettings> 
 }
 
 /**
- * The share-link suffix for these settings: `&radius=4&font=tinos`, or `''`
- * at the defaults, so a default link stays exactly `#t_…`.
+ * The share-link params for these settings, `{ radius: '4', font: 'tinos' }`,
+ * or `{}` at the defaults, so a default link stays exactly `#t_…`. The Export
+ * dialog's share link merges these after the vision params.
  */
+export function pageLinkParams(page: PageSettings): Record<string, string> {
+  const p: Record<string, string> = {}
+  if (page.radius !== RADIUS_DEFAULT) p.radius = String(page.radius)
+  if (page.font !== FONT_DEFAULT) p.font = page.font
+  return p
+}
+
+/** The same params as a hash suffix: `&radius=4&font=tinos`, or `''`. */
 export function pageParams(page: PageSettings): string {
-  let s = ''
-  if (page.radius !== RADIUS_DEFAULT) s += `&radius=${page.radius}`
-  if (page.font !== FONT_DEFAULT) s += `&font=${page.font}`
-  return s
+  return Object.entries(pageLinkParams(page))
+    .map(([k, v]) => `&${k}=${v}`)
+    .join('')
 }
 
 /**

@@ -1530,7 +1530,7 @@ function Donut({
             >
               <span
                 aria-hidden
-                className="size-2 shrink-0 rounded-[calc(var(--radius)*0.2)]"
+                className="size-2 shrink-0 rounded-[min(var(--radius)*0.2,2px)]"
                 style={{ background: `var(--${a.s.token})` }}
               />
               <span className="truncate text-muted-foreground group-hover/share:text-accent-foreground group-focus-visible/share:text-accent-foreground">
@@ -1667,7 +1667,7 @@ function Heatmap({ uid, slice }: { uid: string; slice: Slice }) {
           <span
             key={s}
             aria-hidden
-            className="h-3 flex-1 rounded-[calc(var(--radius)*0.2)]"
+            className="h-3 flex-1 rounded-[min(var(--radius)*0.2,2px)]"
             style={{ background: heatFill(s) }}
           />
         ))}

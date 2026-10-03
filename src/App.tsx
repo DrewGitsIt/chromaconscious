@@ -59,6 +59,7 @@ import { EMBED, embedPreset, fullAppHref } from './embed'
 import { decodeState, encodeState, themeId } from './api/state'
 import { parseThemeHash } from './visionLink'
 import { usePageSettings } from './usePageSettings'
+import { pageLinkParams } from './pageSettings'
 import type { Vision } from './engine/cvd'
 import { VISIONS } from './engine/cvd'
 import { VisionFilter } from './components/VisionFilter'
@@ -322,10 +323,10 @@ export default function App() {
             state: frame,
             id: exportId,
             origin: location.origin,
-            linkParams: visionParams(frame.vision, frame.strength),
+            linkParams: { ...visionParams(frame.vision, frame.strength), ...pageLinkParams(page) },
           }
         : null,
-    [exportId, result, frame],
+    [exportId, result, frame, page],
   )
 
   // ---- candidate edits ----------------------------------------------------

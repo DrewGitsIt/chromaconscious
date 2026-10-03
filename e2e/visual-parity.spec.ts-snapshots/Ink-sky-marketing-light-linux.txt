@@ -25,14 +25,14 @@ span.pg-fn font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; fon
 input. clip-path: inset(50%); overflow: hidden; white-space: nowrap; border: 0px; padding: 0px; width: 1px; height: 1px; margin: -1px; position: fixed; top: 0px; left: 0px;
 input. 
 div.preview-root.@container.flex.min-h-[680px].flex-col.bg-background.text-sm.text-foreground --background: #f5f8ff; --foreground: #181b23; --card: #eff4ff; --card-foreground: #181b23; --popover: #eff4ff; --popover-foreground: #181b23; --primary: #0079a9; --primary-foreground: #f7fbfd; --secondary: #e2ebff; --secondary-foreground: #181b23; --muted: #e2ebff; --muted-foreground: #656972; --accent: #eeebff; --accent-foreground: #261c41; --accent-strong: #9282ce; --link: #736a96; --destructive: #c72c53; --destructive-foreground: #fdf9f9; --destructive-subtle: #fff4f5; --destructive-subtle-foreground: #a3505d; --success: #0d815e; --success-foreground: #f7fbf9; --success-subtle: #edfbf4; --success-subtle-foreground: #427560; --warning: #cdac00; --warning-foreground: #0f0d08; --warning-subtle: #fbf8e9; --warning-subtle-foreground: #7c691c; --border: #c3ccde; --input: #b3bbcb; --ring: #9282ce; --chart-1: #8373bd; --chart-2: #a761b0; --chart-3: #c35871; --chart-4: #bf641f; --chart-5: #958000; --sidebar: #eff4ff; --sidebar-foreground: #181b23; --sidebar-primary: #0079a9; --sidebar-primary-foreground: #f7fbfd; --sidebar-accent: #eeebff; --sidebar-accent-foreground: #261c41; --sidebar-border: #c3ccde; --sidebar-ring: #9282ce; --elevation-1: 0px 1px 2px 0px rgb(19 26 42 / 0.03), 0px 2px 6px -1px rgb(19 26 42 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(19 26 42 / 0.05), 0px 8px 20px -6px rgb(19 26 42 / 0.09); --elevation-3: 0px 1px 2px 0px rgb(19 26 42 / 0.08), 0px 24px 48px -12px rgb(19 26 42 / 0.18); --scrim: rgb(19 26 42 / 0.32);
-div.flex-1.rounded-t-sm height: 52%; background: var(--chart-1);
-div.flex-1.rounded-t-sm height: 74%; background: var(--chart-2);
-div.flex-1.rounded-t-sm height: 41%; background: var(--chart-3);
-div.flex-1.rounded-t-sm height: 88%; background: var(--chart-4);
-div.flex-1.rounded-t-sm height: 63%; background: var(--chart-5);
-div.flex-1.rounded-t-sm height: 96%; background: var(--chart-1);
-div.flex-1.rounded-t-sm height: 70%; background: var(--chart-2);
-div.flex-1.rounded-t-sm height: 58%; background: var(--chart-3);
+div.flex-1.rounded-t-[min(var(--radius)*0.6,6px)] height: 52%; background: var(--chart-1);
+div.flex-1.rounded-t-[min(var(--radius)*0.6,6px)] height: 74%; background: var(--chart-2);
+div.flex-1.rounded-t-[min(var(--radius)*0.6,6px)] height: 41%; background: var(--chart-3);
+div.flex-1.rounded-t-[min(var(--radius)*0.6,6px)] height: 88%; background: var(--chart-4);
+div.flex-1.rounded-t-[min(var(--radius)*0.6,6px)] height: 63%; background: var(--chart-5);
+div.flex-1.rounded-t-[min(var(--radius)*0.6,6px)] height: 96%; background: var(--chart-1);
+div.flex-1.rounded-t-[min(var(--radius)*0.6,6px)] height: 70%; background: var(--chart-2);
+div.flex-1.rounded-t-[min(var(--radius)*0.6,6px)] height: 58%; background: var(--chart-3);
 span.size-8.shrink-0.rounded-full background: var(--chart-1);
 span.size-8.shrink-0.rounded-full background: var(--chart-3);
 span.size-8.shrink-0.rounded-full background: var(--chart-4);

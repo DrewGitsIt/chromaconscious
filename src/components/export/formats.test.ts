@@ -9,6 +9,7 @@ import { encodeState, themeId } from '../../api/state'
 import { parseThemeHash } from '../../visionLink'
 import type { ExportContext } from './formats'
 import { EXPORT_FORMATS, agentCalls, shareLink, visionParams } from './formats'
+import { DEFAULT_PAGE, pageLinkParams } from '../../pageSettings'
 
 const ORIGIN = 'https://drewkidwell.com'
 const KEY = 'k'
@@ -125,9 +126,24 @@ describe('links', () => {
     const id = 't_abcdefghijkl'
     expect(shareLink(ORIGIN, id, {})).toBe(`${ORIGIN}/chromaconscious#${id}`)
     const link = shareLink(ORIGIN, id, visionParams('deutan', 0.6))
-    expect(parseThemeHash(new URL(link).hash)).toEqual({ id, vision: { vision: 'deutan', strength: 0.6 } })
+    expect(parseThemeHash(new URL(link).hash)).toEqual({ id, vision: { vision: 'deutan', strength: 0.6 }, page: {} })
     expect(visionParams('protan', 1)).toEqual({ vision: 'protan' })
     expect(visionParams('typical', 0.4)).toEqual({})
+  })
+
+  it('the share link carries the page settings, and adds nothing at the defaults', () => {
+    const id = 't_abcdefghijkl'
+    expect(pageLinkParams(DEFAULT_PAGE)).toEqual({})
+    expect(shareLink(ORIGIN, id, { ...visionParams('typical', 1), ...pageLinkParams(DEFAULT_PAGE) })).toBe(
+      `${ORIGIN}/chromaconscious#${id}`,
+    )
+    const link = shareLink(ORIGIN, id, { ...visionParams('deutan', 0.6), ...pageLinkParams({ radius: 20, font: 'tinos' }) })
+    expect(link).toBe(`${ORIGIN}/chromaconscious#${id}&vision=deutan&strength=60&radius=20&font=tinos`)
+    expect(parseThemeHash(new URL(link).hash)).toEqual({
+      id,
+      vision: { vision: 'deutan', strength: 0.6 },
+      page: { radius: 20, font: 'tinos' },
+    })
   })
 
   it('the agent calls are the documented endpoints for this id', () => {

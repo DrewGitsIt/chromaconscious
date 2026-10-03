@@ -58,6 +58,7 @@ test.describe('page settings', () => {
     await openMenu(page)
     expect(await css(menu(page), 'borderTopLeftRadius')).toBe('0px')
     await closeMenu(page)
+    expect(await css(page.locator('.preview-root [class*="rounded-t-[min"]').first(), 'borderTopLeftRadius')).toBe('0px')
 
     await corners(page).fill('20')
     await expect(page.locator('.pg-value')).toHaveText('20px')
@@ -65,6 +66,11 @@ test.describe('page settings', () => {
     await openMenu(page)
     expect(await css(menu(page), 'borderTopLeftRadius')).toBe('20px')
     await closeMenu(page)
+
+    // chart bars follow down to sharp but are capped at today's 6px, so a
+    // short bar never turns into a half-circle hill
+    const bar = page.locator('.preview-root [class*="rounded-t-[min"]').first()
+    expect(await css(bar, 'borderTopLeftRadius')).toBe('6px')
 
     // the old hardcoded radii scale too: the checkbox was rounded-[4px]
     await page.locator('.preview-root .nav-item:nth-child(2)').click()

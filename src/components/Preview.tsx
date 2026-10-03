@@ -665,11 +665,15 @@ export function Preview({ tokens, mode, uid, effects }: TokenSpaceProps) {
                     <CardTitle className="text-xl @2xl:text-2xl">{value}</CardTitle>
                   </CardHeader>
                   <CardContent>
+                    {/* Chart marks follow the corners setting down to sharp
+                        but never past today's 6px: at round, a short bar's
+                        top would become a half-circle and stop reading as a
+                        value. Same cap on every chart mark in the mockups. */}
                     <div className="flex h-9 items-end gap-1">
                       {[40, 65, 45, 80, 55, 90, 70].map((h, i) => (
                         <div
                           key={i}
-                          className="flex-1 rounded-t-sm"
+                          className="flex-1 rounded-t-[min(var(--radius)*0.6,6px)]"
                           style={{ height: `${h}%`, background: `var(--${chart})` }}
                         />
                       ))}
@@ -1082,7 +1086,7 @@ function TrafficCard({
               >
                 <span
                   aria-hidden
-                  className="size-2 shrink-0 rounded-[calc(var(--radius)*0.2)]"
+                  className="size-2 shrink-0 rounded-[min(var(--radius)*0.2,2px)]"
                   style={{ background: `var(--${t.token})` }}
                 />
                 {t.label}

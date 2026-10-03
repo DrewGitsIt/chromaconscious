@@ -48,11 +48,11 @@ circle.an-arc-hit cursor: pointer;
 circle.an-arc-hit cursor: pointer;
 circle.an-arc-hit cursor: pointer;
 circle.an-arc-hit cursor: pointer;
-span.size-2.shrink-0.rounded-[calc(var(--radius)*0.2)] background: var(--chart-1);
-span.size-2.shrink-0.rounded-[calc(var(--radius)*0.2)] background: var(--chart-2);
-span.size-2.shrink-0.rounded-[calc(var(--radius)*0.2)] background: var(--chart-3);
-span.size-2.shrink-0.rounded-[calc(var(--radius)*0.2)] background: var(--chart-4);
-span.size-2.shrink-0.rounded-[calc(var(--radius)*0.2)] background: var(--chart-5);
+span.size-2.shrink-0.rounded-[min(var(--radius)*0.2,2px)] background: var(--chart-1);
+span.size-2.shrink-0.rounded-[min(var(--radius)*0.2,2px)] background: var(--chart-2);
+span.size-2.shrink-0.rounded-[min(var(--radius)*0.2,2px)] background: var(--chart-3);
+span.size-2.shrink-0.rounded-[min(var(--radius)*0.2,2px)] background: var(--chart-4);
+span.size-2.shrink-0.rounded-[min(var(--radius)*0.2,2px)] background: var(--chart-5);
 rect.an-bar-seg cursor: pointer;
 rect.an-bar-seg cursor: pointer;
 rect.an-bar-seg cursor: pointer;
@@ -145,12 +145,12 @@ rect.an-heat-cell cursor: pointer;
 rect.an-heat-cell cursor: pointer;
 rect.an-heat-cell cursor: pointer;
 rect.an-heat-cell cursor: pointer;
-span.h-3.flex-1.rounded-[calc(var(--radius)*0.2)] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 10%, var(--card));
-span.h-3.flex-1.rounded-[calc(var(--radius)*0.2)] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 26%, var(--card));
-span.h-3.flex-1.rounded-[calc(var(--radius)*0.2)] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 44%, var(--card));
-span.h-3.flex-1.rounded-[calc(var(--radius)*0.2)] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 62%, var(--card));
-span.h-3.flex-1.rounded-[calc(var(--radius)*0.2)] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 81%, var(--card));
-span.h-3.flex-1.rounded-[calc(var(--radius)*0.2)] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 100%, var(--card));
+span.h-3.flex-1.rounded-[min(var(--radius)*0.2,2px)] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 10%, var(--card));
+span.h-3.flex-1.rounded-[min(var(--radius)*0.2,2px)] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 26%, var(--card));
+span.h-3.flex-1.rounded-[min(var(--radius)*0.2,2px)] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 44%, var(--card));
+span.h-3.flex-1.rounded-[min(var(--radius)*0.2,2px)] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 62%, var(--card));
+span.h-3.flex-1.rounded-[min(var(--radius)*0.2,2px)] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 81%, var(--card));
+span.h-3.flex-1.rounded-[min(var(--radius)*0.2,2px)] background: color-mix(in oklab, color-mix(in oklab, var(--chart-1) 74%, var(--foreground)) 100%, var(--card));
 ---
 ChromaConscious
 
