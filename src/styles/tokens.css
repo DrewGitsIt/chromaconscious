@@ -76,6 +76,8 @@
   --d-base: 200ms; /* state changes: reorder, remove, toast in */
   --d-slow: 340ms; /* the ones that carry meaning: riff, first-paint stagger */
   --d-stage: 300ms; /* a sidebar section folding open or shut */
+  --d-xfade: 420ms; /* riff: a shipped colour cross-fading to the next hop */
+  --d-arrow: 260ms; /* the middle cell's = / arrow glyph following taste */
   --ease: cubic-bezier(0.2, 0.8, 0.3, 1); /* default: quick out, soft landing */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* entrances — decelerate hard */
   --ease-back: cubic-bezier(0.34, 1.4, 0.64, 1); /* overshoot, for lifts */

@@ -11,8 +11,9 @@
  * The "=" and the "→" are one glyph — two bars that part into an equals sign
  * or close into a shaft and grow a head — so a later change (taste dragging,
  * a riff hop) can animate the one cell from "same" to "moved" without a swap.
- * The shaft's length scales with ΔE through `--len`, clamped so a tiny move is
- * still an arrow and a big one still fits.
+ * The shaft's length and opacity scale with ΔE (`--len`, `--dc-o`), clamped so
+ * a tiny move is still an arrow and a big one still fits. Both transition over
+ * --d-arrow, so dragging taste reads as one glyph growing and shrinking.
  *
  * Every state is said in text as well as shape, and none of them by colour.
  */
@@ -56,7 +57,13 @@ export function DeltaCell({ delta, failure, name, derivedLabel }: DeltaCellProps
     <span
       className={`dc dc-${kind}`}
       data-kind={kind}
-      style={{ '--len': `${delta.same ? 12 : shaftLength(delta.e)}px` } as CSSProperties}
+      style={
+        {
+          '--len': `${delta.same ? 12 : shaftLength(delta.e)}px`,
+          // the glyph firms up with the move: a nudge is a faint arrow
+          '--dc-o': delta.same ? 0.7 : Math.min(1, 0.55 + delta.e * 6).toFixed(3),
+        } as CSSProperties
+      }
       title={
         delta.same
           ? `${name}: the engine left your color as it is`

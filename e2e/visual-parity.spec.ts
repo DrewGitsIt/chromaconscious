@@ -32,7 +32,7 @@ const MOCKUPS = ['app', 'analytics', 'marketing', 'brand']
  */
 async function shot(page: Page, name: string) {
   await page.mouse.move(900, 6)
-  await expect(page.locator('.is-rerolling')).toHaveCount(0)
+  await expect(page.locator('.is-fading')).toHaveCount(0)
   // The analytics mockup plays a scripted cold load, and the chrome's entrance
   // motion is driven from script too — neither is reached by Playwright's
   // `animations: 'disabled'`, so wait them out explicitly.

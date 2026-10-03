@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Ban,
   Columns2,
@@ -35,6 +35,7 @@ import { ExportDialog } from './components/export/ExportDialog'
 import type { ExportContext } from './components/export/formats'
 import { EXPORT_FORMATS, visionParams } from './components/export/formats'
 import { FrameCard } from './components/FrameCard'
+import { XFADE_MS } from './components/chips'
 import { fileToCandidates } from './components/ImageDrop'
 import { PresetDots } from './components/PresetDots'
 import { PreviewBoundary } from './components/PreviewBoundary'
@@ -85,6 +86,12 @@ interface FrameState extends ThemeState {
   vision: Vision
   /** 0..1, how far toward the full dichromacy. Meaningless for typical. */
   strength: number
+  /**
+   * The furthest riff hop walked since the set was last replaced — how far
+   * the riff trail reaches. View state: going back keeps the hops ahead on
+   * the trail (the walk is deterministic, so they are still exactly there).
+   */
+  trailMax: number
 }
 
 /** What "start over" replaces — and what undo brings back. */
@@ -118,6 +125,7 @@ const emptyFrameState = (): FrameState => ({
   mockup: 'app',
   vision: 'typical',
   strength: 1,
+  trailMax: 0,
 })
 
 /** The CSS filter for frame i's simulation (see VisionFilter), or null. */
@@ -186,6 +194,39 @@ function useThemeResult(f: FrameState | undefined) {
   }, [candidates, fidelity, monoBase, seed, separation, contrast])
 }
 
+/** How many hops the riff trail shows; older ones fold into "+N". */
+const TRAIL_LEN = 10
+
+/**
+ * The riff trail's columns: each hop in the window as its six shipped seat
+ * colours, under the frame's current settings — so a column is exactly where
+ * a jump lands. Built off a deferred copy of the inputs, so a taste drag
+ * repaints the board first and the trail catches up a frame later (eleven
+ * builds cost ~12ms; the walk's trail cache makes each hop incremental).
+ */
+function useRiffTrail(f: FrameState) {
+  const key = {
+    candidates: f.candidates,
+    fidelity: f.fidelity,
+    monoBase: f.monoBase,
+    separation: f.separation,
+    contrast: f.contrast,
+    max: Math.max(f.trailMax ?? 0, f.seed),
+  }
+  const d = useDeferredValue(key)
+  const { candidates, fidelity, monoBase, separation, contrast, max } = d
+  return useMemo(() => {
+    if (candidates.length === 0 || max === 0) return { first: 0, columns: [] }
+    const first = Math.max(0, max + 1 - TRAIL_LEN)
+    const columns = []
+    for (let hop = first; hop <= max; hop++) {
+      const r = generateTheme({ candidates, fidelity, monoBase: monoBase ?? undefined, seed: hop, separation, contrast })
+      columns.push({ hop, colors: ROLES.map((role) => toHex(r.assignments.find((a) => a.role === role)!.seed)) })
+    }
+    return { first, columns }
+  }, [candidates, fidelity, monoBase, separation, contrast, max])
+}
+
 /**
  * The regenerate callback the placement probes (describePlacement,
  * wouldTakeOver) run once per option. They read only who sits where, and
@@ -232,7 +273,10 @@ export default function App() {
   const [seatMenu, setSeatMenu] = useState<SeatMenu | null>(null)
   const [chartOpen, setChartOpen] = useState(false)
   const [unusedFlash, setUnusedFlash] = useState(false)
-  const [rerolled, setRerolled] = useState<Role[]>([])
+  // Seats a riff hop is moving right now: their shipped chips cross-fade
+  // (FadeChip) for the length of --d-xfade, then the flag clears.
+  const [fading, setFading] = useState<Role[]>([])
+  const fadeTimer = useRef<number | null>(null)
   // The keyboard map's flyout, and the add popover — which a key can open, so
   // its open state has to live out here rather than inside the control.
   const [helpOpen, setHelpOpen] = useState(false)
@@ -274,7 +318,10 @@ export default function App() {
   // (the start hero in split view) build their own.
   const dispatchTo = (i: number, op: Op) => {
     const f = frames[i]
-    const next = applyOp(f, op, { mode: f.mode, view: i === active ? view : undefined })
+    const applied = applyOp(f, op, { mode: f.mode, view: i === active ? view : undefined })
+    // The trail reaches the furthest hop walked; replacing the set starts it over.
+    const trailMax = op.op === 'start' || op.op === 'preset' ? 0 : Math.max(f.trailMax ?? 0, applied.seed)
+    const next = applied === f || trailMax === f.trailMax ? applied : { ...applied, trailMax }
     if (next !== f) updateFrame(i, next)
     return next !== f
   }
@@ -451,22 +498,24 @@ export default function App() {
   }, [toast])
 
   // ---- riff ---------------------------------------------------------------
-  // A hop walks every UNLOCKED seat — derived or yours alike. Capture which
-  // ones those are so they bounce, then clear the flag so the next hop replays
-  // it. (It used to capture the derived ones, back when those were the only
-  // seats that could move.)
-  const riff = () => {
+  // A hop walks every UNLOCKED seat — derived or yours alike — and moves only
+  // the shipped column: your inputs never change. The seats that walk
+  // cross-fade to the new colour; a locked seat is not in the list and does
+  // not change, so it holds perfectly still. back and a trail jump are hops
+  // too, and look the same.
+  const hopTo = (op: Op) => {
     if (!view) return
     const moving = view.slots.filter((s) => !s.locked).map((s) => s.role)
-    dispatch({ op: 'riff' })
+    if (!dispatch(op)) return
     setSeatMenu(null)
-    setRerolled(moving)
-    setTimeout(() => setRerolled([]), 700)
+    setFading(moving)
+    if (fadeTimer.current != null) window.clearTimeout(fadeTimer.current)
+    fadeTimer.current = window.setTimeout(() => setFading([]), XFADE_MS + 60)
   }
-  const riffBack = () => {
-    dispatch({ op: 'back' })
-    setSeatMenu(null)
-  }
+  const riff = () => hopTo({ op: 'riff' })
+  const riffBack = () => hopTo({ op: 'back' })
+  const jumpTo = (hop: number) => hopTo({ op: 'hop', hop })
+  const trail = useRiffTrail(frame)
 
   // ---- board verbs --------------------------------------------------------
   const applyDrop = (payload: DragPayload, target: { kind: 'role'; role: Role } | { kind: 'series' } | { kind: 'bench' }) => {
@@ -868,7 +917,7 @@ export default function App() {
                   ? (seatMenu.seat as Role)
                   : null,
               anchorRole,
-              rerolled,
+              fading,
               picking,
               onPick: (role) => {
                 const idx = view.slots.find((s) => s.role === role)?.candidateIndex ?? null
@@ -889,6 +938,7 @@ export default function App() {
             }}
             tray={{
               series: view.series,
+              fading: fading.length > 0,
               open: chartOpen,
               onToggle: () => setChartOpen((o) => !o),
               onEditInput: (slot, anchor) => setSeatMenu({ kind: 'series', slot, side: 'input', anchor }),
@@ -941,6 +991,8 @@ export default function App() {
             canRiff={hasRiffableSeats(view)}
             onRiff={riff}
             onBack={riffBack}
+            trail={trail}
+            onJump={jumpTo}
           />
         ),
       },

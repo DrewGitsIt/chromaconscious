@@ -97,6 +97,12 @@ export type Op =
   | { op: 'reset' }
   | { op: 'riff'; hops?: number }
   | { op: 'back'; hops?: number }
+  /**
+   * Jump straight to riff hop `hop` (0 = as derived). The walk is
+   * deterministic and its trail is cached, so this lands exactly where that
+   * many riffs would — the riff trail's columns are this op.
+   */
+  | { op: 'hop'; hop: number }
   | { op: 'mono'; index: number | null }
   | { op: 'fidelity'; value: number }
   | { op: 'separation'; value: Separation }
@@ -227,6 +233,10 @@ export function applyOp<S extends ThemeState>(state: S, op: Op, ctx: OpContext):
       return { ...state, seed: state.seed + (op.hops ?? 1) }
     case 'back':
       return { ...state, seed: Math.max(0, state.seed - (op.hops ?? 1)) }
+    case 'hop': {
+      const seed = Number.isFinite(op.hop) ? Math.max(0, Math.floor(op.hop)) : state.seed
+      return seed === state.seed ? state : { ...state, seed }
+    }
     case 'mono':
       if (op.index != null && !has(op.index)) return state
       return { ...state, monoBase: op.index }

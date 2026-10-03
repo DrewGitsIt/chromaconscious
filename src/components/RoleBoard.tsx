@@ -33,6 +33,7 @@ import type { BoardSlot, BoardView, SeatFailure } from '../board'
 import { seatDelta } from '../board'
 import type { DragPayload } from '../board'
 import { DeltaCell } from './DeltaCell'
+import { FadeChip } from './FadeChip'
 import { DRAG_MIME as MIME, chipStyle, readPayload } from './chips'
 
 export type { DragPayload }
@@ -46,8 +47,12 @@ export interface RoleBoardProps {
   openRole: Role | null
   /** Mono-lock base, gets an anchor badge. */
   anchorRole: Role | null
-  /** Seats that just moved on a riff hop — they play the bounce, staggered. */
-  rerolled?: Role[]
+  /**
+   * Seats a riff hop (or a trail jump) is moving right now: their shipped
+   * chip cross-fades to the new colour. Everything else snaps — a taste drag
+   * follows your hand — and a locked seat does not change, so it holds still.
+   */
+  fading?: Role[]
   /**
    * Mono-lock pick mode: the WHOLE row becomes one target. The hint says
    * "click a seat", so clicking the label or the padding must lock too.
@@ -88,7 +93,7 @@ export function RoleBoard({
   failures = {},
   openRole,
   anchorRole,
-  rerolled,
+  fading,
   onEditInput,
   onEditOutput,
   onDeriveSafely,
@@ -104,9 +109,7 @@ export function RoleBoard({
   const [dragRole, setDragRole] = useState<Role | null>(null)
   const located = useRef<Role | null>(null)
 
-  // Stagger by position within the batch that actually moved, so a lone
-  // re-rolled seat bounces immediately rather than waiting its turn.
-  const rerollOrder = new Map<Role, number>((rerolled ?? []).map((r, i) => [r, i]))
+  const fadingSet = new Set<Role>(fading ?? [])
 
   return (
     <div className="role-board">
@@ -119,7 +122,6 @@ export function RoleBoard({
         const { role, hex, inputHex, sourceHex, provenance, locked } = slot
         const solid = provenance !== 'derived'
         const anchored = anchorRole === role
-        const bounce = rerollOrder.get(role)
         const failure = locked ? (failures[role] ?? null) : null
         const delta = inputHex ? seatDelta(inputHex, hex) : null
         const state = locked ? (delta?.same ? 'locked · as typed' : 'locked') : ''
@@ -134,7 +136,7 @@ export function RoleBoard({
           failure ? 'is-failing' : '',
           dropRole === role ? 'drop-ok' : '',
           dragRole === role ? 'is-dragging' : '',
-          bounce == null ? '' : 'is-rerolling',
+          fadingSet.has(role) ? 'is-riffing' : '',
         ]
           .filter(Boolean)
           .join(' ')
@@ -143,7 +145,6 @@ export function RoleBoard({
           <div
             key={role}
             className={className}
-            style={bounce == null ? undefined : { animationDelay: `${bounce * 55}ms` }}
             data-role={role}
             // In pick mode the row is one target: swallow the clicks its
             // inner buttons would otherwise take.
@@ -275,19 +276,17 @@ export function RoleBoard({
                 </button>
               )}
               <DeltaCell delta={delta} failure={failure} name={role} />
-              <button
-                type="button"
+              {/* `hex` is the colour in the theme; `sourceHex` is what you typed,
+                  and only appears when the two have parted company. */}
+              <FadeChip
+                hex={hex}
+                fade={fadingSet.has(role)}
                 className={`rb-chip rb-body${solid ? '' : ' is-derived'}`}
-                style={chipStyle(hex)}
-                draggable={false}
-                // `hex` is the colour in the theme; `sourceHex` is what you typed,
-                // and only appears when the two have parted company.
+                hexClass="rb-hex"
                 title={`${hex} — ${TAG[provenance]}${sourceHex ? `, from ${sourceHex}` : ''}. Set the color ${role} ships; it locks as typed.`}
-                aria-label={`${role} ships as ${hex}, ${TAG[provenance]} — set it`}
+                ariaLabel={`${role} ships as ${hex}, ${TAG[provenance]} — set it`}
                 onClick={(e) => onEditOutput(role, e.currentTarget)}
-              >
-                <span className="rb-hex">{hex}</span>
-              </button>
+              />
             </div>
 
             {failure && (

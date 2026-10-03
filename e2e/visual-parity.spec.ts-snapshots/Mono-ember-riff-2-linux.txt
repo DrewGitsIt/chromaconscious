@@ -1,22 +1,16 @@
-span.rail-thumb top: 0px; height: 332.944px;
-button.rail-tick.here top: 1.85743px;
-button.rail-tick top: 335.73px;
-button.rail-tick top: 651.493px;
-div.rb-slot.rb-yours 
+span.rail-thumb top: 0px; height: 323.881px;
+button.rail-tick.here top: 1.80687px;
+button.rail-tick top: 326.592px;
+button.rail-tick top: 633.76px;
 button.rb-chip.rb-in --c: #ff5c1f; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
-span.dc.dc-moved --len: 30.42118569471516px;
+span.dc.dc-moved --len: 30.42118569471516px; --dc-o: 0.901;
 button.rb-chip.rb-body --c: #e16600; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
-div.rb-slot.rb-derived 
 button.rb-chip.rb-body.is-derived --c: #979518; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
-div.rb-slot.rb-yours 
 button.rb-chip.rb-in --c: #1a1a1a; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
-span.dc.dc-moved --len: 16.585625243915125px;
+span.dc.dc-moved --len: 16.585625243915125px; --dc-o: 0.741;
 button.rb-chip.rb-body --c: #201117; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
-div.rb-slot.rb-derived 
 button.rb-chip.rb-body.is-derived --c: #c73218; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
-div.rb-slot.rb-derived 
 button.rb-chip.rb-body.is-derived --c: #4d7b2a; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
-div.rb-slot.rb-derived 
 button.rb-chip.rb-body.is-derived --c: #fa9533; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
 i. background: rgb(77, 77, 77);
 i. background: rgb(154, 154, 154);
@@ -45,6 +39,24 @@ div.pg-track-wrap --v: 50%;
 input.pg-slider 
 span.pg-fn font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; font-weight: 400;
 input. clip-path: inset(50%); overflow: hidden; white-space: nowrap; border: 0px; padding: 0px; width: 1px; height: 1px; margin: -1px; position: fixed; top: 0px; left: 0px;
+i. background: rgb(254, 91, 30);
+i. background: rgb(148, 128, 0);
+i. background: rgb(26, 26, 26);
+i. background: rgb(200, 51, 23);
+i. background: rgb(84, 128, 58);
+i. background: rgb(242, 149, 32);
+i. background: rgb(238, 93, 48);
+i. background: rgb(153, 139, 0);
+i. background: rgb(29, 20, 23);
+i. background: rgb(200, 46, 6);
+i. background: rgb(76, 126, 53);
+i. background: rgb(240, 143, 38);
+i. background: rgb(225, 102, 0);
+i. background: rgb(151, 149, 24);
+i. background: rgb(32, 17, 23);
+i. background: rgb(199, 50, 24);
+i. background: rgb(77, 123, 42);
+i. background: rgb(250, 149, 51);
 input. 
 div.preview-root.relative.flex.min-h-[680px].overflow-hidden.bg-background.text-sm.text-foreground.dark --background: #1b0c12; --foreground: #f3e7eb; --card: #211218; --card-foreground: #f3e7eb; --popover: #211218; --popover-foreground: #f3e7eb; --primary: #bc540e; --primary-foreground: #fdf9f7; --secondary: #291a20; --secondary-foreground: #f3e7eb; --muted: #291a20; --muted-foreground: #c1b5b9; --accent: #212108; --accent-foreground: #ededbf; --accent-strong: #9d9b22; --link: #b9b98d; --destructive: #c74831; --destructive-foreground: #fdf9f8; --destructive-subtle: #201311; --destructive-subtle-foreground: #eaa89b; --destructive-strong: #fb6449; --success: #577b37; --success-foreground: #f9fbf7; --success-subtle: #131910; --success-subtle-foreground: #a9bf9b; --success-strong: #73a452; --warning: #f09b50; --warning-foreground: #110c09; --warning-subtle: #1f150d; --warning-subtle-foreground: #ddaf8b; --warning-strong: #df7d01; --border: #423338; --input: #56454b; --ring: #9d9b22; --chart-1: #959438; --chart-2: #66bd48; --chart-3: #00bead; --chart-4: #00b4ea; --chart-5: #889cff; --sidebar: #211218; --sidebar-foreground: #f3e7eb; --sidebar-primary: #bc540e; --sidebar-primary-foreground: #fdf9f7; --sidebar-accent: #212108; --sidebar-accent-foreground: #ededbf; --sidebar-border: #423338; --sidebar-ring: #9d9b22; --elevation-1: 0px 1px 2px 0px rgb(1 0 0 / 0.18), 0px 2px 6px -1px rgb(1 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(1 0 0 / 0.28), 0px 8px 20px -6px rgb(1 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(1 0 0 / 0.38), 0px 24px 48px -12px rgb(1 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(1 0 0 / 0.58);
 div.flex-1.rounded-t-[min(var(--radius)*0.6,6px)] height: 40%; background: var(--chart-1);
@@ -185,6 +197,9 @@ hop 2
 riff
 2
 back
+0
+1
+2
 all 52 checks pass
 report
 Export

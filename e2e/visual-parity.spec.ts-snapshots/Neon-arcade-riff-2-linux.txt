@@ -1,22 +1,16 @@
-span.rail-thumb top: 0px; height: 340.661px;
-button.rail-tick.here top: 1.90048px;
-button.rail-tick top: 327.357px;
-button.rail-tick top: 650.438px;
-div.rb-slot.rb-yours 
+span.rail-thumb top: 0px; height: 331.179px;
+button.rail-tick.here top: 1.84758px;
+button.rail-tick top: 318.246px;
+button.rail-tick top: 632.335px;
 button.rb-chip.rb-in --c: #f72585; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
-span.dc.dc-moved --len: 25.533006278688312px;
+span.dc.dc-moved --len: 25.533006278688312px; --dc-o: 0.845;
 button.rb-chip.rb-body --c: #e33e75; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
-div.rb-slot.rb-yours 
 button.rb-chip.rb-in --c: #7209b7; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
-span.dc.dc-moved --len: 40px;
+span.dc.dc-moved --len: 40px; --dc-o: 1.000;
 button.rb-chip.rb-body --c: #960bb2; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
-div.rb-slot.rb-derived 
 button.rb-chip.rb-body.is-derived --c: #725562; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
-div.rb-slot.rb-derived 
 button.rb-chip.rb-body.is-derived --c: #ca1735; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
-div.rb-slot.rb-derived 
 button.rb-chip.rb-body.is-derived --c: #527a26; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
-div.rb-slot.rb-derived 
 button.rb-chip.rb-body.is-derived --c: #ef901a; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
 i. background: rgb(190, 99, 212);
 i. background: rgb(110, 136, 231);
@@ -27,15 +21,15 @@ div.series.led --c: #be63d4;
 button.rb-chip.series-out.is-derived --c: #be63d4; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
 div.series.yours --c: #6e88e7;
 button.rb-chip.series-in --c: #3a0ca3; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
-span.dc.dc-moved --len: 40px;
+span.dc.dc-moved --len: 40px; --dc-o: 1.000;
 button.rb-chip.series-out --c: #6e88e7; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
 div.series.yours --c: #8678fb;
 button.rb-chip.series-in --c: #4361ee; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
-span.dc.dc-moved --len: 40px;
+span.dc.dc-moved --len: 40px; --dc-o: 1.000;
 button.rb-chip.series-out --c: #8678fb; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
 div.series.yours --c: #43bdd3;
 button.rb-chip.series-in --c: #4cc9f0; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
-span.dc.dc-moved --len: 25.271667081218315px;
+span.dc.dc-moved --len: 25.271667081218315px; --dc-o: 0.842;
 button.rb-chip.series-out --c: #43bdd3; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
 div.series.derived --c: #00b3ed;
 button.rb-chip.series-out.is-derived --c: #00b3ed; --ink-on: rgba(0,0,0,0.82); --well: rgba(0,0,0,0.12);
@@ -48,6 +42,24 @@ div.pg-track-wrap --v: 50%;
 input.pg-slider 
 span.pg-fn font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; font-weight: 400;
 input. clip-path: inset(50%); overflow: hidden; white-space: nowrap; border: 0px; padding: 0px; width: 1px; height: 1px; margin: -1px; position: fixed; top: 0px; left: 0px;
+i. background: rgb(245, 45, 133);
+i. background: rgb(114, 11, 184);
+i. background: rgb(114, 92, 98);
+i. background: rgb(199, 44, 79);
+i. background: rgb(84, 128, 58);
+i. background: rgb(242, 149, 32);
+i. background: rgb(247, 64, 120);
+i. background: rgb(130, 24, 188);
+i. background: rgb(116, 85, 95);
+i. background: rgb(199, 38, 74);
+i. background: rgb(76, 126, 53);
+i. background: rgb(240, 143, 38);
+i. background: rgb(227, 62, 117);
+i. background: rgb(150, 11, 178);
+i. background: rgb(114, 85, 98);
+i. background: rgb(202, 23, 53);
+i. background: rgb(82, 122, 38);
+i. background: rgb(239, 144, 26);
 input. 
 div.preview-root.relative.flex.min-h-[680px].overflow-hidden.bg-background.text-sm.text-foreground.dark --background: #1b0c14; --foreground: #f3e7ec; --card: #211219; --card-foreground: #f3e7ec; --popover: #211219; --popover-foreground: #f3e7ec; --primary: #c83e69; --primary-foreground: #fdf9f9; --secondary: #291a21; --secondary-foreground: #f3e7ec; --muted: #291a21; --muted-foreground: #c1b5ba; --accent: #28182d; --accent-foreground: #f9e3ff; --accent-strong: #c679da; --link: #d0aada; --destructive: #cd3f4b; --destructive-foreground: #fdf9f9; --destructive-subtle: #201313; --destructive-subtle-foreground: #eaa7a5; --destructive-strong: #ff5d65; --success: #5b7a35; --success-foreground: #f9fbf7; --success-subtle: #141910; --success-subtle-foreground: #aabf9a; --success-strong: #78a34f; --warning: #e69542; --warning-foreground: #100c09; --warning-subtle: #1e150c; --warning-subtle-foreground: #dbb089; --warning-strong: #da8100; --border: #41333a; --input: #55454c; --ring: #c679da; --chart-1: #be63d4; --chart-2: #6e88e7; --chart-3: #8678fb; --chart-4: #43bdd3; --chart-5: #00b3ed; --sidebar: #211219; --sidebar-foreground: #f3e7ec; --sidebar-primary: #c83e69; --sidebar-primary-foreground: #fdf9f9; --sidebar-accent: #28182d; --sidebar-accent-foreground: #f9e3ff; --sidebar-border: #41333a; --sidebar-ring: #c679da; --elevation-1: 0px 1px 2px 0px rgb(1 0 0 / 0.18), 0px 2px 6px -1px rgb(1 0 0 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045); --elevation-2: 0px 1px 2px 0px rgb(1 0 0 / 0.28), 0px 8px 20px -6px rgb(1 0 0 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --elevation-3: 0px 1px 2px 0px rgb(1 0 0 / 0.38), 0px 24px 48px -12px rgb(1 0 0 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063); --scrim: rgb(1 0 0 / 0.58);
 div.flex-1.rounded-t-[min(var(--radius)*0.6,6px)] height: 40%; background: var(--chart-1);
@@ -185,6 +197,9 @@ hop 2
 riff
 2
 back
+0
+1
+2
 all 52 checks pass
 report
 Export

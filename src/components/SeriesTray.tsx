@@ -21,6 +21,7 @@ import type { SeriesEntry } from '../board'
 import { seatDelta } from '../board'
 import type { DragPayload } from '../board'
 import { DeltaCell } from './DeltaCell'
+import { FadeChip } from './FadeChip'
 import { chipStyle, readPayload } from './chips'
 import './SeriesTray.css'
 
@@ -38,6 +39,8 @@ export interface SeriesTrayProps {
   /** Flip whether riff may move this slot's colour. Only sent for slots of yours. */
   onToggleLock: (slot: number) => void
   onExplain: (anchor: HTMLElement) => void
+  /** A riff hop is landing: shipped chips cross-fade instead of snapping. */
+  fading?: boolean
 }
 
 export function SeriesTray({
@@ -50,6 +53,7 @@ export function SeriesTray({
   onDragStartSeries,
   onToggleLock,
   onExplain,
+  fading = false,
 }: SeriesTrayProps): ReactElement {
   const [dropOk, setDropOk] = useState(false)
   const [dragSlot, setDragSlot] = useState<number | null>(null)
@@ -175,22 +179,20 @@ export function SeriesTray({
                   name={name}
                   derivedLabel={entry.leadsFrom ? `from ${entry.leadsFrom}` : undefined}
                 />
-                <button
-                  type="button"
+                <FadeChip
+                  hex={entry.hex}
+                  fade={fading && !entry.locked}
                   className={`rb-chip series-out${own ? '' : ' is-derived'}`}
-                  style={chipStyle(entry.hex)}
-                  draggable={false}
+                  hexClass="rb-chip-hex"
                   disabled={entry.leadsFrom != null}
                   title={
                     entry.leadsFrom
                       ? `${entry.hex} — chart 1 wears ${entry.leadsFrom}; change it in the ${entry.leadsFrom} row`
                       : `${entry.hex} — ${own ? 'yours' : 'derived'}. Set the color ${name} ships; it locks as typed.`
                   }
-                  aria-label={`${name} ships as ${entry.hex}${entry.leadsFrom ? `, led by ${entry.leadsFrom}` : ' — set it'}`}
+                  ariaLabel={`${name} ships as ${entry.hex}${entry.leadsFrom ? `, led by ${entry.leadsFrom}` : ' — set it'}`}
                   onClick={(e) => onEditOutput(entry.slot, e.currentTarget)}
-                >
-                  <span className="rb-chip-hex">{entry.hex}</span>
-                </button>
+                />
                 {own ? (
                   <button
                     type="button"

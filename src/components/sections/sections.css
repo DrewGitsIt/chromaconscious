@@ -157,6 +157,83 @@
     font-size: 11.5px;
   }
 
+  /* ---------- 3 riff: the trail ----------
+     The last ten hops, newest on the right, each a column of its six seat
+     colours. The current hop is underlined (position and a rule, not colour);
+     hops ahead of it, still reachable, are dimmed. */
+  .trail {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    min-height: 42px;
+    margin-top: 2px;
+  }
+  .trail-more {
+    align-self: center;
+    margin-right: 4px;
+    border: 0;
+    padding: 2px 4px;
+    border-radius: 4px;
+    background: none;
+    font-family: var(--font-code);
+    font-size: 10px;
+    color: var(--ink-faint);
+    cursor: pointer;
+  }
+  .trail-more:hover {
+    color: var(--ink);
+    background: var(--surface-3);
+  }
+  .hopcol {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    width: 17px;
+    border: 0;
+    padding: 0 0 4px;
+    background: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    animation: sec-in var(--d-slow) var(--ease-out) both;
+  }
+  .hopcol i {
+    height: 5px;
+    border-radius: 1px;
+    transition: background-color var(--d-xfade) var(--ease);
+  }
+  .hopcol span {
+    margin-top: 2px;
+    font-family: var(--font-code);
+    font-size: 8.5px;
+    color: var(--ink-faint);
+    text-align: center;
+  }
+  .hopcol.cur {
+    border-bottom-color: var(--ink);
+  }
+  .hopcol.cur span {
+    color: var(--ink);
+  }
+  .hopcol.ahead {
+    opacity: 0.35;
+  }
+  .hopcol:hover,
+  .hopcol:focus-visible {
+    opacity: 1;
+    outline: none;
+  }
+  .hopcol:focus-visible {
+    border-bottom-color: var(--line-active);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hopcol {
+      animation: none;
+    }
+    .hopcol i {
+      transition: none;
+    }
+  }
+
   /* ---------- 4 compare ---------- */
   .cmp-note {
     margin: 0 0 8px;
