@@ -31,6 +31,7 @@ import { GLOSS, jobsForRole } from './roleCopy'
 import type { Seat } from './roleCopy'
 import { ExportButton } from './components/export/ExportButton'
 import { ExportDialog } from './components/export/ExportDialog'
+import type { ExportContext } from './components/export/formats'
 import { EXPORT_FORMATS, visionParams } from './components/export/formats'
 import { FrameCard } from './components/FrameCard'
 import { fileToCandidates } from './components/ImageDrop'
@@ -308,6 +309,21 @@ export default function App() {
   useEffect(() => {
     if (!result) setExportOpen(false)
   }, [result])
+  // One object per theme and view, so a lazy exporter's build is reused
+  // across renders (figmaFormat caches on it) instead of rerun on each.
+  const exportCtx = useMemo<ExportContext | null>(
+    () =>
+      exportId && result
+        ? {
+            result,
+            state: frame,
+            id: exportId,
+            origin: location.origin,
+            linkParams: visionParams(frame.vision, frame.strength),
+          }
+        : null,
+    [exportId, result, frame],
+  )
 
   // ---- candidate edits ----------------------------------------------------
   // Placement is explicit now, so an edit needs no seat-transfer detective
@@ -955,17 +971,7 @@ export default function App() {
       {exportOpen && result && (
         <ExportDialog
           formats={EXPORT_FORMATS}
-          ctx={
-            exportId
-              ? {
-                  result,
-                  state: frame,
-                  id: exportId,
-                  origin: location.origin,
-                  linkParams: visionParams(frame.vision, frame.strength),
-                }
-              : null
-          }
+          ctx={exportCtx}
           issues={checkStats?.issues ?? 0}
           frameLabel={split ? FRAME_LABEL[active] : null}
           returnFocus={exportBtnRef}

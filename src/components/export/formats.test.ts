@@ -86,8 +86,37 @@ describe('the Export dialog matches the API byte for byte', () => {
     for (const [id, ext] of [['css', '.css'], ['tailwind', '.tailwind.css'], ['json', '.tokens.json']]) {
       const f = fmt(id)
       expect(f.download!.filename(ctx)).toBe(`chromaconscious-${ctx.id}${ext}`)
-      expect(await f.download!.blob(ctx).text()).toBe(copied(id, ctx))
+      expect(await (await f.download!.blob(ctx)).text()).toBe(copied(id, ctx))
     }
+  })
+})
+
+describe('Figma variables', () => {
+  it('the download is the zip /export?format=figma returns, byte for byte', async () => {
+    const { env, m } = memoryEnv()
+    const s = tunedState()
+    const ctx = await appContext(s)
+    m.set(ctx.id, JSON.stringify({ state: encodeState(s), parent: null }))
+    const res = await handle(new Request(`${ORIGIN}/api/chromaconscious/v1/export?theme=${ctx.id}&format=figma`), env)
+    const api = new Uint8Array(await res.arrayBuffer())
+    const f = fmt('figma')
+    expect(f.group).toBe('design')
+    expect(f.copy).toEqual([])
+    const blob = await f.download!.blob(ctx)
+    expect(new Uint8Array(await blob.arrayBuffer())).toEqual(api)
+    expect(res.headers.get('content-disposition')).toBe(`attachment; filename="${f.download!.filename(ctx)}"`)
+  })
+
+  it('the preview lists every file in the zip with its variable count', async () => {
+    const ctx = await appContext(presetState())
+    const p = fmt('figma').preview!
+    if (p.kind !== 'files') throw new Error('expected a files preview')
+    const lines = await p.load(ctx)
+    expect(lines.map((l) => l.name)).toEqual([
+      'light.json', 'dark.json', 'light-medium.json', 'dark-medium.json', 'light-high.json', 'dark-high.json', 'README.txt',
+    ])
+    expect(lines[0].detail).toMatch(/^\d+ variables · \d+\.\d KB$/)
+    expect(fmt('figma').hint).toContain("On Figma's free plan, import each file as its own collection")
   })
 })
 

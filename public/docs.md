@@ -175,8 +175,8 @@ Same parameters as `/riff`. `hops` steps back that many, stopping at riff 0. Goi
 | param | type | | description |
 |---|---|---|---|
 | `theme` | theme id | required | |
-| `format` | enum | | `css` (default) gives CSS variables under `:root` and `.dark`. `tailwind` gives the same plus a Tailwind v4 `@theme inline` bridge. `json` gives DTCG design tokens. |
-| `mode` | enum | | For `json` only: `both` (default), `light` or `dark`. CSS always carries both. |
+| `format` | enum | | `css` (default) gives CSS variables under `:root` and `.dark`. `tailwind` gives the same plus a Tailwind v4 `@theme inline` bridge. `json` gives DTCG design tokens. `figma` gives a zip of Figma variable files (below). |
+| `mode` | enum | | For `json`: `both` (default), `light` or `dark`. For `figma`: one file instead of the zip: `light`, `dark`, `light-medium`, `dark-medium`, `light-high` or `dark-high`. CSS always carries both. |
 
 Every export names its theme, so a file in a repo points back to the theme that made it:
 
@@ -190,6 +190,16 @@ Every export names its theme, so a file in a repo points back to the theme that 
 ```
 
 In JSON the id is at `$extensions.chromaconscious.id`.
+
+**`format=figma`** returns `application/zip` (`chromaconscious-t_…-figma.zip`) with a `README.txt` and one file per mode in Figma's native DTCG variable import format: `light.json`, `dark.json`, and the same at the contrast levels `medium` and `high` (`light-medium.json` … `dark-high.json`). All three levels are always included, whatever `contrast` the theme was made at. Download it with `curl -s -o theme.zip`, not a text fetch: it is binary.
+
+- Each file is one Figma mode and defines the same 117 colour variables: `color/<token>` for the 44 tokens below plus `color/scrim` (with alpha), and `ramp/<role>/<1–12>` for the six ramps. Every file has the same names and types, because Figma silently skips a token missing from any file.
+- Colours are `{colorSpace: "srgb", components: [r, g, b], alpha, hex}`, with sRGB-encoded components from 0 to 1. Values are plain colours, not aliases.
+- Shadows have no Figma variable type. The `elevation-1`…`3` shadows are DTCG shadow tokens under `$extensions.chromaconscious.shadows`, which Figma ignores on import.
+- On a paid Figma plan, drag all the files into one collection to get one mode each. The free Starter plan allows one mode per collection, so import each file as its own collection. The README says the same.
+- `&mode=dark-high` (and so on) returns that one file as JSON.
+
+The zip is a pure function of the theme: the app's Export dialog builds the same bytes client-side.
 
 Exports made before the rename start with the legacy `/* themesmith t_… */` header. Read either prefix; the id after it is the same kind of id and still opens. JSON exports also carry the id under the legacy key `$extensions.themesmith.id`, so older readers keep working.
 
