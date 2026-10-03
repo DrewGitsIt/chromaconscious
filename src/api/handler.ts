@@ -12,6 +12,7 @@ import { buildTheme, emptyThemeState } from '../ops'
 import { PRESETS } from '../presets'
 import { QueryError, applyEdits, backOp, hopsParam, presetByName, riffOp, runOps } from './query'
 import { StateError, decodeState, encodeState, isThemeId, themeId } from './state'
+import { exportText } from './exports'
 import { summarize, summaryText } from './summary'
 
 /** The slice of Workers KV this needs; tests pass a Map-backed stand-in. */
@@ -169,22 +170,15 @@ async function route(req: Request, env: Env): Promise<Response> {
       const t = await load(env, q.get('theme'))
       const result = forge(t.state)
       const format = q.get('format') ?? 'css'
-      const header = `ChromaConscious ${t.id} · ${url.origin}/chromaconscious#${t.id}`
+      // The serializer is shared with the app's Export dialog (exports.ts),
+      // so what you copy there is byte-for-byte what this returns.
       if (format === 'css' || format === 'tailwind') {
-        const body = format === 'css' ? result.css : themeTailwind(result)
-        return text(`/* ${header} */\n${body}`, 200, 'text/css; charset=utf-8')
+        return text(exportText(result, t.id, url.origin, format), 200, 'text/css; charset=utf-8')
       }
       if (format === 'json') {
-        const doc = JSON.parse(themeTokensJson(result)) as Record<string, unknown>
-        const ext = { id: t.id, url: `${url.origin}/chromaconscious#${t.id}` }
         const mode = q.get('mode') ?? 'both'
         if (mode !== 'both' && mode !== 'light' && mode !== 'dark') throw new QueryError('mode is light, dark or both')
-        const body = {
-          // Both keys, so readers written against the legacy name still find the id.
-          $extensions: { chromaconscious: ext, themesmith: ext /* legacy */ },
-          ...(mode === 'both' ? doc : { ...(doc.$meta ? { $meta: doc.$meta } : {}), [mode]: doc[mode] }),
-        }
-        return text(JSON.stringify(body, null, 2), 200, 'application/json')
+        return text(exportText(result, t.id, url.origin, 'json', mode), 200, 'application/json')
       }
       throw new QueryError('format is css, tailwind or json')
     }

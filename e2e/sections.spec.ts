@@ -135,11 +135,11 @@ test.describe('sections', () => {
     await page.goto('/')
     await expect(page.locator('[data-sec]')).toHaveCount(1)
     await expect(page.locator('[data-sec="input"] .sec-label')).toHaveText('input')
-    await expect(page.locator('.export-main')).toBeDisabled()
+    await expect(page.locator('.sidebar-shell').getByRole('button', { name: 'Export' })).toBeDisabled()
     await expect(page.getByText('add a color to export CSS, Tailwind, Figma variables or a share link')).toBeVisible()
     await page.getByRole('button', { name: 'Coastal starter' }).click()
     await expect(page.locator('[data-sec] .sec-label')).toHaveText(['colors', 'tuning', 'riff'])
-    await expect(page.locator('.export-main')).toBeEnabled()
+    await expect(page.locator('.sidebar-shell').getByRole('button', { name: 'Export' })).toBeEnabled()
   })
 
   test('headers are reachable and foldable from the keyboard', async ({ page }) => {

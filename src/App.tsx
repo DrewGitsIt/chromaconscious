@@ -10,15 +10,13 @@ import {
   Undo2,
   X,
 } from 'lucide-react'
-import type { ColorCandidate, Role, ThemeResult, TokenAncestor } from './engine'
+import type { ColorCandidate, Role, TokenAncestor } from './engine'
 import {
   candidatesFromList,
   contrastLevelName,
   generateTheme,
   parseColor,
   ROLES,
-  themeTailwind,
-  themeTokensJson,
   toHex,
 } from './engine'
 import type { BoardView, DragPayload } from './board'
@@ -31,8 +29,9 @@ import {
 } from './board'
 import { GLOSS, jobsForRole } from './roleCopy'
 import type { Seat } from './roleCopy'
-import type { ExportFormat } from './components/Preview'
-import { ExportRow } from './components/ExportRow'
+import { ExportButton } from './components/export/ExportButton'
+import { ExportDialog } from './components/export/ExportDialog'
+import { EXPORT_FORMATS, visionParams } from './components/export/formats'
 import { FrameCard } from './components/FrameCard'
 import { fileToCandidates } from './components/ImageDrop'
 import { PresetDots } from './components/PresetDots'
@@ -56,7 +55,7 @@ import { MOCKUPS, mockupById } from './mockups'
 import { PRESETS } from './presets'
 import { useDismiss } from './components/useDismiss'
 import { EMBED, embedPreset, fullAppHref } from './embed'
-import { decodeState } from './api/state'
+import { decodeState, encodeState, themeId } from './api/state'
 import { parseThemeHash } from './visionLink'
 import type { Vision } from './engine/cvd'
 import { VISIONS } from './engine/cvd'
@@ -96,16 +95,6 @@ interface Toast {
 type SeatMenu = { kind: 'explain' | 'assign'; seat: Seat; anchor: HTMLElement }
 
 const FRAME_LABEL = ['A', 'B'] as const
-
-const FORMAT_LABEL: Record<ExportFormat, string> = {
-  css: 'CSS variables',
-  tailwind: 'Tailwind v4 CSS',
-  json: 'Design tokens JSON',
-}
-const EXPORT_FORMATS = (Object.keys(FORMAT_LABEL) as ExportFormat[]).map((id) => ({
-  id,
-  label: FORMAT_LABEL[id],
-}))
 
 const emptyFrameState = (): FrameState => ({
   ...emptyThemeState(),
@@ -215,8 +204,11 @@ export default function App() {
   // Window-wide image drop + the undo toast that forgives any start-over.
   const [dragOver, setDragOver] = useState(false)
   const [toast, setToast] = useState<Toast | null>(null)
-  const [exportFormat, setExportFormat] = useState<ExportFormat>('css')
-  const [copied, setCopied] = useState(false)
+  // The Export dialog, and the id it exports under: `t_` + a hash of the
+  // frame's state, the same id the API gives the same theme.
+  const [exportOpen, setExportOpen] = useState(false)
+  const [exportId, setExportId] = useState<string | null>(null)
+  const exportBtnRef = useRef<HTMLButtonElement>(null)
   // Board chrome: which popover is open, whether the bench is expanded, and
   // which seats just re-rolled (so they bounce once, then stop).
   const [seatMenu, setSeatMenu] = useState<SeatMenu | null>(null)
@@ -303,25 +295,19 @@ export default function App() {
     setActive(0)
   }
 
-  const exporter = (r: ThemeResult) => (format: ExportFormat) =>
-    format === 'css' ? r.css : format === 'tailwind' ? themeTailwind(r) : themeTokensJson(r)
-
-  const doExport = async (format: ExportFormat) => {
-    if (!result) return
-    let ok = false
-    try {
-      await navigator.clipboard.writeText(exporter(result)(format))
-      ok = true
-    } catch {
-      // clipboard unavailable (permissions, insecure context)
+  // Hash only while the dialog is up; a theme with nothing in it has no export.
+  useEffect(() => {
+    if (!exportOpen || !result) return
+    let live = true
+    setExportId(null)
+    void themeId(encodeState(frame)).then((id) => live && setExportId(id))
+    return () => {
+      live = false
     }
-    if (ok) {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1600)
-    } else {
-      setToast({ text: 'copy failed', undo: null })
-    }
-  }
+  }, [exportOpen, result, frame])
+  useEffect(() => {
+    if (!result) setExportOpen(false)
+  }, [result])
 
   // ---- candidate edits ----------------------------------------------------
   // Placement is explicit now, so an edit needs no seat-transfer detective
@@ -938,19 +924,17 @@ export default function App() {
             {/* Always here, greyed before any input: the one deliberate grey
                 in the pane, because it answers "what do I get out of this?"
                 before you have given it anything. */}
-            <ExportRow
-              formats={EXPORT_FORMATS}
-              current={exportFormat}
-              copied={copied}
+            <ExportButton
+              ref={exportBtnRef}
               disabled={!result}
-              onCopy={(id) => void doExport(id as ExportFormat)}
-              onChangeFormat={(id) => {
-                setExportFormat(id as ExportFormat)
-                void doExport(id as ExportFormat)
-              }}
+              captionId="exp-cap"
+              open={exportOpen}
+              onOpen={() => setExportOpen(true)}
             />
             {!result && (
-              <p className="exp-cap">add a color to export CSS, Tailwind, Figma variables or a share link</p>
+              <p className="exp-cap" id="exp-cap">
+                add a color to export CSS, Tailwind, Figma variables or a share link
+              </p>
             )}
           </div>
         }
@@ -967,6 +951,27 @@ export default function App() {
           e.target.value = ''
         }}
       />
+
+      {exportOpen && result && (
+        <ExportDialog
+          formats={EXPORT_FORMATS}
+          ctx={
+            exportId
+              ? {
+                  result,
+                  state: frame,
+                  id: exportId,
+                  origin: location.origin,
+                  linkParams: visionParams(frame.vision, frame.strength),
+                }
+              : null
+          }
+          issues={checkStats?.issues ?? 0}
+          frameLabel={split ? FRAME_LABEL[active] : null}
+          returnFocus={exportBtnRef}
+          onClose={() => setExportOpen(false)}
+        />
+      )}
 
       {/* ---- popovers: fixed-positioned, so no ancestor overflow clips them ---- */}
       {seatMenu?.kind === 'explain' && result && (

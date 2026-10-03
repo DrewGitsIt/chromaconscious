@@ -176,6 +176,9 @@ const stubClipboard = () => {
   return write
 }
 
+/** The pane's Export — the preview's mockups have Export buttons of their own. */
+const exportBtn = () => document.querySelector('.sidebar-shell .export-btn') as HTMLButtonElement
+
 describe('first run', () => {
   it('boots empty into the hero — three doors, no sidebar controls', () => {
     render(<App />)
@@ -193,7 +196,11 @@ describe('first run', () => {
     expect(document.querySelector('.role-board')).toBeNull()
     expect(document.querySelector('.dial')).toBeNull()
     // the one deliberate grey: Export is there, disabled, and says what it will give you
-    expect((document.querySelector('.export-main') as HTMLButtonElement).disabled).toBe(true)
+    const exp = exportBtn()
+    expect(exp.getAttribute('aria-disabled')).toBe('true')
+    expect(exp.getAttribute('aria-describedby')).toBe('exp-cap')
+    fireEvent.click(exp)
+    expect(document.querySelector('[role="dialog"]')).toBeNull()
     expect(screen.getByText(/add a color to export CSS, Tailwind, Figma variables or a share link/)).toBeTruthy()
     expect(document.querySelector('.status-chip')).toBeNull()
   })
@@ -223,7 +230,7 @@ describe('first run', () => {
       '3',
     ])
     // Export is live now, and its caption has done its job
-    expect((document.querySelector('.export-main') as HTMLButtonElement).disabled).toBe(false)
+    expect(exportBtn().getAttribute('aria-disabled')).toBeNull()
     expect(screen.queryByText(/add a color to export/)).toBeNull()
   })
 
@@ -1044,29 +1051,55 @@ describe('report', () => {
 })
 
 describe('export', () => {
-  it('the split button copies the current format to the clipboard', async () => {
+  const openExport = () => {
+    fireEvent.click(exportBtn())
+    return screen.getByRole('dialog', { name: 'Export' })
+  }
+
+  it('Export opens a dialog whose Copy writes the CSS the API would serve', async () => {
     const write = stubClipboard()
     bootCoastal()
-    expect(document.querySelector('.export-row')).toBeTruthy()
-    expect(document.querySelector('.export-main-label')?.textContent).toBe('Copy CSS variables')
-    fireEvent.click(screen.getByRole('button', { name: /Copy CSS variables/ }))
-    await screen.findByText(/CSS variables copied/)
-    expect(write).toHaveBeenCalledTimes(1)
-    expect(write.mock.calls[0][0]).toContain(':root')
-    expect(write.mock.calls[0][0]).toContain('.dark')
+    const dialog = openExport()
+    // the first format is selected and focused
+    const css = screen.getByRole('tab', { name: /CSS variables/ })
+    expect(css.getAttribute('aria-selected')).toBe('true')
+    expect(document.activeElement).toBe(css)
+    // the id is hashed asynchronously; Copy waits for it
+    await screen.findByText(/^t_[a-z2-7]{12}$/)
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }))
+    await screen.findByText('copied')
+    const text = write.mock.calls[0][0] as string
+    expect(text).toMatch(/^\/\* ChromaConscious t_[a-z2-7]{12} · .+\/chromaconscious#t_/)
+    expect(text).toContain(':root')
+    expect(text).toContain('.dark')
+    expect(dialog.querySelector('.xd-pre')?.textContent).toContain(':root')
   })
 
-  it('the format menu copies immediately and is remembered by the button', async () => {
+  it('choosing another format swaps the preview and what Copy writes', async () => {
     const write = stubClipboard()
     bootCoastal()
-    fireEvent.click(screen.getByRole('button', { name: 'choose export format' }))
-    expect(document.querySelector('.export-menu')).toBeTruthy()
-    fireEvent.click(screen.getByRole('menuitem', { name: /Tailwind v4 CSS/ }))
-    await screen.findByText(/Tailwind v4 CSS copied/)
+    openExport()
+    await screen.findByText(/^t_[a-z2-7]{12}$/)
+    fireEvent.click(screen.getByRole('tab', { name: /Tailwind v4/ }))
+    expect(screen.getByRole('tab', { name: /Tailwind v4/ }).getAttribute('aria-selected')).toBe('true')
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }))
+    await screen.findByText('copied')
     expect(write.mock.calls[0][0]).toContain('@theme inline')
-    expect(document.querySelector('.export-main-label')?.textContent).toContain(
-      'Tailwind v4 CSS',
-    )
+  })
+
+  it('while it is open the bare-key shortcuts do not act behind it, and Esc closes it', async () => {
+    bootCoastal()
+    openExport()
+    // r would riff, which is what arms "back"; it must not reach the app
+    expect(backBtn().disabled).toBe(true)
+    fireEvent.keyDown(document.activeElement!, { key: 'r' })
+    expect(backBtn().disabled).toBe(true)
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(document.activeElement).toBe(exportBtn())
+    // and with it closed, the same key riffs
+    fireEvent.keyDown(window, { key: 'r' })
+    expect(backBtn().disabled).toBe(false)
   })
 })
 
