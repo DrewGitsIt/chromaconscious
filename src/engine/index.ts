@@ -1,6 +1,6 @@
 import type { ColorCandidate, GenerateOptions, JudgeInput, Oklch, Role, ThemeResult } from './types'
 import { deltaEok, lerp, parseColor } from './color'
-import { assignRoles, chartAdjust } from './roles'
+import { assignRoles, candidateFidelity, chartAdjust } from './roles'
 import { judgePalette } from './judge'
 import type { Heading, WalkSubject, WalkTrail } from './walk'
 import { chartEnvelope, envelopeFor, travelFor, walkPalette } from './walk'
@@ -180,7 +180,7 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
       // locked role seeds skip fidelityAdjust: the lock names an exact color.
       color: isLocked(ci)
         ? (options.candidates[ci].lockedColor ?? options.candidates[ci].color)
-        : chartAdjust(options.candidates[ci].color, fidelity),
+        : chartAdjust(options.candidates[ci].color, candidateFidelity(options.candidates, ci, fidelity)),
       envelope: chartEnvelope(),
       locked: isLocked(ci),
       lightnessOnly: monoBase != null,
@@ -216,7 +216,7 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
     budget: repairBudget(
       a.candidateIndex,
       a.candidateIndex != null && options.candidates[a.candidateIndex].pin === a.role,
-      fidelity,
+      candidateFidelity(options.candidates, a.candidateIndex, fidelity),
       isLocked(a.candidateIndex),
     ),
     lightnessOnly: monoBase != null && (a.candidateIndex == null || a.candidateIndex === monoBase),
@@ -225,7 +225,12 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
     nodes.push({
       id: `chart-${k + 1}`,
       color: walked.get(`chart-${k + 1}`)!,
-      budget: repairBudget(ci, options.candidates[ci].pin === 'chart', fidelity, isLocked(ci)),
+      budget: repairBudget(
+        ci,
+        options.candidates[ci].pin === 'chart',
+        candidateFidelity(options.candidates, ci, fidelity),
+        isLocked(ci),
+      ),
     })
   })
 
@@ -292,8 +297,11 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
   // Contrast acts only after casting, the walk and repair: it raises the
   // targets the modes solve against, never which colour sits where.
   const contrast = normalizeContrast(options.contrast)
-  const light = buildMode(seeds, chartSeeds, 'light', fidelity, monoSeed, separation, chartLocked, contrast)
-  const dark = buildMode(seeds, chartSeeds, 'dark', fidelity, monoSeed, separation, chartLocked, contrast)
+  // The primary fill's pop budget is spent from the primary colour's own taste.
+  const primaryCi = finalAssignments.find((a) => a.role === 'primary')?.candidateIndex ?? null
+  const primaryFidelity = candidateFidelity(options.candidates, primaryCi, fidelity)
+  const light = buildMode(seeds, chartSeeds, 'light', fidelity, monoSeed, separation, chartLocked, contrast, primaryFidelity)
+  const dark = buildMode(seeds, chartSeeds, 'dark', fidelity, monoSeed, separation, chartLocked, contrast, primaryFidelity)
 
   const result: ThemeResult = {
     light,

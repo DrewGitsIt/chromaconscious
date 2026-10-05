@@ -32,7 +32,17 @@ test('the trail shows every hop walked, and a column jumps there — hop 0 inclu
   }
   const cols = page.locator('.trail .hopcol')
   await expect(cols).toHaveCount(4)
+  // real swatches, big enough to judge colour by: six per hop, at least 10px square
+  const sw = await page.locator('.hopcol[data-hop="2"] i').evaluateAll((els) =>
+    els.map((e) => e.getBoundingClientRect()).map((r) => [r.width, r.height]),
+  )
+  expect(sw).toHaveLength(6)
+  for (const [w, h] of sw) {
+    expect(w).toBeGreaterThanOrEqual(10)
+    expect(h).toBeGreaterThanOrEqual(10)
+  }
   await expect(page.locator('.hopcol.cur')).toHaveAttribute('data-hop', '3')
+  await expect(page.locator('.hopcol[aria-pressed="true"]')).toHaveCount(1)
   // a column's own colours are the colours a jump lands on
   await expect(page.locator('.hopcol[data-hop="1"]')).toHaveAttribute('title', new RegExp(`primary ${at[1]}`))
 

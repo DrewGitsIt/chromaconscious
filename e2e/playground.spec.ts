@@ -12,7 +12,7 @@ const bootCoastal = async (page: Page) => {
 
 /**
  * The palette's verbs, addressed by title. They live in two places now —
- * `start over` and the frame controls stayed in the section header
+ * `start empty` and the frame controls stayed in the section header
  * (`.sec-act .mini`), while mono/reset/riff/back moved to the labelled row
  * beneath it (`.ctl-row .ctl`) — so this matches either. Titles carry their
  * shortcut key appended ("… · R"), which is why the match is a substring.
@@ -32,6 +32,9 @@ const frameState = async (page: Page, label: 'A' | 'B'): Promise<string> => {
     .getAttribute('aria-pressed')
   return `${label} · ${dark ? 'dark' : 'light'}${editing === 'true' ? ' · editing' : ''}`
 }
+
+/** The presets button at the foot of "1 colors". */
+const presetsBtn = (page: Page) => page.locator('.colors-verbs .ctl[title^="replace your colors with a preset"]')
 
 /** One labelled seat on the board. */
 const seat = (page: Page, role: string) => page.locator(`.rb-slot[data-role="${role}"]`)
@@ -99,9 +102,8 @@ test.describe('color input', () => {
     await expect(page.locator('.pk-msg')).toContainText('already on the board')
     await expect(page.locator('.pk-add')).toBeDisabled()
     await page.keyboard.press('Escape')
-    // the start-over menu is the one place that counts the whole set out loud
-    await tool(page, 'start over').click()
-    await expect(page.locator('.menu-cap')).toContainText('replaces your current 1 color')
+    // the start-empty button counts the whole set out loud
+    await expect(tool(page, 'start empty')).toHaveAttribute('title', /clears your 1 color;/)
   })
 
   test('the + popover grows an existing set additively; the extras land in unused', async ({
@@ -210,9 +212,8 @@ test.describe('color input', () => {
 test.describe('start over', () => {
   test('start empty returns to the hero; undo brings the colors back', async ({ page }) => {
     await bootCoastal(page)
-    await tool(page, 'start over').click()
-    await expect(page.locator('.menu-cap')).toContainText('replaces your current 5 colors')
-    await page.getByRole('button', { name: 'start empty' }).click()
+    await expect(tool(page, 'start empty')).toHaveAttribute('title', /clears your 5 colors;/)
+    await tool(page, 'start empty').click()
     await expect(page.getByText('a single color is enough')).toBeVisible()
     await expect(page.locator('.toast')).toContainText('cleared 5 colors')
     await page.getByRole('button', { name: 'undo' }).click()
@@ -220,24 +221,21 @@ test.describe('start over', () => {
     await expect(page.locator('.preview-root')).toBeVisible()
   })
 
-  test('the preset page swaps the palette and marks the one in play', async ({ page }) => {
+  test('the presets button swaps the palette and marks the one in play', async ({ page }) => {
     await bootCoastal(page)
-    await tool(page, 'start over').click()
-    await page.getByRole('button', { name: /from a preset/ }).click()
-    await expect(page.locator('.preset-item.sel')).toHaveText(/Coastal starter/)
-    await page.getByRole('button', { name: 'Neon arcade' }).click()
+    await presetsBtn(page).click()
+    await expect(page.locator('.rp-presets .rp-opt--cur')).toHaveText(/Coastal starter/)
+    await page.locator('.rp-presets').getByRole('button', { name: 'Neon arcade' }).click()
     await seatFrom(page, 'primary', '#f72585')
-    await tool(page, 'start over').click()
-    await page.getByRole('button', { name: /from a preset/ }).click()
-    await expect(page.locator('.preset-item.sel')).toHaveText(/Neon arcade/)
+    await presetsBtn(page).click()
+    await expect(page.locator('.rp-presets .rp-opt--cur')).toHaveText(/Neon arcade/)
+    await page.keyboard.press('Escape')
     // once you edit the colors it is no longer that preset
-    await tool(page, 'start over').click()
     await openAddPopover(page)
     await page.getByPlaceholder(/add a color/).fill('#101010')
     await page.getByRole('button', { name: 'add #101010' }).click()
-    await tool(page, 'start over').click()
-    await page.getByRole('button', { name: /from a preset/ }).click()
-    await expect(page.locator('.preset-item.sel')).toHaveCount(0)
+    await presetsBtn(page).click()
+    await expect(page.locator('.rp-presets .rp-opt--cur')).toHaveCount(0)
   })
 
   test('dragging files over the window discloses the start-over contract', async ({ page }) => {
@@ -266,9 +264,8 @@ test.describe('theme output', () => {
     const bgOf = () =>
       page.locator('.preview-root').evaluate((el) => getComputedStyle(el).backgroundColor)
     const coastal = await bgOf()
-    await tool(page, 'start over').click()
-    await page.getByRole('button', { name: /from a preset/ }).click()
-    await page.getByRole('button', { name: 'Terracotta' }).click()
+    await presetsBtn(page).click()
+    await page.locator('.rp-presets').getByRole('button', { name: 'Terracotta' }).click()
     const terracotta = await bgOf()
     expect(terracotta).not.toBe(coastal)
   })
@@ -297,9 +294,8 @@ test.describe('frames', () => {
     await bootCoastal(page)
     await tool(page, 'compare two frames').click()
     // B is now selected; diverge it
-    await tool(page, 'start over').click()
-    await page.getByRole('button', { name: /from a preset/ }).click()
-    await page.getByRole('button', { name: 'Neon arcade' }).click()
+    await presetsBtn(page).click()
+    await page.locator('.rp-presets').getByRole('button', { name: 'Neon arcade' }).click()
     await expect.poll(() => frameState(page, 'B')).toContain('editing')
     await seatFrom(page, 'primary', '#f72585')
     // switch back to A: still the starter preset
@@ -310,9 +306,8 @@ test.describe('frames', () => {
   test('copy → A overwrites frame A with frame B', async ({ page }) => {
     await bootCoastal(page)
     await tool(page, 'compare two frames').click()
-    await tool(page, 'start over').click()
-    await page.getByRole('button', { name: /from a preset/ }).click()
-    await page.getByRole('button', { name: 'Neon arcade' }).click()
+    await presetsBtn(page).click()
+    await page.locator('.rp-presets').getByRole('button', { name: 'Neon arcade' }).click()
     await page.getByRole('button', { name: 'copy frame B over frame A' }).click()
     await expect.poll(() => frameState(page, 'A')).toBe('A · light · editing')
     await seatFrom(page, 'primary', '#f72585')

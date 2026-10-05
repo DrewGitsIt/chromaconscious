@@ -66,7 +66,7 @@ any colors in, working theme out
 1
 colors
 3 yours · 3 derived
-start over
+start empty
 ?
 mono
 reset
