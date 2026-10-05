@@ -1154,7 +1154,7 @@ describe('export', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Copy' }))
     await screen.findByText('copied')
     const text = write.mock.calls[0][0] as string
-    expect(text).toMatch(/^\/\* ChromaConscious t_[a-z2-7]{12} · .+\/chromaconscious#t_/)
+    expect(text).toMatch(/^\/\* ChromaConscious t_[a-z2-7]{12} · .+\/chromaconscious#s=[A-Za-z0-9_-]+ \*\//)
     expect(text).toContain(':root')
     expect(text).toContain('.dark')
     expect(dialog.querySelector('.xd-pre')?.textContent).toContain(':root')

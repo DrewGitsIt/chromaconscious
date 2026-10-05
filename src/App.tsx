@@ -59,6 +59,7 @@ import { PRESETS } from './presets'
 import { useDismiss } from './components/useDismiss'
 import { EMBED, embedPreset, fullAppHref } from './embed'
 import { decodeState, encodeState, themeId } from './api/state'
+import { payloadState, statePayload } from './api/stateLink'
 import { parseThemeHash } from './visionLink'
 import { usePageSettings } from './usePageSettings'
 import { pageLinkParams } from './pageSettings'
@@ -382,6 +383,7 @@ export default function App() {
             result,
             state: frame,
             id: exportId,
+            payload: statePayload(encodeState(frame)),
             origin: location.origin,
             linkParams: { ...visionParams(frame.vision, frame.strength), ...pageLinkParams(page) },
           }
@@ -449,34 +451,46 @@ export default function App() {
     }
   }
 
-  // ---- open a theme by id: /chromaconscious#t_… --------------------------------
-  // Every API summary links here, so an agent can hand a person the exact
-  // theme it made. The state comes from the same API; this app runs the
-  // engine itself, so what opens is rebuilt locally from that state.
+  // ---- open a theme from a link -------------------------------------------
+  // `#s=<payload>` carries the whole state (api/stateLink.ts) and opens with
+  // no network. `#t_…` is a stored theme: every API summary that saved one
+  // links here, and its state comes from the same API. Either way this app
+  // runs the engine itself, so what opens is rebuilt locally from the state.
   useEffect(() => {
     const link = parseThemeHash(location.hash)
     if (!link) return
-    const { id, vision } = link
+    const { vision } = link
     if (link.page.radius !== undefined) setRadius(link.page.radius)
     if (link.page.font !== undefined) setFont(link.page.font)
+    const open = (state: ThemeState, note: string) => {
+      // A vision link opens in compare: the theme as it is next to the theme
+      // as it is seen, so the simulation never stands in for the real thing.
+      setFrames((prev) => {
+        const a = { ...prev[0], ...state }
+        if (!vision) return prev.map((f, i) => (i === 0 ? a : f))
+        return [
+          { ...a, vision: 'typical', strength: 1 },
+          { ...cloneFrame(a), vision: vision.vision, strength: vision.strength },
+        ]
+      })
+      setActive(0)
+      setToast({ text: note, undo: null })
+    }
+    if (link.state !== undefined) {
+      // A malformed link opens the start screen with a quiet note; never a crash.
+      try {
+        open(decodeState(payloadState(link.state)), 'opened the theme in this link')
+      } catch (err) {
+        setToast({ text: `couldn't read this link: ${err instanceof Error ? err.message : String(err)}`, undo: null })
+      }
+      return
+    }
+    const { id } = link
     let live = true
     fetch(`/api/chromaconscious/v1/state?theme=${id}`)
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`theme ${id} not found`))))
       .then((text) => {
-        if (!live) return
-        const state = decodeState(text)
-        // A vision link opens in compare: the theme as it is next to the theme
-        // as it is seen, so the simulation never stands in for the real thing.
-        setFrames((prev) => {
-          const a = { ...prev[0], ...state }
-          if (!vision) return prev.map((f, i) => (i === 0 ? a : f))
-          return [
-            { ...a, vision: 'typical', strength: 1 },
-            { ...cloneFrame(a), vision: vision.vision, strength: vision.strength },
-          ]
-        })
-        setActive(0)
-        setToast({ text: `opened ${id}`, undo: null })
+        if (live) open(decodeState(text), `opened ${id}`)
       })
       .catch((err: unknown) => {
         if (live) setToast({ text: err instanceof Error ? err.message : `couldn't open ${id}`, undo: null })

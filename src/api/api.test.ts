@@ -4,6 +4,7 @@ import { PRESETS } from '../presets'
 import type { Env } from './handler'
 import { handle, legacyAppRedirect } from './handler'
 import { decodeState, encodeState, themeId } from './state'
+import { statePayload } from './stateLink'
 import { contrastParam, runOps } from './query'
 import { figmaExport, figmaModeFiles } from '../figmaExport'
 import { unzipSync } from 'fflate'
@@ -173,11 +174,15 @@ describe('api', () => {
     const env = memoryEnv()
     const g = await summary(env, '/generate?preset=ink-sky')
     const css = await call(env, `/export?theme=${g.theme}`)
-    expect(css.body.split('\n')[0]).toBe(`/* ChromaConscious ${g.theme} · https://drewkidwell.com/chromaconscious#${g.theme} */`)
+    // the header names the id and links the theme carried whole, so it opens whether or not the id is stored
+    const state = (await call(env, `/state?theme=${g.theme}`)).body
+    const link = `https://drewkidwell.com/chromaconscious#s=${statePayload(state)}`
+    expect(css.body.split('\n')[0]).toBe(`/* ChromaConscious ${g.theme} · ${link} */`)
     const tw = await call(env, `/export?theme=${g.theme}&format=tailwind`)
     expect(tw.body).toContain('@theme inline')
     const json = JSON.parse((await call(env, `/export?theme=${g.theme}&format=json&mode=dark`)).body)
     expect(json.$extensions.chromaconscious.id).toBe(g.theme)
+    expect(json.$extensions.chromaconscious.url).toBe(link)
     expect(Object.keys(json)).toEqual(['$extensions', 'dark'])
   })
 
@@ -329,29 +334,45 @@ describe('export: figma', () => {
   const get = (env: Env, path: string) =>
     handle(new Request(`https://drewkidwell.com/api/chromaconscious/v1${path}`), env)
 
-  it('the API zip is byte-for-byte the zip the Export dialog builds client-side', async () => {
+  // The zip is built only in the browser now (10 ms CPU per request on the
+  // Workers free plan); the API's promise is per file.
+  it('without mode= the API returns an index of the mode files, not a zip', async () => {
     const env = memoryEnv()
     const g = await summary(env, '/generate?preset=ink-sky')
     const res = await get(env, `/export?theme=${g.theme}&format=figma`)
     expect(res.status).toBe(200)
-    expect(res.headers.get('content-type')).toBe('application/zip')
-    expect(res.headers.get('content-disposition')).toBe(`attachment; filename="chromaconscious-${g.theme}-figma.zip"`)
-    const api = new Uint8Array(await res.arrayBuffer())
+    expect(res.headers.get('content-type')).toBe('application/json')
+    const index = JSON.parse(await res.text())
+    expect(index.files).toHaveLength(6)
+    expect(index.files[0].url).toBe(
+      `https://drewkidwell.com/api/chromaconscious/v1/export?theme=${g.theme}&format=figma&mode=light`,
+    )
+  })
+
+  it('each mode file is byte-for-byte that file in the zip the Export dialog builds', async () => {
+    const env = memoryEnv()
     // The app's own state for the same preset, built through the ops — not read back from the API.
     const p = PRESETS.find((x) => x.name === 'Ink & sky')!
-    const client = figmaExport(runOps(emptyThemeState(), [{ op: 'preset', name: p.name, colors: p.colors }]))!
-    expect(api).toEqual(client.bytes)
+    const client = unzipSync(figmaExport(runOps(emptyThemeState(), [{ op: 'preset', name: p.name, colors: p.colors }]))!.bytes)
+    const g = await summary(env, '/generate?preset=ink-sky')
+    for (const name of Object.keys(client).filter((n) => n.endsWith('.json'))) {
+      const res = await get(env, `/export?theme=${g.theme}&format=figma&mode=${name.slice(0, -5)}`)
+      expect(new Uint8Array(await res.arrayBuffer()), name).toEqual(client[name])
+    }
   })
 
   it('holds for a riffed, locked, high-contrast theme opened from its link', async () => {
     const env = memoryEnv()
     const g = await summary(env, '/generate?preset=pastel-picnic&contrast=high')
     const r = await summary(env, `/riff?theme=${g.theme}&hops=3&lock=primary`)
-    const api = new Uint8Array(await (await get(env, `/export?theme=${r.theme}&format=figma`)).arrayBuffer())
     // What the app does with /chromaconscious#t_…: fetch /state, decode, export.
     const state = decodeState((await call(env, `/state?theme=${r.theme}`)).body)
-    expect(api).toEqual(figmaExport(state)!.bytes)
-    expect(Object.keys(unzipSync(api))).toHaveLength(7)
+    const client = unzipSync(figmaExport(state)!.bytes)
+    expect(Object.keys(client)).toHaveLength(7)
+    for (const name of Object.keys(client).filter((n) => n.endsWith('.json'))) {
+      const res = await get(env, `/export?theme=${r.theme}&format=figma&mode=${name.slice(0, -5)}`)
+      expect(new Uint8Array(await res.arrayBuffer()), name).toEqual(client[name])
+    }
   })
 
   it('&mode= returns one file, the same text as that file in the zip', async () => {
@@ -367,5 +388,46 @@ describe('export: figma', () => {
       status: 422,
       body: expect.stringContaining('light, dark, light-medium'),
     })
+  })
+})
+
+describe('state= : the theme carried in the request', () => {
+  const get = (env: Env, path: string) =>
+    handle(new Request(`https://drewkidwell.com/api/chromaconscious/v1${path}`), env)
+
+  it('reads with no key and no store, and has the id the stored theme has', async () => {
+    const env = memoryEnv()
+    const g = await summary(env, '/generate?preset=coastal-starter&lock=primary&taste=0.7')
+    const payload = statePayload((await call(env, `/state?theme=${g.theme}`)).body)
+    const empty = memoryEnv()
+    const res = await get(empty, `/theme?state=${payload}&as=json`)
+    expect(res.status).toBe(200)
+    const t = JSON.parse(await res.text())
+    expect(t.theme).toBe(g.theme)
+    expect(t.parent).toBeNull()
+    expect(t.links.export).toBe(`https://drewkidwell.com/api/chromaconscious/v1/export?state=${payload}&format=css`)
+    expect(empty.size()).toBe(0) // nothing was saved
+  })
+
+  it('starts generate and riff like a stored theme would', async () => {
+    const env = memoryEnv()
+    const g = await summary(env, '/generate?preset=coastal-starter')
+    const payload = statePayload((await call(env, `/state?theme=${g.theme}`)).body)
+    const fromState = await summary(memoryEnv(), `/riff?state=${payload}&hops=2`)
+    const fromId = await summary(env, `/riff?theme=${g.theme}&hops=2`)
+    expect(fromState.theme).toBe(fromId.theme)
+    expect(fromState.parent).toBeNull()
+    const n = await summary(memoryEnv(), `/generate?state=${payload}&taste=0.9`)
+    expect(n.taste).toBe(0.9)
+  })
+
+  it('a malformed, cut or future payload is a 422 that says so; both refs at once is a 400', async () => {
+    const env = memoryEnv()
+    const g = await summary(env, '/generate?preset=coastal-starter')
+    const payload = statePayload((await call(env, `/state?theme=${g.theme}`)).body)
+    for (const bad of ['', '!!', payload.slice(0, -4), 'Ag'])
+      expect((await call(env, `/theme?state=${bad}`)).status, bad).toBe(422)
+    expect((await call(env, '/theme?state=Ag')).body).toContain('newer ChromaConscious')
+    expect(await call(env, `/theme?theme=${g.theme}&state=${payload}`)).toMatchObject({ status: 400 })
   })
 })

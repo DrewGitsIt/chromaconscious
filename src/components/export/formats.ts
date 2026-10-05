@@ -10,7 +10,7 @@
  */
 import type { ThemeResult } from '../../engine'
 import type { ThemeState } from '../../ops'
-import { API_BASE_PATH, appLink, exportText } from '../../api/exports'
+import { API_BASE_PATH, exportText, stateAppLink } from '../../api/exports'
 import type { ExportFormatId } from '../../api/exports'
 import { figmaFormat } from './figmaFormat'
 
@@ -21,6 +21,8 @@ export interface ExportContext {
   state: ThemeState
   /** The theme id: `t_` + a hash of the state, exactly as the API assigns it. */
   id: string
+  /** The whole state, packed for a link (api/stateLink.ts): what `#s=` and `state=` carry. */
+  payload: string
   /** The site the theme lives on — where links point and headers name. */
   origin: string
   /**
@@ -80,7 +82,7 @@ function codeFormat(
   ext: string,
   mime: string,
 ): ExportFormat {
-  const text = (ctx: ExportContext) => exportText(ctx.result, ctx.id, ctx.origin, format)
+  const text = (ctx: ExportContext) => exportText(ctx.result, ctx, ctx.origin, format)
   return {
     ...meta,
     group: 'code',
@@ -93,22 +95,26 @@ function codeFormat(
   }
 }
 
-/** The link that opens this theme, with any view params after the id. */
-export function shareLink(origin: string, id: string, params: Record<string, string>): string {
+/** The link that opens this theme, carried whole, with any view params after it. */
+export function shareLink(origin: string, payload: string, params: Record<string, string>): string {
   const q = new URLSearchParams(params).toString()
-  return appLink(origin, id) + (q ? `&${q}` : '')
+  return stateAppLink(origin, payload) + (q ? `&${q}` : '')
 }
 
-/** The agent's starter calls, in the shape public/docs.md teaches them. */
-export function agentCalls(origin: string, id: string): string {
+/**
+ * The agent's starter calls, in the shape public/docs.md teaches them. Each
+ * carries the theme as `state=`, so none needs a key or a stored theme;
+ * only riff, which makes a new theme, needs a key.
+ */
+export function agentCalls(origin: string, payload: string): string {
   const base = `${origin}${API_BASE_PATH}`
+  const ref = `state=${payload}`
   return [
-    id,
-    '',
-    `curl -s "${base}/theme?theme=${id}"`,
-    `curl -s "${base}/export?theme=${id}&format=css"`,
-    `curl -s "${base}/export?theme=${id}&format=json&mode=dark"`,
-    `curl -s -H "Authorization: Bearer $KEY" "${base}/riff?theme=${id}&hops=3"`,
+    `curl -s "${base}/theme?${ref}"`,
+    `curl -s "${base}/export?${ref}&format=css"`,
+    `curl -s "${base}/export?${ref}&format=json&mode=dark"`,
+    `curl -s "${base}/export?${ref}&format=figma&mode=dark"`,
+    `curl -s -H "Authorization: Bearer $KEY" "${base}/riff?${ref}&hops=3"`,
     '',
     `docs: ${origin}/chromaconscious/docs.md`,
   ].join('\n')
@@ -155,22 +161,19 @@ export const EXPORT_FORMATS: ExportFormat[] = [
     id: 'share',
     group: 'links',
     name: 'Share link',
-    sub: 'this theme, by id',
+    sub: 'opens this exact theme',
     about:
-      // TODO(share-storage): the app doesn't store the theme yet, so this id
-      // only opens once something has saved it (Drew to decide how). Until
-      // then, don't promise that it opens.
-      'A link to this theme by its id. View settings such as a colorblind simulation ride along in the link; they never reach the exported code. The id is the same one the API gives this theme.',
+      'Opens this exact theme in ChromaConscious for anyone. The whole theme travels in the link, so nothing is saved and it never expires. View settings, such as a colorblind simulation or the page settings, ride along; they never reach the exported code.',
     preview: {
       kind: 'link',
       label: 'share link',
-      text: (ctx) => shareLink(ctx.origin, ctx.id, ctx.linkParams),
+      text: (ctx) => shareLink(ctx.origin, ctx.payload, ctx.linkParams),
     },
     copy: [
       {
         label: 'Copy link',
         done: 'link copied',
-        text: (ctx) => shareLink(ctx.origin, ctx.id, ctx.linkParams),
+        text: (ctx) => shareLink(ctx.origin, ctx.payload, ctx.linkParams),
       },
     ],
   },
@@ -178,13 +181,17 @@ export const EXPORT_FORMATS: ExportFormat[] = [
     id: 'api',
     group: 'links',
     name: 'API / agent link',
-    sub: 'the theme id',
+    sub: 'no key needed to read',
     about:
-      'The theme id is all an agent needs: it can read, export or keep riffing this theme over the API. Reading needs no key; making new themes does.',
-    preview: { kind: 'code', label: 'API calls', text: (ctx) => agentCalls(ctx.origin, ctx.id) },
+      'An agent can read or export this exact theme over the API by passing `state=`, which is the same payload as the share link. Reading needs no key and nothing is saved. Riffing makes a new theme, so that call needs a key.',
+    preview: { kind: 'code', label: 'API calls', text: (ctx) => agentCalls(ctx.origin, ctx.payload) },
     copy: [
-      { label: 'Copy id', done: 'id copied', text: (ctx) => ctx.id },
-      { label: 'Copy calls', done: 'calls copied', text: (ctx) => agentCalls(ctx.origin, ctx.id) },
+      {
+        label: 'Copy link',
+        done: 'link copied',
+        text: (ctx) => `${ctx.origin}${API_BASE_PATH}/theme?state=${ctx.payload}`,
+      },
+      { label: 'Copy calls', done: 'calls copied', text: (ctx) => agentCalls(ctx.origin, ctx.payload) },
     ],
   },
 ]

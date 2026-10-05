@@ -13,26 +13,41 @@ export type ExportMode = 'both' | 'light' | 'dark'
 /** The API's base path, as the docs and every summary print it. */
 export const API_BASE_PATH = '/api/chromaconscious/v1'
 
-/** The app link that opens a theme by id. Parameters (vision=…) follow with `&`. */
+/** The app link that opens a stored theme by id. Parameters (vision=…) follow with `&`. */
 export const appLink = (origin: string, id: string): string => `${origin}/chromaconscious#${id}`
 
 /**
- * The exact text `/export?theme=<id>&format=<format>` returns. `origin` is the
- * site the theme lives on: the API passes the request's, the app its own.
+ * The app link that carries the whole theme (api/stateLink.ts): it opens with
+ * no server and no saved id. Parameters (vision=…) follow with `&`.
+ */
+export const stateAppLink = (origin: string, payload: string): string => `${origin}/chromaconscious#s=${payload}`
+
+/** Which theme an export names: its id, and the link that opens it anywhere. */
+export interface ExportRef {
+  id: string
+  /** The `s=` payload of the theme's state. */
+  payload: string
+}
+
+/**
+ * The exact text `/export?theme=<id>&format=<format>` (or `?state=…`) returns.
+ * `origin` is the site the theme lives on: the API passes the request's, the
+ * app its own. The header names the id and links the state, so a file in a
+ * repo opens its theme whether or not that id was ever stored.
  */
 export function exportText(
   result: ThemeResult,
-  id: string,
+  { id, payload }: ExportRef,
   origin: string,
   format: ExportFormatId,
   mode: ExportMode = 'both',
 ): string {
   if (format === 'css' || format === 'tailwind') {
     const body = format === 'css' ? result.css : themeTailwind(result)
-    return `/* ChromaConscious ${id} · ${appLink(origin, id)} */\n${body}`
+    return `/* ChromaConscious ${id} · ${stateAppLink(origin, payload)} */\n${body}`
   }
   const doc = JSON.parse(themeTokensJson(result)) as Record<string, unknown>
-  const ext = { id, url: appLink(origin, id) }
+  const ext = { id, url: stateAppLink(origin, payload) }
   const body = {
     // Both keys, so readers written against the legacy name still find the id.
     $extensions: { chromaconscious: ext, themesmith: ext /* legacy */ },

@@ -50,4 +50,14 @@ describe('parseThemeHash', () => {
     expect(parseThemeHash(`#${ID}&radius=99`)?.page.radius).toBe(20)
     expect(parseThemeHash(`#${ID}&radius=7.6`)?.page.radius).toBe(8)
   })
+
+  it('reads a theme carried whole in the link, with the same params after it', () => {
+    expect(parseThemeHash('#s=AQAB&vision=deutan&radius=4')).toEqual({
+      state: 'AQAB',
+      vision: { vision: 'deutan', strength: 1 },
+      page: { radius: 4 },
+    })
+    expect(parseThemeHash('#s=')).toEqual({ state: '', vision: null, page: {} })
+    expect(parseThemeHash('#x=AQAB')).toBeNull()
+  })
 })
