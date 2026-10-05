@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { candidatesFromList, clearWalkTrails, generateTheme } from '../engine'
 import { PRESETS } from '../presets'
 import type { Env } from './handler'
-import { handle, legacyAppRedirect } from './handler'
+import { STATE_MAX_HOPS, handle, legacyAppRedirect } from './handler'
 import { decodeState, encodeState, themeId } from './state'
 import { statePayload } from './stateLink'
 import { contrastParam, runOps } from './query'
@@ -471,5 +471,49 @@ describe('state= : the theme carried in the request', () => {
       expect((await call(env, `/theme?state=${bad}`)).status, bad).toBe(422)
     expect((await call(env, '/theme?state=Aw')).body).toContain('newer ChromaConscious')
     expect(await call(env, `/theme?theme=${g.theme}&state=${payload}`)).toMatchObject({ status: 400 })
+  })
+})
+
+describe('state= : deep riffs are declined, stored themes are not', () => {
+  const at = (hops: number) => {
+    const p = PRESETS[0]
+    const s = runOps(emptyThemeState(), [{ op: 'preset', name: p.name, colors: p.colors }])
+    return { ...s, seed: hops }
+  }
+  const payloadAt = (hops: number) => statePayload(encodeState(at(hops)))
+
+  it(`builds at the limit (${STATE_MAX_HOPS} hops) on every read endpoint`, async () => {
+    const env = memoryEnv()
+    const p = payloadAt(STATE_MAX_HOPS)
+    for (const path of [`/theme?state=${p}`, `/state?state=${p}`, `/export?state=${p}&format=css`, `/export?state=${p}&format=figma&mode=dark`])
+      expect((await call(env, path, false, null)).status, path).toBe(200)
+  })
+
+  it('declines one hop past it with a 422 that names the depth, the limit, the app link and the way round', async () => {
+    const env = memoryEnv()
+    const p = payloadAt(STATE_MAX_HOPS + 1)
+    for (const path of [`/theme?state=${p}`, `/state?state=${p}`, `/export?state=${p}&format=css`, `/export?state=${p}&format=figma`]) {
+      const r = await call(env, path, false, null)
+      expect(r.status, path).toBe(422)
+      expect(r.body).toContain(`riffed ${STATE_MAX_HOPS + 1} hops deep`)
+      expect(r.body).toContain(`up to ${STATE_MAX_HOPS} hops`)
+      expect(r.body).toContain(`https://drewkidwell.com/chromaconscious#s=${p}`)
+      expect(r.body).toContain('/generate')
+    }
+    // creating from it is declined too, and so is riffing a carried theme past the limit
+    expect((await call(env, `/generate?state=${p}&taste=0.9`)).status).toBe(422)
+    const r = await call(env, `/riff?state=${payloadAt(STATE_MAX_HOPS - 1)}&hops=2`)
+    expect(r.status).toBe(422)
+    expect(r.body).toContain(`riffed ${STATE_MAX_HOPS + 1} hops deep`)
+    expect((await call(env, `/riff?state=${payloadAt(STATE_MAX_HOPS - 1)}&hops=1`)).status).toBe(200)
+  })
+
+  it('a stored theme past the limit reads as before', async () => {
+    const env = memoryEnv()
+    const s = at(STATE_MAX_HOPS + 1)
+    const canonical = encodeState(s)
+    const id = await themeId(canonical)
+    await env.THEMES.put(id, JSON.stringify({ state: canonical, parent: null }))
+    expect((await call(env, `/export?theme=${id}&format=css`, false, null)).status).toBe(200)
   })
 })

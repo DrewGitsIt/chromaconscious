@@ -248,6 +248,8 @@ Returns the theme's canonical state as JSON (the colors, pins, locks, taste, rif
 | riffed 10 hops, 2 locks | 138 |
 | taste 1, two colors "derived safely" | 78 |
 
+**A `state=` theme may be riffed at most 40 hops.** A link carries no riff checkpoint, so the API would replay every hop, and that cost grows with depth. Past 40 every endpoint that takes `state=` answers `422` with a message giving the theme's depth and the limit. The same link still opens in the app, which has no limit. To work with deeper themes over the API, build them with `/generate` and `/riff` using your key: each stored theme keeps a checkpoint, and `theme=t_…` reads have no limit.
+
 The first byte is a format version (now 2; version 1 links still open). A link made by a newer version gets a 422 from the API (the app shows a note and opens empty). Like an id, an old link re-solves on a newer engine: unlocked colors may shift slightly, and locked ones stay exact.
 
 The app's share link appends view settings, which never change the theme: `&vision=deutan&strength=60` (a colorblind simulation, opened side by side with the theme), `&radius=4` (corners, px) and `&font=tinos`.
@@ -276,10 +278,11 @@ Errors come back as plain text that names the parameter and says how to fix it.
 | 401 / 403 | See [Authentication](#authentication). |
 | 404 | No such theme or endpoint. |
 | 400 | Both `theme=` and `state=` were passed. Pass one. |
-| 422 | A parameter is invalid, or a `state=` payload is cut short or unreadable. For example: `unknown role "primry" in colors — roles are primary, accent, neutral, danger, success, warning, chart` |
+| 422 | A parameter is invalid, a `state=` payload is cut short or unreadable, or a `state=` theme is riffed past 40 hops (see [State links](#state-links)). For example: `unknown role "primry" in colors — roles are primary, accent, neutral, danger, success, warning, chart` |
 
 ## Limits
 
 - At most 50 riff steps per request.
+- At most 40 riff hops deep for a theme passed as `state=`. Stored themes (`theme=`) have no depth limit.
 - At most 32 colors per theme.
 - Themes may be re-solved when the engine improves, so an old id can produce slightly different colors later. Locked seats are stored exactly and don't change.
