@@ -181,28 +181,6 @@
     border-radius: 0;
   }
 
-  /* ---------- start-over menu ---------- */
-  .startover-menu {
-    top: calc(100% + 6px);
-    right: 0;
-    width: 236px;
-  }
-  .startover-menu .item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .startover-menu .menu-cap {
-    font-size: var(--fs-xs);
-    color: var(--ink-faint);
-    line-height: 1.5;
-    padding: 7px 10px 4px;
-    border-top: 1px solid var(--line-card);
-    margin-top: 4px;
-  }
-  .startover-menu .preset-item {
-    white-space: nowrap;
-  }
   .preset-dots {
     display: inline-flex;
     gap: 3px;

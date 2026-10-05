@@ -61,6 +61,8 @@ export interface BoardSlot {
   locked: boolean
   /** Index into candidates, or null when the engine derived this seat. */
   candidateIndex: number | null
+  /** This colour's own taste, present only when "derive safely" set one. */
+  ownTaste?: number
 }
 
 export interface SeriesEntry {
@@ -125,6 +127,7 @@ export function readBoard(
       provenance: provenanceOf(c),
       locked: c?.locked === true,
       candidateIndex: ci,
+      ...(typeof c?.fidelity === 'number' ? { ownTaste: c.fidelity } : {}),
     }
   })
 
@@ -272,6 +275,7 @@ export function adjustRole(
     pin: role,
     locked: true,
     lockedColor: color,
+    fidelity: undefined,
   })
 }
 
@@ -303,6 +307,7 @@ export function setRoleInput(
     origin: undefined,
     locked: false,
     lockedColor: undefined,
+    fidelity: undefined,
   })
 }
 
@@ -711,4 +716,39 @@ export function lockedFailure(
     }
   }
   return null
+}
+
+/** The tastes "derive safely" tries, gentlest first, below the theme's own. */
+const SAFE_TASTES = [0.75, 0.5, 0.25, 0]
+
+/**
+ * "derive safely": the one fix a failing lock offers. Unlock the seat so the
+ * engine derives from your colour again — and if that alone still fails
+ * (always the case at taste 1, where the engine may not move your colours at
+ * all), give THIS colour its own, lower taste: the gentlest of 0.75, 0.5,
+ * 0.25 and 0 under which every check descending from the seat passes. The
+ * theme's taste and every other colour are untouched. When nothing clears
+ * it, the colour gets taste 0, the most the engine can do for it.
+ *
+ * Stored as `fidelity` on the candidate, so it rides the share link and holds
+ * through riffs; editing the colour (either side) drops it.
+ */
+export function deriveSafely(
+  candidates: ColorCandidate[],
+  role: Role,
+  view: BoardView,
+  fidelity: number,
+  mode: 'light' | 'dark',
+  regenerate: (next: ColorCandidate[]) => ThemeResult,
+): ColorCandidate[] {
+  const i = view.slots.find((s) => s.role === role)?.candidateIndex ?? null
+  if (i == null) return candidates
+  const unlocked = patch(candidates, i, { locked: false, lockedColor: undefined, fidelity: undefined })
+  if (!lockedFailure(regenerate(unlocked), role, mode)) return unlocked
+  const tries = SAFE_TASTES.filter((t) => t < fidelity)
+  for (const t of tries) {
+    const next = patch(unlocked, i, { fidelity: t })
+    if (!lockedFailure(regenerate(next), role, mode)) return next
+  }
+  return tries.length ? patch(unlocked, i, { fidelity: 0 }) : unlocked
 }

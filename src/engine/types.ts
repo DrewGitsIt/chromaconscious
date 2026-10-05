@@ -53,6 +53,14 @@ export interface ColorCandidate {
    * with the lock cleared walks exactly like one you typed.
    */
   origin?: 'invented'
+  /**
+   * This colour's own taste (fidelity), set by "derive safely": the engine
+   * may move THIS colour as far as this taste allows, while the theme's taste
+   * governs every other one. The effective value is the lower of the two, so
+   * the global dial can still loosen it further but never hold it tighter.
+   * Absent for every colour that hasn't asked — byte-identical output.
+   */
+  fidelity?: number
   source: 'manual' | 'image'
   /** Original input string (hex etc.) for display/reporting. */
   raw: string

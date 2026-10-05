@@ -4,8 +4,6 @@ import {
   Columns2,
   ExternalLink,
   Guitar,
-  Image as ImageIcon,
-  Palette,
   SlidersHorizontal,
   Undo2,
   X,
@@ -37,7 +35,6 @@ import { EXPORT_FORMATS, visionParams } from './components/export/formats'
 import { FrameCard } from './components/FrameCard'
 import { XFADE_MS } from './components/chips'
 import { fileToCandidates } from './components/ImageDrop'
-import { PresetDots } from './components/PresetDots'
 import { PreviewBoundary } from './components/PreviewBoundary'
 import { ReportPanel } from './components/ReportPanel'
 import { AssignPopover, PlacePopover, PresetPopover, RoleTooltip, ShipPopover } from './components/RolePopover'
@@ -56,7 +53,6 @@ import { StatusChip } from './components/StatusChip'
 import type { MockupProps } from './mockups'
 import { MOCKUPS, mockupById } from './mockups'
 import { PRESETS } from './presets'
-import { useDismiss } from './components/useDismiss'
 import { EMBED, embedPreset, fullAppHref } from './embed'
 import { decodeState, encodeState, themeId } from './api/state'
 import { payloadState, statePayload } from './api/stateLink'
@@ -255,12 +251,7 @@ export default function App() {
   const [reportOpen, setReportOpen] = useState(false)
   // Mono lock pick mode: the padlock was clicked, the board is the menu.
   const [picking, setPicking] = useState(false)
-  // The start-over menu: one door for everything that replaces the set.
-  const [startOverOpen, setStartOverOpen] = useState(false)
-  const [startOverPage, setStartOverPage] = useState<'root' | 'presets'>('root')
-  const startOverRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  useDismiss(startOverRef, startOverOpen, () => setStartOverOpen(false))
   // Window-wide image drop + the undo toast that forgives any start-over.
   const [dragOver, setDragOver] = useState(false)
   const [toast, setToast] = useState<Toast | null>(null)
@@ -435,6 +426,12 @@ export default function App() {
         },
       })
     }
+  }
+
+  /** The header's one verb: clear the set. Undoable from the toast. */
+  const startEmpty = () => {
+    if (frame.candidates.length === 0) return
+    startOverAt(active, [], null, `cleared ${frame.candidates.length} color${frame.candidates.length === 1 ? '' : 's'}`)
   }
 
   const imageStartOver = async (i: number, file: File) => {
@@ -711,8 +708,7 @@ export default function App() {
           if (hasPlacements) dispatch({ op: 'reset' })
           break
         case 'startOver':
-          setStartOverPage('root')
-          setStartOverOpen((o) => !o)
+          startEmpty()
           break
         case 'chart':
           setChartOpen((o) => !o)
@@ -817,18 +813,19 @@ export default function App() {
   // so it re-enters) with tuning and riff after it; compare joins only while
   // the stage is split. The shell numbers them and gives each a rail tick.
   const colorsActions = (
-    <span className="sec-tools" ref={startOverRef}>
-      {/* The header keeps exactly one verb; the others live in the row below. */}
+    <span className="sec-tools">
+      {/* The header keeps exactly one verb. An image or a preset start over
+          from the foot of this section, where the ways in fold once colours
+          exist; this is the one way out. A plain button rather than a menu of
+          one, and no confirm: the toast's undo forgives it, the same
+          forgiveness every other replace-the-set gets. */}
       <button
         className="mini ctl-head"
-        onClick={() => {
-          setStartOverPage('root')
-          setStartOverOpen((o) => !o)
-        }}
-        title={withKey('startOver', 'start over')}
+        onClick={startEmpty}
+        title={withKey('startOver', `start empty — clears your ${nColors}; undo is one click`)}
       >
-        <Palette size={12} strokeWidth={1.75} />
-        start over
+        <Ban size={12} strokeWidth={1.75} />
+        start empty
       </button>
       {/* The keyboard map lives up here rather than in the row it documents:
           flex squeezed it under the target floor there. */}
@@ -842,50 +839,6 @@ export default function App() {
         ?
       </button>
       {helpOpen && <ShortcutsFlyout onClose={() => setHelpOpen(false)} />}
-      {startOverOpen && (
-        <div className="menu startover-menu">
-          {startOverPage === 'root' ? (
-            <>
-              <button className="item" onClick={() => fileInputRef.current?.click()}>
-                <ImageIcon size={13} strokeWidth={1.75} /> from an image…
-              </button>
-              <button className="item" onClick={() => setStartOverPage('presets')}>
-                <Palette size={13} strokeWidth={1.75} /> from a preset…
-              </button>
-              <button
-                className="item"
-                onClick={() => {
-                  setStartOverOpen(false)
-                  startOverAt(active, [], null, `cleared ${nColors}`)
-                }}
-              >
-                <Ban size={13} strokeWidth={1.75} /> start empty
-              </button>
-              <div className="menu-cap">
-                each of these replaces your current {nColors} — undo is one click
-              </div>
-            </>
-          ) : (
-            <>
-              <button className="item" onClick={() => setStartOverPage('root')}>
-                ‹ back
-              </button>
-              {PRESETS.map((p) => (
-                <button
-                  key={p.name}
-                  className={`item preset-item ${frame.preset === p.name ? 'sel' : ''}`}
-                  onClick={() => {
-                    setStartOverOpen(false)
-                    startOverAt(active, candidatesFromList(p.colors), p.name, `started over with ${p.name}`)
-                  }}
-                >
-                  <PresetDots colors={p.colors} /> {p.name}
-                </button>
-              ))}
-            </>
-          )}
-        </div>
-      )}
     </span>
   )
 
@@ -943,7 +896,7 @@ export default function App() {
               onEditOutput: (role, anchor) => setSeatMenu({ kind: 'ship', seat: role, anchor }),
               // The one fix a failing lock offers: unlock, and the engine
               // re-derives from your colour.
-              onDeriveSafely: (role) => dispatch({ op: 'unlock', role }),
+              onDeriveSafely: (role) => dispatch({ op: 'deriveSafely', role }),
               onExplain: (role, anchor) => setSeatMenu({ kind: 'explain', seat: role, anchor }),
               onToggleLock: toggleSeatLock,
               onDropInRole: (payload, role) => applyDrop(payload, { kind: 'role', role }),
@@ -1077,7 +1030,6 @@ export default function App() {
         hidden
         onChange={(e) => {
           const file = e.target.files?.[0]
-          setStartOverOpen(false)
           if (file) void imageStartOver(active, file)
           e.target.value = ''
         }}

@@ -124,7 +124,13 @@ export function RoleBoard({
         const anchored = anchorRole === role
         const failure = locked ? (failures[role] ?? null) : null
         const delta = inputHex ? seatDelta(inputHex, hex) : null
-        const state = locked ? (delta?.same ? 'locked · as typed' : 'locked') : ''
+        const state = locked
+          ? delta?.same
+            ? 'locked · as typed'
+            : 'locked'
+          : slot.ownTaste != null
+            ? `derived safely · taste ${slot.ownTaste.toFixed(2)}`
+            : ''
 
         const className = [
           'rb-slot',
@@ -297,7 +303,7 @@ export function RoleBoard({
                   type="button"
                   className="rb-derive"
                   draggable={false}
-                  title={`unlock ${role}: the engine derives it from your color again`}
+                  title={`unlock ${role}: the engine derives it from your color again, and at a high taste gives this one color a lower taste of its own until it passes`}
                   onClick={() => onDeriveSafely(role)}
                 >
                   derive safely

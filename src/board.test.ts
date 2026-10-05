@@ -628,3 +628,83 @@ describe('placement probes are riff-independent', () => {
     }
   })
 })
+
+describe('deriveSafely — at taste 1, a per-colour override', () => {
+  const at1 = () => {
+    const c = candidatesFromList(PRESETS[0].colors)
+    const v = readBoard(generateTheme({ candidates: c, fidelity: 1 }), c, 'light')
+    return adjustRole(c, 'primary', parseColor('#f8f8f8')!, '#f8f8f8', v)
+  }
+  const state1 = () => ({ ...emptyThemeState(), candidates: at1(), fidelity: 1 })
+  const fails = (s: ReturnType<typeof state1>) => {
+    const r = generateTheme({ candidates: s.candidates, fidelity: s.fidelity, seed: s.seed })
+    return [...r.light.report, ...r.dark.report].filter((x) => !x.pass).length + r.repairs.length
+  }
+
+  it('unlocking alone cannot fix it at taste 1 — the engine may not move your colour', () => {
+    const s = state1()
+    expect(fails(s)).toBeGreaterThan(0)
+    const unlocked = applyOp(s, { op: 'unlock', role: 'primary' }, { mode: 'light' })
+    expect(fails(unlocked)).toBeGreaterThan(0)
+  })
+
+  it('gives that one colour its own lower taste, so its warning and the count clear', () => {
+    const s = state1()
+    const i = board(s.candidates).slots.find((x) => x.role === 'primary')!.candidateIndex!
+    const next = applyOp(s, { op: 'deriveSafely', role: 'primary' }, { mode: 'light' })
+    expect(next.fidelity).toBe(1) // the theme's taste is untouched
+    expect(next.candidates[i].locked).toBe(false)
+    expect(next.candidates[i].fidelity).toBeLessThan(1)
+    expect(toHex(next.candidates[i].color)).toBe('#f8f8f8') // your colour stays the input
+    expect(fails(next)).toBe(0)
+    const r = generateTheme({ candidates: next.candidates, fidelity: 1 })
+    expect(lockedFailure(r, 'primary', 'light')).toBeNull()
+    // every other colour of yours still ships exactly as typed
+    for (const s2 of readBoard(r, next.candidates, 'light').slots) {
+      if (s2.role !== 'primary' && s2.inputHex) expect(seatDelta(s2.inputHex, s2.hex).same, s2.role).toBe(true)
+    }
+    expect(readBoard(r, next.candidates, 'light').slots.find((x) => x.role === 'primary')!.ownTaste).toBe(
+      next.candidates[i].fidelity,
+    )
+  })
+
+  it('picks the gentlest taste that passes, not the bluntest', () => {
+    const next = applyOp(state1(), { op: 'deriveSafely', role: 'primary' }, { mode: 'light' })
+    const own = next.candidates.find((c) => typeof c.fidelity === 'number')!.fidelity!
+    // one step gentler fails (or there is none)
+    const gentler = [0.75, 0.5, 0.25, 0].filter((t) => t > own)
+    for (const t of gentler) {
+      const c = next.candidates.map((x) => (x.fidelity != null ? { ...x, fidelity: t } : x))
+      expect(lockedFailure(generateTheme({ candidates: c, fidelity: 1 }), 'primary', 'light'), `taste ${t}`).not.toBeNull()
+    }
+  })
+
+  it('below taste 1, where unlocking is enough, it adds no override', () => {
+    const c = candidatesFromList(PRESETS[0].colors)
+    const locked = adjustRole(c, 'primary', parseColor('#f8f8f8')!, '#f8f8f8', board(c))
+    const s = { ...emptyThemeState(), candidates: locked }
+    const next = applyOp(s, { op: 'deriveSafely', role: 'primary' }, { mode: 'light' })
+    expect(next.candidates.some((x) => x.fidelity != null)).toBe(false)
+  })
+
+  it('holds through riffs, and is dropped when you edit the colour', () => {
+    const next = applyOp(state1(), { op: 'deriveSafely', role: 'primary' }, { mode: 'light' })
+    for (const seed of [1, 4]) {
+      const walked = applyOp(next, { op: 'hop', hop: seed }, { mode: 'light' })
+      expect(walked.candidates.some((x) => x.fidelity != null), `hop ${seed}`).toBe(true)
+      const r = generateTheme({ candidates: walked.candidates, fidelity: 1, seed })
+      expect(lockedFailure(r, 'primary', 'light'), `hop ${seed}`).toBeNull()
+    }
+    const edited = applyOp(next, { op: 'input', role: 'primary', color: '#fafafa' }, { mode: 'light' })
+    expect(edited.candidates.some((x) => x.fidelity != null)).toBe(false)
+  })
+
+  it('the global dial can still loosen it, never hold it tighter', () => {
+    const next = applyOp(state1(), { op: 'deriveSafely', role: 'primary' }, { mode: 'light' })
+    const own = next.candidates.find((c) => c.fidelity != null)!.fidelity!
+    const lower = generateTheme({ candidates: next.candidates, fidelity: 0 })
+    const plain = generateTheme({ candidates: next.candidates.map(({ fidelity: _f, ...c }) => c), fidelity: 0 })
+    expect(lower.css).toBe(plain.css) // below its own taste the theme's governs
+    expect(own).toBeGreaterThan(0)
+  })
+})

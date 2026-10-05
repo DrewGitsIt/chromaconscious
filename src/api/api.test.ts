@@ -48,6 +48,48 @@ describe('state codec', () => {
   })
 })
 
+describe('state codec — a colour\'s own taste (derive safely)', () => {
+  // Written before per-colour taste existed; same fixture and id as below.
+  const OLD = '{"v":1,"candidates":[{"color":"#e63946"},{"color":"#1d3557","pin":"primary","locked":true}],"fidelity":0.7,"seed":2,"separation":"flat","preset":"Coastal starter"}'
+  const OLD_ID = 't_yofoevnthnbv'
+
+  it('is absent unless set, so every existing id keeps its bytes and its theme', async () => {
+    const s = decodeState(OLD)
+    expect(s.candidates.some((c) => 'fidelity' in c)).toBe(false)
+    expect(encodeState(s)).toBe(OLD)
+    expect(await themeId(encodeState(s))).toBe(OLD_ID)
+  })
+
+  it('travels on the wire, exactly, rebuilds the same theme, and changes the id', async () => {
+    const base = decodeState(OLD)
+    const s = { ...base, candidates: base.candidates.map((c, i) => (i === 0 ? { ...c, fidelity: 0.25 } : c)) }
+    const text = encodeState(s)
+    expect(JSON.parse(text).candidates[0].fidelity).toBe(0.25)
+    expect(decodeState(text).candidates[0].fidelity).toBe(0.25)
+    expect(buildTheme(decodeState(text))!.css).toBe(buildTheme(s)!.css)
+    expect(await themeId(text)).not.toBe(OLD_ID)
+  })
+
+  it('a malformed value is clamped or ignored, never trusted', () => {
+    const wire = (v: unknown) =>
+      decodeState(OLD.replace('{"color":"#e63946"}', `{"color":"#e63946","fidelity":${JSON.stringify(v)}}`)).candidates[0]
+    expect(wire(-2).fidelity).toBe(0)
+    expect(wire(7).fidelity).toBe(1)
+    expect('fidelity' in wire('0.5')).toBe(false)
+    expect('fidelity' in wire(null)).toBe(false)
+  })
+
+  it('a theme fixed with derive safely at taste 1 round-trips with the fix', () => {
+    let s = { ...emptyThemeState(), candidates: candidatesFromList(PRESETS[0].colors), fidelity: 1 }
+    s = applyOp(s, { op: 'adjust', role: 'primary', color: '#f8f8f8' }, { mode: 'light' })
+    s = applyOp(s, { op: 'deriveSafely', role: 'primary' }, { mode: 'light' })
+    expect(s.candidates.some((c) => typeof c.fidelity === 'number')).toBe(true)
+    const back = decodeState(encodeState(s))
+    expect(encodeState(back)).toBe(encodeState(s))
+    expect(buildTheme(back)!.css).toBe(buildTheme(s)!.css)
+  })
+})
+
 describe('state codec — contrast level', () => {
   // Written by the encoder as it stood before the contrast level existed; the
   // id was computed outside this codebase (sha256 → base32, 60 bits).
