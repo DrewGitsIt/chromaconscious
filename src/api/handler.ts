@@ -66,6 +66,30 @@ interface Stored {
   parent: string | null
 }
 
+/**
+ * The deepest riff a `state=` request will build. A stored theme resumes its
+ * walk from a checkpoint kept beside it; a carried one replays every hop, and
+ * the replay grows with the hop count. Measured locally (Figma `&mode=` file,
+ * walk trails cleared, median): hop 21 ~3–5.5 ms, hop 50 ~4–9 ms, hop 100
+ * ~5–10 ms, against the Workers Free plan's 10 ms CPU per request, with
+ * Cloudflare likely 1.5–2× slower. 40 keeps a fresh replay under budget there.
+ */
+export const STATE_MAX_HOPS = 40
+
+/**
+ * 422, not 413 or 503: the request is well-formed and small, and nothing is
+ * wrong with the server; this content is what can't be processed here.
+ */
+function tooDeep(hops: number, carried: string, origin: string): HttpError {
+  return new HttpError(
+    422,
+    `this theme is riffed ${hops} hops deep, and themes passed as state= are built only up to ${STATE_MAX_HOPS} hops: ` +
+      `a link carries no riff checkpoint, so every hop would be replayed. ` +
+      `The same link opens fine in the app: ${origin}/chromaconscious#s=${carried}. ` +
+      `Agents: create the theme with /generate and /riff using your key; each stored theme keeps a checkpoint, and theme=t_… reads have no hop limit.`,
+  )
+}
+
 /** A theme as a request names it: stored (`theme=`) or carried whole (`state=`). */
 interface Loaded extends Stored {
   id: string
@@ -80,13 +104,14 @@ interface Loaded extends Stored {
  * theme in the request, needs no store and no key, and has the same id the
  * theme would have if stored. Exactly one of the two.
  */
-async function loadRef(env: Env, q: URLSearchParams, idParam = 'theme'): Promise<Loaded> {
+async function loadRef(env: Env, q: URLSearchParams, idParam = 'theme', origin = ''): Promise<Loaded> {
   const id = q.get(idParam)
   const carried = q.get('state')
   if (id && carried != null) throw new HttpError(400, `pass ${idParam}= or state=, not both`)
   if (carried != null) {
     const canonical = payloadState(carried)
     const state = decodeState(canonical)
+    if (state.seed > STATE_MAX_HOPS) throw tooDeep(state.seed, carried, origin)
     return { id: await themeId(encodeState(state)), state, parent: null, payload: carried, carried }
   }
   const t = await load(env, id, idParam)
@@ -171,7 +196,7 @@ async function route(req: Request, env: Env): Promise<Response> {
     case '/generate': {
       requireKey(req, env)
       // A start: a stored theme (from=), a carried one (state=), or nothing.
-      const prior = q.get('from') || q.get('state') != null ? await loadRef(env, q, 'from') : null
+      const prior = q.get('from') || q.get('state') != null ? await loadRef(env, q, 'from', url.origin) : null
       let state = prior?.state ?? emptyThemeState()
       const preset = q.get('preset')
       if (preset) {
@@ -188,11 +213,13 @@ async function route(req: Request, env: Env): Promise<Response> {
     case '/riff':
     case '/back': {
       requireKey(req, env)
-      const prior = await loadRef(env, q)
+      const prior = await loadRef(env, q, 'theme', url.origin)
       const hops = hopsParam(q)
       // Locks first, so a riff never moves what this same call just locked.
       let state = applyEdits(prior.state, q, true)
       state = runOps(state, [path === '/riff' ? riffOp(hops) : backOp(hops)])
+      // a riff from a carried theme replays to its new depth too
+      if (prior.carried && state.seed > STATE_MAX_HOPS) throw tooDeep(state.seed, prior.carried, url.origin)
       const result = forge(state)
       const parent = prior.carried ? null : prior.id
       const id = await save(env, state, parent, result)
@@ -200,15 +227,15 @@ async function route(req: Request, env: Env): Promise<Response> {
     }
     case '/state': {
       // The theme's own state, so the app can open it: /chromaconscious#t_… .
-      const t = await loadRef(env, q)
+      const t = await loadRef(env, q, 'theme', url.origin)
       return text(encodeState(t.state), 200, 'application/json')
     }
     case '/theme': {
-      const t = await loadRef(env, q)
+      const t = await loadRef(env, q, 'theme', url.origin)
       return respondTheme(req, t.id, t.parent, t.state, forge(t.state), t.carried)
     }
     case '/export': {
-      const t = await loadRef(env, q)
+      const t = await loadRef(env, q, 'theme', url.origin)
       const format = q.get('format') ?? 'css'
       // Every format's bytes come from the serializer shared with the app's
       // Export dialog (exports.ts, exportsFigma.ts): what you copy or download
