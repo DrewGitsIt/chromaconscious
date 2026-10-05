@@ -183,7 +183,7 @@ Same parameters as `/riff`. `hops` steps back that many, stopping at riff 0. Goi
 Every export names its theme, so a file in a repo points back to the theme that made it. The link carries the whole theme, so it opens whether or not the id was ever stored:
 
 ```
-/* ChromaConscious t_fxhcneuortx6 · https://drewkidwell.com/chromaconscious#s=AQMDGR01Vz_YHVmR425xP7HH_NSKripAcBgw_6fGMgDmOUYAqNrcPAE */
+/* ChromaConscious t_fxhcneuortx6 · https://drewkidwell.com/chromaconscious#s=AgMDGR01Vz_YHVmR425xP7HH_NSKripAcBgw_6fGMgDmOUYAqNrcPAE */
 :root {
   --background: #d0fcf8;
   --foreground: #040b0b;
@@ -199,7 +199,7 @@ In JSON the id is at `$extensions.chromaconscious.id`, and the link at `$extensi
 - **Without `mode`**, it returns a small JSON index: `{ theme, note, files: [{ mode, filename, url }] }`, one `url` per mode. Fetch the ones you want. The API doesn't build the zip: three theme builds plus compression don't fit a request's CPU budget. The app's Export dialog builds the same files, plus a `README.txt`, as one `.zip` in your browser.
 
 ```
-curl -s "https://drewkidwell.com/api/chromaconscious/v1/export?state=AQEDAR01VwDmOUYAqNrcPA&format=figma&mode=dark" -o dark.json
+curl -s "https://drewkidwell.com/api/chromaconscious/v1/export?state=AgEDAR01VwDmOUYAqNrcPA&format=figma&mode=dark" -o dark.json
 ```
 
 
@@ -238,7 +238,7 @@ Returns the theme's canonical state as JSON (the colors, pins, locks, taste, rif
 
 ### State links
 
-`state=` (API) and `#s=` (app) carry the same payload: the canonical state above, packed into bytes and base64url-encoded. Hex colors cost 3 bytes each; a color typed another way (`oklch(…)`, a name) travels as its text; a lock's exact OKLCH travels as three 64-bit floats. It is lossless, so the theme it opens has the same id as the theme that made it.
+`state=` (API) and `#s=` (app) carry the same payload: the canonical state above, packed into bytes and base64url-encoded. Hex colors cost 3 bytes each; a color typed another way (`oklch(…)`, a name) travels as its text; a lock's exact OKLCH travels as three 64-bit floats; a color's own taste (the app's "derive safely") costs one byte. It is lossless, so the theme it opens has the same id as the theme that made it.
 
 | theme | link length (`https://drewkidwell.com/chromaconscious#s=…`) |
 |---|---|
@@ -246,13 +246,14 @@ Returns the theme's canonical state as JSON (the colors, pins, locks, taste, rif
 | a 5-color preset | 74 |
 | a 12-color image extraction | 126 |
 | riffed 10 hops, 2 locks | 138 |
+| taste 1, two colors "derived safely" | 78 |
 
-The first byte is a format version. A link made by a newer version gets a 422 from the API (the app shows a note and opens empty). Like an id, an old link re-solves on a newer engine: unlocked colors may shift slightly, and locked ones stay exact.
+The first byte is a format version (now 2; version 1 links still open). A link made by a newer version gets a 422 from the API (the app shows a note and opens empty). Like an id, an old link re-solves on a newer engine: unlocked colors may shift slightly, and locked ones stay exact.
 
 The app's share link appends view settings, which never change the theme: `&vision=deutan&strength=60` (a colorblind simulation, opened side by side with the theme), `&radius=4` (corners, px) and `&font=tinos`.
 
 ```
-https://drewkidwell.com/chromaconscious#s=AQEDAR01VwDmOUYAqNrcPA&vision=deutan
+https://drewkidwell.com/chromaconscious#s=AgEDAR01VwDmOUYAqNrcPA&vision=deutan
 ```
 
 ### `GET /presets`

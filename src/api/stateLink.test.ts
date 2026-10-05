@@ -29,6 +29,12 @@ const riffedLocked = (): ThemeState => {
   return s
 }
 
+/** "Derive safely" at taste 1: one or two colours with their own taste. */
+const overridden = (tastes: number[]): ThemeState => {
+  const s = { ...preset('Coastal starter'), fidelity: 1 }
+  return { ...s, candidates: s.candidates.map((c, i) => (i < tastes.length ? { ...c, fidelity: tastes[i] } : c)) }
+}
+
 const roundTrips = async (s: ThemeState) => {
   const canonical = encodeState(s)
   const back = payloadState(statePayload(canonical))
@@ -52,6 +58,9 @@ describe('state links: lossless', () => {
       }
       const canonical = encodeState(s)
       expect(payloadState(statePayload(canonical))).toBe(canonical)
+      // and again with a derive-safely override on the first colour
+      const o = encodeState({ ...s, candidates: s.candidates.map((c, i) => (i ? c : { ...c, fidelity: 0.25 })) })
+      expect(payloadState(statePayload(o))).toBe(o)
     }
     // ids for a slice (hashing all 4k is slow and proves nothing more)
     for (const { opts } of all.filter((_, i) => i % 97 === 0)) {
@@ -64,12 +73,35 @@ describe('state links: lossless', () => {
     await roundTrips({ ...preset('Ink & sky'), contrast: 0.5, fidelity: 0.73, separation: 'lifted', monoBase: 1 })
     await roundTrips({ ...preset('Neon arcade'), contrast: 1 / 3, fidelity: 1 / 7 })
     await roundTrips({ ...preset('Terracotta'), preset: 'a name no preset has ✓' })
+    // a colour's own taste: every derive-safely step, 1, and an off-grid value
+    for (const t of [0, 0.25, 0.5, 0.75, 1, 0.33, 1 / 3]) await roundTrips(overridden([t]))
+    await roundTrips(overridden([0.25, 0.5]))
+    await roundTrips({ ...riffedLocked(), candidates: riffedLocked().candidates.map((c) => ({ ...c, fidelity: 0 })) })
     await roundTrips({
       ...emptyThemeState(),
       candidates: candidatesFromList(['#ABCDEF', 'rebeccapurple', '#abc', 'oklch(0.7 0.1 200)']).map((c, i) =>
         i === 1 ? { ...c, pin: 'chart' as const, benched: true, origin: 'invented' as const } : c,
       ),
     })
+  })
+
+  it("a colour's own taste costs one byte, and survives into the theme", () => {
+    const plain = packState(encodeState(overridden([])))
+    const one = packState(encodeState(overridden([0.25])))
+    expect(one.length - plain.length).toBe(1)
+    const back = decodeState(payloadState(statePayload(encodeState(overridden([0.25, 0.5])))))
+    expect(back.candidates.slice(0, 3).map((c) => c.fidelity)).toEqual([0.25, 0.5, undefined])
+  })
+
+  it('a version-1 link (before per-colour taste) still opens, to the same text', () => {
+    const canonical = encodeState(riffedLocked())
+    const v1 = packState(canonical)
+    v1[0] = 1
+    expect(payloadState(toBase64url(v1))).toBe(canonical)
+    // v1 never carried a colour's taste, so a v1 link claiming one is malformed
+    const bad = packState(encodeState(overridden([0.25])))
+    bad[0] = 1
+    expect(() => payloadState(toBase64url(bad))).toThrow(StateError)
   })
 
   it('the theme opened from a link is the theme that made it', () => {
@@ -107,6 +139,7 @@ describe('state links: refuse quietly, never crash', () => {
   it('an unknown version says so', () => {
     const bytes = packState(encodeState(preset('Coastal starter')))
     bytes[0] = LINK_VERSION + 1
+    expect(LINK_VERSION).toBe(2)
     expect(() => payloadState(toBase64url(bytes))).toThrow(/newer ChromaConscious/)
   })
 
@@ -130,6 +163,8 @@ describe('state links: size', () => {
     ['image, 5 colours', extraction(5), ''],
     ['image, 12 colours', extraction(12), ''],
     ['riff hop 10, 2 locks', riffedLocked(), ''],
+    ['taste 1, 1 colour derived safely', overridden([0.25]), ''],
+    ['taste 1, 2 colours derived safely', overridden([0.25, 0.5]), ''],
     ['riff 10 + locks + page + vision', riffedLocked(), '&radius=4&font=tinos&vision=deutan&strength=60'],
   ]
 
