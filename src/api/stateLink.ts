@@ -13,15 +13,18 @@
  * else survives exactly, just less compactly — a colour typed as `oklch(…)`
  * travels as its text, and a lock's exact OKLCH as three float64s.
  *
- * Layout, version 1 (all integers are unsigned LEB128 varints):
+ * Layout, version 2 (all integers are unsigned LEB128 varints):
  *
- *   u8      version (1)
+ *   u8      version (2; version 1 links, which predate per-colour taste, still decode)
  *   u8      settings flags: 1 fidelity · 2 seed · 4 monoBase · 8 separation
  *           · 16 contrast · 32 preset — a clear bit is the canonical default
  *   varint  candidate count, then per candidate:
  *     u8      pin (bits 0–2: 0 none, 1–6 primary…warning, 7 chart) · 8 locked
  *             · 16 lockedColor · 32 benched · 64 colour is text, not hex
- *             · 128 an extension byte follows (1 invented · 2 from an image)
+ *             · 128 an extension byte follows: 1 invented · 2 from an image
+ *             · bits 2–4 the colour's own taste ("derive safely"): 0 none,
+ *             1–5 for 0, .25, .5, .75, 1, or 7 for a u8 percent / 255 + float64
+ *             after the colour (v2 only)
  *     colour  3 bytes (#rrggbb, lowercase), or varint length + UTF-8 text
  *     [24 bytes, lockedColor l c h as float64, when flagged]
  *   then the flagged settings in flag order: fidelity and contrast as a u8
@@ -29,12 +32,16 @@
  *   separation as a u8 index; preset as varint (1 + index into PRESET_NAMES)
  *   or 0 + varint length + UTF-8 text.
  *
- * The tables below belong to version 1 and must never be reordered. A
+ * The tables below belong to the format and must never be reordered. A
  * different layout is a new version; old versions keep decoding.
  */
 import { StateError } from './state'
 
-export const LINK_VERSION = 1
+export const LINK_VERSION = 2
+/** Every version this build reads. */
+const READS = [1, 2]
+/** A colour's own taste, as the 3-bit code in its extension byte. 7 = exact, after the colour. */
+const TASTE_CODES = [0, 0.25, 0.5, 0.75, 1]
 
 const PINS = ['primary', 'accent', 'neutral', 'danger', 'success', 'warning', 'chart'] as const
 const SEPARATIONS_V1 = ['flat', 'layered', 'lifted'] as const
@@ -57,6 +64,7 @@ interface WireCandidate {
   benched?: true
   origin?: 'invented'
   source?: 'image'
+  fidelity?: number
 }
 interface WireState {
   v: number
@@ -175,7 +183,8 @@ export function packState(canonical: string): Uint8Array {
     const pin = c.pin === undefined ? 0 : PINS.indexOf(c.pin as (typeof PINS)[number]) + 1
     if (pin === 0 && c.pin !== undefined) throw new StateError(`cannot pack pin ${c.pin}`)
     const hex = HEX.test(c.color)
-    const ext = (c.origin === 'invented' ? 1 : 0) | (c.source === 'image' ? 2 : 0)
+    const taste = c.fidelity === undefined ? 0 : TASTE_CODES.indexOf(c.fidelity) + 1 || 7
+    const ext = (c.origin === 'invented' ? 1 : 0) | (c.source === 'image' ? 2 : 0) | (taste << 2)
     w.u8(
       pin |
         (c.locked ? 8 : 0) |
@@ -188,6 +197,7 @@ export function packState(canonical: string): Uint8Array {
     if (hex) for (let i = 1; i < 7; i += 2) w.u8(parseInt(c.color.slice(i, i + 2), 16))
     else w.text(c.color)
     if (c.lockedColor) for (const n of c.lockedColor) w.f64(n)
+    if (taste === 7) w.unit(c.fidelity!)
   }
   if (s.fidelity !== undefined) w.unit(s.fidelity)
   if (s.seed !== undefined) w.varint(s.seed)
@@ -213,7 +223,7 @@ export function packState(canonical: string): Uint8Array {
 export function unpackState(bytes: Uint8Array): string {
   const r = new Reader(bytes)
   const version = r.u8()
-  if (version !== LINK_VERSION) throw new StateError(`this link was made by a newer ChromaConscious (format ${version})`)
+  if (!READS.includes(version)) throw new StateError(`this link was made by a newer ChromaConscious (format ${version})`)
   const flags = r.u8()
   const count = r.varint()
   if (count > 256) throw new StateError('the link has too many colours')
@@ -236,6 +246,14 @@ export function unpackState(bytes: Uint8Array): string {
     if (head & 32) c.benched = true
     if (ext & 1) c.origin = 'invented'
     if (ext & 2) c.source = 'image'
+    const taste = (ext >> 2) & 7
+    if (taste && version < 2) throw new StateError('the link has an unreadable colour')
+    if (ext >> 5) throw new StateError('the link has an unreadable colour')
+    if (taste === 7) c.fidelity = r.unit()
+    else if (taste) {
+      if (taste > TASTE_CODES.length) throw new StateError('the link has an unreadable colour')
+      c.fidelity = TASTE_CODES[taste - 1]
+    }
     candidates.push(c)
   }
   const s: WireState = { v: 1, candidates }

@@ -170,13 +170,45 @@ test('a share link opens the same theme in a fresh page, with no network', async
   await expect(fresh.getByRole('dialog', { name: 'Export' }).locator('.xd-id')).toHaveText(id!)
 })
 
+test('a colour derived safely at taste 1 stays fixed through a share link', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await boot(page)
+  const seat = (p: Page) => p.locator('.rb-slot[data-role="primary"]')
+  await page.locator('.dial-slider').fill('1')
+  // ship a primary that fails at taste 1, then let derive safely fix just that colour
+  await seat(page).locator('.rb-body').click()
+  await page.locator('.rp-ship').getByLabel('color primary ships').fill('f8f8f8')
+  await page.locator('.rp-ship').getByRole('button', { name: 'lock' }).click()
+  await expect(seat(page).locator('.rb-fail')).not.toHaveCount(0)
+  await seat(page).getByRole('button', { name: 'derive safely' }).click()
+  await expect(seat(page).locator('.rb-fail')).toHaveCount(0)
+  const state = (await seat(page).locator('.rb-state').textContent())!
+  expect(state).toMatch(/^derived safely · taste 0\.\d\d$/)
+  const shipped = await seat(page).locator('.rb-hex').textContent()
+
+  await open(page)
+  await tab(page, /Share link/).click()
+  await dialog(page).getByRole('button', { name: 'Copy link' }).click()
+  const link = await page.evaluate(() => navigator.clipboard.readText())
+
+  const fresh = await context.newPage()
+  await fresh.route('**/api/**', (r) => r.abort())
+  await fresh.emulateMedia({ reducedMotion: 'reduce' })
+  await fresh.goto('/' + new URL(link).hash)
+  await expect(seat(fresh).locator('.rb-state')).toHaveText(state)
+  await expect(seat(fresh).locator('.rb-hex')).toHaveText(shipped!)
+  await expect(seat(fresh).locator('.rb-fail')).toHaveCount(0)
+  await expect(seat(fresh).locator('.rb-in')).toHaveText('#f8f8f8')
+  await expect(fresh.locator('.dial-value')).toHaveText('1.00')
+})
+
 test('a malformed share link opens the start screen with a quiet note', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto('/#s=AQMDGR01Vz_YHVmR42')
   await expect(page.getByText(/couldn't read this link/)).toBeVisible()
   await expect(page.locator('[data-sec="input"]')).toBeVisible()
-  await page.goto('/#s=Ag&vision=deutan')
+  await page.goto('/#s=Aw&vision=deutan')
   await page.reload()
   await expect(page.getByText(/newer ChromaConscious/)).toBeVisible()
   expect(errors).toEqual([])
