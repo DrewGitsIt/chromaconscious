@@ -139,16 +139,27 @@ const monoBtn = (): HTMLButtonElement =>
 /** The riff hop badge, or null before the first hop. */
 const hop = (): string | null =>
   document.querySelector('.ctl-hop')?.textContent ?? null
-/** `start over` is the one verb still in the header. */
-const openStartOver = () =>
-  fireEvent.click(document.querySelector('.sec-act .mini[title^="start over"]') as HTMLElement)
+/** `start empty` is the one verb in the header. */
+const startEmptyBtn = (): HTMLButtonElement =>
+  document.querySelector('.sec-act .mini[title^="start empty"]') as HTMLButtonElement
+const startEmpty = () => fireEvent.click(startEmptyBtn())
+/** The presets button at the foot of "1 colors" opens the preset popover. */
+const openPresets = () =>
+  fireEvent.click(document.querySelector('.colors-verbs .ctl[title^="replace your colors with a preset"]') as HTMLElement)
+const pickPreset = (name: string) => {
+  openPresets()
+  fireEvent.click(
+    [...document.querySelectorAll('.rp-presets .rp-opt')].find(
+      (o) => o.querySelector('.rp-opt-name')?.textContent === name,
+    ) as HTMLElement,
+  )
+}
 
-/** Which preset the current set still belongs to — the menu marks it `sel`. */
+/** Which preset the current set still belongs to — the popover marks it current. */
 const selectedPreset = (): string | null => {
-  openStartOver()
-  fireEvent.click(screen.getByRole('button', { name: /from a preset/ }))
-  const name = document.querySelector('.preset-item.sel')?.textContent?.trim() ?? null
-  openStartOver() // toggle the menu shut again
+  openPresets()
+  const name = document.querySelector('.rp-presets .rp-opt--cur .rp-opt-name')?.textContent?.trim() ?? null
+  fireEvent.keyDown(document, { key: 'Escape' })
   return name
 }
 
@@ -291,8 +302,7 @@ describe('frames', () => {
     bootCoastal()
     fireEvent.click(screen.getByTitle('compare two frames'))
     // B is selected; starting it over empty must not affect A
-    openStartOver()
-    fireEvent.click(screen.getByRole('button', { name: /start empty/ }))
+    startEmpty()
     expect(document.querySelectorAll('.start-hero')).toHaveLength(1)
     expect(document.querySelectorAll('.preview-root')).toHaveLength(1)
     expect(frameState('A')).toBe('A · dark')
@@ -304,9 +314,7 @@ describe('frames', () => {
     bootCoastal()
     fireEvent.click(screen.getByTitle('compare two frames'))
     // diverge B, then copy it over A
-    openStartOver()
-    fireEvent.click(screen.getByRole('button', { name: /from a preset/ }))
-    fireEvent.click(screen.getByRole('button', { name: /Neon arcade/ }))
+    pickPreset('Neon arcade')
     fireEvent.click(screen.getByLabelText('copy frame B over frame A'))
     expect(frameState('A')).toBe('A · dark · editing')
     expect(originOf('primary')).toBe('#f72585')
@@ -621,9 +629,7 @@ describe('riff', () => {
     bootCoastal()
     fireEvent.click(riffBtn())
     expect(hop()).toBe('1')
-    openStartOver()
-    fireEvent.click(screen.getByRole('button', { name: /from a preset/ }))
-    fireEvent.click(screen.getByRole('button', { name: /Neon arcade/ }))
+    pickPreset('Neon arcade')
     expect(hop()).toBeNull()
     expect(backBtn().disabled).toBe(true)
   })
@@ -826,36 +832,40 @@ describe('color input', () => {
 })
 
 describe('start over', () => {
-  it('one menu holds the destructive verbs; start empty returns to the hero', () => {
+  it('the header holds one verb, start empty: a plain button, forgiven by undo', () => {
     bootCoastal()
-    openStartOver()
-    expect(screen.getByRole('button', { name: /from an image/ })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /from a preset/ })).toBeTruthy()
-    expect(document.querySelector('.menu-cap')?.textContent).toContain(
-      'replaces your current 5 colors',
-    )
-    fireEvent.click(screen.getByRole('button', { name: /start empty/ }))
+    // image and presets live at the foot of "1 colors" now, not in a menu here
+    expect(document.querySelector('.startover-menu')).toBeNull()
+    expect(startEmptyBtn().textContent).toBe('start empty')
+    expect(startEmptyBtn().title).toMatch(/^start empty — clears your 5 colors; undo is one click {2}· {2}O$/)
+    startEmpty()
     expect(document.querySelector('.start-hero')).toBeTruthy()
     expect(document.querySelector('.role-board')).toBeNull()
     expect(document.querySelector('.toast')?.textContent).toContain('cleared 5 colors')
   })
 
+  it('o is start empty, and undo brings the set back', () => {
+    bootCoastal()
+    const before = boardState()
+    fireEvent.keyDown(window, { key: 'o' })
+    expect(document.querySelector('.role-board')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'undo' }))
+    expect(boardState()).toEqual(before)
+  })
+
   it('undo restores the replaced set', () => {
     bootCoastal()
     const before = boardState()
-    openStartOver()
-    fireEvent.click(screen.getByRole('button', { name: /start empty/ }))
+    startEmpty()
     expect(document.querySelector('.role-board')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'undo' }))
     expect(boardState()).toEqual(before)
     expect(document.querySelector('.toast')).toBeNull()
   })
 
-  it('the preset page applies a palette and reports it in the toast', () => {
+  it('the preset popover applies a palette and reports it in the toast', () => {
     bootCoastal()
-    openStartOver()
-    fireEvent.click(screen.getByRole('button', { name: /from a preset/ }))
-    fireEvent.click(screen.getByRole('button', { name: /Neon arcade/ }))
+    pickPreset('Neon arcade')
     expect(originOf('primary')).toBe('#f72585')
     expect(document.querySelector('.toast')?.textContent).toContain('started over with Neon arcade')
     expect(selectedPreset()).toBe('Neon arcade')
@@ -866,9 +876,7 @@ describe('start over', () => {
     fireEvent.click(monoBtn())
     openAssign('primary')
     expect(document.querySelector('.rb-anchor')).toBeTruthy()
-    openStartOver()
-    fireEvent.click(screen.getByRole('button', { name: /from a preset/ }))
-    fireEvent.click(screen.getByRole('button', { name: /Terracotta/ }))
+    pickPreset('Terracotta')
     expect(document.querySelector('.rb-anchor')).toBeNull()
     expect(monoBtn().textContent).toBe('mono')
   })

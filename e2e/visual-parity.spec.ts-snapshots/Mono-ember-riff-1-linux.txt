@@ -1,7 +1,7 @@
-span.rail-thumb top: 0px; height: 323.881px;
-button.rail-tick.here top: 1.80687px;
-button.rail-tick top: 326.592px;
-button.rail-tick top: 633.76px;
+span.rail-thumb top: 0px; height: 309.442px;
+button.rail-tick.here top: 1.72632px;
+button.rail-tick top: 312.032px;
+button.rail-tick top: 605.505px;
 button.rb-chip.rb-in --c: #ff5c1f; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
 span.dc.dc-moved --len: 16.676052342148086px; --dc-o: 0.742;
 button.rb-chip.rb-body --c: #ee5d30; --ink-on: rgba(255,255,255,0.95); --well: rgba(255,255,255,0.13999999999999999);
@@ -95,7 +95,7 @@ any colors in, working theme out
 1
 colors
 2 yours · 4 derived
-start over
+start empty
 ?
 mono
 reset

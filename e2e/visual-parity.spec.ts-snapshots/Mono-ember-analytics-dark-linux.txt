@@ -172,7 +172,7 @@ any colors in, working theme out
 1
 colors
 2 yours · 4 derived
-start over
+start empty
 ?
 mono
 reset
