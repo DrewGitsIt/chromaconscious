@@ -16,6 +16,7 @@ The API drives the same engine, with the same verbs, as the app at https://drewk
 
 - **Themes are immutable snapshots.** Every call that changes something returns a new theme id (`t_` followed by 12 characters). The theme you started from is never modified. To undo, use the older id.
 - **The id is a hash of the theme's state.** The same inputs always give the same id, so repeating a call is harmless.
+- **A theme can also travel whole, as `state=`.** Every read endpoint takes `state=<payload>` wherever it takes `theme=<id>`. The payload is the theme's entire state, packed (about 30 characters for a 5-color preset). It needs no key and no stored theme, never expires, and has the same id the stored theme would. App share links (`#s=…`) and export headers carry it. See [State links](#state-links).
 - **A lock freezes a seat where it currently stands.** That can be several riffs away from the color you typed. A lock persists into every theme descended from the one it was set on, until you `unlock` it. The lock is the only thing riff cannot move.
 - **Colors are addressed by role, chart slot (`chart-1`…`chart-5`) or hex, never by position.** A position shifts when a color is removed; a role does not.
 - **Light and dark are both always present.** `mode` only selects which one an export shows.
@@ -30,7 +31,7 @@ The API drives the same engine, with the same verbs, as the app at https://drewk
 Authorization: Bearer <key>
 ```
 
-Reading an existing theme (`/theme`, `/export`, `/state`, `/presets`) needs no key.
+Reading a theme (`/theme`, `/export`, `/state`, `/presets`) needs no key, whether by `theme=` or `state=`.
 
 | status | meaning |
 |---|---|
@@ -46,6 +47,7 @@ Reading an existing theme (`/theme`, `/export`, `/state`, `/presets`) needs no k
 | `colors` | list | | Comma-separated colors. Bare hex (`1d3557`) or any URL-encoded CSS color. `role:hex` places a color in a seat (`primary:1d3557`), and `chart:hex` puts it in the chart series. Order matters: earlier colors get first claim on seats. With `from`, these replace the theme's **unlocked** colors, and locked colors carry over. |
 | `preset` | string | | Start from a preset (`coastal-starter`). See `/presets`. |
 | `from` | theme id | | Start from an existing theme and change only what you pass. |
+| `state` | payload | | The same as `from`, for a theme carried whole (an `#s=` link, or an export header). |
 | `add` | list | | Append colors instead of replacing them. With `from`, this is how to change one thing and keep the rest. `chart:hex` colors fill the chart slots after `chart-1`. |
 | `taste` | 0–1 | | How freely the engine may adjust your colors. `0` adjusts freely to fit their roles; `1` keeps them as typed. Default `0.5`. See [Adjustments](#adjustments). |
 | `separation` | enum | | `flat`, `layered` (default) or `lifted`: how strongly surfaces separate from each other. |
@@ -99,7 +101,7 @@ export   https://drewkidwell.com/api/chromaconscious/v1/export?theme=t_levvog6re
 - **`contrast`** counts the text pairings that pass, per mode, and states the floor every text pair is held to at this contrast level. Any failures are listed below it. A failure marked `unreachable` is a ceiling: the engine pushed that color as far as its hue goes on that surface and it still fell short, so only a different color fixes it.
 - **`spacing`** lists pairs of seats the engine couldn't push far enough apart to tell apart.
 - **`judge`** scores the palette's harmony from 0 to 1.
-- **`open`** is a link that opens this exact theme in the app. Append `&vision=deutan` (or `protan`, `tritan`; optionally `&strength=60`, a percent) to open it side by side with a colorblind simulation of itself: frame A as typed, frame B as someone with that type of colorblindness sees it. View-only; it doesn't change the theme or its id.
+- **`open`** is a link that opens this exact theme in the app. A theme read by `state=` gets `#s=…` and `state=…` links instead, because its id was never stored. Append `&vision=deutan` (or `protan`, `tritan`; optionally `&strength=60`, a percent) to open it side by side with a colorblind simulation of itself: frame A as typed, frame B as someone with that type of colorblindness sees it. View-only; it doesn't change the theme or its id.
 
 ### Adjustments
 
@@ -168,20 +170,20 @@ Same parameters as `/riff`. `hops` steps back that many, stopping at riff 0. Goi
 
 ### `GET /theme`: read a theme's summary
 
-`theme` (required) and `as`. No key needed.
+`theme` or `state` (one is required), and `as`. No key needed.
 
 ### `GET /export`: the theme as code
 
 | param | type | | description |
 |---|---|---|---|
-| `theme` | theme id | required | |
-| `format` | enum | | `css` (default) gives CSS variables under `:root` and `.dark`. `tailwind` gives the same plus a Tailwind v4 `@theme inline` bridge. `json` gives DTCG design tokens. `figma` gives a zip of Figma variable files (below). |
-| `mode` | enum | | For `json`: `both` (default), `light` or `dark`. For `figma`: one file instead of the zip: `light`, `dark`, `light-medium`, `dark-medium`, `light-high` or `dark-high`. CSS always carries both. |
+| `theme` / `state` | id / payload | one required | |
+| `format` | enum | | `css` (default) gives CSS variables under `:root` and `.dark`. `tailwind` gives the same plus a Tailwind v4 `@theme inline` bridge. `json` gives DTCG design tokens. `figma` gives Figma variable files, one per mode (below). |
+| `mode` | enum | | For `json`: `both` (default), `light` or `dark`. For `figma`: the file to return: `light`, `dark`, `light-medium`, `dark-medium`, `light-high` or `dark-high`; without it, an index of the six. CSS always carries both. |
 
-Every export names its theme, so a file in a repo points back to the theme that made it:
+Every export names its theme, so a file in a repo points back to the theme that made it. The link carries the whole theme, so it opens whether or not the id was ever stored:
 
 ```
-/* ChromaConscious t_fxhcneuortx6 · https://drewkidwell.com/chromaconscious#t_fxhcneuortx6 */
+/* ChromaConscious t_fxhcneuortx6 · https://drewkidwell.com/chromaconscious#s=AQMDGR01Vz_YHVmR425xP7HH_NSKripAcBgw_6fGMgDmOUYAqNrcPAE */
 :root {
   --background: #d0fcf8;
   --foreground: #040b0b;
@@ -189,17 +191,23 @@ Every export names its theme, so a file in a repo points back to the theme that 
   …
 ```
 
-In JSON the id is at `$extensions.chromaconscious.id`.
+In JSON the id is at `$extensions.chromaconscious.id`, and the link at `$extensions.chromaconscious.url`. To continue from a file, pass the `s=` payload from its link as `state=` (or the id as `from=`, if that theme is stored).
 
-**`format=figma`** returns `application/zip` (`chromaconscious-t_…-figma.zip`) with a `README.txt` and one file per mode in Figma's native DTCG variable import format: `light.json`, `dark.json`, and the same at the contrast levels `medium` and `high` (`light-medium.json` … `dark-high.json`). All three levels are always included, whatever `contrast` the theme was made at. Download it with `curl -s -o theme.zip`, not a text fetch: it is binary.
+**`format=figma`** gives one file per mode in Figma's native DTCG variable import format: `light.json`, `dark.json`, and the same at the contrast levels `medium` and `high` (`light-medium.json` … `dark-high.json`). All three levels are always offered, whatever `contrast` the theme was made at.
+
+- **`&mode=dark-high`** (and so on) returns that one file as JSON, named `t_…-dark-high.json`.
+- **Without `mode`**, it returns a small JSON index: `{ theme, note, files: [{ mode, filename, url }] }`, one `url` per mode. Fetch the ones you want. The API doesn't build the zip: three theme builds plus compression don't fit a request's CPU budget. The app's Export dialog builds the same files, plus a `README.txt`, as one `.zip` in your browser.
+
+```
+curl -s "https://drewkidwell.com/api/chromaconscious/v1/export?state=AQEDAR01VwDmOUYAqNrcPA&format=figma&mode=dark" -o dark.json
+```
+
 
 - Each file is one Figma mode and defines the same 117 colour variables: `color/<token>` for the 44 tokens below plus `color/scrim` (with alpha), and `ramp/<role>/<1–12>` for the six ramps. Every file has the same names and types, because Figma silently skips a token missing from any file.
 - Colours are `{colorSpace: "srgb", components: [r, g, b], alpha, hex}`, with sRGB-encoded components from 0 to 1. Values are plain colours, not aliases.
 - Shadows have no Figma variable type. The `elevation-1`…`3` shadows are DTCG shadow tokens under `$extensions.chromaconscious.shadows`, which Figma ignores on import.
-- On a paid Figma plan, drag all the files into one collection to get one mode each. The free Starter plan allows one mode per collection, so import each file as its own collection. The README says the same.
-- `&mode=dark-high` (and so on) returns that one file as JSON.
-
-The zip is a pure function of the theme: the app's Export dialog builds the same bytes client-side.
+- On a paid Figma plan, drag all the files into one collection to get one mode each. The free Starter plan allows one mode per collection, so import each file as its own collection. The app's README says the same.
+Each file is a pure function of the theme: every file in the app's zip is byte-for-byte the API's file for that mode.
 
 Exports made before the rename start with the legacy `/* themesmith t_… */` header. Read either prefix; the id after it is the same kind of id and still opens. JSON exports also carry the id under the legacy key `$extensions.themesmith.id`, so older readers keep working.
 
@@ -222,10 +230,29 @@ ChromaConscious makes **colors only**. Radius, spacing and type are up to you, a
 
 ### `GET /state`: a theme's inputs
 
-Returns the theme's canonical state as JSON (the colors, pins, locks, taste, riff count and so on). The app uses this to open `#t_…` links. No key needed.
+Returns the theme's canonical state as JSON (the colors, pins, locks, taste, riff count and so on). The app uses this to open `#t_…` links. Takes `theme` or `state`. No key needed.
 
 ```
 {"v":1,"candidates":[{"color":"#1d3557","pin":"primary","locked":true,"lockedColor":[0.376791374653954,0.06945781888014638,257.5119625619583]},{"color":"#e63946"},{"color":"#a8dadc"}],"fidelity":0.6,"seed":1}
+```
+
+### State links
+
+`state=` (API) and `#s=` (app) carry the same payload: the canonical state above, packed into bytes and base64url-encoded. Hex colors cost 3 bytes each; a color typed another way (`oklch(…)`, a name) travels as its text; a lock's exact OKLCH travels as three 64-bit floats. It is lossless, so the theme it opens has the same id as the theme that made it.
+
+| theme | link length (`https://drewkidwell.com/chromaconscious#s=…`) |
+|---|---|
+| one color | 52 |
+| a 5-color preset | 74 |
+| a 12-color image extraction | 126 |
+| riffed 10 hops, 2 locks | 138 |
+
+The first byte is a format version. A link made by a newer version gets a 422 from the API (the app shows a note and opens empty). Like an id, an old link re-solves on a newer engine: unlocked colors may shift slightly, and locked ones stay exact.
+
+The app's share link appends view settings, which never change the theme: `&vision=deutan&strength=60` (a colorblind simulation, opened side by side with the theme), `&radius=4` (corners, px) and `&font=tinos`.
+
+```
+https://drewkidwell.com/chromaconscious#s=AQEDAR01VwDmOUYAqNrcPA&vision=deutan
 ```
 
 ### `GET /presets`
@@ -247,7 +274,8 @@ Errors come back as plain text that names the parameter and says how to fix it.
 | 400 | `theme` is missing or isn't a theme id. |
 | 401 / 403 | See [Authentication](#authentication). |
 | 404 | No such theme or endpoint. |
-| 422 | A parameter is invalid. For example: `unknown role "primry" in colors — roles are primary, accent, neutral, danger, success, warning, chart` |
+| 400 | Both `theme=` and `state=` were passed. Pass one. |
+| 422 | A parameter is invalid, or a `state=` payload is cut short or unreadable. For example: `unknown role "primry" in colors — roles are primary, accent, neutral, danger, success, warning, chart` |
 
 ## Limits
 

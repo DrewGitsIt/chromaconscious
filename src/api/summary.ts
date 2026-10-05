@@ -155,6 +155,11 @@ export function summarize(
   state: ThemeState,
   result: ThemeResult,
   origin: string,
+  /**
+   * The `s=` payload when the theme came in as `state=` and was never stored:
+   * its links then carry the state, since its id opens nothing.
+   */
+  carried?: string,
 ): ThemeSummary {
   const view: BoardView = readBoard(result, state.candidates, 'light')
   const tally = (mode: 'light' | 'dark') => ({
@@ -204,8 +209,8 @@ export function summarize(
     spacing: result.repairs.map((r) => ({ pair: r.label, deltaE: +r.deltaE.toFixed(3), required: r.required })),
     judge: +result.judge.score.toFixed(2),
     links: {
-      open: `${origin}/chromaconscious#${id}`,
-      export: `${api}/export?theme=${id}&format=css`,
+      open: carried ? `${origin}/chromaconscious#s=${carried}` : `${origin}/chromaconscious#${id}`,
+      export: carried ? `${api}/export?state=${carried}&format=css` : `${api}/export?theme=${id}&format=css`,
     },
   }
 }

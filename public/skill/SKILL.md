@@ -18,15 +18,16 @@ Base URL: `https://drewkidwell.com/api/chromaconscious/v1` (the legacy `/api/the
    `curl -s -H "Authorization: Bearer $CHROMACONSCIOUS_API_KEY" "$BASE/riff?theme=t_…&lock=primary"`
 4. **Export** when it's right. No key is needed:
    `curl -s "$BASE/export?theme=t_…&format=css"` (or `tailwind`, `json`)
-   For Figma: `curl -s -o theme-figma.zip "$BASE/export?theme=t_…&format=figma"`. It's a zip of Figma variable files, one per mode (light/dark × standard/medium/high contrast), with a README on importing them.
+   For Figma: `curl -s -o dark.json "$BASE/export?theme=t_…&format=figma&mode=dark"`, one file per mode (`light`, `dark`, `light-medium`, `dark-medium`, `light-high`, `dark-high`). Without `mode=` you get an index of the six URLs. Import each into Figma's Local variables; on the free plan, each file is its own collection.
 
 Every call returns a **new** id; nothing changes in place. To go back, use an older id, or `/back?theme=…`.
 
 ## Rules that matter
 
 - **Use `curl -s`, not a summarizing web fetch.** Exports must arrive byte-exact.
-- **Continue existing work.** If the project already has a ChromaConscious export, its first line reads `/* ChromaConscious t_… */` (older files have the legacy `/* themesmith t_… */` header; read either). Continue from that id with `/generate?from=t_…` instead of starting over.
-- **Creating needs a key; reading doesn't.** `/generate`, `/riff` and `/back` need `Authorization: Bearer $CHROMACONSCIOUS_API_KEY`. A key kept in the legacy `$THEMESMITH_API_KEY` variable still works; only the variable name changed. `/theme`, `/export`, `/state` and `/presets` are open.
+- **A theme can travel whole as `state=`.** Anywhere you'd pass `theme=t_…`, you can pass `state=<payload>` instead: the payload after `#s=` in a ChromaConscious share link or export header. It needs no key and nothing stored. If a person hands you a link like `…/chromaconscious#s=AQEDAR01VwDmOUYAqNrcPA`, read it with `$BASE/theme?state=AQEDAR01VwDmOUYAqNrcPA`.
+- **Continue existing work.** If the project already has a ChromaConscious export, its first line reads `/* ChromaConscious t_… · …#s=… */` (older files have `…#t_…`, or the legacy `/* themesmith t_… */` header; read any). Continue from it with `/generate?state=<the s= payload>`, or `/generate?from=t_…` for an older file, instead of starting over.
+- **Creating needs a key; reading doesn't.** `/generate`, `/riff` and `/back` need `Authorization: Bearer $CHROMACONSCIOUS_API_KEY`. A key kept in the legacy `$THEMESMITH_API_KEY` variable still works; only the variable name changed. `/theme`, `/export`, `/state` and `/presets` are open, by `theme=` or `state=`.
 - **`taste`** runs from 0 to 1 (default 0.5). Below 1, a color outside its role's range (too dark, too muted…) is pulled toward it, and colors too close to a neighbor are pushed apart. At 1 your colors stay as typed; if two end up too close, the `spacing` line says so instead of fixing it.
 - **`contrast`** is `standard` (default), `medium` or `high` (or 0–1). It raises every contrast target, Material 3 style: at `high` every text pair clears Lc 88 · 10:1. Use it when the user asks for accessible, high-contrast or AAA. It doesn't change which color sits where, but fills and text move further from your colors to meet it. A failure marked `unreachable` means that color can't get there; suggest a different one.
 - **What `taste=1` doesn't stop:** riff moves unlocked colors (lock what must hold), and chart colors keep a lightness floor and ceiling so a series stays visible.

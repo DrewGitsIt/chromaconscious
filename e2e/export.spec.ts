@@ -78,7 +78,9 @@ test('open, walk the formats by keyboard, copy, and Esc returns focus to Export'
   const clip = await page.evaluate(() => navigator.clipboard.readText())
   const id = await dialog(page).locator('.xd-id').textContent()
   const origin = new URL(page.url()).origin
-  expect(clip.split('\n')[0]).toBe(`/* ChromaConscious ${id} · ${origin}/chromaconscious#${id} */`)
+  expect(clip.split('\n')[0]).toMatch(
+    new RegExp(`^/\\* ChromaConscious ${id} · ${origin}/chromaconscious#s=[A-Za-z0-9_-]+ \\*/$`),
+  )
   expect(clip).toContain(':root {')
   expect(clip).toContain('.dark {')
 
@@ -98,27 +100,86 @@ test('open, walk the formats by keyboard, copy, and Esc returns focus to Export'
   await expect(exportBtn(page)).toBeFocused()
 })
 
-test('the links: share carries the vision; the agent entry copies the id', async ({ page, context }) => {
+test('the links: share carries the theme and the vision; the agent entry carries state=', async ({
+  page,
+  context,
+}) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await boot(page)
   await open(page)
-  const id = await dialog(page).locator('.xd-id').textContent()
-  await tab(page, /API \/ agent link/).click()
-  await dialog(page).getByRole('button', { name: 'Copy id' }).click()
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(id)
-  await dialog(page).getByRole('button', { name: 'Copy calls' }).click()
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain(
-    `/api/chromaconscious/v1/export?theme=${id}&format=css`,
-  )
+  const origin = new URL(page.url()).origin
   await tab(page, /Share link/).click()
-  await expect(dialog(page).locator('.xd-link')).toHaveText(`${new URL(page.url()).origin}/chromaconscious#${id}`)
+  const link = (await dialog(page).locator('.xd-link').textContent())!
+  expect(link).toMatch(new RegExp(`^${origin}/chromaconscious#s=[A-Za-z0-9_-]+$`))
+  const payload = link.split('#s=')[1]
+
+  await tab(page, /API \/ agent link/).click()
+  await dialog(page).getByRole('button', { name: 'Copy link' }).click()
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    `${origin}/api/chromaconscious/v1/theme?state=${payload}`,
+  )
+  await dialog(page).getByRole('button', { name: 'Copy calls' }).click()
+  const calls = await page.evaluate(() => navigator.clipboard.readText())
+  expect(calls).toContain(`/api/chromaconscious/v1/export?state=${payload}&format=css`)
+  expect(calls).not.toContain('theme=t_')
   await page.keyboard.press('Escape')
 
   // a frame under a simulation shares it
   await page.keyboard.press('v') // typical → protan
   await open(page)
   await tab(page, /Share link/).click()
-  await expect(dialog(page).locator('.xd-link')).toHaveText(/&vision=protan$/)
+  await expect(dialog(page).locator('.xd-link')).toHaveText(/#s=[A-Za-z0-9_-]+&vision=protan$/)
+})
+
+/** The tokens a frame paints, read off its preview root. */
+const painted = (page: Page) =>
+  page.locator('.preview-root').first().evaluate((el) => {
+    const cs = getComputedStyle(el)
+    return ['--background', '--foreground', '--primary', '--accent-strong', '--destructive', '--chart-3', '--border'].map(
+      (t) => `${t}: ${cs.getPropertyValue(t).trim()}`,
+    )
+  })
+
+test('a share link opens the same theme in a fresh page, with no network', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await boot(page)
+  // a theme a preset alone can't name: riffed, with a lock and a taste
+  await page.locator('.dial-slider').fill('0.8')
+  const riff = page.locator('.ctl-row .ctl[title*="walk the palette"]')
+  await riff.click()
+  await riff.click()
+  await open(page)
+  const id = await dialog(page).locator('.xd-id').textContent()
+  await tab(page, /Share link/).click()
+  await dialog(page).getByRole('button', { name: 'Copy link' }).click()
+  const link = await page.evaluate(() => navigator.clipboard.readText())
+  await page.keyboard.press('Escape')
+  const before = await painted(page)
+  expect(before.every((t) => /#[0-9a-f]{6}/.test(t))).toBe(true)
+
+  // a fresh page; the API is unreachable, so this can only come from the link
+  const fresh = await context.newPage()
+  await fresh.route('**/api/**', (r) => r.abort())
+  await fresh.emulateMedia({ reducedMotion: 'reduce' })
+  // the preview server has no /chromaconscious path; the fragment is the link
+  await fresh.goto('/' + new URL(link).hash)
+  await expect(fresh.locator('.role-board')).toBeVisible()
+  await expect(fresh.getByText('opened the theme in this link')).toBeVisible()
+  expect(await painted(fresh)).toEqual(before)
+  await fresh.locator('.sidebar-shell').getByRole('button', { name: 'Export' }).click()
+  await expect(fresh.getByRole('dialog', { name: 'Export' }).locator('.xd-id')).toHaveText(id!)
+})
+
+test('a malformed share link opens the start screen with a quiet note', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.goto('/#s=AQMDGR01Vz_YHVmR42')
+  await expect(page.getByText(/couldn't read this link/)).toBeVisible()
+  await expect(page.locator('[data-sec="input"]')).toBeVisible()
+  await page.goto('/#s=Ag&vision=deutan')
+  await page.reload()
+  await expect(page.getByText(/newer ChromaConscious/)).toBeVisible()
+  expect(errors).toEqual([])
 })
 
 test('a failing check is a note, never a gate', async ({ page, context }) => {

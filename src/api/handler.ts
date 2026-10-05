@@ -10,11 +10,11 @@ import { restoreWalkStop, themeTailwind, themeTokensJson, walkCheckpoint } from 
 import type { ThemeState } from '../ops'
 import { buildTheme, emptyThemeState } from '../ops'
 import { PRESETS } from '../presets'
-import { figmaExport } from '../figmaExport'
 import { QueryError, applyEdits, backOp, hopsParam, presetByName, riffOp, runOps } from './query'
 import { StateError, decodeState, encodeState, isThemeId, themeId } from './state'
 import { exportText } from './exports'
-import { FIGMA_MODE_NAMES, figmaModeFile, figmaZip } from './exportsFigma'
+import { FIGMA_MODE_NAMES, figmaIndex, figmaModeFile } from './exportsFigma'
+import { payloadState, statePayload } from './stateLink'
 import { summarize, summaryText } from './summary'
 
 /** The slice of Workers KV this needs; tests pass a Map-backed stand-in. */
@@ -66,8 +66,35 @@ interface Stored {
   parent: string | null
 }
 
-async function load(env: Env, id: string | null): Promise<Stored & { id: string }> {
-  if (!id) throw new HttpError(400, 'missing theme= — pass the id a previous call returned')
+/** A theme as a request names it: stored (`theme=`) or carried whole (`state=`). */
+interface Loaded extends Stored {
+  id: string
+  /** The `s=` payload, always: export headers link it. */
+  payload: string
+  /** Set when the theme came in as `state=` and is not stored. */
+  carried?: string
+}
+
+/**
+ * `theme=<id>` reads the store; `state=<payload>` (stateLink.ts) carries the
+ * theme in the request, needs no store and no key, and has the same id the
+ * theme would have if stored. Exactly one of the two.
+ */
+async function loadRef(env: Env, q: URLSearchParams, idParam = 'theme'): Promise<Loaded> {
+  const id = q.get(idParam)
+  const carried = q.get('state')
+  if (id && carried != null) throw new HttpError(400, `pass ${idParam}= or state=, not both`)
+  if (carried != null) {
+    const canonical = payloadState(carried)
+    const state = decodeState(canonical)
+    return { id: await themeId(encodeState(state)), state, parent: null, payload: carried, carried }
+  }
+  const t = await load(env, id, idParam)
+  return { ...t, payload: statePayload(encodeState(t.state)) }
+}
+
+async function load(env: Env, id: string | null, idParam = 'theme'): Promise<Stored & { id: string }> {
+  if (!id) throw new HttpError(400, `missing ${idParam}= — pass the id a previous call returned, or state= from a link`)
   if (!isThemeId(id)) throw new HttpError(400, `"${id}" is not a theme id (they look like t_k3v9x2abcdef)`)
   const raw = await env.THEMES.get(id)
   if (raw == null) throw new HttpError(404, `no theme ${id} — it may have expired; regenerate it`)
@@ -99,8 +126,15 @@ async function save(env: Env, state: ThemeState, parent: string | null, result: 
   return id
 }
 
-function respondTheme(req: Request, id: string, parent: string | null, state: ThemeState, result: ThemeResult): Response {
-  const summary = summarize(id, parent, state, result, new URL(req.url).origin)
+function respondTheme(
+  req: Request,
+  id: string,
+  parent: string | null,
+  state: ThemeState,
+  result: ThemeResult,
+  carried?: string,
+): Response {
+  const summary = summarize(id, parent, state, result, new URL(req.url).origin, carried)
   const q = new URL(req.url).searchParams
   if (q.get('as') === 'json' || req.headers.get('accept')?.includes('application/json')) {
     return text(JSON.stringify(summary, null, 2), 200, 'application/json')
@@ -136,8 +170,8 @@ async function route(req: Request, env: Env): Promise<Response> {
   switch (path) {
     case '/generate': {
       requireKey(req, env)
-      const from = q.get('from')
-      const prior = from ? await load(env, from) : null
+      // A start: a stored theme (from=), a carried one (state=), or nothing.
+      const prior = q.get('from') || q.get('state') != null ? await loadRef(env, q, 'from') : null
       let state = prior?.state ?? emptyThemeState()
       const preset = q.get('preset')
       if (preset) {
@@ -146,70 +180,69 @@ async function route(req: Request, env: Env): Promise<Response> {
       }
       state = applyEdits(state, q, prior != null)
       const result = forge(state)
-      const id = await save(env, state, prior?.id ?? null, result)
-      return respondTheme(req, id, prior?.id ?? null, state, result)
+      // a carried start was never stored, so it is nobody's parent
+      const parent = prior && !prior.carried ? prior.id : null
+      const id = await save(env, state, parent, result)
+      return respondTheme(req, id, parent, state, result)
     }
     case '/riff':
     case '/back': {
       requireKey(req, env)
-      const prior = await load(env, q.get('theme'))
+      const prior = await loadRef(env, q)
       const hops = hopsParam(q)
       // Locks first, so a riff never moves what this same call just locked.
       let state = applyEdits(prior.state, q, true)
       state = runOps(state, [path === '/riff' ? riffOp(hops) : backOp(hops)])
       const result = forge(state)
-      const id = await save(env, state, prior.id, result)
-      return respondTheme(req, id, prior.id, state, result)
+      const parent = prior.carried ? null : prior.id
+      const id = await save(env, state, parent, result)
+      return respondTheme(req, id, parent, state, result)
     }
     case '/state': {
       // The theme's own state, so the app can open it: /chromaconscious#t_… .
-      const t = await load(env, q.get('theme'))
+      const t = await loadRef(env, q)
       return text(encodeState(t.state), 200, 'application/json')
     }
     case '/theme': {
-      const t = await load(env, q.get('theme'))
-      return respondTheme(req, t.id, t.parent, t.state, forge(t.state))
+      const t = await loadRef(env, q)
+      return respondTheme(req, t.id, t.parent, t.state, forge(t.state), t.carried)
     }
     case '/export': {
-      const t = await load(env, q.get('theme'))
+      const t = await loadRef(env, q)
       const format = q.get('format') ?? 'css'
       // Every format's bytes come from the serializer shared with the app's
       // Export dialog (exports.ts, exportsFigma.ts): what you copy or download
-      // there is byte-for-byte what this returns.
-      // Figma before forge: its files build the theme at each contrast level
-      // themselves, and the Worker's CPU budget has no room for a fourth build.
+      // there is byte-for-byte what this returns, for theme= and state= alike.
       if (format === 'figma') {
         const mode = q.get('mode')
-        if (mode != null) {
-          if (!FIGMA_MODE_NAMES.includes(mode)) throw new QueryError(`mode is one of ${FIGMA_MODE_NAMES.join(', ')}`)
-          const file = figmaModeFile(t.state, t.id, mode)
-          if (!file) throw noColors()
-          return new Response(file.json, {
-            headers: {
-              'content-type': 'application/json',
-              'content-disposition': `attachment; filename="${file.download}"`,
-              'access-control-allow-origin': '*',
-            },
-          })
+        // No zip here: it builds the theme at three contrast levels and
+        // compresses six files, which does not fit a Workers free-plan request
+        // (10 ms CPU). The index points at the per-mode files, each one build;
+        // the app's Export dialog makes the zip in the browser.
+        if (mode == null) {
+          const ref = t.carried ? `state=${t.carried}` : `theme=${t.id}`
+          return text(JSON.stringify(figmaIndex(url.origin + base, ref, t.id), null, 2), 200, 'application/json')
         }
-        const zip = figmaZip(t.state, t.id)
-        if (!zip) throw noColors()
-        return new Response(zip.bytes as Uint8Array<ArrayBuffer>, {
+        if (!FIGMA_MODE_NAMES.includes(mode)) throw new QueryError(`mode is one of ${FIGMA_MODE_NAMES.join(', ')}`)
+        // Before forge: the mode file builds its own contrast level.
+        const file = figmaModeFile(t.state, t.id, mode)
+        if (!file) throw noColors()
+        return new Response(file.json, {
           headers: {
-            'content-type': 'application/zip',
-            'content-disposition': `attachment; filename="${zip.filename}"`,
+            'content-type': 'application/json',
+            'content-disposition': `attachment; filename="${file.download}"`,
             'access-control-allow-origin': '*',
           },
         })
       }
       const result = forge(t.state)
       if (format === 'css' || format === 'tailwind') {
-        return text(exportText(result, t.id, url.origin, format), 200, 'text/css; charset=utf-8')
+        return text(exportText(result, t, url.origin, format), 200, 'text/css; charset=utf-8')
       }
       if (format === 'json') {
         const mode = q.get('mode') ?? 'both'
         if (mode !== 'both' && mode !== 'light' && mode !== 'dark') throw new QueryError('mode is light, dark or both')
-        return text(exportText(result, t.id, url.origin, 'json', mode), 200, 'application/json')
+        return text(exportText(result, t, url.origin, 'json', mode), 200, 'application/json')
       }
       throw new QueryError('format is css, tailwind, json or figma')
     }
@@ -238,9 +271,9 @@ export function warmUp(rounds = 6) {
     summaryText(summarize('t_warmwarmwarm', null, round, result, 'https://warm.up'))
     themeTailwind(result)
     themeTokensJson(result)
-    // Once: the Figma zip's first call costs ~35 ms cold (its serializer and
-    // the deflater compiling) and ~25 ms after this, against ~9 ms warm.
-    if (i === 0) figmaExport(round)
+    // Once: a Figma mode file's serializer, and the state-link codec.
+    if (i === 0) figmaModeFile(round, 't_warmwarmwarm', 'dark-high')
+    payloadState(statePayload(encodeState(round)))
   }
 }
 

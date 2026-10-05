@@ -39,6 +39,7 @@ So a theme is a small value, about 1 KB of state, and the API treats it like a g
 - **A theme ID** (`t_k3v9x2…`) names one immutable snapshot of the state: colors, placements, taste, riff count, mono, separation, contrast level and **locks**.
   - The ID is a hash of the canonical state (below), so the same state always gets the same ID and storing it twice is harmless.
   - KV maps ID → state.
+- **A theme can also travel whole** (decided 2026-10-05). `state=<payload>` is accepted wherever `theme=<id>` is (and `/generate` takes it like `from=`); the app opens `#s=<payload>`. The payload is the canonical state packed by `src/api/stateLink.ts`: a version byte, then hexes as 3 bytes, enums and flags as bits, varints, and exact float64s for locks and off-grid settings, base64url. It is lossless (the decoded canonical text is byte-identical, so the ID matches; unit-tested over every golden fixture), needs no key and no KV, and never expires. A 5-color preset link is 74 characters with origin; 12 hexes is 126; riffed with 2 locks is 138. It was chosen over base64url JSON (2–3× longer) and deflate-raw JSON (about 2× longer: short palettes give deflate nothing to find). A newer format version is refused with a message; old links re-solve on newer engines, like old IDs.
 - **Every call that changes something creates a new snapshot** and returns its ID. The input snapshot never changes, so going back is just reusing the old ID.
 - **No tenancy is needed for themes.** Two callers riffing the same `t_x` each get their own result. The same input gives the same output, so their results are the same `t_y`, and neither can change anything the other holds.
 - **Locks live in the snapshot**, not with the caller. A lock set a week ago is still set on any theme descended from that one. A fresh `/generate` without `from=` starts with no locks.
@@ -51,10 +52,10 @@ The real problem across sessions is remembering *which* ID you were on. There ar
 1. **Exports carry their own ID.** Every export starts with a header naming the theme:
 
    ```css
-   /* ChromaConscious t_k3v9x2 · https://drewkidwell.com/chromaconscious#t_k3v9x2 */
+   /* ChromaConscious t_k3v9x2 · https://drewkidwell.com/chromaconscious#s=AQEDAR01VwDmOUYAqNrcPA */
    ```
 
-   The skill tells the agent: *if the project already has a ChromaConscious export, read the ID from its header and continue with `from=`.* The file in the repo is its own pointer back to the theme.
+   The link carries the theme whole (`#s=`), so it opens even when the ID was never stored, and the header is the same whether the export was asked for by `theme=` or `state=`. The skill tells the agent: *if the project already has a ChromaConscious export, continue from its header with `state=` (or `from=` with the ID).* The file in the repo is its own pointer back to the theme.
 2. **Named themes** *(later, key-only)*. `name=site-palette` is a movable pointer to the latest ID. This is the only per-user, changeable state in the design, so it's the only thing that needs authentication. Anonymous callers only ever deal in snapshot IDs.
 
 **Retention.**
@@ -75,6 +76,7 @@ GET  /back?theme=t_x&hops=1
 GET  /theme?theme=t_x                 re-read the summary (with &include=… for more detail)
 GET  /export?theme=t_x&format=css|tailwind|json&mode=both|light|dark
 GET  /export?theme=t_x&format=figma[&mode=light|dark|light-medium|dark-medium|light-high|dark-high]
+     …and every read above takes state=<payload> in place of theme=t_x (see "A theme can also travel whole")
 GET  /preview?theme=t_x&mockup=app|analytics|marketing|brand&mode=light|dark&as=png|html
 GET  /presets
 ```
@@ -98,11 +100,11 @@ GET  /presets
   - `css` gives CSS variables
   - `tailwind` gives the Tailwind v4 `@theme` CSS
   - `json` gives DTCG tokens
-  - `figma` gives a zip (`application/zip`) for Figma's native DTCG variable import: `README.txt` plus one file per mode × contrast level (`light.json`, `dark.json`, `light-medium.json`, `dark-medium.json`, `light-high.json`, `dark-high.json`), all three levels whatever the theme's own `contrast`. With `mode=` it returns that one file as JSON. Built by `src/figmaExport.ts` (`figmaExport(state)`), a pure function the app's Export dialog calls too, so the API and the UI emit identical bytes (unit-tested). The format rules, from Figma's import docs:
+  - `figma` serves Figma's native DTCG variable import, one file per mode × contrast level (`light.json`, `dark.json`, `light-medium.json`, `dark-medium.json`, `light-high.json`, `dark-high.json`), all three levels whatever the theme's own `contrast`. `mode=` returns that one file as JSON. **Without `mode=` it returns a JSON index** (`{ theme, note, files: [{ mode, filename, url }] }`), not a zip: the zip does not fit the Workers Free plan's 10 ms CPU (see the measurement below; Drew is on Free, decided 2026-10-05). The app's Export dialog builds the zip, with a `README.txt`, client-side via `src/figmaExport.ts`; every file in it is byte-for-byte the API's file for that mode (unit-tested per mode). The format rules, from Figma's import docs:
     - Colours are objects, `{colorSpace: "srgb", components, alpha, hex}`, with sRGB-encoded (not linear) components from 0 to 1. Nested groups become `/` names (`color/primary`, `ramp/primary/9`).
     - Figma makes a variable only for a token present in every file with the same `$type`, and silently drops the rest. `themeFigmaModes` (`engine/css.ts`) throws if the files differ, and if a name would collide after the `/` rename.
     - No aliases: role tokens are often not an exact ramp step. Shadows have no variable type, so they ride in `$extensions.chromaconscious.shadows`; the scrim is an RGBA colour variable.
-    - CPU (Node on this machine, `process.cpuUsage`, median over 60 requests across four themes): **~8.5 ms** for the zip, of which ~6.5 ms is the three theme builds (one per contrast level), ~1 ms serializing and ~2 ms deflating; ~2.5 ms for a single `&mode=` file, which builds one level. The first zip in an isolate costs ~25 ms after warm-up (~35 ms without). The zip is the one read endpoint above 5 ms. Scaled by the 1.5–2× noted under Performance it is ~13–17 ms on Cloudflare, which is over the Workers Free plan's 10 ms CPU limit and well under Paid's. Not yet measured on Cloudflare.
+    - CPU (Node on this machine, `process.cpuUsage`, median over 60 requests across four themes): **~8.5 ms** for the zip, of which ~6.5 ms is the three theme builds (one per contrast level), ~1 ms serializing and ~2 ms deflating; ~2.5 ms for a single `&mode=` file, which builds one level. The first zip in an isolate costs ~25 ms after warm-up (~35 ms without). Scaled by the 1.5–2× noted under Performance the zip would be ~13–17 ms on Cloudflare, over the Free plan's 10 ms, so the API no longer builds it. Single files with `state=` input (no KV read, and no stored walk checkpoint, so the riff walk replays), `process.cpuUsage`, walk trails cleared before each request, median of 9: a preset 2.2–4.0 ms per mode; riffed 10 hops with 2 locks 2.5–5.0 ms; riffed 50 hops 4.7–8.9 ms, the closest to budget, because the replay grows with the hop count (a `theme=` read restores the stored checkpoint instead). The index is ~0.1 ms. Not yet measured on Cloudflare.
 
   Every format includes the ID header. JSON carries it as `$extensions.chromaconscious.id`.
 
@@ -200,8 +202,8 @@ Full parameters and examples: https://drewkidwell.com/chromaconscious/docs.md
 
 ## Human ↔ agent handoff
 
-- **Agent to person.** The summary's `open` link loads the UI with `#t_…`. The UI reads it into frame A on load.
-- **Person to agent.** A "copy for agent" item next to Export. It stores the frame as a snapshot and copies the ID and link.
+- **Agent to person.** The summary's `open` link loads the UI with `#t_…` (or `#s=…` for a theme read by `state=`). The UI reads it into frame A on load; `#s=` needs no network.
+- **Person to agent.** The Export dialog's "API / agent link" copies calls that carry the frame as `state=`: nothing is stored, and reading needs no key.
 - Compare mode in the UI is simply two IDs to the API.
 
 ## Cloudflare budget
