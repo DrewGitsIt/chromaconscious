@@ -96,4 +96,25 @@ test.describe('colour rows', () => {
     await expect(page.locator('.tray-set .series .series-in')).toHaveCount(2)
     await expect(page.locator('.tray-set .series .series-add')).toHaveCount(3)
   })
+
+  test('at taste 1, "derive safely" fixes that one colour: warning and count clear, taste stays 1', async ({ page }) => {
+    await page.locator('.dial-slider').fill('1')
+    await setShipped(page, 'primary', '#f8f8f8')
+    await expect(middle(page, 'primary')).toHaveAttribute('data-kind', 'fail')
+    await expect(page.locator('.status-chip')).toContainText('issue')
+    await seat(page, 'primary').getByRole('button', { name: 'derive safely' }).click()
+    await expect(seat(page, 'primary').locator('.rb-fail')).toHaveCount(0)
+    await expect(page.locator('.status-chip')).toContainText(/^all \d+ checks pass/)
+    // the theme's taste is untouched; this one colour has its own
+    await expect(page.locator('.dial-value')).toHaveText('1.00')
+    await expect(seat(page, 'primary').locator('.rb-state')).toHaveText(/^derived safely · taste 0\.\d\d$/)
+    await expect(seat(page, 'primary').locator('.rb-in')).toHaveText('#f8f8f8')
+    await expect(middle(page, 'primary')).toHaveAttribute('data-kind', 'moved')
+    // every other colour of yours still ships as typed
+    await expect(middle(page, 'accent')).toHaveAttribute('data-kind', 'same')
+    // and it holds through a riff
+    await page.locator('.ctl-row .ctl[title^="riff"]').click()
+    await expect(seat(page, 'primary').locator('.rb-state')).toHaveText(/^derived safely/)
+    await expect(seat(page, 'primary').locator('.rb-fail')).toHaveCount(0)
+  })
 })

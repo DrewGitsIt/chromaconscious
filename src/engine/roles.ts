@@ -140,6 +140,15 @@ export function roleWindow(role: Role, monoLocked = false): RoleWindow {
 }
 
 /**
+ * A candidate's effective fidelity: the theme's, or its own when "derive
+ * safely" gave it a lower one. Never higher than the theme's.
+ */
+export function candidateFidelity(candidates: ColorCandidate[], i: number | null, fidelity: number): number {
+  const own = i != null ? candidates[i]?.fidelity : undefined
+  return typeof own === 'number' && own < fidelity ? own : fidelity
+}
+
+/**
  * Fidelity: at 0, the seed is normalized into the role's canonical window
  * (so ramps and contrast targets always work); at 1 the input is kept verbatim.
  */
@@ -333,12 +342,15 @@ export function assignRoles(
   const frozen = (i: number | null): Oklch | null =>
     i != null && candidates[i].locked === true ? (candidates[i].lockedColor ?? candidates[i].color) : null
 
+  /** A colour's own taste, when "derive safely" gave it one (see ColorCandidate.fidelity). */
+  const tasteOf = (i: number | null): number => candidateFidelity(candidates, i, fidelity)
+
   const primaryInput = roleSeeds.get('primary')!
   const baseIsPrimary = baseInput != null && primaryInput.index === monoBase
   const primarySeed =
     primaryInput.input != null
       ? (frozen(primaryInput.index) ??
-        fidelityAdjust(primaryInput.input, 'primary', fidelity, baseIsPrimary))
+        fidelityAdjust(primaryInput.input, 'primary', tasteOf(primaryInput.index), baseIsPrimary))
       : synthesize('primary', { l: 0.55, c: 0.15, h: 250 })
   // The donor every mono'd role inherits hue + chroma from: the base's own
   // colour, adjusted once, wherever on the board it happens to sit.
@@ -372,7 +384,7 @@ export function assignRoles(
       const seed =
         frozen(entry.index) ??
         monoOverride(role, entry.index) ??
-        (role === 'primary' ? primarySeed : fidelityAdjust(entry.input, role, fidelity))
+        (role === 'primary' ? primarySeed : fidelityAdjust(entry.input, role, tasteOf(entry.index)))
       return { role, candidateIndex: entry.index, seed, deltaE: deltaEok(entry.input, seed) }
     }
     return {

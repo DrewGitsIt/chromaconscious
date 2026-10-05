@@ -19,6 +19,7 @@ import {
   adjustRole,
   benchCandidate,
   deriveRole,
+  deriveSafely,
   dropCandidate,
   keepRole,
   lockRole,
@@ -84,6 +85,12 @@ export type Op =
    * value, and taste, riff and repair leave it alone. A derived seat is kept.
    */
   | { op: 'adjust'; role: Role; color: string }
+  /**
+   * The failing lock's fix: unlock the seat, and when that alone still fails
+   * (at taste 1 it always does) give that colour its own lower taste — the
+   * gentlest that passes. See board.deriveSafely.
+   */
+  | { op: 'deriveSafely'; role: Role }
   /** Set YOUR colour for a seat and let the engine derive from it (unlocks it). */
   | { op: 'input'; role: Role; color: string }
   /** A chart row's edit: your colour (derives) or the one that ships (locks as typed). */
@@ -188,6 +195,12 @@ export function applyOp<S extends ThemeState>(state: S, op: Op, ctx: OpContext):
       const view = board()
       const parsed = parseColor(op.color)
       return view && parsed ? withCandidates(setRoleInput(state.candidates, op.role, parsed, op.color, view)) : state
+    }
+    case 'deriveSafely': {
+      const view = board()
+      if (!view) return state
+      const regenerate = (next: ColorCandidate[]) => buildTheme({ ...state, candidates: next })!
+      return withCandidates(deriveSafely(state.candidates, op.role, view, state.fidelity, ctx.mode, regenerate))
     }
     case 'seriesColor': {
       const view = board()

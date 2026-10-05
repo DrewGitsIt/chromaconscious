@@ -163,6 +163,8 @@ export function buildMode(
   chartLocked: boolean[] = [],
   /** Contrast level 0..1 (contrastLevel.ts): raises every target below. 0 = historical. */
   contrast = 0,
+  /** The primary colour's own taste, when "derive safely" lowered it; else the theme's. */
+  primaryFidelity = fidelity,
 ): ThemeMode {
   const targets = contrastTargets(contrast)
   const ramps = {} as Record<Role, Ramp>
@@ -306,7 +308,7 @@ export function buildMode(
   if (unreached.has('accent-strong')) unreached.add('ring')
 
   const fill = fillMinimums(targets, contrast)
-  const primarySolid = compliantSolid(P[8], seeds.primary.h, N[0], popBudget(fidelity), fill)
+  const primarySolid = compliantSolid(P[8], seeds.primary.h, N[0], popBudget(primaryFidelity), fill)
   const dangerSolid = compliantSolid(D[8], seeds.danger.h, undefined, Infinity, fill)
   const successSolid = compliantSolid(S[8], seeds.success.h, undefined, Infinity, fill)
   const warningSolid = compliantSolid(W[8], seeds.warning.h, undefined, Infinity, fill)

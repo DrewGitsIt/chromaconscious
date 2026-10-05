@@ -26,6 +26,8 @@ interface WireCandidate {
   benched?: true
   origin?: 'invented'
   source?: 'image'
+  /** This colour's own taste ("derive safely"). Absent unless set, so old ids hold. */
+  fidelity?: number
 }
 
 interface WireState {
@@ -56,6 +58,7 @@ export function encodeState(s: ThemeState): string {
       ...(c.benched ? { benched: true as const } : {}),
       ...(c.origin ? { origin: c.origin } : {}),
       ...(c.source === 'image' ? { source: 'image' as const } : {}),
+      ...(typeof c.fidelity === 'number' ? { fidelity: c.fidelity } : {}),
     })),
     ...(s.fidelity !== 0.5 ? { fidelity: s.fidelity } : {}),
     ...(s.seed ? { seed: s.seed } : {}),
@@ -91,6 +94,9 @@ export function decodeState(text: string): ThemeState {
         : {}),
       ...(w.benched ? { benched: true } : {}),
       ...(w.origin === 'invented' ? { origin: 'invented' as const } : {}),
+      ...(typeof w.fidelity === 'number' && Number.isFinite(w.fidelity)
+        ? { fidelity: Math.min(1, Math.max(0, w.fidelity)) }
+        : {}),
     }
   })
   const base = emptyThemeState()
