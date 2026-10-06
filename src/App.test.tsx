@@ -1067,7 +1067,7 @@ describe('separation', () => {
     expect(L(painted('--card'))).toBeGreaterThan(L(painted('--background')))
     // the page is the half that receded
     expect(L(painted('--background'))).toBeLessThan(L(before.bg))
-    expect(sentence()).toMatch(/the card floats above it/)
+    expect(sentence()).toMatch(/cards float above it/)
   })
 
   it('flat converges the surfaces and stops the resting shadow', () => {
@@ -1081,7 +1081,7 @@ describe('separation', () => {
     // spelled as a transparent layer rather than `none`, because `none` inside
     // a composed box-shadow list is invalid and would drop the ring with it.
     expect(painted('--elevation-1')).toBe(EMPTY_SHADOW)
-    expect(sentence()).toMatch(/nothing casts a shadow at rest/)
+    expect(sentence()).toMatch(/no shadows/)
   })
 
   it('arrow keys walk the axis and select as they go', () => {
@@ -1106,7 +1106,7 @@ describe('separation', () => {
     const card = painted('--card')
 
     fireEvent.mouseEnter(segment('flat'))
-    expect(sentence()).toMatch(/card and page meet at one level/)
+    expect(sentence()).toMatch(/card and page exist on one level/i)
     expect(inForce()).toBe('layered')
     expect(painted('--card')).toBe(card)
 
