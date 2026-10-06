@@ -158,7 +158,7 @@ test.describe('separation moves the surface ladder, not just the control', () =>
     const card = await previewVar(page, '--card')
 
     await page.locator('.sep-opt[data-sep="lifted"]').hover()
-    await expect(caption).toHaveText(/the card floats above it/)
+    await expect(caption).toHaveText(/cards float above it/)
     await expect(page.locator('.sep-opt[data-sep="layered"]')).toHaveAttribute(
       'aria-checked',
       'true',
