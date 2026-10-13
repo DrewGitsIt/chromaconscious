@@ -10,18 +10,16 @@ import { figmaExport, figmaModeFiles } from '../figmaExport'
 import { unzipSync } from 'fflate'
 import { applyOp, buildTheme, emptyThemeState } from '../ops'
 
-const KEY = 'test-key-123'
 const memoryEnv = (): Env & { size: () => number } => {
   const m = new Map<string, string>()
   return {
     THEMES: { get: async (k) => m.get(k) ?? null, put: async (k, v) => void m.set(k, v) },
-    CHROMACONSCIOUS_API_KEYS: `other-key, ${KEY}`,
     size: () => m.size,
   }
 }
-const call = async (env: Env, path: string, json = false, key: string | null = KEY) => {
+const call = async (env: Env, path: string, json = false) => {
   const url = `https://drewkidwell.com/api/chromaconscious/v1${path}${json ? (path.includes('?') ? '&' : '?') + 'as=json' : ''}`
-  const res = await handle(new Request(url, { headers: key ? { authorization: `Bearer ${key}` } : {} }), env)
+  const res = await handle(new Request(url), env)
   return { status: res.status, body: await res.text() }
 }
 const summary = async (env: Env, path: string) => {
@@ -269,17 +267,36 @@ describe('api', () => {
     expect(cold.seats).toEqual(warm.seats)
   })
 
-  it('creating needs a valid key; reading an existing theme does not', async () => {
+  it('creates and reads with no key; a sent Authorization header is ignored', async () => {
     const env = memoryEnv()
-    expect((await call(env, '/generate?preset=ink-sky', false, null)).status).toBe(401)
-    expect((await call(env, '/generate?preset=ink-sky', false, 'wrong')).status).toBe(403)
     const g = await summary(env, '/generate?preset=ink-sky')
-    expect((await call(env, `/riff?theme=${g.theme}`, false, null)).status).toBe(401)
-    for (const path of [`/theme?theme=${g.theme}`, `/export?theme=${g.theme}`, `/state?theme=${g.theme}`, '/presets'])
-      expect((await call(env, path, false, null)).status, path).toBe(200)
-    // unset secret: nobody may create
-    const closed = { ...env, CHROMACONSCIOUS_API_KEYS: undefined }
-    expect((await call(closed, '/generate?preset=ink-sky')).status).toBe(403)
+    expect(env.size()).toBe(1)
+    expect((await call(env, `/riff?theme=${g.theme}`)).status).toBe(200)
+    const withHeader = new Request('https://drewkidwell.com/api/chromaconscious/v1/generate?preset=ink-sky&as=json', {
+      headers: { authorization: 'Bearer anything' },
+    })
+    expect((await (await handle(withHeader, env)).json()).theme).toBe(g.theme)
+  })
+
+  it('a failed store write still answers, with the theme carried as state=', async () => {
+    const env = memoryEnv()
+    const stored = await summary(env, '/generate?preset=ink-sky')
+    const full: Env = { THEMES: { get: async () => null, put: async () => { throw new Error('KV put() limit exceeded for the day.') } } }
+    const g = await summary(full, '/generate?preset=ink-sky')
+    expect(g.theme).toBe(stored.theme) // same id: the state is the same
+    expect(g.links.open).toContain('#s=')
+    const carried = new URL(g.links.export).searchParams.get('state')!
+    expect((await call(env, `/theme?state=${carried}&as=json`)).body).toContain(g.theme)
+    const r = await summary(full, `/riff?state=${carried}&hops=2`)
+    expect(r.links.open).toContain('#s=')
+  })
+
+  it('the bare base URL is an index that points agents at the skill', async () => {
+    const r = await call(memoryEnv(), '')
+    expect(r.status).toBe(200)
+    expect(r.body).toContain('https://drewkidwell.com/chromaconscious/skill/SKILL.md')
+    expect(r.body).toContain('curl -s "https://drewkidwell.com/api/chromaconscious/v1/generate?preset=coastal-starter"')
+    expect((await call(memoryEnv(), '/')).body).toBe(r.body)
   })
 
   it('says which of your colors moved, why, and how to keep them', async () => {
@@ -313,7 +330,7 @@ describe('api', () => {
     const env = memoryEnv()
     const g = await summary(env, '/generate?preset=terracotta&lock=primary&taste=0.7')
     const r = await summary(env, `/riff?theme=${g.theme}&hops=2`)
-    const state = decodeState((await call(env, `/state?theme=${r.theme}`, false, null)).body)
+    const state = decodeState((await call(env, `/state?theme=${r.theme}`)).body)
     const css = (await call(env, `/export?theme=${r.theme}`)).body.split('\n').slice(1).join('\n')
     expect(buildTheme(state)!.css).toBe(css)
   })
@@ -321,8 +338,7 @@ describe('api', () => {
 
 describe('the legacy name keeps working after the rename', () => {
   const OLD = 'themesmith' // legacy: the name before ChromaConscious
-  const req = (path: string, key: string | null = KEY) =>
-    new Request(`https://drewkidwell.com${path}`, { headers: key ? { authorization: `Bearer ${key}` } : {}, redirect: 'manual' })
+  const req = (path: string) => new Request(`https://drewkidwell.com${path}`, { redirect: 'manual' })
 
   it('the old API base is an alias: same theme, same id, same export', async () => {
     const env = memoryEnv()
@@ -330,10 +346,10 @@ describe('the legacy name keeps working after the rename', () => {
     const viaOld = await handle(req(`/api/${OLD}/v1/generate?preset=ink-sky&as=json`), env)
     expect(viaOld.status).toBe(200)
     expect((await viaOld.json()).theme).toBe(g.theme)
-    const oldCss = await (await handle(req(`/api/${OLD}/v1/export?theme=${g.theme}`, null), env)).text()
+    const oldCss = await (await handle(req(`/api/${OLD}/v1/export?theme=${g.theme}`), env)).text()
     expect(oldCss).toBe((await call(env, `/export?theme=${g.theme}`)).body)
     // a prefix that only looks like a base is not one
-    expect((await handle(req(`/api/${OLD}/v1x/presets`, null), env)).status).toBe(404)
+    expect((await handle(req(`/api/${OLD}/v1x/presets`), env)).status).toBe(404)
   })
 
   it('JSON exports carry the id under both $extensions keys', async () => {
@@ -342,14 +358,6 @@ describe('the legacy name keeps working after the rename', () => {
     const json = JSON.parse((await call(env, `/export?theme=${g.theme}&format=json`)).body)
     expect(json.$extensions.chromaconscious.id).toBe(g.theme)
     expect(json.$extensions[OLD]).toEqual(json.$extensions.chromaconscious)
-  })
-
-  it('reads the legacy secret name when the new one is unset, and prefers the new one', async () => {
-    const legacyOnly: Env = { THEMES: memoryEnv().THEMES, [`${OLD.toUpperCase()}_API_KEYS`]: KEY }
-    expect((await call(legacyOnly, '/generate?preset=ink-sky')).status).toBe(200)
-    const both: Env = { THEMES: memoryEnv().THEMES, CHROMACONSCIOUS_API_KEYS: 'new-key', [`${OLD.toUpperCase()}_API_KEYS`]: KEY }
-    expect((await call(both, '/generate?preset=ink-sky')).status).toBe(403)
-    expect((await call(both, '/generate?preset=ink-sky', false, 'new-key')).status).toBe(200)
   })
 
   it('old app links 301 to the new path, keeping the query; the #t_ fragment rides along in the browser', async () => {
@@ -361,7 +369,7 @@ describe('the legacy name keeps working after the rename', () => {
       [`/${OLD}/docs.md`, '/chromaconscious/docs.md'],
       [`/${OLD}/skill/SKILL.md`, '/chromaconscious/skill/SKILL.md'],
     ]) {
-      const res = await handle(req(from, null), env)
+      const res = await handle(req(from), env)
       expect(res.status, from).toBe(301)
       expect(res.headers.get('location'), from).toBe(`https://drewkidwell.com${to}`)
     }
@@ -486,14 +494,14 @@ describe('state= : deep riffs are declined, stored themes are not', () => {
     const env = memoryEnv()
     const p = payloadAt(STATE_MAX_HOPS)
     for (const path of [`/theme?state=${p}`, `/state?state=${p}`, `/export?state=${p}&format=css`, `/export?state=${p}&format=figma&mode=dark`])
-      expect((await call(env, path, false, null)).status, path).toBe(200)
+      expect((await call(env, path)).status, path).toBe(200)
   })
 
   it('declines one hop past it with a 422 that names the depth, the limit, the app link and the way round', async () => {
     const env = memoryEnv()
     const p = payloadAt(STATE_MAX_HOPS + 1)
     for (const path of [`/theme?state=${p}`, `/state?state=${p}`, `/export?state=${p}&format=css`, `/export?state=${p}&format=figma`]) {
-      const r = await call(env, path, false, null)
+      const r = await call(env, path)
       expect(r.status, path).toBe(422)
       expect(r.body).toContain(`riffed ${STATE_MAX_HOPS + 1} hops deep`)
       expect(r.body).toContain(`up to ${STATE_MAX_HOPS} hops`)
@@ -514,6 +522,6 @@ describe('state= : deep riffs are declined, stored themes are not', () => {
     const canonical = encodeState(s)
     const id = await themeId(canonical)
     await env.THEMES.put(id, JSON.stringify({ state: canonical, parent: null }))
-    expect((await call(env, `/export?theme=${id}&format=css`, false, null)).status).toBe(200)
+    expect((await call(env, `/export?theme=${id}&format=css`)).status).toBe(200)
   })
 })

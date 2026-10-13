@@ -103,8 +103,7 @@ export function shareLink(origin: string, payload: string, params: Record<string
 
 /**
  * The agent's starter calls, in the shape public/docs.md teaches them. Each
- * carries the theme as `state=`, so none needs a key or a stored theme;
- * only riff, which makes a new theme, needs a key.
+ * carries the theme as `state=`, so none needs a stored theme.
  */
 export function agentCalls(origin: string, payload: string): string {
   const base = `${origin}${API_BASE_PATH}`
@@ -114,7 +113,7 @@ export function agentCalls(origin: string, payload: string): string {
     `curl -s "${base}/export?${ref}&format=css"`,
     `curl -s "${base}/export?${ref}&format=json&mode=dark"`,
     `curl -s "${base}/export?${ref}&format=figma&mode=dark"`,
-    `curl -s -H "Authorization: Bearer $KEY" "${base}/riff?${ref}&hops=3"`,
+    `curl -s "${base}/riff?${ref}&hops=3"`,
     '',
     `docs: ${origin}/chromaconscious/docs.md`,
   ].join('\n')
@@ -181,9 +180,9 @@ export const EXPORT_FORMATS: ExportFormat[] = [
     id: 'api',
     group: 'links',
     name: 'API / agent link',
-    sub: 'no key needed to read',
+    sub: 'no key needed',
     about:
-      'An agent can read or export this exact theme over the API by passing `state=`, which is the same payload as the share link. Reading needs no key and nothing is saved. Riffing makes a new theme, so that call needs a key.',
+      'An agent can read or export this exact theme over the API by passing `state=`, which is the same payload as the share link. No key is needed, and reading saves nothing.',
     preview: { kind: 'code', label: 'API calls', text: (ctx) => agentCalls(ctx.origin, ctx.payload) },
     copy: [
       {

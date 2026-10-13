@@ -15,7 +15,7 @@ Use the golden fixture: the "Coastal starter" preset at default settings. The ex
 - Or the real zip: run `npm run dev:cf`, generate the preset, then download it. The zip should hold `README.txt` plus six `.json` files.
 
   ```sh
-  curl -s -H "Authorization: Bearer $KEY" "http://localhost:8787/api/chromaconscious/v1/generate?preset=coastal-starter"
+  curl -s "http://localhost:8787/api/chromaconscious/v1/generate?preset=coastal-starter"
   curl -s -o cc.zip "http://localhost:8787/api/chromaconscious/v1/export?theme=t_…&format=figma"
   unzip -l cc.zip
   ```

@@ -14,20 +14,15 @@ import { EXPORT_FORMATS, agentCalls, shareLink, visionParams } from './formats'
 import { DEFAULT_PAGE, pageLinkParams } from '../../pageSettings'
 
 const ORIGIN = 'https://drewkidwell.com'
-const KEY = 'k'
 const memoryEnv = () => {
   const m = new Map<string, string>()
   const env: Env = {
     THEMES: { get: async (k) => m.get(k) ?? null, put: async (k, v) => void m.set(k, v) },
-    CHROMACONSCIOUS_API_KEYS: KEY,
   }
   return { env, m }
 }
 const api = async (env: Env, path: string) => {
-  const res = await handle(
-    new Request(`${ORIGIN}/api/chromaconscious/v1${path}`, { headers: { authorization: `Bearer ${KEY}` } }),
-    env,
-  )
+  const res = await handle(new Request(`${ORIGIN}/api/chromaconscious/v1${path}`), env)
   expect(res.status).toBe(200)
   return res.text()
 }
@@ -194,13 +189,12 @@ describe('links', () => {
     expect(visionParams('typical', 0.4)).toEqual({})
   })
 
-  it('the agent calls carry state=, and only riff asks for a key', () => {
+  it('the agent calls carry state=, and none asks for a key', () => {
     const calls = agentCalls(ORIGIN, 'AQAB')
     expect(calls).toContain(`${ORIGIN}/api/chromaconscious/v1/export?state=AQAB&format=css`)
     expect(calls).toContain(`${ORIGIN}/api/chromaconscious/v1/export?state=AQAB&format=figma&mode=dark`)
-    expect(calls.split('\n').filter((l) => l.includes('Bearer'))).toEqual([
-      expect.stringContaining('/riff?state=AQAB'),
-    ])
+    expect(calls).toContain(`${ORIGIN}/api/chromaconscious/v1/riff?state=AQAB&hops=3`)
+    expect(calls).not.toContain('Bearer')
     expect(calls).toContain(`${ORIGIN}/chromaconscious/docs.md`)
   })
 

@@ -16,27 +16,18 @@ The API drives the same engine, with the same verbs, as the app at https://drewk
 
 - **Themes are immutable snapshots.** Every call that changes something returns a new theme id (`t_` followed by 12 characters). The theme you started from is never modified. To undo, use the older id.
 - **The id is a hash of the theme's state.** The same inputs always give the same id, so repeating a call is harmless.
-- **A theme can also travel whole, as `state=`.** Every read endpoint takes `state=<payload>` wherever it takes `theme=<id>`. The payload is the theme's entire state, packed (about 30 characters for a 5-color preset). It needs no key and no stored theme, never expires, and has the same id the stored theme would. App share links (`#s=…`) and export headers carry it. See [State links](#state-links).
+- **A theme can also travel whole, as `state=`.** Every read endpoint takes `state=<payload>` wherever it takes `theme=<id>`. The payload is the theme's entire state, packed (about 30 characters for a 5-color preset). It needs no stored theme, never expires, and has the same id the stored theme would. App share links (`#s=…`) and export headers carry it. See [State links](#state-links).
 - **A lock freezes a seat where it currently stands.** That can be several riffs away from the color you typed. A lock persists into every theme descended from the one it was set on, until you `unlock` it. The lock is the only thing riff cannot move.
 - **Colors are addressed by role, chart slot (`chart-1`…`chart-5`) or hex, never by position.** A position shifts when a color is removed; a role does not.
 - **Light and dark are both always present.** `mode` only selects which one an export shows.
 - **Your colors may be adjusted; `taste=1` keeps them as typed.** Below 1, a color outside its role's range is pulled toward it, and a color too close to a neighbor is pushed apart. The summary's `adjusted` lines say which colors moved, why, and how to stop it. See [Adjustments](#adjustments).
 - **Chart colors are a series stepped from the accent.** `chart-1` is the accent, and derived chart colors move with it. Supply `chart:hex` colors to set them yourself.
 
-## Authentication
+## Access
 
-`/generate`, `/riff` and `/back` create themes, so they need a key:
+No key is needed for any endpoint; an `Authorization` header is ignored. `GET` the base URL for a short index.
 
-```
-Authorization: Bearer <key>
-```
-
-Reading a theme (`/theme`, `/export`, `/state`, `/presets`) needs no key, whether by `theme=` or `state=`.
-
-| status | meaning |
-|---|---|
-| 401 | No key was sent. |
-| 403 | The key is not valid. |
+If the theme store is unavailable, `/generate` and `/riff` still answer: the theme comes back carried, with `#s=…` and `state=…` links in place of `#t_…`. Use those as you would an id.
 
 ## Endpoints
 
@@ -63,8 +54,7 @@ At least one of `colors`, `preset` or `from` is required.
 **Order of operations:** colors first, then settings, then placements, then locks.
 
 ```
-curl -s -H "Authorization: Bearer $KEY" \
-  "https://drewkidwell.com/api/chromaconscious/v1/generate?colors=primary:1d3557,e63946,a8dadc&taste=0.6"
+curl -s "https://drewkidwell.com/api/chromaconscious/v1/generate?colors=primary:1d3557,e63946,a8dadc&taste=0.6"
 ```
 
 ```
@@ -145,8 +135,7 @@ Every unlocked seat takes a small step through color space, including colors you
 | `as` | `json` | | JSON summary. |
 
 ```
-curl -s -H "Authorization: Bearer $KEY" \
-  "https://drewkidwell.com/api/chromaconscious/v1/riff?theme=t_levvog6reokv&lock=primary"
+curl -s "https://drewkidwell.com/api/chromaconscious/v1/riff?theme=t_levvog6reokv&lock=primary"
 ```
 
 ```
@@ -170,7 +159,7 @@ Same parameters as `/riff`. `hops` steps back that many, stopping at riff 0. Goi
 
 ### `GET /theme`: read a theme's summary
 
-`theme` or `state` (one is required), and `as`. No key needed.
+`theme` or `state` (one is required), and `as`.
 
 ### `GET /export`: the theme as code
 
@@ -207,6 +196,8 @@ curl -s "https://drewkidwell.com/api/chromaconscious/v1/export?state=AgEDAR01VwD
 - Colours are `{colorSpace: "srgb", components: [r, g, b], alpha, hex}`, with sRGB-encoded components from 0 to 1. Values are plain colours, not aliases.
 - Shadows have no Figma variable type. The `elevation-1`…`3` shadows are DTCG shadow tokens under `$extensions.chromaconscious.shadows`, which Figma ignores on import.
 - On a paid Figma plan, drag all the files into one collection to get one mode each. The free Starter plan allows one mode per collection, so import each file as its own collection. The app's README says the same.
+**Ramps.** Each role has a 12-step ramp, exported only in `format=figma` as `ramp/<role>/<1–12>`. Steps 1–8 are surfaces and lines, from the page outward: on the neutral ramp, 1 is `background`, 2 `card`, 3 `muted`, 6 `border` and 7 `input`. Step 9 is the role's solid color (the seat) and 10 its hover. Steps 11 and 12 are text solved against step 3: 11 is `muted-foreground`, 12 is `foreground`. Steps 9 and 10 sit outside the surface ladder: a dark neutral seat puts a near-black step 9 into the light ramp. Map surfaces from steps 1–8 and text from 11–12, never 1–12 in order.
+
 Each file is a pure function of the theme: every file in the app's zip is byte-for-byte the API's file for that mode.
 
 Exports made before the rename start with the legacy `/* themesmith t_… */` header. Read either prefix; the id after it is the same kind of id and still opens. JSON exports also carry the id under the legacy key `$extensions.themesmith.id`, so older readers keep working.
@@ -228,9 +219,23 @@ Exports made before the rename start with the legacy `/* themesmith t_… */` he
 
 ChromaConscious makes **colors only**. Radius, spacing and type are up to you, and there are no hover tokens: derive them, for example `color-mix(in oklab, var(--primary) 88%, var(--foreground))`.
 
+**Mapping to your own tokens.** A seat is a fill color, like a light-mode button. Roles have lightness ranges, and the engine derives dark mode itself. So seed each seat with the color you'd fill a light-mode button or badge with, not a finished dark-mode token or a text tint. Each seat does one job; translate your tokens by job, not by name:
+
+| seat | its job | what it becomes |
+|---|---|---|
+| `primary` | The brand color: what people click, and the loudest voice in the theme. | `--primary` and `--sidebar-primary` (buttons). |
+| `accent` | The quiet second voice: where you are, what's selected, what's linked. | `--accent` (hover and selected tint), `--accent-strong` (tab indicator), `--ring`, `--link`, `--chart-1`. |
+| `neutral` | Surfaces, lines and text. Most of the pixels on screen, so it decides how the theme feels. | `--background`, `--card`, `--muted`, `--border`, `--input`, `--foreground`, `--muted-foreground`. |
+| `danger` | Destructive actions and errors: the only color allowed to alarm. | `--destructive`, with `-subtle` and `-strong`. |
+| `success` | Confirmations and healthy states. | `--success`, with `-subtle` and `-strong`. |
+| `warning` | Cautions that aren't failures: expiring, degraded, needs a look. | `--warning`, with `-subtle` and `-strong`. |
+| `chart` | Data series, kept apart from each other and from the page. | `--chart-1` … `--chart-5`. |
+
+When your system has a job no seat names, use the seat whose job is closest. An `info` color, for example, informs without alarming, which is accent's job.
+
 ### `GET /state`: a theme's inputs
 
-Returns the theme's canonical state as JSON (the colors, pins, locks, taste, riff count and so on). The app uses this to open `#t_…` links. Takes `theme` or `state`. No key needed.
+Returns the theme's canonical state as JSON (the colors, pins, locks, taste, riff count and so on). The app uses this to open `#t_…` links. Takes `theme` or `state`.
 
 ```
 {"v":1,"candidates":[{"color":"#1d3557","pin":"primary","locked":true,"lockedColor":[0.376791374653954,0.06945781888014638,257.5119625619583]},{"color":"#e63946"},{"color":"#a8dadc"}],"fidelity":0.6,"seed":1}
@@ -248,7 +253,7 @@ Returns the theme's canonical state as JSON (the colors, pins, locks, taste, rif
 | riffed 10 hops, 2 locks | 138 |
 | taste 1, two colors "derived safely" | 78 |
 
-**A `state=` theme may be riffed at most 40 hops.** A link carries no riff checkpoint, so the API would replay every hop, and that cost grows with depth. Past 40 every endpoint that takes `state=` answers `422` with a message giving the theme's depth and the limit. The same link still opens in the app, which has no limit. To work with deeper themes over the API, build them with `/generate` and `/riff` using your key: each stored theme keeps a checkpoint, and `theme=t_…` reads have no limit.
+**A `state=` theme may be riffed at most 40 hops.** A link carries no riff checkpoint, so the API would replay every hop, and that cost grows with depth. Past 40 every endpoint that takes `state=` answers `422` with a message giving the theme's depth and the limit. The same link still opens in the app, which has no limit. To work with deeper themes over the API, build them with `/generate` and `/riff`: each stored theme keeps a checkpoint, and `theme=t_…` reads have no limit.
 
 The first byte is a format version (now 2; version 1 links still open). A link made by a newer version gets a 422 from the API (the app shows a note and opens empty). Like an id, an old link re-solves on a newer engine: unlocked colors may shift slightly, and locked ones stay exact.
 
@@ -275,7 +280,6 @@ Errors come back as plain text that names the parameter and says how to fix it.
 | status | when |
 |---|---|
 | 400 | `theme` is missing or isn't a theme id. |
-| 401 / 403 | See [Authentication](#authentication). |
 | 404 | No such theme or endpoint. |
 | 400 | Both `theme=` and `state=` were passed. Pass one. |
 | 422 | A parameter is invalid, a `state=` payload is cut short or unreadable, or a `state=` theme is riffed past 40 hops (see [State links](#state-links)). For example: `unknown role "primry" in colors — roles are primary, accent, neutral, danger, success, warning, chart` |

@@ -25,14 +25,6 @@ export interface ThemeStore {
 
 export interface Env {
   THEMES: ThemeStore
-  /**
-   * Comma-separated keys allowed to create themes (a Worker secret:
-   * `wrangler secret put CHROMACONSCIOUS_API_KEYS`). Reading an existing theme
-   * needs none. Unset means nobody may create — the API fails closed.
-   */
-  CHROMACONSCIOUS_API_KEYS?: string
-  /** The legacy secret name from before the rename, read only when the new one is unset. */
-  THEMESMITH_API_KEYS?: string // legacy
 }
 
 /** The API's base path. The legacy themesmith path stays an alias, so existing clients keep working. */
@@ -86,7 +78,7 @@ function tooDeep(hops: number, carried: string, origin: string): HttpError {
     `this theme is riffed ${hops} hops deep, and themes passed as state= are built only up to ${STATE_MAX_HOPS} hops: ` +
       `a link carries no riff checkpoint, so every hop would be replayed. ` +
       `The same link opens fine in the app: ${origin}/chromaconscious#s=${carried}. ` +
-      `Agents: create the theme with /generate and /riff using your key; each stored theme keeps a checkpoint, and theme=t_… reads have no hop limit.`,
+      `Agents: create the theme with /generate and /riff instead; each stored theme keeps a checkpoint, and theme=t_… reads have no hop limit.`,
   )
 }
 
@@ -140,15 +132,29 @@ const forge = (state: ThemeState): ThemeResult => {
 /**
  * Store a snapshot, with the walk checkpoint it was built at. Its id is its
  * content hash, so an existing id is already right and is not rewritten.
+ *
+ * A failed write (the Workers Free plan allows ~1,000 KV writes a day) is not
+ * the caller's problem: the theme comes back carried, as `state=`, which needs
+ * no store. `carried` is then the payload to answer with.
  */
-async function save(env: Env, state: ThemeState, parent: string | null, result: ThemeResult): Promise<string> {
+async function save(
+  env: Env,
+  state: ThemeState,
+  parent: string | null,
+  result: ThemeResult,
+): Promise<{ id: string; carried?: string }> {
   const canonical = encodeState(state)
   const id = await themeId(canonical)
-  if ((await env.THEMES.get(id)) == null) {
-    const walk = walkCheckpoint(result)
-    await env.THEMES.put(id, JSON.stringify({ state: canonical, parent, ...(walk ? { walk } : {}) }))
+  try {
+    if ((await env.THEMES.get(id)) == null) {
+      const walk = walkCheckpoint(result)
+      await env.THEMES.put(id, JSON.stringify({ state: canonical, parent, ...(walk ? { walk } : {}) }))
+    }
+  } catch (err) {
+    console.error('theme store failed; answering with state=', err)
+    return { id, carried: statePayload(canonical) }
   }
-  return id
+  return { id }
 }
 
 function respondTheme(
@@ -167,22 +173,25 @@ function respondTheme(
   return text(summaryText(summary))
 }
 
-/** Byte-wise compare that takes the same time wherever the first difference is. */
-function sameKey(a: string, b: string): boolean {
-  const x = new TextEncoder().encode(a)
-  const y = new TextEncoder().encode(b)
-  let diff = x.length ^ y.length
-  for (let i = 0; i < Math.max(x.length, y.length); i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0)
-  return diff === 0
-}
+/**
+ * What the bare base URL answers: the one URL a person hands an agent, so it
+ * points at the skill first and shows enough to make a first call.
+ */
+function apiIndex(api: string, origin: string): string {
+  return `ChromaConscious API v1: complete UI color themes (light + dark, contrast-checked,
+shadcn/Tailwind tokens) from a few colors.
 
-/** Creating a theme writes to KV, so it needs a key; reading one does not. */
-function requireKey(req: Request, env: Env) {
-  const keys = (env.CHROMACONSCIOUS_API_KEYS ?? env.THEMESMITH_API_KEYS ?? '') // legacy secret name as fallback
-    .split(',').map((k) => k.trim()).filter(Boolean)
-  const given = /^Bearer\s+(.+)$/i.exec(req.headers.get('authorization') ?? '')?.[1]?.trim()
-  if (!given) throw new HttpError(401, 'creating themes needs a key — send the header "Authorization: Bearer <key>"')
-  if (!keys.some((k) => sameKey(k, given))) throw new HttpError(403, 'that key is not valid for this API')
+Agents, start here: ${origin}/chromaconscious/skill/SKILL.md
+Full reference:     ${origin}/chromaconscious/docs.md
+
+GET /generate?colors=1d3557,e63946      make a theme
+GET /riff?theme=t_…                     explore variations
+GET /theme?theme=t_…                    read a theme's summary
+GET /export?theme=t_…&format=css        css · tailwind · json · figma
+GET /presets                            starter palettes
+
+Try: curl -s "${api}/generate?preset=coastal-starter"
+`
 }
 
 async function route(req: Request, env: Env): Promise<Response> {
@@ -193,8 +202,9 @@ async function route(req: Request, env: Env): Promise<Response> {
   const q = url.searchParams
 
   switch (path) {
+    case '/':
+      return text(apiIndex(url.origin + base, url.origin))
     case '/generate': {
-      requireKey(req, env)
       // A start: a stored theme (from=), a carried one (state=), or nothing.
       const prior = q.get('from') || q.get('state') != null ? await loadRef(env, q, 'from', url.origin) : null
       let state = prior?.state ?? emptyThemeState()
@@ -207,12 +217,11 @@ async function route(req: Request, env: Env): Promise<Response> {
       const result = forge(state)
       // a carried start was never stored, so it is nobody's parent
       const parent = prior && !prior.carried ? prior.id : null
-      const id = await save(env, state, parent, result)
-      return respondTheme(req, id, parent, state, result)
+      const saved = await save(env, state, parent, result)
+      return respondTheme(req, saved.id, parent, state, result, saved.carried)
     }
     case '/riff':
     case '/back': {
-      requireKey(req, env)
       const prior = await loadRef(env, q, 'theme', url.origin)
       const hops = hopsParam(q)
       // Locks first, so a riff never moves what this same call just locked.
@@ -222,8 +231,8 @@ async function route(req: Request, env: Env): Promise<Response> {
       if (prior.carried && state.seed > STATE_MAX_HOPS) throw tooDeep(state.seed, prior.carried, url.origin)
       const result = forge(state)
       const parent = prior.carried ? null : prior.id
-      const id = await save(env, state, parent, result)
-      return respondTheme(req, id, parent, state, result)
+      const saved = await save(env, state, parent, result)
+      return respondTheme(req, saved.id, parent, state, result, saved.carried)
     }
     case '/state': {
       // The theme's own state, so the app can open it: /chromaconscious#t_… .
