@@ -165,6 +165,8 @@ export function buildMode(
   contrast = 0,
   /** The primary colour's own taste, when "derive safely" lowered it; else the theme's. */
   primaryFidelity = fidelity,
+  /** The neutral colour's own taste when the neutral is yours; unset when derived. */
+  neutralFidelity?: number,
 ): ThemeMode {
   const targets = contrastTargets(contrast)
   const ramps = {} as Record<Role, Ramp>
@@ -176,6 +178,7 @@ export function buildMode(
       isNeutral: role === 'neutral',
       separation,
       contrast,
+      ...(role === 'neutral' && neutralFidelity != null ? { fidelity: neutralFidelity } : {}),
     })
     ramps[role] = ramp.hex
     unreachedSteps[role] = ramp.unreached
@@ -295,9 +298,10 @@ export function buildMode(
 
   // Link text: the accent as running-text color. Same APCA + WCAG double gate
   // as ramp text steps (Lc 62 / 4.5:1 at standard), solved against every
-  // surface links actually sit on — page, card, and the success banner's wash.
+  // surface links actually sit on — page, card, the success banner's wash, and
+  // the accent's own hover/selected tint (a link in a selected row).
   const link = toHex(
-    solveOnSurfaces('link', [N[0], N[1], S[1]], targets.text.lc, targets.text.wcag, seeds.accent.h, () =>
+    solveOnSurfaces('link', [N[0], N[1], S[2], A[2]], targets.text.lc, targets.text.wcag, seeds.accent.h, () =>
       Math.min(seeds.accent.c * (mode === 'dark' ? 0.45 : 0.6), mode === 'dark' ? 0.08 : 0.11),
     ),
   )
@@ -359,19 +363,19 @@ export function buildMode(
     link,
     destructive: dangerSolid.bg,
     'destructive-foreground': dangerSolid.fg,
-    'destructive-subtle': D[1],
+    'destructive-subtle': D[2],
     'destructive-subtle-foreground': D[10],
     // Non-text status marks (dots, icons), solved like accent-strong. Additive:
     // every token above is unchanged by their existence.
     'destructive-strong': destructiveStrong,
     success: successSolid.bg,
     'success-foreground': successSolid.fg,
-    'success-subtle': S[1],
+    'success-subtle': S[2],
     'success-subtle-foreground': S[10],
     'success-strong': successStrong,
     warning: warningSolid.bg,
     'warning-foreground': warningSolid.fg,
-    'warning-subtle': W[1],
+    'warning-subtle': W[2],
     'warning-subtle-foreground': W[10],
     'warning-strong': warningStrong,
     border: N[5],

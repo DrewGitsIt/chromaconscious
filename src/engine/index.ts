@@ -300,8 +300,12 @@ export function generateTheme(options: GenerateOptions): ThemeResult {
   // The primary fill's pop budget is spent from the primary colour's own taste.
   const primaryCi = finalAssignments.find((a) => a.role === 'primary')?.candidateIndex ?? null
   const primaryFidelity = candidateFidelity(options.candidates, primaryCi, fidelity)
-  const light = buildMode(seeds, chartSeeds, 'light', fidelity, monoSeed, separation, chartLocked, contrast, primaryFidelity)
-  const dark = buildMode(seeds, chartSeeds, 'dark', fidelity, monoSeed, separation, chartLocked, contrast, primaryFidelity)
+  // Dark surfaces loosen with the neutral's taste, but only for a neutral of
+  // yours: a derived one was never a colour anyone asked to keep.
+  const neutralCi = finalAssignments.find((a) => a.role === 'neutral')?.candidateIndex ?? null
+  const neutralFidelity = neutralCi == null ? undefined : candidateFidelity(options.candidates, neutralCi, fidelity)
+  const light = buildMode(seeds, chartSeeds, 'light', fidelity, monoSeed, separation, chartLocked, contrast, primaryFidelity, neutralFidelity)
+  const dark = buildMode(seeds, chartSeeds, 'dark', fidelity, monoSeed, separation, chartLocked, contrast, primaryFidelity, neutralFidelity)
 
   const result: ThemeResult = {
     light,

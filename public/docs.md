@@ -107,6 +107,8 @@ Every color you supply goes through these steps, in order. The `adjusted` line n
 
 A color inside its range, with no close neighbor, isn't touched at any taste.
 
+**Taste also reaches dark surfaces, for a neutral of yours.** Dark-mode surfaces normally stay close to gray whatever the neutral. Above `0.5`, taste loosens that: by `taste=1` dark surfaces carry up to twice the chroma, and a neutral that is itself a dark surface color (a navy, a near-black) sets their lightness, within a few points. At `0.5` and below, and for a neutral the engine derived, nothing changes.
+
 ### Contrast level
 
 `contrast` raises the targets every token is solved for, like Material 3's contrast levels. It never changes which color sits in which seat, and it doesn't change what `taste` means: taste still decides how far *your* color may move. Raising the level never lowers any checked pair: a fill that can't reach its label target without sinking toward the page (or spending drift taste didn't grant) stays where it is, and the label miss is reported.

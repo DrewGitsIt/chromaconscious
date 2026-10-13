@@ -3,6 +3,7 @@ import type { ThemeResult } from './index'
 import { candidatesFromList, generateTheme, parseColor, resolveBrand, wcagRatio } from './index'
 import { deltaEok, hueDistance } from './color'
 import { extractCandidates } from './extract'
+import { makeRamp } from './ramp'
 
 const PALETTE = ['#e63946', '#f1faee', '#a8dadc', '#457b9d', '#1d3557']
 
@@ -515,5 +516,44 @@ describe('brand adapter', () => {
       expect(wcagRatio(b.brand, b.paper), 'brand pops off paper').toBeGreaterThanOrEqual(3)
       expect(wcagRatio(b.accentInk, b.accent), 'accentInk on accent').toBeGreaterThanOrEqual(4.5)
     }
+  })
+})
+
+describe('taste above 0.5 loosens dark surfaces, for a neutral of yours', () => {
+  // Glacier's navy, the case that came back slate at taste 1.
+  const navy = (fidelity: number) => {
+    const candidates = candidatesFromList(['#65a5c8', '#09263f'])
+    candidates[0].pin = 'primary'
+    candidates[1].pin = 'neutral'
+    return generateTheme({ candidates, fidelity })
+  }
+  const page = (r: ThemeResult) => parseColor(r.dark.tokens.background)!
+
+  it('keeps the navy in dark surfaces at taste 1: more chroma, and its own lightness', () => {
+    const half = page(navy(0.5))
+    const full = page(navy(1))
+    expect(half.c).toBeLessThanOrEqual(0.031)
+    expect(full.c).toBeGreaterThan(0.05)
+    expect(full.l).toBeGreaterThan(half.l + 0.03)
+  })
+
+  it('changes no ramp at taste 0.5 and below, and never the light ramp', () => {
+    const seed = parseColor('#09263f')!
+    const ramp = (mode: 'light' | 'dark', fidelity?: number) =>
+      makeRamp(seed, mode, { isNeutral: true, ...(fidelity != null ? { fidelity } : {}) }).hex
+    for (const f of [0, 0.3, 0.5]) expect(ramp('dark', f)).toEqual(ramp('dark'))
+    expect(ramp('light', 1)).toEqual(ramp('light'))
+    expect(ramp('dark', 1)).not.toEqual(ramp('dark'))
+  })
+
+  it('leaves a derived neutral alone at any taste', () => {
+    const candidates = candidatesFromList(['#65a5c8'])
+    const derived = (fidelity: number) => generateTheme({ candidates, fidelity }).dark.tokens.background
+    expect(derived(1)).toBe(derived(0.5))
+  })
+
+  it('still clears every text check in dark mode at taste 1', () => {
+    for (const r of navy(1).dark.report.filter((r) => r.requiredWcag === 4.5))
+      expect(r.wcag, `${r.token} on ${r.background}`).toBeGreaterThanOrEqual(4.5)
   })
 })

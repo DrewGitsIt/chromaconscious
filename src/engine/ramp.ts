@@ -31,6 +31,21 @@ const DARK_CHROMA_CAP = [0.015, 0.022, 0.045, 0.055, 0.07, 0.085, 0.11, 0.14]
 const NEUTRAL_CAP = [0.045, 0.042, 0.038, 0.034, 0.03, 0.027, 0.024, 0.022]
 const DARK_NEUTRAL_CAP = [0.03, 0.028, 0.026, 0.025, 0.024, 0.023, 0.024, 0.026]
 
+/**
+ * Taste above 0.5 loosens the dark surfaces, for a neutral of yours. Below
+ * it the caps above hold every dark neutral near gray, so a navy came back
+ * slate even at taste 1: the seat kept your colour, the surfaces built from
+ * it didn't. `loosen` runs 0 (taste 0.5 and below: byte-identical) to 1
+ * (taste 1), and at 1 the caps double and the ladder drifts toward a dark
+ * seed's own lightness, within DARK_DRIFT. Only a seed that is itself a dark
+ * surface pulls: full weight at L .30 and below, none from L .45, so a mid
+ * grey seed never lifts a dark page.
+ */
+const DARK_DRIFT = { down: -0.04, up: 0.05 }
+const darkLoosen = (fidelity: number) => clamp((fidelity - 0.5) / 0.5, 0, 1)
+const darkDrift = (seed: Oklch, loosen: number) =>
+  loosen * clamp((0.45 - seed.l) / 0.15, 0, 1) * clamp(seed.l - DARK_L[0], DARK_DRIFT.down, DARK_DRIFT.up)
+
 // How much a chromatic neutral seed pulls light-mode backgrounds down from
 // near-white (a cream background can't exist at L 0.99 — sRGB has no room
 // for chroma there). Tapers off by mid-ramp so borders keep their ladder.
@@ -76,6 +91,11 @@ export interface RampOptions {
   separation?: Separation
   /** Contrast level 0..1 (contrastLevel.ts). Default 0, the historical ramp. */
   contrast?: number
+  /**
+   * The neutral colour's own taste, when it is yours; only the dark neutral
+   * ramp reads it (see `darkLoosen`). Unset: a derived neutral, never loosened.
+   */
+  fidelity?: number
 }
 
 /**
@@ -94,9 +114,9 @@ export interface RampOptions {
  */
 const HAIRLINE_STEPS = [5, 6] as const
 
-function stepChroma(seedC: number, i: number, dark: boolean, neutral: boolean): number {
+function stepChroma(seedC: number, i: number, dark: boolean, neutral: boolean, loosen = 0): number {
   if (neutral) {
-    return Math.min(seedC, dark ? DARK_NEUTRAL_CAP[i] : NEUTRAL_CAP[i])
+    return Math.min(seedC, dark ? DARK_NEUTRAL_CAP[i] * (1 + loosen) : NEUTRAL_CAP[i])
   }
   const cap = dark ? DARK_CHROMA_CAP[i] : CHROMA_CAP[i]
   return Math.min(seedC * CHROMA_MULT[i], cap)
@@ -125,10 +145,15 @@ export function makeRamp(
   const targets = contrastTargets(opts.contrast ?? 0)
   const unreached: number[] = []
   const seedC = opts.isNeutral ? Math.min(seed.c, 0.08) : seed.c
+  const loosen = opts.isNeutral && dark && opts.fidelity != null ? darkLoosen(opts.fidelity) : 0
   let ladder = dark ? DARK_L : LIGHT_L
   if (opts.isNeutral && !dark) {
     const dip = clamp((seedC - 0.02) * 0.9, 0, 0.045)
     if (dip > 0) ladder = ladder.map((l, i) => l - dip * NEUTRAL_L_TAPER[i])
+  }
+  if (loosen > 0) {
+    const drift = darkDrift(seed, loosen)
+    if (drift !== 0) ladder = ladder.map((l) => l + drift)
   }
   // Separation rides on top of the taper, and only on the surface ramp — the
   // brand and status ramps have no surfaces to separate. The ceiling sits
@@ -141,7 +166,7 @@ export function makeRamp(
   }
 
   const steps: Oklch[] = ladder.map((l, i) =>
-    toGamut({ l, c: stepChroma(seedC, i, dark, !!opts.isNeutral), h: seed.h }),
+    toGamut({ l, c: stepChroma(seedC, i, dark, !!opts.isNeutral, loosen), h: seed.h }),
   )
 
   const direction = dark ? 'lighter' : 'darker'
@@ -151,7 +176,7 @@ export function makeRamp(
     for (const i of HAIRLINE_STEPS) {
       const floor = i === 5 ? targets.border : targets.input
       if (floor <= 1) continue
-      const chroma = () => stepChroma(seedC, i, dark, true)
+      const chroma = () => stepChroma(seedC, i, dark, true, loosen)
       const solves = surfaces.map((s) => solveLightness(0, floor, s, seed.h, chroma, direction))
       if (solves.some((x) => !x.reached)) unreached.push(i)
       const l = solves.map((x) => x.color.l).reduce(further)
@@ -159,7 +184,7 @@ export function makeRamp(
     }
     // Keep the ladder ordered: step 8 never sits nearer the page than step 7.
     if (further(steps[6].l, steps[7].l) !== steps[7].l) {
-      steps[7] = toGamut({ l: steps[6].l, c: stepChroma(seedC, 7, dark, true), h: seed.h })
+      steps[7] = toGamut({ l: steps[6].l, c: stepChroma(seedC, 7, dark, true, loosen), h: seed.h })
     }
   }
 
