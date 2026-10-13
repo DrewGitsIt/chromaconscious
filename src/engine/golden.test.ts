@@ -54,7 +54,15 @@ function observe({ opts }: Config, probes: boolean): unknown {
   return obs
 }
 
-const hash = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex').slice(0, 20)
+/**
+ * Floats are rounded before hashing. V8 versions differ in the last digit of
+ * some Math functions, so raw floats moved 4238 of these hashes between Node
+ * 22 and 26 while every shipped hex stayed byte-identical. Six significant
+ * digits is far below anything a colour can show, and far above that noise.
+ */
+const roundFloats = (_: string, x: unknown) =>
+  typeof x === 'number' && !Number.isInteger(x) ? Number(x.toPrecision(6)) : x
+const hash = (v: unknown) => createHash('sha256').update(JSON.stringify(v, roundFloats)).digest('hex').slice(0, 20)
 
 describe('golden engine output', () => {
   const all = configs()
