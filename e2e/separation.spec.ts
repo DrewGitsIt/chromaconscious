@@ -46,6 +46,8 @@ const choose = async (page: Page, s: 'flat' | 'layered' | 'lifted') => {
 test.describe('separation moves the surface ladder, not just the control', () => {
   test('layered is the zero point and lifted floats the card above the page', async ({ page }) => {
     await boot(page)
+    // frames open dark; this test reads light first
+    await page.getByRole('button', { name: 'switch frame A to light' }).click()
 
     // untouched: the engine's historical order — the card sits under the page
     await expect(page.locator('.sep-opt[data-sep="layered"]')).toHaveAttribute(
@@ -98,6 +100,8 @@ test.describe('separation moves the surface ladder, not just the control', () =>
 
   test('the hairline trades against the shadow, in both directions', async ({ page }) => {
     await boot(page)
+    // frames open dark; this test reads light first
+    await page.getByRole('button', { name: 'switch frame A to light' }).click()
     await choose(page, 'flat')
     const flatBorder = await luminance(page, '--border')
     await choose(page, 'lifted')
@@ -108,7 +112,7 @@ test.describe('separation moves the surface ladder, not just the control', () =>
 
   test('dark mode gets its own solve, with the border signs flipped', async ({ page }) => {
     await boot(page)
-    await page.getByRole('button', { name: 'switch frame A to dark' }).click()
+    // frames open dark
     await expect(page.locator('.preview-root.dark')).toBeVisible()
 
     const layeredBg = await previewVar(page, '--background')
@@ -187,6 +191,8 @@ test.describe('separation moves the surface ladder, not just the control', () =>
 
   test('it belongs to the frame, so split view can hold two settings at once', async ({ page }) => {
     await boot(page)
+    // frames open dark; this test reads light first
+    await page.getByRole('button', { name: 'switch frame A to light' }).click()
     await page.locator('.board-btn[title*="compare two frames"]').click()
     await expect(page.locator('.preview-root')).toHaveCount(2)
 

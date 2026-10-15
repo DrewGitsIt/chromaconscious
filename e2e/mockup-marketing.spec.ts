@@ -85,6 +85,8 @@ test.describe('the marketing page as a large-field brand test', () => {
 
   test('the brand field is repainted from the dark solve, not reused', async ({ page }) => {
     await boot(page)
+    // frames open dark; this test reads light first
+    await page.getByRole('button', { name: 'switch frame A to light' }).click()
     const lightPrimary = await previewVar(page, '--primary')
     await page.getByRole('button', { name: 'switch frame A to dark' }).click()
     await expect(page.locator('.preview-root.dark')).toBeVisible()
@@ -359,6 +361,8 @@ test.describe('the marketing page as a large-field brand test', () => {
 
   test('dark elevates with a lit top edge that light mode does not have', async ({ page }) => {
     await boot(page)
+    // frames open dark; this test reads light first
+    await page.getByRole('button', { name: 'switch frame A to light' }).click()
     const lightCard = await shadowOf(page, '.mkt-feature')
     expect(lightCard).not.toContain('inset')
 

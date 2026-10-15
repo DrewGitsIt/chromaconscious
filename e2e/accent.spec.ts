@@ -95,6 +95,8 @@ test.describe('accent jobs in the app dashboard', () => {
 
   test('dark mode re-solves the accent jobs against the dark surfaces', async ({ page }) => {
     await bootPastel(page)
+    // frames open dark; this test reads light first
+    await page.getByRole('button', { name: 'switch frame A to light' }).click()
     const lightLink = await previewVar(page, '--link')
     await page.getByRole('button', { name: 'switch frame A to dark' }).click()
     await expect(page.locator('.preview-root.dark')).toBeVisible()

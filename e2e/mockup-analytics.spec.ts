@@ -317,6 +317,8 @@ test.describe('analytics console — dark mode and split view', () => {
     page,
   }) => {
     await boot(page)
+    // frames open dark; this test reads light first
+    await page.getByRole('button', { name: 'switch frame A to light' }).click()
     const lightChart1 = await previewVar(page, '--chart-1')
     const lightCell = await styleOf(page.locator('.an-heat-cell').first(), 'fill')
 
@@ -546,6 +548,8 @@ test.describe('analytics console — the brand color has real jobs', () => {
 
   test('the brand chrome is repainted from the dark solve, not reused', async ({ page }) => {
     await boot(page)
+    // frames open dark; this test reads light first
+    await page.getByRole('button', { name: 'switch frame A to light' }).click()
     const lightPrimary = await previewVar(page, '--primary')
     const lightLink = await previewVar(page, '--link')
     await page.locator('.an-save-view').click()
@@ -634,6 +638,8 @@ test.describe('analytics console — elevation and the scrim', () => {
     page,
   }) => {
     await boot(page)
+    // frames open dark; this test reads light first
+    await page.getByRole('button', { name: 'switch frame A to light' }).click()
     const declared = await previewVar(page, '--elevation-1')
     expect(declared).not.toBe('')
     expect(declared).not.toBe('none')
@@ -742,6 +748,8 @@ test.describe('analytics console — elevation and the scrim', () => {
 
   test('dark elevates with a lit top edge, and leans harder on the scrim', async ({ page }) => {
     await boot(page)
+    // frames open dark; this test reads light first
+    await page.getByRole('button', { name: 'switch frame A to light' }).click()
     const lightTile = await shadowOf(page, '.an-tile')
     expect(lightTile).not.toContain('inset')
     const lightScrim = channels(await previewVar(page, '--scrim'))[3]

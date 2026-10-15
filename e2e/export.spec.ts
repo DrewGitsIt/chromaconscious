@@ -157,9 +157,10 @@ test('a share link opens the same theme in a fresh page, with no network', async
   const before = await painted(page)
   expect(before.every((t) => /#[0-9a-f]{6}/.test(t))).toBe(true)
 
-  // a fresh page; the API is unreachable, so this can only come from the link
+  // a fresh page; the API is unreachable, so this can only come from the link.
+  // Block the API paths only: the dev server also serves the app's src/api/ modules.
   const fresh = await context.newPage()
-  await fresh.route('**/api/**', (r) => r.abort())
+  await fresh.route('**/api/{chromaconscious,themesmith}/**', (r) => r.abort())
   await fresh.emulateMedia({ reducedMotion: 'reduce' })
   // the preview server has no /chromaconscious path; the fragment is the link
   await fresh.goto('/' + new URL(link).hash)
@@ -192,7 +193,7 @@ test('a colour derived safely at taste 1 stays fixed through a share link', asyn
   const link = await page.evaluate(() => navigator.clipboard.readText())
 
   const fresh = await context.newPage()
-  await fresh.route('**/api/**', (r) => r.abort())
+  await fresh.route('**/api/{chromaconscious,themesmith}/**', (r) => r.abort())
   await fresh.emulateMedia({ reducedMotion: 'reduce' })
   await fresh.goto('/' + new URL(link).hash)
   await expect(seat(fresh).locator('.rb-state')).toHaveText(state)

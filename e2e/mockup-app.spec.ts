@@ -356,6 +356,8 @@ test.describe('solved pairs the mockup has to draw', () => {
 
   test('the solid pair is re-solved for dark, not reused from light', async ({ page }) => {
     await boot(page)
+    // frames open dark; this test reads light first
+    await page.getByRole('button', { name: 'switch frame A to light' }).click()
     const lightDestructive = await previewVar(page, '--destructive')
     await page.getByRole('button', { name: 'switch frame A to dark' }).click()
     await expect(page.locator('.preview-root.dark')).toBeVisible()
@@ -504,7 +506,7 @@ test.describe('split view', () => {
 test.describe('dark mode', () => {
   test('every state the mockup can reach also renders dark', async ({ page }) => {
     await boot(page)
-    await page.getByRole('button', { name: 'switch frame A to dark' }).click()
+    // frames open dark
     await expect(page.locator('.preview-root.dark')).toBeVisible()
     await projects(page)
     await row(page, 'marketing-site').click()
@@ -552,6 +554,8 @@ const elevationVar = (page: Page, level: 1 | 2 | 3) => previewVar(page, `--eleva
 test.describe('elevation', () => {
   test('resting surfaces wear level 1, layer for layer from the engine', async ({ page }) => {
     await boot(page)
+    // frames open dark; this test reads light first
+    await page.getByRole('button', { name: 'switch frame A to light' }).click()
     const declared = await elevationVar(page, 1)
     expect(declared).not.toBe('')
     expect(declared).not.toBe('none')
@@ -656,6 +660,8 @@ test.describe('elevation', () => {
 
   test('dark elevates with a lit top edge that light does not have', async ({ page }) => {
     await boot(page)
+    // frames open dark; this test reads light first
+    await page.getByRole('button', { name: 'switch frame A to light' }).click()
     // light: a drop shadow, and nothing inset
     const light = await shadowOf(page, '.stat-tile')
     expect(light).not.toBe('none')

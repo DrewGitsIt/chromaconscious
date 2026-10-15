@@ -276,18 +276,18 @@ test.describe('frames', () => {
     await bootCoastal(page)
     await expect(page.locator('.preview-root')).toHaveCount(1)
     await expect(page.locator('.artboard')).toHaveCount(1)
-    await page.getByRole('button', { name: 'switch frame A to dark' }).click()
-    await expect(page.getByRole('button', { name: 'switch frame A to light' })).toBeVisible()
+    await page.getByRole('button', { name: 'switch frame A to light' }).click()
+    await expect(page.getByRole('button', { name: 'switch frame A to dark' })).toBeVisible()
   })
 
   test('compare splits the canvas; each frame keeps its own mode', async ({ page }) => {
     await bootCoastal(page)
     await tool(page, 'compare two frames').click()
     await expect(page.locator('.preview-root')).toHaveCount(2)
-    await expect.poll(() => frameState(page, 'B')).toBe('B · light · editing')
-    await page.getByRole('button', { name: 'switch frame B to dark' }).click()
     await expect.poll(() => frameState(page, 'B')).toBe('B · dark · editing')
-    await expect.poll(() => frameState(page, 'A')).toBe('A · light')
+    await page.getByRole('button', { name: 'switch frame B to light' }).click()
+    await expect.poll(() => frameState(page, 'B')).toBe('B · light · editing')
+    await expect.poll(() => frameState(page, 'A')).toBe('A · dark')
   })
 
   test('sidebar edits only touch the selected frame', async ({ page }) => {
@@ -309,7 +309,7 @@ test.describe('frames', () => {
     await presetsBtn(page).click()
     await page.locator('.rp-presets').getByRole('button', { name: 'Neon arcade' }).click()
     await page.getByRole('button', { name: 'copy frame B over frame A' }).click()
-    await expect.poll(() => frameState(page, 'A')).toBe('A · light · editing')
+    await expect.poll(() => frameState(page, 'A')).toBe('A · dark · editing')
     await seatFrom(page, 'primary', '#f72585')
   })
 

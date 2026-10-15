@@ -12,6 +12,12 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  optimizeDeps: {
+    // Only e2e/vision-filter.fixture.ts imports this, and the startup scan never
+    // sees it. Discovered mid-suite, it re-optimizes and reloads every open page,
+    // failing whichever e2e tests are running in the other workers.
+    include: ['react-dom/server'],
+  },
   test: {
     // Playwright specs run via `npm run e2e`, not vitest.
     exclude: ['e2e/**', 'node_modules/**'],
