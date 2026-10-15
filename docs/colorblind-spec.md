@@ -1,6 +1,6 @@
 # Colorblind view — spec (draft 1)
 
-Status: 2026-10-01. Not started.
+Status: 2026-10-14. Shipped: the eye menu on each frame, and vision in theme links. This draft keeps the reasoning behind it.
 
 ## Decisions
 

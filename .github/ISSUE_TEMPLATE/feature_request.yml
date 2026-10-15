@@ -1,0 +1,38 @@
+name: Feature request
+description: Suggest something ChromaConscious should do.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: The problem
+      description: Start from the problem, not the solution. A user story works well.
+      placeholder: As a designer with deuteranomaly, I want …, so that …
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Acceptance criteria
+      description: Observable outcomes that would tell us it's done.
+      placeholder: |
+        - [ ] …
+        - [ ] …
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where
+      multiple: true
+      options:
+        - Web app
+        - API
+        - Agent skill / docs
+        - Exports
+        - Engine (how colors are chosen)
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Workarounds you use today, or other tools that do this.

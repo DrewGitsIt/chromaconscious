@@ -2,7 +2,7 @@
 
 > Renamed from themesmith to ChromaConscious on 2026-10-03. The legacy names keep working: the `/api/themesmith/v1` base, `/themesmith*` app paths (301) and the `$extensions.themesmith` key. See src/api/handler.ts.
 
-Status: 2026-09-26. Phase 1 and the core of phase 2 are built on the `phase1/core` branch (worktree `../themesmith-phase1`); not merged, not deployed. See [Phases](#phases).
+Status: 2026-10-14. Phases 1 and 2 are shipped and live at https://drewkidwell.com/api/chromaconscious/v1, open to all with no key. Phases 3–5 are open. See [Phases](#phases). The sections below keep the reasoning as it was decided, with dates.
 
 ## Decisions so far
 

@@ -1,0 +1,78 @@
+name: Bug report
+description: Something in the app or API doesn't work the way it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. A report someone else can reproduce without asking you anything gets fixed fastest. See [CONTRIBUTING.md](https://github.com/DrewGitsIt/chromaconscious/blob/main/CONTRIBUTING.md#reporting-a-bug) for examples.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One or two sentences. What happened, and why does it matter?
+    validations:
+      required: true
+  - type: input
+    id: theme
+    attributes:
+      label: Theme link
+      description: In the app, open Export → Share link and copy it. It reopens exactly what you saw. For the API, paste the request URL and the `theme t_…` line of the response.
+      placeholder: https://drewkidwell.com/chromaconscious#s=…
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered, starting from the theme link or an empty page. One action per step.
+      placeholder: |
+        1. Open the theme link
+        2. Lock the danger seat
+        3. Switch frame A to dark
+        4. Press riff
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: Exact text, hex values, or error messages where you have them.
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where
+      options:
+        - Web app
+        - API
+        - Agent skill / docs
+        - Export (CSS / Tailwind / JSON / Figma)
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser and version, OS, light or dark, any colorblind filter.
+      placeholder: Firefox 142, macOS 26, dark, deutan · 60%
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact
+      options:
+        - Blocks me, with no workaround
+        - Wrong result, but there's a workaround
+        - Cosmetic
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Screenshots, a recording, or console output. Drag files in.

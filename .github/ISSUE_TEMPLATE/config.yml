@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: API reference
+    url: https://drewkidwell.com/chromaconscious/docs.md
+    about: Every endpoint and parameter, with examples.
+  - name: Agent skill
+    url: https://drewkidwell.com/chromaconscious/skill/SKILL.md
+    about: Give your coding agent access to ChromaConscious.
