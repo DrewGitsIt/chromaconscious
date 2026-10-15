@@ -1,7 +1,7 @@
 {
   "name": "chromaconscious",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Complete, contrast-checked UI color themes (light + dark) from a few colors, an image or a preset. Web app and API.",
   "homepage": "https://drewkidwell.com/chromaconscious/",
   "repository": {
