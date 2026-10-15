@@ -25,3 +25,10 @@ dist-ssr
 dist-cf
 .wrangler
 .dev.vars
+
+# Playwright
+test-results
+playwright-report
+blob-report
+# visual-parity baselines: recorded locally on demand, never committed
+e2e/*-snapshots/
