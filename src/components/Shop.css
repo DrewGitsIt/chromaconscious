@@ -1,0 +1,495 @@
+/* Shop-owned styles. Mockup world, not chrome: every colour is a theme token
+   (set inline on .preview-root by the token space), corners are --radius and
+   display type is `.font-heading` at --font-heading-weight. A website, not
+   print: sizes are px and the page reflows at narrow widths (split view)
+   instead of scaling. */
+@layer chrome-base, chrome;
+
+@layer chrome {
+  .shp {
+    container-type: inline-size;
+    min-height: 680px;
+    background: var(--background);
+    color: var(--foreground);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  :where(.shp) :where(p, h1, h2, h3, ul, dl, dd, fieldset) {
+    margin: 0;
+  }
+  :where(.shp) :where(ul) {
+    padding: 0;
+    list-style: none;
+  }
+  :where(.shp) svg.lucide {
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
+  /* Zero specificity, so a control's own class sets its colour. */
+  :where(.shp) :where(button, input) {
+    font: inherit;
+    color: inherit;
+  }
+  :where(.shp) :where(button) {
+    cursor: pointer;
+  }
+  /* Hand-rolled controls take the ring the shadcn primitives do. */
+  .shp :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  .shp-promo {
+    padding: 8px 16px;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-align: center;
+  }
+  .shp-header {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    padding: 16px 40px;
+    border-bottom: 1px solid var(--border);
+  }
+  .shp-mark {
+    font-size: 26px;
+    font-weight: var(--font-heading-weight, 600);
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+  .shp-nav {
+    display: flex;
+    gap: 24px;
+    font-size: 14px;
+  }
+  .shp-bag-wrap {
+    position: relative;
+    margin-left: auto;
+  }
+  .shp-bag-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--background);
+    font-weight: 500;
+  }
+  .shp-count {
+    min-width: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 20px;
+    text-align: center;
+  }
+  .shp-bag {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 2;
+    width: 280px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    color: var(--card-foreground);
+    box-shadow: var(--elevation-2);
+  }
+  .shp-bag li,
+  .shp-bag-total {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+  }
+  .shp-bag-total {
+    margin-top: 6px;
+    border-top: 1px solid var(--border);
+    font-weight: 600;
+  }
+
+  .shp-main {
+    padding: 20px 40px 48px;
+  }
+  .shp-crumbs {
+    margin-bottom: 20px;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+  }
+  .shp-product {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 48px;
+  }
+
+  /* ---- gallery ---- */
+  .shp-stage {
+    overflow: hidden;
+    border-radius: var(--radius);
+  }
+  .shp-main-photo {
+    aspect-ratio: 1;
+  }
+  .shp-zoom img {
+    transform: scale(2.4);
+    transform-origin: 82% 40%;
+  }
+  .shp-thumbs {
+    display: grid;
+    grid-template-columns: repeat(3, 72px);
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .shp-thumb {
+    padding: 0;
+    overflow: hidden;
+    border: 2px solid transparent;
+    border-radius: var(--radius);
+    background: none;
+  }
+  .shp-thumb .token-photo {
+    aspect-ratio: 1;
+  }
+  .shp-thumb[aria-pressed='true'] {
+    border-color: var(--accent-strong);
+  }
+
+  /* ---- buy box ---- */
+  .shp-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding-top: 8px;
+  }
+  .shp-title {
+    font-size: 44px;
+    font-weight: var(--font-heading-weight, 600);
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+  .shp-rating {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: -4px;
+    font-size: 13px;
+  }
+  .shp-stars {
+    display: flex;
+    gap: 2px;
+    color: var(--accent-strong);
+  }
+  .shp-stars svg.lucide {
+    width: 14px;
+    height: 14px;
+  }
+  .shp-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--link);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  .shp-price {
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .shp-desc {
+    max-width: 44ch;
+  }
+  .shp-finish {
+    padding: 0;
+    border: 0;
+  }
+  .shp-finish legend {
+    padding: 0;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .shp-swatches {
+    display: flex;
+    gap: 10px;
+  }
+  .shp-swatch {
+    position: relative;
+    display: block;
+    width: 34px;
+    height: 34px;
+    cursor: pointer;
+  }
+  .shp-swatch input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .shp-swatch i {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+  }
+  .shp-swatch:has(input:checked) i {
+    box-shadow:
+      0 0 0 2px var(--background),
+      0 0 0 4px var(--foreground);
+  }
+  .shp-swatch:has(input:focus-visible) i {
+    outline: 2px solid var(--ring);
+    outline-offset: 5px;
+  }
+  .shp-buy {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    max-width: 420px;
+    margin-top: 4px;
+  }
+  .shp-qty {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--input);
+    border-radius: var(--radius);
+  }
+  .shp-qty button {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 42px;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .shp-qty button:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+  .shp-qty output {
+    min-width: 22px;
+    font-weight: 600;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .shp-btn {
+    flex: 1;
+    padding: 0 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--background);
+    font-weight: 600;
+  }
+  .shp-btn-primary {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+  .shp-added {
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    background: var(--success-subtle);
+    color: var(--success-subtle-foreground);
+    font-size: 13px;
+  }
+  .shp-promises {
+    display: grid;
+    gap: 6px;
+    font-size: 13px;
+  }
+  .shp-promises li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ---- tabs ---- */
+  .shp-tabs-wrap {
+    margin-top: 48px;
+  }
+  .shp-tabs {
+    display: flex;
+    gap: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .shp-tabs button {
+    margin-bottom: -1px;
+    padding: 10px 0;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
+    font-weight: 500;
+  }
+  .shp-tabs button[aria-selected='true'] {
+    border-bottom-color: var(--accent-strong);
+    font-weight: 600;
+  }
+  .shp-tabpanel {
+    padding-top: 20px;
+    min-height: 150px;
+  }
+  .shp-specs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px 32px;
+  }
+  .shp-specs dt {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .shp-care {
+    display: grid;
+    gap: 8px;
+    max-width: 60ch;
+  }
+  .shp-reviews {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 40px;
+  }
+  .shp-dist {
+    display: grid;
+    gap: 6px;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .shp-dist-row {
+    display: grid;
+    grid-template-columns: 28px 1fr 28px;
+    align-items: center;
+    gap: 8px;
+  }
+  .shp-dist-row span:last-child {
+    text-align: right;
+  }
+  .shp-bar {
+    height: 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--muted);
+  }
+  .shp-bar i {
+    display: block;
+    height: 100%;
+    background: var(--primary);
+  }
+  .shp-review-list {
+    display: grid;
+    gap: 16px;
+  }
+  .shp-review-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 2px;
+  }
+  .shp-review-head span {
+    font-size: 12px;
+  }
+
+  /* ---- goes with ---- */
+  .shp-related {
+    margin-top: 40px;
+  }
+  .shp-h2 {
+    margin-bottom: 16px;
+    font-size: 24px;
+    font-weight: var(--font-heading-weight, 600);
+    letter-spacing: -0.03em;
+  }
+  .shp-cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+  .shp-card {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    color: var(--card-foreground);
+    box-shadow: var(--elevation-1);
+  }
+  .shp-card-photo {
+    aspect-ratio: 4 / 3;
+  }
+  .shp-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+  }
+  .shp-card h3 {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .shp-card p {
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+  .shp-quick {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--card);
+  }
+
+  .shp-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 40px;
+    background: var(--secondary);
+    color: var(--secondary-foreground);
+    font-size: 12px;
+  }
+
+  /* Split view: the buy box goes under the gallery. */
+  @container (max-width: 720px) {
+    .shp-header,
+    .shp-main,
+    .shp-footer {
+      padding-inline: 20px;
+    }
+    .shp-nav {
+      display: none;
+    }
+    .shp-product,
+    .shp-reviews {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    .shp-title {
+      font-size: 34px;
+    }
+    .shp-cards {
+      grid-template-columns: 1fr 1fr;
+    }
+    .shp-cards > :last-child {
+      display: none;
+    }
+    .shp-footer {
+      flex-direction: column;
+    }
+  }
+}

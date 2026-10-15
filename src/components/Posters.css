@@ -1,0 +1,237 @@
+/* Poster-owned styles. Mockup world, not chrome: every colour is a theme
+   token (set inline on .preview-root by the token space), corners are
+   --radius and display type is `.font-heading` at --font-heading-weight.
+   Sizes are cqi of the wall, so the whole wall scales with the frame. */
+@layer chrome-base, chrome;
+
+@layer chrome {
+  .pst {
+    padding: 40px;
+    background: var(--muted);
+  }
+  /* The container: cqi below is a share of this width. */
+  .pst-wall {
+    container-type: inline-size;
+  }
+  .pst-board {
+    display: grid;
+    gap: 3cqi;
+  }
+  .pst-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3cqi;
+    align-items: start;
+  }
+  .pst-row-2 {
+    grid-template-columns: 1.9fr 1fr;
+  }
+  :where(.pst) :where(p, h2, table) {
+    margin: 0;
+  }
+
+  /* Paper on a wall: the shadow is an effect like elevation, not a colour. */
+  .pst-poster,
+  .pst-listing,
+  .pst-ticket {
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 14px 30px -16px rgb(0 0 0 / 0.35);
+  }
+
+  .pst-poster {
+    display: flex;
+    flex-direction: column;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    padding: 2.2cqi;
+    background: var(--background);
+    color: var(--foreground);
+  }
+  .pst-on-secondary {
+    background: var(--secondary);
+    color: var(--secondary-foreground);
+  }
+  .pst-head {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.6cqi;
+    font-size: 0.85cqi;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .pst-art {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: var(--radius);
+  }
+  .pst-bill {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding-top: 1.8cqi;
+  }
+  .pst-date {
+    display: flex;
+    align-items: center;
+    gap: 0.9cqi;
+    font-size: 0.85cqi;
+    line-height: 1.25;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .pst-date b {
+    font-size: 3.2cqi;
+    font-weight: var(--font-heading-weight, 600);
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+    font-variant-numeric: tabular-nums;
+  }
+  .pst-title {
+    margin-top: auto;
+    font-size: 3cqi;
+    font-weight: var(--font-heading-weight, 600);
+    letter-spacing: -0.035em;
+    line-height: 0.95;
+    text-wrap: balance;
+  }
+  .pst-who {
+    margin-top: 0.9cqi;
+    font-size: 0.95cqi;
+    line-height: 1.35;
+  }
+  .pst-bill .pst-date b {
+    color: var(--link);
+  }
+  /* Link is checked on the page, not on secondary: there the date takes the
+     poster's own ink. */
+  .pst-on-secondary .pst-bill .pst-date b {
+    color: inherit;
+  }
+
+  /* ---- the photograph poster: image above a primary block ---- */
+  .pst-photo-poster {
+    padding-bottom: 0;
+  }
+  .pst-photo {
+    flex: 1;
+    min-height: 0;
+    border-radius: var(--radius);
+  }
+  .pst-block {
+    display: flex;
+    flex-direction: column;
+    margin: 1.8cqi -2.2cqi 0;
+    padding: 1.8cqi 2.2cqi 2.2cqi;
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+  .pst-credit {
+    margin-top: 0.6cqi;
+    font-size: 0.75cqi;
+    letter-spacing: 0.02em;
+  }
+  .pst-block .pst-title {
+    margin-top: 1.4cqi;
+  }
+
+  /* ---- season listing ---- */
+  .pst-listing {
+    padding: 2.4cqi 2.6cqi;
+    background: var(--background);
+    color: var(--foreground);
+  }
+  .pst-kicker {
+    font-size: 0.85cqi;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .pst-listing-title {
+    margin: 0.6cqi 0 1.6cqi;
+    font-size: 3.4cqi;
+    font-weight: var(--font-heading-weight, 600);
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+  .pst-listing table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1.15cqi;
+  }
+  .pst-listing td {
+    padding: 0.85cqi 0;
+    border-top: 1px solid var(--border);
+    vertical-align: baseline;
+  }
+  .pst-listing tr:last-child td {
+    border-bottom: 1px solid var(--border);
+  }
+  .pst-listing td b {
+    font-weight: 600;
+  }
+  .pst-listing-date {
+    width: 8cqi;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.95cqi;
+  }
+  .pst-listing-price {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .pst-listing-foot {
+    margin-top: 1.4cqi;
+    font-size: 1cqi;
+  }
+  .pst-link {
+    color: var(--link);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  /* ---- tickets ---- */
+  .pst-tickets {
+    display: grid;
+    gap: 2cqi;
+  }
+  .pst-ticket {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    border-radius: var(--radius);
+    background: var(--card);
+    color: var(--card-foreground);
+  }
+  .pst-ticket-main {
+    padding: 1.4cqi 1.6cqi;
+    font-size: 0.95cqi;
+  }
+  .pst-ticket-work {
+    margin: 0.4cqi 0 0.3cqi;
+    font-size: 1.8cqi;
+    font-weight: var(--font-heading-weight, 600);
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+  /* The stub, torn along a perforation of the card's border colour. */
+  .pst-ticket-stub {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0.2cqi;
+    padding: 0 1.6cqi;
+    border-left: 0.25cqi dotted var(--border);
+    font-size: 0.8cqi;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .pst-ticket-stub b {
+    color: var(--link);
+    font-size: 2.2cqi;
+    font-weight: var(--font-heading-weight, 600);
+    letter-spacing: -0.02em;
+    text-transform: none;
+  }
+}

@@ -1,0 +1,20 @@
+/* The showcase mockups' recoloured photographs (TokenPhoto.tsx). Each
+   mockup sizes and places its figures; this is only what every one needs. */
+@layer chrome-base, chrome;
+
+@layer chrome {
+  .token-photo {
+    position: relative;
+    overflow: hidden;
+    margin: 0;
+  }
+  .token-photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .token-photo-defs {
+    position: absolute;
+  }
+}

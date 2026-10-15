@@ -88,7 +88,7 @@ follows a `hover`/`click` immediately shows the state *before* it landed. Put
 ### Choosing which mockup a frame renders
 
 The frame controls live on the **stage, not the sidebar**: each frame (`.artboard`) has a label row (`.frame-card`) above it — pane letter (`role=button:edit frame A`), a `<select class="frame-mockup">`, the light/dark toggle (`role=button:switch frame A to dark`), and a right-justified `.board-btn` that is `compare` (title `compare two frames`) or, once split, `close A`/`close B`. The mockup scrolls inside `.frame`, never the page — so raw `page.mouse` clicks on anything below the frame's fold need a `scrollIntoViewIfNeeded()` first. The option values are
-the ids in `src/mockups.tsx`: `app`, `analytics`, `marketing`, `brand`.
+the ids in `src/mockups.tsx`: `app`, `analytics`, `marketing`, `brand`, `magazine`, `trail`, `shop`, `posters`.
 
 ```
 click role=button:Coastal starter

@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import type { TokenSpaceProps } from '../mockups'
-import { gradientMap } from './gradientMap'
+import { TokenPhoto } from './TokenPhoto'
+import type { TokenPhotoProps } from './TokenPhoto'
 import dunes from '../assets/magazine/dunes.jpg'
 import salk from '../assets/magazine/salk.jpg'
 import stairwell from '../assets/magazine/stairwell.jpg'
@@ -20,7 +21,7 @@ import './Magazine.css'
  *   on a photograph. e2e/mockup-magazine.spec.ts walks every text node to hold
  *   it to that.
  * - Photographs are part of the palette: each is recoloured by a gradient map
- *   whose stops are tokens (`Photo`), so locate mode dims a photo exactly as
+ *   whose stops are tokens (TokenPhoto.tsx), so locate mode dims a photo exactly as
  *   it dims a card.
  *
  * Sizes are in `cqi` of the spread, so the composition scales with the frame
@@ -32,9 +33,12 @@ export function Magazine({ tokens, mode, uid, effects }: TokenSpaceProps) {
     ...Object.fromEntries(Object.entries(tokens).map(([k, v]) => [`--${k}`, v])),
     ...effects,
   } as CSSProperties
-  const photo = (name: string, src: string, stops: string[], rest: Omit<PhotoProps, 'id' | 'src' | 'stops' | 'tokens'>) => (
-    <Photo id={`mag-${name}-${uid}`} src={src} stops={stops} tokens={tokens} {...rest} />
-  )
+  const photo = (
+    name: string,
+    src: string,
+    stops: string[],
+    rest: Omit<TokenPhotoProps, 'id' | 'src' | 'stops' | 'tokens' | 'className'>,
+  ) => <TokenPhoto id={`mag-${name}-${uid}`} src={src} stops={stops} tokens={tokens} className="mag-photo" {...rest} />
 
   return (
     <div className={`preview-root mag ${mode === 'dark' ? 'dark' : ''}`} style={vars}>
@@ -288,57 +292,5 @@ function Masthead({ font, children }: { font: string | undefined; children: Reac
     <h1 ref={ref} className="mag-mast font-heading">
       {children}
     </h1>
-  )
-}
-
-interface PhotoProps {
-  id: string
-  src: string
-  /** Token names, dark to light in the light theme. */
-  stops: string[]
-  tokens: Record<string, string>
-  alt: string
-  /** Contrast pushed before mapping, about mid-grey. 1 leaves the photo as shot. */
-  contrast?: number
-  position?: string
-}
-
-/**
- * A photograph recoloured by tokens. The filter sits beside the image and is
- * rebuilt from `tokens` on every render, so locate mode's substituted tokens
- * reach the photo the same way they reach a card.
- */
-function Photo({ id, src, stops, tokens, alt, contrast = 1, position }: PhotoProps) {
-  const [r, g, b] = gradientMap(tokens, stops)
-  const k = contrast
-  const lift = (1 - k) / 2
-  return (
-    <figure className="mag-photo">
-      <svg width="0" height="0" aria-hidden className="mag-defs">
-        <filter id={id} colorInterpolationFilters="sRGB" data-stops={stops.join(' ')}>
-          <feColorMatrix
-            type="matrix"
-            values=".2126 .7152 .0722 0 0  .2126 .7152 .0722 0 0  .2126 .7152 .0722 0 0  0 0 0 1 0"
-          />
-          <feComponentTransfer>
-            <feFuncR type="linear" slope={k} intercept={lift} />
-            <feFuncG type="linear" slope={k} intercept={lift} />
-            <feFuncB type="linear" slope={k} intercept={lift} />
-          </feComponentTransfer>
-          <feComponentTransfer>
-            <feFuncR type="table" tableValues={r} />
-            <feFuncG type="table" tableValues={g} />
-            <feFuncB type="table" tableValues={b} />
-          </feComponentTransfer>
-        </filter>
-      </svg>
-      <img
-        src={src}
-        alt={alt}
-        loading="lazy"
-        decoding="async"
-        style={{ filter: `url(#${id})`, objectPosition: position }}
-      />
-    </figure>
   )
 }

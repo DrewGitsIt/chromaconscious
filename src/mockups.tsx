@@ -5,7 +5,10 @@ import { Analytics } from './components/Analytics'
 import { BrandBoard } from './components/BrandBoard'
 import { Magazine } from './components/Magazine'
 import { Marketing } from './components/Marketing'
+import { Posters } from './components/Posters'
 import { Preview } from './components/Preview'
+import { Shop } from './components/Shop'
+import { Trail } from './components/Trail'
 import type { PageSettings } from './pageSettings'
 import { DEFAULT_PAGE, pageVars } from './pageSettings'
 
@@ -132,6 +135,28 @@ export const MOCKUPS: Mockup[] = [
     supportsDark: true,
     followsPage: true,
     Component: tokenSpace(Magazine),
+  },
+  {
+    id: 'trail',
+    name: 'Hiking app',
+    supportsDark: true,
+    followsPage: true,
+    Component: tokenSpace(Trail),
+  },
+  {
+    id: 'shop',
+    name: 'Product page',
+    supportsDark: true,
+    followsPage: true,
+    Component: tokenSpace(Shop),
+  },
+  {
+    id: 'posters',
+    name: 'Concert posters',
+    // Print, like the magazine: no controls, and the art is drawn in tokens.
+    supportsDark: true,
+    followsPage: true,
+    Component: tokenSpace(Posters),
   },
 ]
 
