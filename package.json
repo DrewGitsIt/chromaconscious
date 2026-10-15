@@ -2,16 +2,33 @@
   "name": "chromaconscious",
   "private": true,
   "version": "0.0.0",
+  "description": "Complete, contrast-checked UI color themes (light + dark) from a few colors, an image or a preset. Web app and API.",
+  "homepage": "https://drewkidwell.com/chromaconscious/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DrewGitsIt/chromaconscious.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DrewGitsIt/chromaconscious/issues"
+  },
+  "license": "MIT",
+  "author": "Drew Kidwell",
   "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
     "preview": "vite preview",
     "e2e": "playwright test",
     "build:cf": "node -e \"require('fs').rmSync('dist-cf',{recursive:true,force:true})\" && tsc -b && vite build --base=/chromaconscious/ --outDir dist-cf/chromaconscious --emptyOutDir",
     "dev:cf": "npm run build:cf && wrangler dev",
-    "deploy": "npm run build:cf && wrangler deploy"
+    "deploy": "npm run build:cf && wrangler deploy",
+    "postversion": "git push --follow-tags"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

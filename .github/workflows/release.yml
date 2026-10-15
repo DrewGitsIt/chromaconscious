@@ -1,0 +1,93 @@
+# A release is a deploy. Pushing a v* tag (`npm version minor` does it) runs
+# CI, deploys that exact commit to Cloudflare, and only then publishes the
+# GitHub Release, so every Release on the repo is something that went live.
+#
+# To redeploy an existing release, run this workflow by hand and pick the tag
+# under "Use workflow from".
+#
+# Needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID on the `production`
+# environment.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Deploy and publish
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://drewkidwell.com/chromaconscious/
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Require a version tag
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        run: |
+          echo "::error::Run this from a v* tag, not ${{ github.ref }}."
+          exit 1
+
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Tag matches package.json
+        run: |
+          want="v$(node -p 'require("./package.json").version')"
+          if [ "$TAG" != "$want" ]; then
+            echo "::error::Tag $TAG does not match package.json ($want)."
+            exit 1
+          fi
+
+      - run: npm ci
+      - run: npm run build:cf
+
+      - name: Deploy to Cloudflare
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler deploy --tag "$TAG" --message "$TAG ${GITHUB_SHA::7}" | tee /tmp/deploy.log
+          version=$(grep -oE 'Current Version ID: [0-9a-f-]+' /tmp/deploy.log | awk '{print $4}')
+          echo "worker_version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test
+        run: |
+          curl -fsS -o /dev/null https://drewkidwell.com/chromaconscious/
+          curl -fsS https://drewkidwell.com/api/chromaconscious/v1 | head -1
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKER_VERSION: ${{ steps.deploy.outputs.worker_version }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; redeployed only."
+            exit 0
+          fi
+          cat > /tmp/notes.md <<EOF
+          Deployed to https://drewkidwell.com/chromaconscious/ from ${GITHUB_SHA::7}.
+          Cloudflare Worker version: \`${WORKER_VERSION:-unknown}\`
+          EOF
+          gh release create "$TAG" --verify-tag --title "$TAG" \
+            --notes-file /tmp/notes.md --generate-notes
