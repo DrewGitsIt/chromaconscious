@@ -5,7 +5,7 @@
 # To redeploy an existing release, run this workflow by hand and pick the tag
 # under "Use workflow from".
 #
-# Needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID on the `production`
+# Needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID on the `prod`
 # environment.
 name: Release
 
@@ -15,11 +15,16 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: production
+  group: prod
   cancel-in-progress: false
 
 permissions:
   contents: read
+
+# bash with pipefail: a failing command never hides behind a pipe
+defaults:
+  run:
+    shell: bash
 
 jobs:
   ci:
@@ -31,7 +36,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment:
-      name: production
+      name: prod
       url: https://drewkidwell.com/chromaconscious/
     permissions:
       contents: write
@@ -45,6 +50,9 @@ jobs:
           exit 1
 
       - uses: actions/checkout@v5
+        with:
+          # the notes need history back to the previous tag
+          fetch-depth: 0
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
@@ -66,15 +74,35 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # wrangler's machine-readable record of the deploy, one JSON object a line
+          WRANGLER_OUTPUT_FILE_PATH: /tmp/wrangler-output.ndjson
         run: |
-          npx wrangler deploy --tag "$TAG" --message "$TAG ${GITHUB_SHA::7}" | tee /tmp/deploy.log
-          version=$(grep -oE 'Current Version ID: [0-9a-f-]+' /tmp/deploy.log | awk '{print $4}')
+          npx wrangler deploy --tag "$TAG" --message "$TAG ${GITHUB_SHA::7}"
+          version=$(node -e '
+            const lines = require("fs").readFileSync(process.env.WRANGLER_OUTPUT_FILE_PATH, "utf8").split("\n")
+            const deploy = lines.filter(Boolean).map(JSON.parse).find((e) => e.type === "deploy")
+            process.stdout.write(deploy?.version_id ?? "")')
+          if [ -z "$version" ]; then
+            echo "::error::wrangler reported no deployed version."
+            exit 1
+          fi
           echo "worker_version=$version" >> "$GITHUB_OUTPUT"
 
+      # A 200 is not enough: the previous deploy answers 200 too. The live page
+      # must load this build's bundle.
       - name: Smoke test
         run: |
-          curl -fsS -o /dev/null https://drewkidwell.com/chromaconscious/
-          curl -fsS https://drewkidwell.com/api/chromaconscious/v1 | head -1
+          bundle=$(grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' dist-cf/chromaconscious/index.html | head -1)
+          for _ in $(seq 12); do
+            if curl -fsS https://drewkidwell.com/chromaconscious/ | grep -qF "$bundle"; then
+              echo "live page serves $bundle"
+              curl -fsS https://drewkidwell.com/api/chromaconscious/v1 | head -1
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::the live page does not serve $bundle after 60 s."
+          exit 1
 
       - name: Publish GitHub Release
         env:
@@ -85,9 +113,5 @@ jobs:
             echo "Release $TAG already exists; redeployed only."
             exit 0
           fi
-          cat > /tmp/notes.md <<EOF
-          Deployed to https://drewkidwell.com/chromaconscious/ from ${GITHUB_SHA::7}.
-          Cloudflare Worker version: \`${WORKER_VERSION:-unknown}\`
-          EOF
-          gh release create "$TAG" --verify-tag --title "$TAG" \
-            --notes-file /tmp/notes.md --generate-notes
+          node scripts/release-notes.mjs "$TAG" --worker "$WORKER_VERSION" > /tmp/notes.md
+          gh release create "$TAG" --verify-tag --title "$TAG" --notes-file /tmp/notes.md

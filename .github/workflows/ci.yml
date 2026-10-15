@@ -16,6 +16,11 @@ concurrency:
 permissions:
   contents: read
 
+# bash with pipefail: a failing command never hides behind a pipe
+defaults:
+  run:
+    shell: bash
+
 jobs:
   check:
     name: Lint, types, unit, build
