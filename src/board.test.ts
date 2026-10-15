@@ -626,7 +626,8 @@ describe('placement probes are riff-independent', () => {
         }
       }
     }
-  })
+    // a sweep over every preset: ~3 s alone on a laptop, past 5 s under load
+  }, 30_000)
 })
 
 describe('deriveSafely — at taste 1, a per-colour override', () => {
