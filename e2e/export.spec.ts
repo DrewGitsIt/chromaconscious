@@ -209,7 +209,7 @@ test('a malformed share link opens the start screen with a quiet note', async ({
   await page.goto('/#s=AQMDGR01Vz_YHVmR42')
   await expect(page.getByText(/couldn't read this link/)).toBeVisible()
   await expect(page.locator('[data-sec="input"]')).toBeVisible()
-  await page.goto('/#s=Aw&vision=deutan')
+  await page.goto('/#s=BA&vision=deutan')
   await page.reload()
   await expect(page.getByText(/newer ChromaConscious/)).toBeVisible()
   expect(errors).toEqual([])
