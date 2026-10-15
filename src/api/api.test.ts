@@ -475,9 +475,9 @@ describe('state= : the theme carried in the request', () => {
     const env = memoryEnv()
     const g = await summary(env, '/generate?preset=coastal-starter')
     const payload = statePayload((await call(env, `/state?theme=${g.theme}`)).body)
-    for (const bad of ['', '!!', payload.slice(0, -4), 'Aw'])
+    for (const bad of ['', '!!', payload.slice(0, -4), 'BA'])
       expect((await call(env, `/theme?state=${bad}`)).status, bad).toBe(422)
-    expect((await call(env, '/theme?state=Aw')).body).toContain('newer ChromaConscious')
+    expect((await call(env, '/theme?state=BA')).body).toContain('newer ChromaConscious')
     expect(await call(env, `/theme?theme=${g.theme}&state=${payload}`)).toMatchObject({ status: 400 })
   })
 })
@@ -523,5 +523,34 @@ describe('state= : deep riffs are declined, stored themes are not', () => {
     const id = await themeId(canonical)
     await env.THEMES.put(id, JSON.stringify({ state: canonical, parent: null }))
     expect((await call(env, `/export?theme=${id}&format=css`)).status).toBe(200)
+  })
+})
+
+describe('corners and font over the API', () => {
+  it('generate takes radius= and font=, and every export carries them', async () => {
+    const env = memoryEnv()
+    const g = await summary(env, '/generate?preset=coastal-starter&radius=4&font=tinos')
+    expect([g.radius, g.font]).toEqual([4, 'tinos'])
+    const css = (await call(env, `/export?theme=${g.theme}&format=css`)).body
+    expect(css).toContain('--radius: 0.25rem;')
+    expect(css).toContain("--font-sans: 'Tinos'")
+    // and the text summary names them, since they are off their defaults
+    expect((await call(env, `/theme?theme=${g.theme}`)).body).toContain('corners 4px · font tinos')
+  })
+
+  it('an unknown face or an off-slider radius is a 422 that lists what is allowed', async () => {
+    const env = memoryEnv()
+    const font = await call(env, '/generate?preset=coastal-starter&font=comic-sans')
+    expect(font.status).toBe(422)
+    expect(font.body).toContain('fraunces')
+    for (const r of ['21', '-1', '2.5', '', 'round'])
+      expect((await call(env, `/generate?preset=coastal-starter&radius=${r}`)).status, r).toBe(422)
+  })
+
+  it('at the defaults the summary line reads as it always did', async () => {
+    const env = memoryEnv()
+    const g = await summary(env, '/generate?preset=coastal-starter')
+    expect([g.radius, g.font]).toEqual([10, 'system'])
+    expect((await call(env, `/theme?theme=${g.theme}`)).body).not.toMatch(/corners|font/)
   })
 })

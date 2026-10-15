@@ -14,6 +14,7 @@ import type { ColorCandidate, Role, Separation } from '../engine'
 import { SEPARATIONS, normalizeContrast, parseColor } from '../engine'
 import type { ThemeState } from '../ops'
 import { emptyThemeState } from '../ops'
+import { FONT_DEFAULT, RADIUS_DEFAULT, clampRadius, isPageFontId } from '../pageSettings'
 
 export const STATE_VERSION = 1
 
@@ -40,6 +41,10 @@ interface WireState {
   /** Contrast level 0..1. Absent = 0 (standard), so pre-contrast ids still resolve. */
   contrast?: number
   preset?: string
+  /** Corners in px. Absent = 10 (shadcn's default), so ids made before it was exported hold. */
+  radius?: number
+  /** A face id (pageSettings.ts). Absent = the system stack. */
+  font?: string
 }
 
 export class StateError extends Error {}
@@ -68,6 +73,10 @@ export function encodeState(s: ThemeState): string {
     // stored before the level existed must keep the id it was given.
     ...(s.contrast ? { contrast: s.contrast } : {}),
     ...(s.preset ? { preset: s.preset } : {}),
+    // After everything that existed before them, and only away from their
+    // defaults: older states keep their bytes, so their ids.
+    ...(s.radius !== RADIUS_DEFAULT ? { radius: s.radius } : {}),
+    ...(s.font !== FONT_DEFAULT ? { font: s.font } : {}),
   }
   return JSON.stringify(wire)
 }
@@ -109,6 +118,10 @@ export function decodeState(text: string): ThemeState {
     separation: SEPARATIONS.includes(wire.separation!) ? wire.separation! : base.separation,
     contrast: typeof wire.contrast === 'number' ? normalizeContrast(wire.contrast) : base.contrast,
     preset: typeof wire.preset === 'string' ? wire.preset : null,
+    // A face this build doesn't know falls back to the default, like an
+    // unknown vision: the theme still opens.
+    radius: typeof wire.radius === 'number' && Number.isFinite(wire.radius) ? clampRadius(wire.radius) : base.radius,
+    font: typeof wire.font === 'string' && isPageFontId(wire.font) ? wire.font : base.font,
   }
 }
 

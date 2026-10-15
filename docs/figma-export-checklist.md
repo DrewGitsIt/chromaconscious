@@ -41,6 +41,8 @@ Figma silently skips any token it doesn't like, so the count is the check.
 
 Fewer than 117 means a token was dropped. Find which one is missing; that name or type is what Figma rejected.
 
+Then repeat once with corners moved off 10px (e.g. 4px) before exporting. Expect **118**: one more, a `radius` **number** variable reading `4`. The face never becomes a variable; it rides in `$extensions.chromaconscious.font`. 117 here means Figma rejected the `number` type: note it, because the export's radius would then need another encoding.
+
 ## 3. Spot-check three hexes and the scrim (2 min). Proves: correctness (the colour encoding)
 
 Click each variable's swatch and read the hex in the colour picker.

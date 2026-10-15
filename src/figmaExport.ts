@@ -15,6 +15,7 @@ import type { ContrastLevelName, FigmaModeFile } from './engine'
 import { CONTRAST_LEVELS, FIGMA_LEVELS, figmaModeName, themeFigmaModes } from './engine'
 import type { ThemeState } from './ops'
 import { buildTheme } from './ops'
+import { themePage } from './pageSettings'
 
 export interface FigmaExport {
   filename: string
@@ -37,7 +38,7 @@ export function figmaModeFiles(
     levels.map((level) => [level, buildTheme({ ...state, contrast: CONTRAST_LEVELS[level] })]),
   )
   if (Object.values(byLevel).some((r) => !r)) return null
-  return themeFigmaModes(byLevel as Parameters<typeof themeFigmaModes>[0])
+  return themeFigmaModes(byLevel as Parameters<typeof themeFigmaModes>[0], themePage(state))
 }
 
 /** The mode names a single-file request may ask for: light, dark, light-medium, … */

@@ -57,8 +57,7 @@ import { EMBED, embedPreset, fullAppHref } from './embed'
 import { decodeState, encodeState, themeId } from './api/state'
 import { payloadState, statePayload } from './api/stateLink'
 import { parseThemeHash } from './visionLink'
-import { usePageSettings } from './usePageSettings'
-import { pageLinkParams } from './pageSettings'
+import { loadPageFont } from './pageSettings'
 import type { Vision } from './engine/cvd'
 import { VISIONS } from './engine/cvd'
 import { VisionFilter } from './components/VisionFilter'
@@ -245,8 +244,6 @@ export default function App() {
   // the canvas splits when a second frame exists. Frames boot empty — the
   // first move belongs to the user, made in the stage's start hero.
   const [frames, setFrames] = useState<FrameState[]>(() => [initialFrame()])
-  // Corners and type: view state for both frames, never theme state.
-  const { page, setRadius, setFont } = usePageSettings()
   const [active, setActive] = useState(0)
   const [reportOpen, setReportOpen] = useState(false)
   // Mono lock pick mode: the padlock was clicked, the board is the menu.
@@ -319,6 +316,25 @@ export default function App() {
   }
   const dispatch = (op: Op) => dispatchTo(active, op)
 
+  // Faces load on demand. Whatever brought a face in (a pick, a link, a
+  // compare clone) fetches it here; a repeat import is free.
+  const faces = frames.map((f) => f.font).join(' ')
+  useEffect(() => {
+    for (const id of new Set(faces.split(' '))) void loadPageFont(id)
+  }, [faces])
+  // A pick fetches the face before it lands, so the preview swaps once,
+  // straight from the old face to the new one. Picks race: only the latest lands.
+  const fontPick = useRef(0)
+  const pickFont = (id: string) => {
+    const ticket = ++fontPick.current
+    const i = active
+    void loadPageFont(id)
+      .catch(() => {})
+      .then(() => {
+        if (ticket === fontPick.current) dispatchTo(i, { op: 'font', value: id })
+      })
+  }
+
   const toggleMode = (i: number) => {
     setFrames((prev) =>
       prev.map((f, j) =>
@@ -376,10 +392,10 @@ export default function App() {
             id: exportId,
             payload: statePayload(encodeState(frame)),
             origin: location.origin,
-            linkParams: { ...visionParams(frame.vision, frame.strength), ...pageLinkParams(page) },
+            linkParams: visionParams(frame.vision, frame.strength),
           }
         : null,
-    [exportId, result, frame, page],
+    [exportId, result, frame],
   )
 
   // ---- candidate edits ----------------------------------------------------
@@ -457,9 +473,10 @@ export default function App() {
     const link = parseThemeHash(location.hash)
     if (!link) return
     const { vision } = link
-    if (link.page.radius !== undefined) setRadius(link.page.radius)
-    if (link.page.font !== undefined) setFont(link.page.font)
-    const open = (state: ThemeState, note: string) => {
+    const open = (carried: ThemeState, note: string) => {
+      // Links from before the state carried corners and font put them in the
+      // parameters; they still open as they looked.
+      const state = { ...carried, ...link.page }
       // A vision link opens in compare: the theme as it is next to the theme
       // as it is seen, so the simulation never stands in for the real thing.
       setFrames((prev) => {
@@ -495,7 +512,7 @@ export default function App() {
     return () => {
       live = false
     }
-  }, [setRadius, setFont])
+  }, [])
 
   const undoStartOver = () => {
     if (toast?.undo) updateFrame(toast.undo.frameIndex, toast.undo.prev)
@@ -944,7 +961,12 @@ export default function App() {
             onFidelity={(v) => dispatch({ op: 'fidelity', value: v })}
             onSeparation={(v) => dispatch({ op: 'separation', value: v })}
             onContrast={(v) => dispatch({ op: 'contrast', value: v })}
-            page={{ page, onRadius: setRadius, onFont: setFont, applies: mockupById(frame.mockup).followsPage }}
+            page={{
+              page: { radius: frame.radius, font: frame.font },
+              onRadius: (px) => dispatch({ op: 'radius', value: px }),
+              onFont: pickFont,
+              applies: mockupById(frame.mockup).followsPage,
+            }}
           />
         ),
       },
@@ -1269,7 +1291,7 @@ export default function App() {
                           mode={f.mode}
                           uid={FRAME_LABEL[i].toLowerCase()}
                           locateTarget={active === i ? locating : null}
-                          page={page}
+                          page={{ radius: f.radius, font: f.font }}
                         />
                       </PreviewBoundary>
                     ) : (

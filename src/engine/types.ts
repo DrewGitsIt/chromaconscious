@@ -309,3 +309,23 @@ export interface ThemeResult {
   judge: JudgeVerdict
   css: string
 }
+
+/**
+ * The theme's corners and face, as the exporters write them. Built from the
+ * state by pageSettings.ts; the engine never solves anything with it. Each
+ * part is absent at its default (shadcn's 10px, the system face), so an export
+ * at the defaults is byte-identical to one made before these were exported.
+ */
+export interface ThemePage {
+  /** px; written as rem, the unit shadcn's own `--radius` uses. */
+  radius?: number
+  font?: {
+    /** As the dropdown names it: `Fraunces`. */
+    name: string
+    /** The CSS font-family stack, first entry the face itself. */
+    stack: string
+    headingWeight: number
+    /** The npm package that self-hosts the face, for the install note. */
+    pkg: string
+  }
+}

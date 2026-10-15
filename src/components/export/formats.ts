@@ -13,6 +13,7 @@ import type { ThemeState } from '../../ops'
 import { API_BASE_PATH, exportText, stateAppLink } from '../../api/exports'
 import type { ExportFormatId } from '../../api/exports'
 import { figmaFormat } from './figmaFormat'
+import { themePage } from '../../pageSettings'
 
 /** Everything a format may read. */
 export interface ExportContext {
@@ -27,7 +28,7 @@ export interface ExportContext {
   origin: string
   /**
    * View settings that ride the share link and never reach exported code:
-   * `vision`/`strength`, then the page settings (`radius`, `font`).
+   * `vision`/`strength`. Corners and font are theme state; the payload has them.
    */
   linkParams: Record<string, string>
 }
@@ -82,7 +83,7 @@ function codeFormat(
   ext: string,
   mime: string,
 ): ExportFormat {
-  const text = (ctx: ExportContext) => exportText(ctx.result, ctx, ctx.origin, format)
+  const text = (ctx: ExportContext) => exportText(ctx.result, ctx, ctx.origin, format, 'both', themePage(ctx.state))
   return {
     ...meta,
     group: 'code',
@@ -126,7 +127,8 @@ export const EXPORT_FORMATS: ExportFormat[] = [
       id: 'css',
       name: 'CSS variables',
       sub: ':root + .dark',
-      about: 'Light in `:root`, dark in `.dark`, plus elevation and scrim. Drop it into any stylesheet.',
+      about:
+        'Light in `:root`, dark in `.dark`, plus elevation and scrim, and your corners and font when you changed them. Drop it into any stylesheet; it replaces a shadcn theme whole.',
     },
     '.css',
     'text/css',
@@ -138,7 +140,7 @@ export const EXPORT_FORMATS: ExportFormat[] = [
       name: 'Tailwind v4',
       sub: 'CSS + @theme inline',
       about:
-        'The same variables, plus an `@theme inline` bridge, so `bg-primary` and `shadow-elevation-2` work in Tailwind v4.',
+        'The same variables, plus an `@theme inline` bridge, so `bg-primary`, `shadow-elevation-2`, and `rounded-md` and `font-sans` once you set corners or a font, work in Tailwind v4.',
     },
     '.tailwind.css',
     'text/css',
@@ -162,7 +164,7 @@ export const EXPORT_FORMATS: ExportFormat[] = [
     name: 'Share link',
     sub: 'opens this exact theme',
     about:
-      'Opens this exact theme in ChromaConscious for anyone. The whole theme travels in the link, so nothing is saved and it never expires. View settings, such as a colorblind simulation or the page settings, ride along; they never reach the exported code.',
+      'Opens this exact theme in ChromaConscious for anyone. The whole theme travels in the link, so nothing is saved and it never expires. A colorblind simulation rides along as a view setting; it never reaches the exported code.',
     preview: {
       kind: 'link',
       label: 'share link',

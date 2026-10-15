@@ -187,14 +187,14 @@
     animation: sec-in var(--d-slow) var(--ease-out) backwards;
   }
   .sec + .sec {
-    margin-top: 22px;
+    margin-top: 28px;
   }
   .sec-head {
     position: relative;
     display: flex;
     align-items: center;
     gap: var(--gap-m);
-    margin: 0 0 10px;
+    margin: 0 0 14px;
     min-height: 24px;
   }
   .sec.shut .sec-head {
@@ -227,12 +227,14 @@
     color: var(--ink-faint);
     min-width: 8px;
   }
-  /* "1 colors": the section's name in the UI voice, lowercase, a step above
-     body text — the mockup's heading, not a tracked-out instrument label */
+  /* "1 colors": the section's name in the UI voice, lowercase. Two steps
+     above a control's name (size and weight), so a heading never reads as one
+     more control — the controls under it step down to muted ink. */
   .sec-label {
     font-family: var(--font-ui);
-    font-size: var(--fs-m);
-    font-weight: 500;
+    font-size: var(--fs-sec);
+    font-weight: 600;
+    letter-spacing: -0.01em;
     color: var(--ink);
     white-space: nowrap;
   }

@@ -14,6 +14,7 @@ import { readBoard } from '../board'
 import type { Op, ThemeState } from '../ops'
 import { applyOp, buildTheme } from '../ops'
 import { PRESETS } from '../presets'
+import { PAGE_FONTS, RADIUS_MAX, RADIUS_MIN, isPageFontId } from '../pageSettings'
 
 export class QueryError extends Error {}
 
@@ -144,6 +145,18 @@ export function applyEdits(start: ThemeState, q: URLSearchParams, fromExisting: 
   }
   const contrast = q.get('contrast')
   if (contrast != null) ops.push({ op: 'contrast', value: contrastParam(contrast) })
+  const radius = q.get('radius')
+  if (radius != null) {
+    const px = radius.trim() === '' ? NaN : Number(radius)
+    if (!Number.isInteger(px) || px < RADIUS_MIN || px > RADIUS_MAX)
+      throw new QueryError(`radius is a whole number of px from ${RADIUS_MIN} to ${RADIUS_MAX}`)
+    ops.push({ op: 'radius', value: px })
+  }
+  const font = q.get('font')
+  if (font != null) {
+    if (!isPageFontId(font)) throw new QueryError(`font is one of ${PAGE_FONTS.map((f) => f.id).join(', ')}`)
+    ops.push({ op: 'font', value: font })
+  }
   const mono = q.get('mono')
   if (mono != null) ops.push((s) => ({ op: 'mono', index: mono === 'off' ? null : indexOf(s, mono) }))
   for (const ref of list(q.get('bench'))) ops.push((s) => ({ op: 'bench', index: indexOf(s, ref) }))

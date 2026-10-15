@@ -11,7 +11,6 @@ import { strFromU8, unzipSync } from 'fflate'
 import { parseThemeHash } from '../../visionLink'
 import type { ExportContext } from './formats'
 import { EXPORT_FORMATS, agentCalls, shareLink, visionParams } from './formats'
-import { DEFAULT_PAGE, pageLinkParams } from '../../pageSettings'
 
 const ORIGIN = 'https://drewkidwell.com'
 const memoryEnv = () => {
@@ -56,6 +55,9 @@ function tunedState(): ThemeState {
   return s
 }
 
+/** Corners and a face off their defaults, on top of everything tunedState sets. */
+const shapedState = (): ThemeState => ({ ...tunedState(), radius: 4, font: 'fraunces' })
+
 describe('the Export dialog matches the API byte for byte', () => {
   it('a preset frame gets the id the API gives the same preset', async () => {
     const { env } = memoryEnv()
@@ -67,6 +69,7 @@ describe('the Export dialog matches the API byte for byte', () => {
   for (const [name, build] of [
     ['preset', presetState],
     ['tuned (lock, riff, taste, separation, contrast)', tunedState],
+    ['shaped (corners and font)', shapedState],
   ] as const) {
     it(`${name}: CSS, Tailwind and DTCG equal /export, by theme= and by state= alike`, async () => {
       const { env, m } = memoryEnv()
@@ -119,7 +122,7 @@ describe('the Export dialog matches the API byte for byte', () => {
 describe('Figma variables', () => {
   it("every file in the download is the API's file for that mode, byte for byte", async () => {
     const { env, m } = memoryEnv()
-    const s = tunedState()
+    const s = shapedState()
     const ctx = await appContext(s)
     m.set(ctx.id, JSON.stringify({ state: encodeState(s), parent: null }))
     const f = fmt('figma')
@@ -172,21 +175,21 @@ describe('links', () => {
     expect(await themeId(encodeState(decodeState(payloadState(parsed.state!))))).toBe(ctx.id)
   })
 
-  it('the share link carries the vision and page settings, and adds nothing at the defaults', () => {
+  it('the share link carries the vision, and adds nothing for typical', () => {
     const p = 'AQAB'
-    expect(pageLinkParams(DEFAULT_PAGE)).toEqual({})
-    expect(shareLink(ORIGIN, p, { ...visionParams('typical', 1), ...pageLinkParams(DEFAULT_PAGE) })).toBe(
-      `${ORIGIN}/chromaconscious#s=${p}`,
-    )
-    const link = shareLink(ORIGIN, p, { ...visionParams('deutan', 0.6), ...pageLinkParams({ radius: 20, font: 'tinos' }) })
-    expect(link).toBe(`${ORIGIN}/chromaconscious#s=${p}&vision=deutan&strength=60&radius=20&font=tinos`)
-    expect(parseThemeHash(new URL(link).hash)).toEqual({
-      state: p,
-      vision: { vision: 'deutan', strength: 0.6 },
-      page: { radius: 20, font: 'tinos' },
-    })
+    expect(shareLink(ORIGIN, p, visionParams('typical', 1))).toBe(`${ORIGIN}/chromaconscious#s=${p}`)
+    const link = shareLink(ORIGIN, p, visionParams('deutan', 0.6))
+    expect(link).toBe(`${ORIGIN}/chromaconscious#s=${p}&vision=deutan&strength=60`)
+    expect(parseThemeHash(new URL(link).hash)).toEqual({ state: p, vision: { vision: 'deutan', strength: 0.6 }, page: {} })
     expect(visionParams('protan', 1)).toEqual({ vision: 'protan' })
     expect(visionParams('typical', 0.4)).toEqual({})
+  })
+
+  it('corners and font ride in the payload itself, not beside it', async () => {
+    const ctx = await appContext(shapedState())
+    expect(ctx.linkParams).toEqual({})
+    const back = decodeState(payloadState(ctx.payload))
+    expect([back.radius, back.font]).toEqual([4, 'fraunces'])
   })
 
   it('the agent calls carry state=, and none asks for a key', () => {
@@ -203,5 +206,45 @@ describe('links', () => {
       expect(['code', 'design', 'links']).toContain(f.group)
       expect(f.copy.length + (f.download ? 1 : 0)).toBeGreaterThan(0)
     }
+  })
+})
+
+describe('corners and font in the files', () => {
+  it('at the defaults, no file mentions either', async () => {
+    const ctx = await appContext(presetState())
+    for (const id of ['css', 'tailwind', 'json']) expect(copied(id, ctx), id).not.toMatch(/radius|font/)
+  })
+
+  it('CSS writes them once, in :root, in shadcn\'s names, and says which package brings the face', async () => {
+    const css = copied('css', await appContext(shapedState()))
+    const [root, dark] = css.split('.dark {')
+    expect(root).toContain('  --radius: 0.25rem;')
+    expect(root).toContain('  /* Fraunces: npm i @fontsource-variable/fraunces, then import it once in your app */')
+    expect(root).toContain("  --font-sans: 'Fraunces Variable', ui-serif, Georgia, serif;")
+    expect(root).toContain("  --font-heading: 'Fraunces Variable', ui-serif, Georgia, serif;")
+    expect(root).toContain('  --font-heading-weight: 600;')
+    expect(dark).not.toMatch(/radius|font/)
+  })
+
+  it('Tailwind bridges the radius scale and the face', async () => {
+    const tw = copied('tailwind', await appContext(shapedState()))
+    const bridge = tw.slice(tw.indexOf('@theme inline'))
+    expect(bridge).toContain('  --radius-md: calc(var(--radius) * 0.8);')
+    expect(bridge).toContain('  --radius-lg: var(--radius);')
+    expect(bridge).toContain("  --font-sans: 'Fraunces Variable', ui-serif, Georgia, serif;")
+  })
+
+  it('DTCG gives each mode a dimension, a fontFamily and a fontWeight', async () => {
+    const doc = JSON.parse(copied('json', await appContext(shapedState())))
+    for (const mode of ['light', 'dark']) {
+      expect(doc[mode].radius).toEqual({ $type: 'dimension', $value: '4px' })
+      expect(doc[mode]['font-sans']).toEqual({ $type: 'fontFamily', $value: ['Fraunces Variable', 'ui-serif', 'Georgia', 'serif'] })
+      expect(doc[mode]['font-heading-weight']).toEqual({ $type: 'fontWeight', $value: 600 })
+    }
+  })
+
+  it('a radius of 0 is still written: sharp is a choice, not the default', async () => {
+    const css = copied('css', await appContext({ ...presetState(), radius: 0 }))
+    expect(css).toContain('  --radius: 0rem;')
   })
 })

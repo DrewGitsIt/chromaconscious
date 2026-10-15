@@ -15,6 +15,7 @@
 import type { ColorCandidate, Role, Separation, ThemeResult } from './engine'
 import { candidatesFromList, generateTheme, normalizeContrast, parseColor } from './engine'
 import type { BoardView } from './board'
+import { FONT_DEFAULT, RADIUS_DEFAULT, clampRadius, isPageFontId } from './pageSettings'
 import {
   adjustRole,
   benchCandidate,
@@ -55,6 +56,13 @@ export interface ThemeState {
   contrast: number
   /** Name of the applied preset; cleared once candidates diverge from it. */
   preset: string | null
+  /**
+   * Corners in px and the face's id (pageSettings.ts). Exported like
+   * separation, but the engine never reads them: they shape the page, not
+   * the colours.
+   */
+  radius: number
+  font: string
 }
 
 export const emptyThemeState = (): ThemeState => ({
@@ -65,6 +73,8 @@ export const emptyThemeState = (): ThemeState => ({
   separation: 'layered',
   contrast: 0,
   preset: null,
+  radius: RADIUS_DEFAULT,
+  font: FONT_DEFAULT,
 })
 
 export type Op =
@@ -115,6 +125,8 @@ export type Op =
   | { op: 'separation'; value: Separation }
   /** Contrast level 0..1; clamped. */
   | { op: 'contrast'; value: number }
+  | { op: 'radius'; value: number }
+  | { op: 'font'; value: string }
 
 export interface OpContext {
   /**
@@ -261,5 +273,11 @@ export function applyOp<S extends ThemeState>(state: S, op: Op, ctx: OpContext):
       const value = normalizeContrast(op.value)
       return value === state.contrast ? state : { ...state, contrast: value }
     }
+    case 'radius': {
+      const value = clampRadius(op.value)
+      return value === state.radius ? state : { ...state, radius: value }
+    }
+    case 'font':
+      return !isPageFontId(op.value) || op.value === state.font ? state : { ...state, font: op.value }
   }
 }

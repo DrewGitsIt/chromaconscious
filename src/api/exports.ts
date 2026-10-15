@@ -4,8 +4,8 @@
  * would not. Every export names its theme, so a file in a repo points back to
  * the theme that made it.
  */
-import type { ThemeResult } from '../engine'
-import { themeTailwind, themeTokensJson } from '../engine'
+import type { ThemePage, ThemeResult } from '../engine'
+import { emitCss, themeTailwind, themeTokensJson } from '../engine'
 
 export type ExportFormatId = 'css' | 'tailwind' | 'json'
 export type ExportMode = 'both' | 'light' | 'dark'
@@ -41,12 +41,14 @@ export function exportText(
   origin: string,
   format: ExportFormatId,
   mode: ExportMode = 'both',
+  /** The theme's corners and face (pageSettings.ts `themePage`); `{}` at the defaults. */
+  page: ThemePage = {},
 ): string {
   if (format === 'css' || format === 'tailwind') {
-    const body = format === 'css' ? result.css : themeTailwind(result)
+    const body = format === 'css' ? emitCss(result.light, result.dark, page) : themeTailwind(result, page)
     return `/* ChromaConscious ${id} · ${stateAppLink(origin, payload)} */\n${body}`
   }
-  const doc = JSON.parse(themeTokensJson(result)) as Record<string, unknown>
+  const doc = JSON.parse(themeTokensJson(result, page)) as Record<string, unknown>
   const ext = { id, url: stateAppLink(origin, payload) }
   const body = {
     // Both keys, so readers written against the legacy name still find the id.

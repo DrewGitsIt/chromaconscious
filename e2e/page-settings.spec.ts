@@ -2,8 +2,8 @@ import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 
 /**
- * Page settings (corners, type) are preview-only view state. The trap they
- * exist to avoid is the portal: a menu or dialog mounts on <body>, outside
+ * Corners and font: theme state the preview draws and every export writes.
+ * The trap the preview has to avoid is the portal: a menu or dialog mounts on <body>, outside
  * the frame, so a setting injected only on the frame would stop at its edge.
  * So every check here reads a card in the frame AND a portalled menu.
  */
@@ -33,10 +33,12 @@ const closeMenu = async (page: Page) => {
 const corners = (page: Page) => page.getByRole('slider', { name: 'corners' })
 const typeTrigger = (page: Page) => page.locator('.pg-font')
 
-test.describe('page settings', () => {
+test.describe('corners and font', () => {
   test('the defaults are today\'s look: shadcn radius, system body, Geist titles', async ({ page }) => {
     await boot(page)
-    await expect(page.locator('.pg-head')).toContainText('preview only · rides the share link · not exported')
+    // plain tuning controls now: no group heading of their own
+    await expect(page.locator('.pg-head')).toHaveCount(0)
+    await expect(page.locator('.pg-name')).toHaveText(['corners', 'font'])
     await expect(corners(page)).toHaveValue('10')
     await expect(page.locator('.pg-value')).toHaveText('10px')
     await expect(typeTrigger(page)).toContainText('System UI')
@@ -110,7 +112,7 @@ test.describe('page settings', () => {
     expect(requests.filter((u) => /googleapis|gstatic/.test(u))).toEqual([])
   })
 
-  test('a link carries the page settings; an unknown font is dropped and the theme still opens', async ({ page }) => {
+  test('an old link with page parameters still opens with them; an unknown font is dropped', async ({ page }) => {
     await page.route('**/api/chromaconscious/v1/state*', (route) =>
       route.fulfill({
         contentType: 'application/json',
@@ -130,10 +132,31 @@ test.describe('page settings', () => {
     await expect(typeTrigger(page)).toContainText('System UI')
   })
 
-  test('the brand board says it keeps its own corners and type', async ({ page }) => {
+  test('both reach the export dialog, at the top of :root', async ({ page }) => {
+    await boot(page)
+    await corners(page).fill('4')
+    await typeTrigger(page).click()
+    await page.getByRole('option', { name: /Fraunces/ }).click()
+    await expect(typeTrigger(page)).toContainText('Fraunces')
+    await page.locator('.export-btn').click()
+    const preview = page.locator('.xd-pre').first()
+    await expect(preview).toContainText('--radius: 0.25rem;')
+    await expect(preview).toContainText("--font-sans: 'Fraunces Variable'")
+  })
+
+  test('compare keeps each frame\'s own corners', async ({ page }) => {
+    await boot(page)
+    await page.locator('[title*="compare two frames"]').click()
+    await corners(page).fill('0')
+    await page.getByRole('button', { name: 'edit frame A' }).click()
+    await expect(corners(page)).toHaveValue('10')
+    expect(await css(card(page), 'borderTopLeftRadius')).toBe('14px')
+  })
+
+  test('the brand board says it keeps its own corners and font', async ({ page }) => {
     await boot(page)
     await expect(page.locator('.pg-note')).toHaveCount(0)
     await page.locator('.frame-mockup').first().selectOption('brand')
-    await expect(page.locator('.pg-note')).toHaveText('the brand board is print: it keeps its own corners and type')
+    await expect(page.locator('.pg-note')).toHaveText('the brand board is print: it keeps its own corners and font')
   })
 })

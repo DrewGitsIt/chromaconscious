@@ -2,7 +2,7 @@ import { converter, formatHex, formatHex8 } from 'culori'
 import type { ContrastLevelName } from './contrastLevel'
 import { effectVars } from './elevation'
 import { ROLES } from './types'
-import type { Separation, ShadowLayer, ThemeEffects, ThemeMode, ThemeResult } from './types'
+import type { Separation, ShadowLayer, ThemeEffects, ThemeMode, ThemePage, ThemeResult } from './types'
 
 const toRgb = converter('rgb')
 
@@ -18,6 +18,8 @@ const LEVELS = [1, 2, 3] as const
 type ExportableMode = Pick<ThemeMode, 'tokens'> & { effects?: ThemeEffects }
 
 const px = (n: number) => `${n}px`
+/** shadcn writes `--radius` in rem (`0.625rem`), so the export does too. */
+const rem = (n: number) => `${n / 16}rem`
 
 /**
  * The CSS strings come from `elevation.ts`, not from here. The live preview
@@ -34,17 +36,47 @@ function effectLines(effects: ThemeEffects | undefined, indent: string): string[
  * with a lit top edge where light drops a shadow, so the two blocks hold
  * genuinely different values, not one value behind a mode switch.
  */
-export function emitCss(light: ExportableMode, dark: ExportableMode): string {
+export function emitCss(light: ExportableMode, dark: ExportableMode, page?: ThemePage): string {
   const block = (mode: ExportableMode, indent = '  ') =>
     [
       ...Object.entries(mode.tokens).map(([k, v]) => `${indent}--${k}: ${v};`),
       ...effectLines(mode.effects, indent),
     ].join('\n')
-  return `:root {\n${block(light)}\n}\n\n.dark {\n${block(dark)}\n}\n`
+  // First, where shadcn's own globals.css puts `--radius`, and where the
+  // dialog's preview shows them.
+  const root = [...pageLines(page, '  '), block(light)].join('\n')
+  return `:root {\n${root}\n}\n\n.dark {\n${block(dark)}\n}\n`
 }
 
+/**
+ * Corners and face, in `:root` only: neither changes with the mode. The names
+ * are shadcn's own (`--radius`, `--font-sans`, `--font-heading`), so the file
+ * drops over a shadcn project's and takes. A face is only a name in CSS, so
+ * the comment says which package actually brings the files.
+ */
+function pageLines(page: ThemePage | undefined, indent: string): string[] {
+  const out: string[] = []
+  if (page?.radius !== undefined) out.push(`${indent}--radius: ${rem(page.radius)};`)
+  if (page?.font) {
+    const f = page.font
+    out.push(
+      `${indent}/* ${f.name}: npm i ${f.pkg}, then import it once in your app */`,
+      `${indent}--font-sans: ${f.stack};`,
+      `${indent}--font-heading: ${f.stack};`,
+      `${indent}--font-heading-weight: ${f.headingWeight};`,
+    )
+  }
+  return out
+}
+
+/** `'Fraunces Variable', ui-serif, serif` → the DTCG fontFamily array. */
+const familyList = (stack: string): string[] => stack.split(',').map((s) => s.trim().replace(/^'(.*)'$/, '$1'))
+
+/** shadcn's Tailwind v4 radius scale, as multiples of `--radius` (the app's own index.css). */
+const RADIUS_SCALE = [['sm', 0.6], ['md', 0.8], ['lg', 1], ['xl', 1.4], ['2xl', 1.8], ['3xl', 2.2], ['4xl', 2.6]] as const
+
 /** CSS variables plus the Tailwind v4 `@theme inline` bridge to color utilities. */
-export function themeTailwind(result: Pick<ThemeResult, 'light' | 'dark'>): string {
+export function themeTailwind(result: Pick<ThemeResult, 'light' | 'dark'>, page?: ThemePage): string {
   const bridge = Object.keys(result.light.tokens).map((k) => `  --color-${k}: var(--${k});`)
   if (result.light.effects) {
     // `--shadow-*` is Tailwind's own namespace for box-shadows; bridging these
@@ -56,7 +88,15 @@ export function themeTailwind(result: Pick<ThemeResult, 'light' | 'dark'>): stri
       '  --color-scrim: var(--scrim);',
     )
   }
-  return `${emitCss(result.light, result.dark)}\n@theme inline {\n${bridge.join('\n')}\n}\n`
+  if (page?.radius !== undefined) {
+    // shadcn's own scale off the one `--radius`, so `rounded-md` follows it.
+    bridge.push(
+      ...RADIUS_SCALE.map(([k, f]) => `  --radius-${k}: ${f === 1 ? 'var(--radius)' : `calc(var(--radius) * ${f})`};`),
+    )
+  }
+  // Inline, so `font-sans` compiles to the stack itself.
+  if (page?.font) bridge.push(`  --font-sans: ${page.font.stack};`, `  --font-heading: ${page.font.stack};`)
+  return `${emitCss(result.light, result.dark, page)}\n@theme inline {\n${bridge.join('\n')}\n}\n`
 }
 
 /**
@@ -146,8 +186,20 @@ function dtcgModeTokens<C>({ tokens, effects }: ExportableMode, color: ColorEnco
 /** DTCG-style design tokens: each token as { $type, $value } per mode. */
 export function themeTokensJson(
   result: Pick<ThemeResult, 'light' | 'dark'> & { seed?: number; separation?: Separation; contrast?: number },
+  page?: ThemePage,
 ): string {
-  const block = (mode: ExportableMode) => dtcgModeTokens(mode, dtcgColor)
+  // Corners and face sit in each mode beside the colours, so either mode is a
+  // whole token set on its own (what a `mode=dark` export hands out).
+  const shape = {
+    ...(page?.radius !== undefined ? { radius: { $type: 'dimension', $value: px(page.radius) } } : {}),
+    ...(page?.font
+      ? {
+          'font-sans': { $type: 'fontFamily', $value: familyList(page.font.stack) },
+          'font-heading-weight': { $type: 'fontWeight', $value: page.font.headingWeight },
+        }
+      : {}),
+  }
+  const block = (mode: ExportableMode) => ({ ...dtcgModeTokens(mode, dtcgColor), ...shape })
   // seed 0, `layered` and standard contrast are the canonical settings — an export made with
   // anything else carries it so the theme is reproducible, and one made with
   // the defaults stays byte-identical to before $meta existed.
@@ -255,7 +307,10 @@ function figmaPaths(doc: Record<string, unknown>, prefix = '', out = new Map<str
  * Throws if any two files disagree on their set of paths or types, since
  * Figma would drop the difference without a word.
  */
-export function themeFigmaModes(byLevel: Partial<Record<ContrastLevelName, FigmaSource>>): FigmaModeFile[] {
+export function themeFigmaModes(
+  byLevel: Partial<Record<ContrastLevelName, FigmaSource>>,
+  page?: ThemePage,
+): FigmaModeFile[] {
   const files: FigmaModeFile[] = []
   const sets: string[] = []
   for (const level of FIGMA_LEVELS) {
@@ -277,6 +332,8 @@ export function themeFigmaModes(byLevel: Partial<Record<ContrastLevelName, Figma
       const doc = {
         color,
         ramp,
+        // A number variable, in px: Figma's corner radius has no unit.
+        ...(page?.radius !== undefined ? { radius: { $type: 'number', $value: page.radius } } : {}),
         $extensions: {
           chromaconscious: {
             mode,
@@ -286,6 +343,11 @@ export function themeFigmaModes(byLevel: Partial<Record<ContrastLevelName, Figma
             // Figma variables cannot hold shadows. DTCG shadow tokens, one per
             // elevation level, layer colours in the same object form as above.
             shadows,
+            // Not a variable: a CSS stack is not a Figma font name, and the
+            // importer's support for string types is unconfirmed.
+            ...(page?.font
+              ? { font: { name: page.font.name, stack: page.font.stack, headingWeight: page.font.headingWeight } }
+              : {}),
           },
         },
       }

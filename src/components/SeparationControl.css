@@ -18,7 +18,7 @@
   .sep-name {
     display: block;
     font-size: var(--fs-m);
-    color: var(--ink);
+    color: var(--ink-muted);
     margin-bottom: 8px;
   }
 

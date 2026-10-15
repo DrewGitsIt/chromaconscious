@@ -1,34 +1,13 @@
 @layer chrome-base, chrome;
 
-/* PAGE — the tuning section's preview-only group. Set off by a rule and a
-   caption that says what it is NOT (theme state), so the two controls never
-   read as part of the palette. The corners slider is the contrast control's
-   instrument (a ruled scale, a 2px rail, a hairline needle) with its own
-   class names, because tests address `.ctr-slider` as one control. */
+/* CORNERS and FONT — the tuning section's last two controls. Theme state
+   like the rest, so they sit in the same rhythm with no group of their own.
+   The corners slider is the contrast control's instrument (a ruled scale, a
+   2px rail, a hairline needle) with its own class names, because tests
+   address `.ctr-slider` as one control. */
 @layer chrome {
-  .pg {
-    margin-top: 24px;
-    padding-top: 16px;
-    border-top: 1px solid var(--line-card);
-  }
-  .pg-head {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-  .pg-head b {
-    font-size: var(--fs-m);
-    font-weight: 500;
-    color: var(--ink);
-  }
-  .pg-head span {
-    font-size: var(--fs-xs);
-    color: var(--ink-faint);
-  }
-
-  .pg-row + .pg-row {
-    margin-top: 16px;
+  .pg-row {
+    margin-top: 20px;
   }
   .pg-read {
     display: flex;
@@ -38,7 +17,7 @@
   }
   .pg-name {
     font-size: var(--fs-m);
-    color: var(--ink);
+    color: var(--ink-muted);
   }
   .pg-value {
     font-family: var(--font-code);

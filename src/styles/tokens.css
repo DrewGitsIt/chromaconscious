@@ -55,8 +55,9 @@
   --fs-xs: 11px; /* micro-labels, tags, fine print */
   --fs-s: 12px; /* captions, hex codes, dense controls */
   --fs-m: 13px; /* default control text */
+  --fs-sec: 15px; /* pane section headings: the one step between controls and the wordmark */
   --fs-h1: 16px; /* the wordmark */
-  --fs-read: 20px; /* numeric readouts */
+  --fs-read: 17px; /* numeric readouts: bright and mono, but never louder than a heading */
 
   /* rhythm */
   --gap-s: 6px;

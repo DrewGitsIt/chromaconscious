@@ -13,6 +13,7 @@ import { PRESETS } from '../presets'
 import { QueryError, applyEdits, backOp, hopsParam, presetByName, riffOp, runOps } from './query'
 import { StateError, decodeState, encodeState, isThemeId, themeId } from './state'
 import { exportText } from './exports'
+import { themePage } from '../pageSettings'
 import { FIGMA_MODE_NAMES, figmaIndex, figmaModeFile } from './exportsFigma'
 import { payloadState, statePayload } from './stateLink'
 import { summarize, summaryText } from './summary'
@@ -273,12 +274,12 @@ async function route(req: Request, env: Env): Promise<Response> {
       }
       const result = forge(t.state)
       if (format === 'css' || format === 'tailwind') {
-        return text(exportText(result, t, url.origin, format), 200, 'text/css; charset=utf-8')
+        return text(exportText(result, t, url.origin, format, 'both', themePage(t.state)), 200, 'text/css; charset=utf-8')
       }
       if (format === 'json') {
         const mode = q.get('mode') ?? 'both'
         if (mode !== 'both' && mode !== 'light' && mode !== 'dark') throw new QueryError('mode is light, dark or both')
-        return text(exportText(result, t, url.origin, 'json', mode), 200, 'application/json')
+        return text(exportText(result, t, url.origin, 'json', mode, themePage(t.state)), 200, 'application/json')
       }
       throw new QueryError('format is css, tailwind, json or figma')
     }

@@ -20,7 +20,7 @@ export interface MockupProps {
    * candidate, but they still own tokens.
    */
   locateTarget?: TokenAncestor | null
-  /** Corners and type for the preview (pageSettings.ts). Global view state, never theme state. */
+  /** The frame's corners and font (pageSettings.ts). Theme state; the mockup only draws them. */
   page?: PageSettings
 }
 

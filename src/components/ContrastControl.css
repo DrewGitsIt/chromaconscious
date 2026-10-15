@@ -21,7 +21,7 @@
   }
   .ctr-name {
     font-size: var(--fs-m);
-    color: var(--ink);
+    color: var(--ink-muted);
   }
   /* The ratio is THE reading, in the dial's big bright readout style; the Lc
      trails it small and muted, as the engine's aim rather than the check. */

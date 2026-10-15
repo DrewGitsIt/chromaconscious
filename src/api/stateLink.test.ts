@@ -55,6 +55,8 @@ describe('state links: lossless', () => {
         separation: opts.separation ?? 'layered',
         contrast: 0,
         preset: null,
+        radius: 10,
+        font: 'system',
       }
       const canonical = encodeState(s)
       expect(payloadState(statePayload(canonical))).toBe(canonical)
@@ -73,6 +75,11 @@ describe('state links: lossless', () => {
     await roundTrips({ ...preset('Ink & sky'), contrast: 0.5, fidelity: 0.73, separation: 'lifted', monoBase: 1 })
     await roundTrips({ ...preset('Neon arcade'), contrast: 1 / 3, fidelity: 1 / 7 })
     await roundTrips({ ...preset('Terracotta'), preset: 'a name no preset has ✓' })
+    // corners and face: each alone, both, and the ends of the slider
+    await roundTrips({ ...preset('Ink & sky'), radius: 4 })
+    await roundTrips({ ...preset('Ink & sky'), font: 'fraunces' })
+    await roundTrips({ ...riffedLocked(), radius: 0, font: 'jetbrains-mono', contrast: 1 })
+    await roundTrips({ ...preset('Pastel picnic'), radius: 20, font: 'geist' })
     // a colour's own taste: every derive-safely step, 1, and an off-grid value
     for (const t of [0, 0.25, 0.5, 0.75, 1, 0.33, 1 / 3]) await roundTrips(overridden([t]))
     await roundTrips(overridden([0.25, 0.5]))
@@ -102,6 +109,33 @@ describe('state links: lossless', () => {
     const bad = packState(encodeState(overridden([0.25])))
     bad[0] = 1
     expect(() => payloadState(toBase64url(bad))).toThrow(StateError)
+  })
+
+  it('corners and face leave the bytes, and the id, alone at their defaults', async () => {
+    const s = preset('Coastal starter')
+    expect(encodeState(s)).not.toMatch(/radius|font/)
+    expect(encodeState({ ...s, radius: 10, font: 'system' })).toBe(encodeState(s))
+    expect(await themeId(encodeState({ ...s, radius: 4 }))).not.toBe(await themeId(encodeState(s)))
+  })
+
+  it('a link needing neither is still version 2, so older builds open it', () => {
+    expect(packState(encodeState(preset('Coastal starter')))[0]).toBe(2)
+    expect(packState(encodeState({ ...preset('Coastal starter'), radius: 4 }))[0]).toBe(3)
+    expect(packState(encodeState({ ...preset('Coastal starter'), font: 'tinos' }))[0]).toBe(3)
+  })
+
+  it('a face costs one byte, and one this build has never heard of travels as text', () => {
+    const plain = packState(encodeState(preset('Coastal starter')))
+    expect(packState(encodeState({ ...preset('Coastal starter'), font: 'fraunces' })).length - plain.length).toBe(1)
+    const future = JSON.stringify({ ...JSON.parse(encodeState(preset('Coastal starter'))), font: 'a-face-from-later' })
+    expect(payloadState(statePayload(future))).toBe(future)
+    // and opens at the default face rather than failing
+    expect(decodeState(future).font).toBe('system')
+  })
+
+  it('a radius the slider never makes is clamped on open', () => {
+    const wild = JSON.stringify({ ...JSON.parse(encodeState(preset('Coastal starter'))), radius: 99 })
+    expect(decodeState(payloadState(statePayload(wild))).radius).toBe(20)
   })
 
   it('the theme opened from a link is the theme that made it', () => {
@@ -139,8 +173,14 @@ describe('state links: refuse quietly, never crash', () => {
   it('an unknown version says so', () => {
     const bytes = packState(encodeState(preset('Coastal starter')))
     bytes[0] = LINK_VERSION + 1
-    expect(LINK_VERSION).toBe(2)
+    expect(LINK_VERSION).toBe(3)
     expect(() => payloadState(toBase64url(bytes))).toThrow(/newer ChromaConscious/)
+  })
+
+  it('a version-2 link claiming corners or a face is malformed', () => {
+    const bytes = packState(encodeState({ ...preset('Coastal starter'), radius: 4 }))
+    bytes[0] = 2
+    expect(() => payloadState(toBase64url(bytes))).toThrow(StateError)
   })
 
   it('base64url round-trips every byte', () => {

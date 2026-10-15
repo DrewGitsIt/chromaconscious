@@ -17,7 +17,7 @@
   }
   .dial-name {
     font-size: var(--fs-m);
-    color: var(--ink);
+    color: var(--ink-muted);
   }
   .dial-value {
     font-family: var(--font-code);

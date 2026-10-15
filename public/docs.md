@@ -43,6 +43,8 @@ If the theme store is unavailable, `/generate` and `/riff` still answer: the the
 | `taste` | 0–1 | | How freely the engine may adjust your colors. `0` adjusts freely to fit their roles; `1` keeps them as typed. Default `0.5`. See [Adjustments](#adjustments). |
 | `separation` | enum | | `flat`, `layered` (default) or `lifted`: how strongly surfaces separate from each other. |
 | `contrast` | enum \| 0–1 | | `standard` (default), `medium` or `high`, or a number from `0` to `1` (`0.5` is medium). Raises every contrast target the theme is solved for; doesn't change which color sits where. See [Contrast level](#contrast-level). |
+| `radius` | 0–20 | | Corner radius in px. Default `10` (shadcn's `0.625rem`). Exports write it as `--radius`, in rem. |
+| `font` | enum | | The theme's face: `system` (default), `geist`, `inter`, `arimo`, `plex`, `source-sans`, `atkinson`, `nunito`, `outfit`, `space-grotesk`, `barlow`, `tinos`, `source-serif`, `playfair`, `fraunces`, `roboto-slab` or `jetbrains-mono`. Exports write `--font-sans` and `--font-heading` with a comment naming the `@fontsource` package to install. |
 | `mono` | hex \| `off` | | Mono lock. That color's hue rules every seat. |
 | `lock` / `unlock` | list | | Roles or `chart-N`. Locking a seat the engine derived keeps it as your color first. |
 | `bench` | list | | Colors (by role or hex) to take out of play. |
@@ -259,7 +261,7 @@ Returns the theme's canonical state as JSON (the colors, pins, locks, taste, rif
 
 The first byte is a format version (now 2; version 1 links still open). A link made by a newer version gets a 422 from the API (the app shows a note and opens empty). Like an id, an old link re-solves on a newer engine: unlocked colors may shift slightly, and locked ones stay exact.
 
-The app's share link appends view settings, which never change the theme: `&vision=deutan&strength=60` (a colorblind simulation, opened side by side with the theme), `&radius=4` (corners, px) and `&font=tinos`.
+The app's share link appends view settings, which never change the theme: `&vision=deutan&strength=60` (a colorblind simulation, opened side by side with the theme). Corners and font are part of the theme and travel in its state; older links that carried them as `&radius=4&font=tinos` still open with them applied.
 
 ```
 https://drewkidwell.com/chromaconscious#s=AgEDAR01VwDmOUYAqNrcPA&vision=deutan

@@ -8,6 +8,7 @@ import { CHART_WINDOW, contrastLevelName, contrastTargets, roleWindow, toHex, wh
 import type { BoardView } from '../board'
 import { readBoard } from '../board'
 import type { ThemeState } from '../ops'
+import { FONT_DEFAULT, RADIUS_DEFAULT } from '../pageSettings'
 
 export interface ThemeSummary {
   theme: string
@@ -22,6 +23,9 @@ export interface ThemeSummary {
    */
   contrastLevel: { level: number; name: string | null; text: { lc: number; wcag: number }; marks: { lc: number; wcag: number } }
   mono: string | null
+  /** Corners in px, and the face's id (`system` is the platform's own stack). */
+  radius: number
+  font: string
   seats: Array<{ role: string; hex: string; provenance: string; from: string | null; locked: boolean }>
   chart: Array<{ slot: number; hex: string; provenance: string; locked: boolean }>
   bench: Array<{ color: string; parked: boolean; why: string[] }>
@@ -175,6 +179,8 @@ export function summarize(
     separation: state.separation,
     contrastLevel: contrastSummary(state.contrast),
     mono: state.monoBase != null ? state.candidates[state.monoBase].raw : null,
+    radius: state.radius,
+    font: state.font,
     seats: view.slots.map((s) => ({
       role: s.role,
       hex: s.hex,
@@ -224,6 +230,9 @@ export function summaryText(s: ThemeSummary): string {
     `separation ${s.separation}`,
     `contrast ${s.contrastLevel.name ?? s.contrastLevel.level.toFixed(2)}`,
     s.mono ? `mono ${s.mono}` : null,
+    // Only away from the defaults, so a summary line made before reads the same.
+    s.radius !== RADIUS_DEFAULT ? `corners ${s.radius}px` : null,
+    s.font !== FONT_DEFAULT ? `font ${s.font}` : null,
   ]
     .filter(Boolean)
     .join(' · ')

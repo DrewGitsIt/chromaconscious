@@ -13,11 +13,14 @@
  * else survives exactly, just less compactly — a colour typed as `oklch(…)`
  * travels as its text, and a lock's exact OKLCH as three float64s.
  *
- * Layout, version 2 (all integers are unsigned LEB128 varints):
+ * Layout, version 3 (all integers are unsigned LEB128 varints):
  *
- *   u8      version (2; version 1 links, which predate per-colour taste, still decode)
+ *   u8      version: 3 when radius or font is set, else 2, so a link that
+ *           needs neither still opens in a build from before them. Version 1
+ *           links, which predate per-colour taste, still decode.
  *   u8      settings flags: 1 fidelity · 2 seed · 4 monoBase · 8 separation
- *           · 16 contrast · 32 preset — a clear bit is the canonical default
+ *           · 16 contrast · 32 preset · 64 radius · 128 font (64 and 128 v3
+ *           only) — a clear bit is the canonical default
  *   varint  candidate count, then per candidate:
  *     u8      pin (bits 0–2: 0 none, 1–6 primary…warning, 7 chart) · 8 locked
  *             · 16 lockedColor · 32 benched · 64 colour is text, not hex
@@ -30,16 +33,17 @@
  *   then the flagged settings in flag order: fidelity and contrast as a u8
  *   percent (0–100) or 255 + float64; seed and monoBase as varints;
  *   separation as a u8 index; preset as varint (1 + index into PRESET_NAMES)
- *   or 0 + varint length + UTF-8 text.
+ *   or 0 + varint length + UTF-8 text; radius as a varint (px); font as
+ *   varint (1 + index into FONT_IDS) or 0 + varint length + UTF-8 text.
  *
  * The tables below belong to the format and must never be reordered. A
  * different layout is a new version; old versions keep decoding.
  */
 import { StateError } from './state'
 
-export const LINK_VERSION = 2
+export const LINK_VERSION = 3
 /** Every version this build reads. */
-const READS = [1, 2]
+const READS = [1, 2, 3]
 /** A colour's own taste, as the 3-bit code in its extension byte. 7 = exact, after the colour. */
 const TASTE_CODES = [0, 0.25, 0.5, 0.75, 1]
 
@@ -54,6 +58,25 @@ const PRESET_NAMES = [
   'Mono + ember',
   'Terracotta',
   'Corporate blue',
+]
+/** The faces as named on 2026-10-15 (pageSettings.ts ids). A face not here travels as text. */
+const FONT_IDS = [
+  'geist',
+  'inter',
+  'arimo',
+  'plex',
+  'source-sans',
+  'atkinson',
+  'nunito',
+  'outfit',
+  'space-grotesk',
+  'barlow',
+  'tinos',
+  'source-serif',
+  'playfair',
+  'fraunces',
+  'roboto-slab',
+  'jetbrains-mono',
 ]
 
 interface WireCandidate {
@@ -75,6 +98,8 @@ interface WireState {
   separation?: string
   contrast?: number
   preset?: string
+  radius?: number
+  font?: string
 }
 
 const HEX = /^#[0-9a-f]{6}$/
@@ -165,18 +190,20 @@ class Reader {
 
 // ---- canonical text <-> bytes ----------------------------------------------
 
-/** The canonical state text (state.ts `encodeState`) as version-1 bytes. */
+/** The canonical state text (state.ts `encodeState`) as link bytes. */
 export function packState(canonical: string): Uint8Array {
   const s = JSON.parse(canonical) as WireState
   const w = new Writer()
-  w.u8(LINK_VERSION)
   const flags =
     (s.fidelity !== undefined ? 1 : 0) |
     (s.seed !== undefined ? 2 : 0) |
     (s.monoBase !== undefined ? 4 : 0) |
     (s.separation !== undefined ? 8 : 0) |
     (s.contrast !== undefined ? 16 : 0) |
-    (s.preset !== undefined ? 32 : 0)
+    (s.preset !== undefined ? 32 : 0) |
+    (s.radius !== undefined ? 64 : 0) |
+    (s.font !== undefined ? 128 : 0)
+  w.u8(flags & 192 ? LINK_VERSION : 2)
   w.u8(flags)
   w.varint(s.candidates.length)
   for (const c of s.candidates) {
@@ -216,6 +243,15 @@ export function packState(canonical: string): Uint8Array {
       w.text(s.preset)
     }
   }
+  if (s.radius !== undefined) w.varint(s.radius)
+  if (s.font !== undefined) {
+    const i = FONT_IDS.indexOf(s.font)
+    if (i >= 0) w.varint(i + 1)
+    else {
+      w.varint(0)
+      w.text(s.font)
+    }
+  }
   return w.done()
 }
 
@@ -225,6 +261,7 @@ export function unpackState(bytes: Uint8Array): string {
   const version = r.u8()
   if (!READS.includes(version)) throw new StateError(`this link was made by a newer ChromaConscious (format ${version})`)
   const flags = r.u8()
+  if (flags & 192 && version < 3) throw new StateError('the link has unreadable settings')
   const count = r.varint()
   if (count > 256) throw new StateError('the link has too many colours')
   const candidates: WireCandidate[] = []
@@ -270,6 +307,12 @@ export function unpackState(bytes: Uint8Array): string {
     const i = r.varint()
     s.preset = i === 0 ? r.text() : PRESET_NAMES[i - 1]
     if (s.preset === undefined) throw new StateError('the link names an unknown preset')
+  }
+  if (flags & 64) s.radius = r.varint()
+  if (flags & 128) {
+    const i = r.varint()
+    s.font = i === 0 ? r.text() : FONT_IDS[i - 1]
+    if (s.font === undefined) throw new StateError('the link names an unknown font')
   }
   if (r.left !== 0) throw new StateError('the link has trailing data')
   return JSON.stringify(s)

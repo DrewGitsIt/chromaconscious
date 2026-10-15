@@ -39,21 +39,16 @@ const faceStyle = (id: string): CSSProperties => {
 }
 
 /**
- * The tuning section's "page" group: corners and type for the preview only.
- * View state, like the vision filter — it rides the share link and never
- * reaches the theme, the API or an export (pageSettings.ts).
+ * The tuning section's last two controls: corners and font. Theme state like
+ * the rest of the section (pageSettings.ts), so they carry no group heading
+ * of their own; the export writes them beside the colours.
  */
 export function PageSettingsGroup({ page, onRadius, onFont, applies }: PageSettingsGroupProps): ReactElement {
   const font = pageFontById(page.font)
   const isDefault = page.radius === RADIUS_DEFAULT
   const pct = ((page.radius - RADIUS_MIN) / (RADIUS_MAX - RADIUS_MIN)) * 100
   return (
-    <div className="pg" role="group" aria-labelledby="pg-head">
-      <div className="pg-head">
-        <b id="pg-head">page</b>
-        <span>preview only · rides the share link · not exported</span>
-      </div>
-
+    <>
       <div className="pg-row">
         <div className="pg-read">
           <span className="pg-name">corners</span>
@@ -92,7 +87,7 @@ export function PageSettingsGroup({ page, onRadius, onFont, applies }: PageSetti
 
       <div className="pg-row">
         <div className="pg-read">
-          <span className="pg-name">type</span>
+          <span className="pg-name">font</span>
         </div>
         <Select.Root
           value={page.font}
@@ -105,7 +100,7 @@ export function PageSettingsGroup({ page, onRadius, onFont, applies }: PageSetti
         >
           <Select.Trigger
             className="pg-font"
-            aria-label={`type: ${font.name}, ${font.use}`}
+            aria-label={`font: ${font.name}, ${font.use}`}
             onPointerEnter={loadSpecimens}
             onFocus={loadSpecimens}
           >
@@ -142,7 +137,7 @@ export function PageSettingsGroup({ page, onRadius, onFont, applies }: PageSetti
         </Select.Root>
       </div>
 
-      {!applies && <p className="pg-note">the brand board is print: it keeps its own corners and type</p>}
-    </div>
+      {!applies && <p className="pg-note">the brand board is print: it keeps its own corners and font</p>}
+    </>
   )
 }

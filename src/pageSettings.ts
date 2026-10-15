@@ -1,16 +1,17 @@
 /**
- * Page settings: the preview's corners and type.
+ * Page settings: the theme's corners and face.
  *
- * These are VIEW state, like the vision simulation, not theme state. They
- * change how the mockups are drawn, never which colours the engine solves, so
- * they stay out of the theme state, its id, the API and every export. They
- * ride the share link (`#t_…&radius=4&font=tinos`, read in visionLink.ts) and
- * are global: both frames of a split show the same page.
+ * They are THEME state, like separation: they travel in the state (state.ts,
+ * stateLink.ts), so the share link, the API and every export agree on them.
+ * They never change which colours the engine solves; the engine only writes
+ * them out (`ThemePage`, engine/css.ts). Each is dropped from the state at its
+ * default, so every theme id made before they were exported still holds.
  *
- * Kept free of imports so scripts/font-specimens.mjs can read the font table
- * with Node's own type stripping. That script also holds where each face's
- * dropdown specimen is cut from, which the app never needs.
+ * Kept free of runtime imports so scripts/font-specimens.mjs can read the
+ * font table with Node's own type stripping. That script also holds where each
+ * face's dropdown specimen is cut from, which the app never needs.
  */
+import type { ThemePage } from './engine/types'
 
 /** Corners, in px. 0 is sharp; 20 (1.25rem) is round. */
 export const RADIUS_MIN = 0
@@ -38,6 +39,8 @@ export interface PageFont {
   headingWeight: number
   /** The licence the font files ship under (each package's LICENSE). */
   licence: 'OFL-1.1' | 'Apache-2.0' | null
+  /** The @fontsource package the export's install note names; null for the system stack. */
+  pkg: string | null
 }
 
 const SANS = 'ui-sans-serif, system-ui, sans-serif'
@@ -60,23 +63,23 @@ const SERIF = 'ui-serif, Georgia, serif'
  * pairing is one face for both, with a heavier heading.
  */
 export const PAGE_FONTS: readonly PageFont[] = [
-  { id: 'system', name: 'System UI', use: 'native interface', group: 'interface', stack: `ui-sans-serif, system-ui, -apple-system, sans-serif`, weight: 400, headingWeight: 500, licence: null },
-  { id: 'geist', name: 'Geist', use: 'product UI', group: 'interface', stack: `'Geist Variable', ${SANS}`, weight: 400, headingWeight: 600, licence: 'OFL-1.1' },
-  { id: 'inter', name: 'Inter', use: 'interface workhorse', group: 'interface', stack: `'Inter Variable', ${SANS}`, weight: 400, headingWeight: 600, licence: 'OFL-1.1' },
-  { id: 'arimo', name: 'Arimo', use: 'sturdy, Arial-class', group: 'interface', stack: `'Arimo Variable', Arial, ${SANS}`, weight: 500, headingWeight: 700, licence: 'OFL-1.1' },
-  { id: 'plex', name: 'IBM Plex Sans', use: 'corporate', group: 'interface', stack: `'IBM Plex Sans Variable', ${SANS}`, weight: 400, headingWeight: 600, licence: 'OFL-1.1' },
-  { id: 'source-sans', name: 'Source Sans 3', use: 'humanist, warm', group: 'interface', stack: `'Source Sans 3 Variable', ${SANS}`, weight: 400, headingWeight: 600, licence: 'OFL-1.1' },
-  { id: 'atkinson', name: 'Atkinson Hyperlegible', use: 'max legibility', group: 'interface', stack: `'Atkinson Hyperlegible', ${SANS}`, weight: 400, headingWeight: 700, licence: 'OFL-1.1' },
-  { id: 'nunito', name: 'Nunito', use: 'rounded, friendly', group: 'character', stack: `'Nunito Variable', ${SANS}`, weight: 400, headingWeight: 700, licence: 'OFL-1.1' },
-  { id: 'outfit', name: 'Outfit', use: 'geometric', group: 'character', stack: `'Outfit Variable', ${SANS}`, weight: 400, headingWeight: 600, licence: 'OFL-1.1' },
-  { id: 'space-grotesk', name: 'Space Grotesk', use: 'technical', group: 'character', stack: `'Space Grotesk Variable', ${SANS}`, weight: 400, headingWeight: 600, licence: 'OFL-1.1' },
-  { id: 'barlow', name: 'Barlow Condensed', use: 'condensed display', group: 'character', stack: `'Barlow Condensed', ${SANS}`, weight: 500, headingWeight: 700, licence: 'OFL-1.1' },
-  { id: 'tinos', name: 'Tinos', use: 'newspaper, TNR-class', group: 'serif', stack: `'Tinos', 'Times New Roman', ${SERIF}`, weight: 400, headingWeight: 700, licence: 'OFL-1.1' },
-  { id: 'source-serif', name: 'Source Serif 4', use: 'editorial reading', group: 'serif', stack: `'Source Serif 4 Variable', ${SERIF}`, weight: 400, headingWeight: 600, licence: 'OFL-1.1' },
-  { id: 'playfair', name: 'Playfair Display', use: 'headline, high contrast', group: 'serif', stack: `'Playfair Display Variable', ${SERIF}`, weight: 400, headingWeight: 700, licence: 'OFL-1.1' },
-  { id: 'fraunces', name: 'Fraunces', use: 'soft display', group: 'serif', stack: `'Fraunces Variable', ${SERIF}`, weight: 400, headingWeight: 600, licence: 'OFL-1.1' },
-  { id: 'roboto-slab', name: 'Roboto Slab', use: 'slab', group: 'serif', stack: `'Roboto Slab Variable', ${SERIF}`, weight: 400, headingWeight: 600, licence: 'Apache-2.0' },
-  { id: 'jetbrains-mono', name: 'JetBrains Mono', use: 'code, dev tools', group: 'mono', stack: `'JetBrains Mono Variable', ui-monospace, monospace`, weight: 400, headingWeight: 600, licence: 'OFL-1.1' },
+  { id: 'system', name: 'System UI', use: 'native interface', group: 'interface', stack: `ui-sans-serif, system-ui, -apple-system, sans-serif`, weight: 400, headingWeight: 500, licence: null, pkg: null },
+  { id: 'geist', name: 'Geist', use: 'product UI', group: 'interface', stack: `'Geist Variable', ${SANS}`, weight: 400, headingWeight: 600, licence: 'OFL-1.1', pkg: '@fontsource-variable/geist' },
+  { id: 'inter', name: 'Inter', use: 'interface workhorse', group: 'interface', stack: `'Inter Variable', ${SANS}`, weight: 400, headingWeight: 600, licence: 'OFL-1.1', pkg: '@fontsource-variable/inter' },
+  { id: 'arimo', name: 'Arimo', use: 'sturdy, Arial-class', group: 'interface', stack: `'Arimo Variable', Arial, ${SANS}`, weight: 500, headingWeight: 700, licence: 'OFL-1.1', pkg: '@fontsource-variable/arimo' },
+  { id: 'plex', name: 'IBM Plex Sans', use: 'corporate', group: 'interface', stack: `'IBM Plex Sans Variable', ${SANS}`, weight: 400, headingWeight: 600, licence: 'OFL-1.1', pkg: '@fontsource-variable/ibm-plex-sans' },
+  { id: 'source-sans', name: 'Source Sans 3', use: 'humanist, warm', group: 'interface', stack: `'Source Sans 3 Variable', ${SANS}`, weight: 400, headingWeight: 600, licence: 'OFL-1.1', pkg: '@fontsource-variable/source-sans-3' },
+  { id: 'atkinson', name: 'Atkinson Hyperlegible', use: 'max legibility', group: 'interface', stack: `'Atkinson Hyperlegible', ${SANS}`, weight: 400, headingWeight: 700, licence: 'OFL-1.1', pkg: '@fontsource/atkinson-hyperlegible' },
+  { id: 'nunito', name: 'Nunito', use: 'rounded, friendly', group: 'character', stack: `'Nunito Variable', ${SANS}`, weight: 400, headingWeight: 700, licence: 'OFL-1.1', pkg: '@fontsource-variable/nunito' },
+  { id: 'outfit', name: 'Outfit', use: 'geometric', group: 'character', stack: `'Outfit Variable', ${SANS}`, weight: 400, headingWeight: 600, licence: 'OFL-1.1', pkg: '@fontsource-variable/outfit' },
+  { id: 'space-grotesk', name: 'Space Grotesk', use: 'technical', group: 'character', stack: `'Space Grotesk Variable', ${SANS}`, weight: 400, headingWeight: 600, licence: 'OFL-1.1', pkg: '@fontsource-variable/space-grotesk' },
+  { id: 'barlow', name: 'Barlow Condensed', use: 'condensed display', group: 'character', stack: `'Barlow Condensed', ${SANS}`, weight: 500, headingWeight: 700, licence: 'OFL-1.1', pkg: '@fontsource/barlow-condensed' },
+  { id: 'tinos', name: 'Tinos', use: 'newspaper, TNR-class', group: 'serif', stack: `'Tinos', 'Times New Roman', ${SERIF}`, weight: 400, headingWeight: 700, licence: 'OFL-1.1', pkg: '@fontsource/tinos' },
+  { id: 'source-serif', name: 'Source Serif 4', use: 'editorial reading', group: 'serif', stack: `'Source Serif 4 Variable', ${SERIF}`, weight: 400, headingWeight: 600, licence: 'OFL-1.1', pkg: '@fontsource-variable/source-serif-4' },
+  { id: 'playfair', name: 'Playfair Display', use: 'headline, high contrast', group: 'serif', stack: `'Playfair Display Variable', ${SERIF}`, weight: 400, headingWeight: 700, licence: 'OFL-1.1', pkg: '@fontsource-variable/playfair-display' },
+  { id: 'fraunces', name: 'Fraunces', use: 'soft display', group: 'serif', stack: `'Fraunces Variable', ${SERIF}`, weight: 400, headingWeight: 600, licence: 'OFL-1.1', pkg: '@fontsource-variable/fraunces' },
+  { id: 'roboto-slab', name: 'Roboto Slab', use: 'slab', group: 'serif', stack: `'Roboto Slab Variable', ${SERIF}`, weight: 400, headingWeight: 600, licence: 'Apache-2.0', pkg: '@fontsource-variable/roboto-slab' },
+  { id: 'jetbrains-mono', name: 'JetBrains Mono', use: 'code, dev tools', group: 'mono', stack: `'JetBrains Mono Variable', ui-monospace, monospace`, weight: 400, headingWeight: 600, licence: 'OFL-1.1', pkg: '@fontsource-variable/jetbrains-mono' },
 ]
 
 export const FONT_DEFAULT = 'system'
@@ -96,9 +99,10 @@ export const DEFAULT_PAGE: PageSettings = { radius: RADIUS_DEFAULT, font: FONT_D
 export const clampRadius = (px: number): number => Math.min(RADIUS_MAX, Math.max(RADIUS_MIN, Math.round(px)))
 
 /**
- * Read `radius=` and `font=` from a share link's parameters. Like `vision=`,
- * a value we can't read is dropped (that setting stays at its default) and
- * the theme still opens. A radius outside the slider is clamped onto it.
+ * Read `radius=` and `font=` from a link's parameters. Links made before the
+ * state carried these put them here; the app folds them into the theme it
+ * opens, so those links still open as they looked. A value we can't read is
+ * dropped and a radius outside the slider is clamped onto it.
  */
 export function parsePageParams(params: URLSearchParams): Partial<PageSettings> {
   const page: Partial<PageSettings> = {}
@@ -112,23 +116,15 @@ export function parsePageParams(params: URLSearchParams): Partial<PageSettings> 
   return page
 }
 
-/**
- * The share-link params for these settings, `{ radius: '4', font: 'tinos' }`,
- * or `{}` at the defaults, so a default link stays exactly `#t_…`. The Export
- * dialog's share link merges these after the vision params.
- */
-export function pageLinkParams(page: PageSettings): Record<string, string> {
-  const p: Record<string, string> = {}
-  if (page.radius !== RADIUS_DEFAULT) p.radius = String(page.radius)
-  if (page.font !== FONT_DEFAULT) p.font = page.font
-  return p
-}
-
-/** The same params as a hash suffix: `&radius=4&font=tinos`, or `''`. */
-export function pageParams(page: PageSettings): string {
-  return Object.entries(pageLinkParams(page))
-    .map(([k, v]) => `&${k}=${v}`)
-    .join('')
+/** What the exporters write for these settings: each part only away from its default. */
+export function themePage(page: PageSettings): ThemePage {
+  const f = pageFontById(page.font)
+  return {
+    ...(page.radius !== RADIUS_DEFAULT ? { radius: page.radius } : {}),
+    ...(f.id !== FONT_DEFAULT && f.pkg
+      ? { font: { name: f.name, stack: f.stack, headingWeight: f.headingWeight, pkg: f.pkg } }
+      : {}),
+  }
 }
 
 /**
