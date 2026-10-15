@@ -8,8 +8,9 @@
 <style>
   /* ============================================================
      The first of the showcase mockups (Huemint's presentation
-     ethos, ChromaConscious's honesty). Rules this draft holds to,
-     because the React port has to:
+     ethos, ChromaConscious's honesty). The live version is
+     src/components/Magazine.tsx; this draft is kept as the design
+     reference that set the bar. Rules both hold to:
 
      1. Every colour is a theme token. The tokens below are the
         engine's real output for each preset at its defaults,
@@ -944,7 +945,7 @@
     </select>
   </label>
   <label>corners <input id="radius" type="range" min="0" max="20" value="10" /> <output id="radius-out">10px</output></label>
-  <span class="note">tokens: the engine's real output per preset · photos: CC0 / public domain (assets/magazine/SOURCES.md)</span>
+  <span class="note">tokens: the engine's real output per preset · photos: CC0 / public domain (src/assets/magazine/SOURCES.md)</span>
 </div>
 
 <main class="mag" id="mag">
@@ -954,7 +955,7 @@
     <article class="page cover">
       <h1 class="mast" data-fit>Meridian</h1>
       <div class="cover-meta"><span>No. 14</span><span>The light issue</span><span>Autumn 2026</span></div>
-      <figure class="photo"><img src="assets/magazine/dunes.jpg" alt="" data-duo="foreground primary background" data-contrast="1.25" /></figure>
+      <figure class="photo"><img src="/src/assets/magazine/dunes.jpg" alt="" data-duo="foreground primary background" data-contrast="1.25" /></figure>
       <div class="cover-lines">
         <p class="kicker">Inside</p>
         <p class="display">Concrete, porcelain, paint</p>
@@ -975,7 +976,7 @@
         <li><span class="n">04</span><div><h3>Painting at night</h3><p>Mara Vell on working without daylight.</p></div><span class="pg">p. 24</span></li>
       </ol>
       <div class="editor">
-        <figure class="photo"><img src="assets/magazine/salk.jpg" alt="" data-duo="foreground link background" style="object-position: 70% 50%" /></figure>
+        <figure class="photo"><img src="/src/assets/magazine/salk.jpg" alt="" data-duo="foreground link background" style="object-position: 70% 50%" /></figure>
         <div>
           <p>This issue looks at how light changes what we see: a building over one day, a glaze under a lamp, a painting made after dark.</p>
           <p>— The editors</p>
@@ -988,7 +989,7 @@
   <!-- 2 · feature -->
   <section class="spread" aria-label="Feature">
     <article class="page bleed feature-img">
-      <figure class="photo"><img src="assets/magazine/salk.jpg" alt="" data-duo="primary background" data-contrast="1.15" /></figure>
+      <figure class="photo"><img src="/src/assets/magazine/salk.jpg" alt="" data-duo="primary background" data-contrast="1.15" /></figure>
       <div class="plate"><b>The Salk Institute, La Jolla</b>Photograph: Carol M. Highsmith, Library of Congress</div>
     </article>
     <article class="page feature">
@@ -1010,7 +1011,7 @@
   <section class="spread" aria-label="Object study">
     <article class="page on-secondary object">
       <p class="kicker"><span>Object study</span><span>No. 07</span></p>
-      <figure class="photo"><img src="assets/magazine/vase.jpg" alt="" data-duo="foreground link secondary" data-contrast="1.4" /></figure>
+      <figure class="photo"><img src="/src/assets/magazine/vase.jpg" alt="" data-duo="foreground link secondary" data-contrast="1.4" /></figure>
       <span class="folio l">18</span>
     </article>
     <article class="page study">
@@ -1037,7 +1038,7 @@
       <div class="who"><span>Mara Vell, painter</span><span>Interview by Teo Brandt</span></div>
     </article>
     <article class="page qa">
-      <figure class="photo"><img src="assets/magazine/window.jpg" alt="" data-duo="foreground primary background" data-contrast="1.1" style="object-position: 50% 62%" /></figure>
+      <figure class="photo"><img src="/src/assets/magazine/window.jpg" alt="" data-duo="foreground primary background" data-contrast="1.1" style="object-position: 50% 62%" /></figure>
       <dl>
         <dt>Why work in the dark?</dt>
         <dd>Because colour lies in daylight. In the dark I only have value, light against dark, and if the painting works there, it works.</dd>
@@ -1055,7 +1056,7 @@
   <!-- 5 · back cover -->
   <section class="spread" aria-label="Back cover">
     <article class="page bleed back">
-      <figure class="photo"><img src="assets/magazine/stairwell.jpg" alt="" data-duo="foreground link background" data-contrast="1.2" /></figure>
+      <figure class="photo"><img src="/src/assets/magazine/stairwell.jpg" alt="" data-duo="foreground link background" data-contrast="1.2" /></figure>
       <div class="colophon">Meridian · Quarterly · Est. 2013</div>
       <div class="sub-card">
         <p class="kicker">Subscribe</p>

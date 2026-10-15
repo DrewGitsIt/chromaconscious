@@ -1,0 +1,471 @@
+/* Magazine-owned styles. Mockup world, not chrome: every colour is a theme
+   token (set inline on .preview-root by the token space), corners are
+   --radius and display type is `.font-heading` at --font-heading-weight, so
+   the page follows the theme's corners and face. Sizes are cqi of the spread:
+   the composition scales with the frame, as print does. Ported from
+   mockups/magazine.html, the draft that set the bar. */
+@layer chrome-base, chrome;
+
+@layer chrome {
+  .mag {
+    display: grid;
+    gap: 40px;
+    padding: 40px;
+    background: var(--muted);
+  }
+
+  /* A spread: two pages and a fold. */
+  .mag-spread {
+    container-type: inline-size;
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    aspect-ratio: 3 / 2;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 18px 40px -18px rgb(0 0 0 / 0.35);
+  }
+  /* The fold is an effect like elevation, not a palette colour. */
+  .mag-spread::after {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 calc(50% - 3cqi);
+    width: 6cqi;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(0 0 0 / 0.07) 48%,
+      rgb(0 0 0 / 0.12) 50%,
+      rgb(0 0 0 / 0.04) 52%,
+      transparent
+    );
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+
+  .mag-page {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    padding: 4cqi 4.2cqi;
+    background: var(--background);
+    color: var(--foreground);
+  }
+  .mag-on-primary {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+  .mag-on-secondary {
+    background: var(--secondary);
+    color: var(--secondary-foreground);
+  }
+  .mag-bleed {
+    padding: 0;
+  }
+
+  /* Zero specificity, so any rule below sets its own margin. */
+  :where(.mag) :where(p, h1, h2, h3, dl, dd, ul, ol, blockquote) {
+    margin: 0;
+  }
+  .mag-display {
+    font-weight: var(--font-heading-weight, 600);
+    letter-spacing: -0.035em;
+    line-height: 0.92;
+    text-wrap: balance;
+  }
+  .mag-kicker {
+    font-size: 1.05cqi;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .mag-folio {
+    position: absolute;
+    bottom: 2.2cqi;
+    font-size: 0.95cqi;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+  }
+  .mag-l {
+    left: 4.2cqi;
+  }
+  .mag-r {
+    right: 4.2cqi;
+  }
+  .mag-link {
+    color: var(--link);
+  }
+
+  .mag-photo {
+    position: relative;
+    overflow: hidden;
+    margin: 0;
+  }
+  .mag-photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .mag-defs {
+    position: absolute;
+  }
+
+  /* ---- cover + contents ---- */
+  .mag-cover {
+    padding: 3.2cqi 3.2cqi 0;
+  }
+  .mag-mast {
+    display: block;
+    margin-bottom: 1.4cqi;
+    white-space: nowrap;
+    text-transform: uppercase;
+    font-weight: var(--font-heading-weight, 600);
+    letter-spacing: -0.05em;
+    line-height: 0.8;
+  }
+  .mag-cover-meta {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 1.2cqi;
+    border-bottom: 1px solid var(--foreground);
+    font-size: 0.95cqi;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .mag-cover .mag-photo {
+    flex: 1;
+    margin: 1.6cqi -3.2cqi 0;
+  }
+  .mag-cover-lines {
+    position: absolute;
+    right: 3.2cqi;
+    bottom: 3.2cqi;
+    width: 22cqi;
+    padding: 2cqi 2.2cqi 2.2cqi;
+    border-radius: var(--radius);
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+  .mag-cover-lines .mag-display {
+    margin: 0.8cqi 0 1.6cqi;
+    font-size: 3.4cqi;
+  }
+  .mag-cover-lines ul {
+    display: grid;
+    gap: 0.9cqi;
+    padding: 0;
+    list-style: none;
+    font-size: 1.2cqi;
+    line-height: 1.3;
+  }
+  .mag-cover-lines li {
+    display: grid;
+    grid-template-columns: 2.2cqi 1fr;
+  }
+  .mag-cover-lines b {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mag-contents h2 {
+    margin: 1.6cqi 0 2.4cqi;
+    font-size: 5.6cqi;
+  }
+  .mag-toc {
+    padding: 0;
+    list-style: none;
+  }
+  .mag-toc li {
+    display: grid;
+    grid-template-columns: 6.4cqi 1fr auto;
+    align-items: baseline;
+    padding: 1.1cqi 0;
+    border-top: 1px solid var(--border);
+  }
+  .mag-toc li:last-child {
+    border-bottom: 1px solid var(--border);
+  }
+  .mag-n {
+    color: var(--link);
+    font-size: 3.2cqi;
+    font-weight: var(--font-heading-weight, 600);
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+  .mag-toc h3 {
+    margin-bottom: 0.4cqi;
+    font-size: 1.55cqi;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .mag-toc p {
+    max-width: 30cqi;
+    font-size: 1.15cqi;
+    line-height: 1.4;
+  }
+  .mag-pg {
+    font-size: 1.05cqi;
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+  }
+  .mag-editor {
+    display: grid;
+    grid-template-columns: 7cqi 1fr;
+    gap: 1.8cqi;
+    align-items: center;
+    margin-top: auto;
+    padding-bottom: 2.6cqi;
+  }
+  .mag-editor .mag-photo {
+    aspect-ratio: 1;
+    border-radius: var(--radius);
+  }
+  .mag-editor p {
+    font-size: 1.15cqi;
+    line-height: 1.5;
+  }
+  .mag-editor p + p {
+    margin-top: 0.6cqi;
+    font-weight: 600;
+  }
+
+  /* ---- feature ---- */
+  .mag-feature-img .mag-photo {
+    position: absolute;
+    inset: 0;
+  }
+  .mag-plate {
+    position: absolute;
+    left: 3cqi;
+    bottom: 3cqi;
+    max-width: 20cqi;
+    padding: 1.3cqi 1.5cqi;
+    border-radius: var(--radius);
+    background: var(--card);
+    color: var(--card-foreground);
+    font-size: 1cqi;
+    line-height: 1.45;
+  }
+  .mag-plate b {
+    display: block;
+    margin-bottom: 0.2cqi;
+    font-size: 1.1cqi;
+  }
+  .mag-feature h2 {
+    margin: 1.4cqi 0 1.8cqi;
+    font-size: 6cqi;
+  }
+  .mag-deck {
+    max-width: 36cqi;
+    margin-bottom: 1.8cqi;
+    font-size: 1.7cqi;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+  }
+  .mag-byline {
+    margin-bottom: 2.2cqi;
+    padding-bottom: 1.4cqi;
+    border-bottom: 1px solid var(--border);
+    font-size: 1cqi;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .mag-body {
+    columns: 2;
+    column-gap: 2.4cqi;
+    font-size: 1.12cqi;
+    line-height: 1.55;
+  }
+  .mag-body p {
+    margin-bottom: 1cqi;
+  }
+  .mag-body p:first-child::first-letter {
+    float: left;
+    margin: 0.35cqi 0.7cqi 0 0;
+    color: var(--link);
+    font-family: var(--font-sans);
+    font-size: 4.6cqi;
+    font-weight: var(--font-heading-weight, 600);
+    line-height: 0.82;
+  }
+  .mag-pull {
+    break-inside: avoid;
+    margin: 0.4cqi 0 1.2cqi;
+    padding-left: 1.2cqi;
+    border-left: 0.35cqi solid var(--primary);
+    font-size: 1.9cqi;
+    font-weight: var(--font-heading-weight, 600);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  /* ---- object study ---- */
+  .mag-object .mag-kicker {
+    display: flex;
+    justify-content: space-between;
+  }
+  .mag-object .mag-photo {
+    flex: 1;
+    margin-top: 2cqi;
+    border-radius: var(--radius);
+  }
+  .mag-study h2 {
+    margin: 1.2cqi 0 1.4cqi;
+    font-size: 8cqi;
+    line-height: 1.05;
+  }
+  .mag-sub {
+    margin-bottom: 3cqi;
+    font-size: 1.6cqi;
+    letter-spacing: -0.01em;
+  }
+  .mag-specs {
+    display: grid;
+    grid-template-columns: 11cqi 1fr;
+    margin-bottom: 3cqi;
+    font-size: 1.15cqi;
+  }
+  .mag-specs dt,
+  .mag-specs dd {
+    padding: 1cqi 0;
+    border-top: 1px solid var(--border);
+  }
+  .mag-specs dt {
+    padding-top: 1.15cqi;
+    font-size: 0.95cqi;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .mag-note {
+    max-width: 34cqi;
+    font-size: 1.15cqi;
+    line-height: 1.55;
+  }
+  .mag-credit {
+    margin: auto 0 2cqi;
+    font-size: 0.95cqi;
+    letter-spacing: 0.04em;
+  }
+
+  /* ---- interview ---- */
+  .mag-quote-page {
+    justify-content: space-between;
+  }
+  .mag-quote-page .mag-display {
+    font-size: 6.6cqi;
+    line-height: 0.98;
+    letter-spacing: -0.04em;
+  }
+  .mag-who {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 1.2cqi;
+    border-top: 1px solid var(--primary-foreground);
+    font-size: 1.15cqi;
+    line-height: 1.5;
+  }
+  .mag-qa .mag-photo {
+    flex: none;
+    height: 50%;
+    margin: -4cqi -4.2cqi 2.4cqi;
+  }
+  .mag-qa dl {
+    columns: 2;
+    column-gap: 2.4cqi;
+    font-size: 1.12cqi;
+    line-height: 1.55;
+  }
+  .mag-qa dl > div {
+    break-inside: avoid;
+    margin-bottom: 1.2cqi;
+  }
+  .mag-qa dt {
+    margin-bottom: 0.3cqi;
+    font-weight: 600;
+  }
+
+  /* ---- back cover ---- */
+  .mag-back {
+    grid-column: 1 / -1;
+  }
+  .mag-back .mag-photo {
+    position: absolute;
+    inset: 0;
+  }
+  .mag-colophon {
+    position: absolute;
+    left: 4.2cqi;
+    top: 4cqi;
+    padding: 1.2cqi 1.6cqi;
+    border-radius: var(--radius);
+    background: var(--background);
+    color: var(--foreground);
+    font-size: 0.95cqi;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .mag-sub-card {
+    position: absolute;
+    right: 4.2cqi;
+    bottom: 5.4cqi;
+    width: 30cqi;
+    padding: 2.6cqi;
+    border-radius: var(--radius);
+    background: var(--card);
+    color: var(--card-foreground);
+  }
+  .mag-sub-card .mag-display {
+    margin: 0.8cqi 0 1.2cqi;
+    font-size: 3.6cqi;
+  }
+  .mag-sub-card p:not(.mag-kicker):not(.mag-display) {
+    margin-bottom: 1.8cqi;
+    font-size: 1.2cqi;
+    line-height: 1.5;
+  }
+  .mag-sub-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.6cqi;
+  }
+  .mag-price {
+    font-size: 2.4cqi;
+    font-weight: var(--font-heading-weight, 600);
+    letter-spacing: -0.03em;
+  }
+  .mag-price small {
+    margin-left: 0.4cqi;
+    font-size: 1cqi;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+  }
+  .mag-stamp {
+    padding: 0.9cqi 1.4cqi;
+    border-radius: var(--radius);
+    background: var(--primary);
+    color: var(--primary-foreground);
+    font-size: 1.05cqi;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  /* The printer's colour bar. */
+  .mag-colorbar {
+    position: absolute;
+    left: 4.2cqi;
+    bottom: 2cqi;
+    display: flex;
+    height: 1.6cqi;
+    border: 1px solid var(--foreground);
+    background: var(--background);
+  }
+  .mag-colorbar i {
+    width: 2.4cqi;
+    border-right: 1px solid var(--foreground);
+  }
+  .mag-colorbar i:last-child {
+    border-right: 0;
+  }
+}

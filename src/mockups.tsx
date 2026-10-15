@@ -3,6 +3,7 @@ import type { ThemeResult, TokenAncestor } from './engine'
 import { effectVars, locateTokens } from './engine'
 import { Analytics } from './components/Analytics'
 import { BrandBoard } from './components/BrandBoard'
+import { Magazine } from './components/Magazine'
 import { Marketing } from './components/Marketing'
 import { Preview } from './components/Preview'
 import type { PageSettings } from './pageSettings'
@@ -121,6 +122,16 @@ export const MOCKUPS: Mockup[] = [
     // its corners are the board's design, not a UI's, so neither follows.
     followsPage: false,
     Component: BrandBoard,
+  },
+  {
+    id: 'magazine',
+    name: 'Magazine',
+    // Print, but in the shadcn token vocabulary, so it rides the token space
+    // and locate mode like the app mockups; its photographs are mapped
+    // through tokens, so they follow the mode too.
+    supportsDark: true,
+    followsPage: true,
+    Component: tokenSpace(Magazine),
   },
 ]
 
