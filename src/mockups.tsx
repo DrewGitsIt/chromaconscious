@@ -9,6 +9,8 @@ import { Posters } from './components/Posters'
 import { Preview } from './components/Preview'
 import { Shop } from './components/Shop'
 import { Trail } from './components/Trail'
+import type { Budget } from './budget'
+import { spendBudget } from './budget'
 import type { PageSettings } from './pageSettings'
 import { DEFAULT_PAGE, pageVars } from './pageSettings'
 
@@ -26,6 +28,8 @@ export interface MockupProps {
   locateTarget?: TokenAncestor | null
   /** The frame's corners and font (pageSettings.ts). Theme state; the mockup only draws them. */
   page?: PageSettings
+  /** The frame's colour budget (budget.ts). View state; only showcase spaces offer it. */
+  budget?: Budget
 }
 
 export interface Mockup {
@@ -35,6 +39,8 @@ export interface Mockup {
   supportsDark: boolean
   /** Whether the page settings (corners, type) reach this space. */
   followsPage: boolean
+  /** Whether the frame offers a colour budget: the showcase compositions do. */
+  budgets: boolean
   Component: (props: MockupProps) => React.ReactNode
 }
 
@@ -65,6 +71,13 @@ export interface TokenSpaceProps {
    * handed, and a portal never sees the frame's own styles.
    */
   effects: Record<string, string>
+  /**
+   * The frame's colour budget. `tokens` are already substituted for it; a
+   * mockup reads this only where it chooses colours by name for itself
+   * (photograph stops, generated art, a shop's finishes), so it can choose
+   * among the ones the budget spends. Absent means full.
+   */
+  budget?: Budget
 }
 
 /**
@@ -76,21 +89,29 @@ export interface TokenSpaceProps {
  * own vocabulary (paper/ink) and runs its own substitution via brandAncestry.
  */
 function tokenSpace(Component: (props: TokenSpaceProps) => React.ReactNode) {
-  return function TokenSpaceMockup({ result, mode, uid, locateTarget = null, page = DEFAULT_PAGE }: MockupProps) {
+  return function TokenSpaceMockup({
+    result,
+    mode,
+    uid,
+    locateTarget = null,
+    page = DEFAULT_PAGE,
+    budget = 'full',
+  }: MockupProps) {
     const tokens = useMemo(() => {
       const base = result[mode].tokens
       // `ancestry` is already keyed by role/chart-slot — no candidate lookup.
-      return locateTarget == null
-        ? base
-        : locateTokens(base, result[mode].ancestry, locateTarget, base.background)
-    }, [result, mode, locateTarget])
+      const located =
+        locateTarget == null ? base : locateTokens(base, result[mode].ancestry, locateTarget, base.background)
+      // The budget last: a colour it doesn't spend stays unspent while located.
+      return spendBudget(located, budget)
+    }, [result, mode, locateTarget, budget])
     // Serialized by the engine, not here, so the preview shows exactly the
     // string the CSS export contains.
     const effects = useMemo(
       () => ({ ...effectVars(result[mode].effects), ...pageVars(page) }),
       [result, mode, page],
     )
-    return <Component tokens={tokens} mode={mode} uid={uid} effects={effects} />
+    return <Component tokens={tokens} mode={mode} uid={uid} effects={effects} budget={budget} />
   }
 }
 
@@ -101,6 +122,7 @@ export const MOCKUPS: Mockup[] = [
     name: 'App dashboard',
     supportsDark: true,
     followsPage: true,
+    budgets: false,
     Component: tokenSpace(Preview),
   },
   {
@@ -108,6 +130,7 @@ export const MOCKUPS: Mockup[] = [
     name: 'Analytics console',
     supportsDark: true,
     followsPage: true,
+    budgets: false,
     Component: tokenSpace(Analytics),
   },
   {
@@ -115,6 +138,7 @@ export const MOCKUPS: Mockup[] = [
     name: 'Marketing page',
     supportsDark: true,
     followsPage: true,
+    budgets: false,
     Component: tokenSpace(Marketing),
   },
   {
@@ -124,6 +148,7 @@ export const MOCKUPS: Mockup[] = [
     // Print, in its own paper/ink vocabulary: its Georgia display lines and
     // its corners are the board's design, not a UI's, so neither follows.
     followsPage: false,
+    budgets: false,
     Component: BrandBoard,
   },
   {
@@ -134,6 +159,7 @@ export const MOCKUPS: Mockup[] = [
     // through tokens, so they follow the mode too.
     supportsDark: true,
     followsPage: true,
+    budgets: true,
     Component: tokenSpace(Magazine),
   },
   {
@@ -141,6 +167,7 @@ export const MOCKUPS: Mockup[] = [
     name: 'Hiking app',
     supportsDark: true,
     followsPage: true,
+    budgets: true,
     Component: tokenSpace(Trail),
   },
   {
@@ -148,6 +175,7 @@ export const MOCKUPS: Mockup[] = [
     name: 'Product page',
     supportsDark: true,
     followsPage: true,
+    budgets: true,
     Component: tokenSpace(Shop),
   },
   {
@@ -156,6 +184,7 @@ export const MOCKUPS: Mockup[] = [
     // Print, like the magazine: no controls, and the art is drawn in tokens.
     supportsDark: true,
     followsPage: true,
+    budgets: true,
     Component: tokenSpace(Posters),
   },
 ]

@@ -24,7 +24,7 @@ import './Trail.css'
  *
  * Sizes are cqi of the field, so the trio scales with the frame.
  */
-export function Trail({ tokens, mode, uid, effects }: TokenSpaceProps) {
+export function Trail({ tokens, mode, uid, effects, budget = 'full' }: TokenSpaceProps) {
   const vars = {
     ...Object.fromEntries(Object.entries(tokens).map(([k, v]) => [`--${k}`, v])),
     ...effects,
@@ -44,6 +44,7 @@ export function Trail({ tokens, mode, uid, effects }: TokenSpaceProps) {
       src={PHOTOS[t.photo]}
       stops={['foreground', 'primary', 'background']}
       tokens={tokens}
+      budget={budget}
       contrast={1.15}
       position={t.position}
       className={className}

@@ -63,6 +63,7 @@ import { VISIONS } from './engine/cvd'
 import { VisionFilter } from './components/VisionFilter'
 import { PortalScope } from './components/PortalContainer'
 import type { Op, ThemeState } from './ops'
+import type { Budget } from './budget'
 import { applyOp, emptyThemeState } from './ops'
 import './styles/tokens.css'
 import './styles/base.css'
@@ -82,6 +83,11 @@ interface FrameState extends ThemeState {
   vision: Vision
   /** 0..1, how far toward the full dichromacy. Meaningless for typical. */
   strength: number
+  /**
+   * How many of the palette's colours a showcase mockup spends (budget.ts).
+   * View state like `vision`: exports and the report never see it.
+   */
+  budget: Budget
   /**
    * The furthest riff hop walked since the set was last replaced — how far
    * the riff trail reaches. View state: going back keeps the hops ahead on
@@ -121,6 +127,7 @@ const emptyFrameState = (): FrameState => ({
   mockup: 'app',
   vision: 'typical',
   strength: 1,
+  budget: 'full',
   trailMax: 0,
 })
 
@@ -345,6 +352,8 @@ export default function App() {
 
   const setVision = (i: number, vision: Vision, strength: number) =>
     updateFrame(i, { vision, strength })
+
+  const setBudget = (i: number, budget: Budget) => updateFrame(i, { budget })
 
   const setMockup = (i: number, id: string) => {
     const m = mockupById(id)
@@ -1199,6 +1208,8 @@ export default function App() {
                   mockup={f.mockup}
                   mode={f.mode}
                   supportsDark={mockupById(f.mockup).supportsDark}
+                  budget={mockupById(f.mockup).budgets ? (f.budget ?? 'full') : null}
+                  onChangeBudget={(b) => setBudget(i, b)}
                   vision={f.vision}
                   strength={f.strength}
                   copyTarget={split ? FRAME_LABEL[1 - i] : null}
@@ -1292,6 +1303,7 @@ export default function App() {
                           uid={FRAME_LABEL[i].toLowerCase()}
                           locateTarget={active === i ? locating : null}
                           page={{ radius: f.radius, font: f.font }}
+                          budget={f.budget ?? 'full'}
                         />
                       </PreviewBoundary>
                     ) : (

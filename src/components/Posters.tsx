@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import type { TokenSpaceProps } from '../mockups'
+import { ART_INKS, BAND_INKS } from '../budget'
 import { TokenPhoto } from './TokenPhoto'
 import fern from '../assets/poster/fern.jpg'
 import './Posters.css'
@@ -19,7 +20,7 @@ import './Posters.css'
  * photograph a TokenPhoto, and e2e/mockup-posters.spec.ts fails any text
  * that overlaps either.
  */
-export function Posters({ tokens, mode, uid, effects }: TokenSpaceProps) {
+export function Posters({ tokens, mode, uid, effects, budget = 'full' }: TokenSpaceProps) {
   const vars = {
     ...Object.fromEntries(Object.entries(tokens).map(([k, v]) => [`--${k}`, v])),
     ...effects,
@@ -33,7 +34,7 @@ export function Posters({ tokens, mode, uid, effects }: TokenSpaceProps) {
             {/* ---------------------------------------------- quarter circles */}
             <Poster label="Poster: Music for 18 Musicians">
               <PosterHead />
-              <Tiles seed={7} cols={4} rows={4} />
+              <Tiles seed={7} cols={4} rows={4} inks={ART_INKS[budget]} />
               <div className="pst-bill">
                 <p className="pst-date">
                   <b className="font-heading">14</b>
@@ -51,7 +52,7 @@ export function Posters({ tokens, mode, uid, effects }: TokenSpaceProps) {
             {/* ----------------------------------------------- disc and bands */}
             <Poster label="Poster: Tabula Rasa" className="pst-on-secondary">
               <PosterHead />
-              <Bands />
+              <Bands {...BAND_INKS[budget]} />
               <div className="pst-bill">
                 <p className="pst-date">
                   <b className="font-heading">28</b>
@@ -74,6 +75,7 @@ export function Posters({ tokens, mode, uid, effects }: TokenSpaceProps) {
                 src={fern}
                 stops={['foreground', 'primary', 'background']}
                 tokens={tokens}
+                budget={budget}
                 contrast={1.2}
                 position="50% 25%"
                 className="pst-photo"
@@ -189,22 +191,19 @@ function rng(seed: number) {
 
 const fill = (token: string): CSSProperties => ({ fill: `var(--${token})` })
 
-/** The poster palette: the brand's colours and the page's two ends. */
-const TILE_INKS = ['primary', 'accent-strong', 'link', 'foreground', 'accent', 'background']
-
 /**
  * Quarter circles, half discs and dots on a grid, the oldest trick in Swiss
  * posters. Each tile is a ground and a figure in two different inks.
  */
-function Tiles({ seed, cols, rows }: { seed: number; cols: number; rows: number }) {
+function Tiles({ seed, cols, rows, inks }: { seed: number; cols: number; rows: number; inks: string[] }) {
   const r = rng(seed)
   const pick = <T,>(xs: T[]) => xs[Math.floor(r() * xs.length)]
   const tiles: ReactNode[] = []
   for (let y = 0; y < rows; y++)
     for (let x = 0; x < cols; x++) {
-      const ground = pick(TILE_INKS)
-      let figure = pick(TILE_INKS)
-      while (figure === ground) figure = pick(TILE_INKS)
+      const ground = pick(inks)
+      let figure = pick(inks)
+      while (figure === ground) figure = pick(inks)
       const turn = Math.floor(r() * 4) * 90
       const kind = r()
       const shape =
@@ -235,18 +234,17 @@ function Tiles({ seed, cols, rows }: { seed: number; cols: number; rows: number 
 }
 
 /** A low sun behind a field of bands, cut by the poster's own ground. */
-function Bands() {
-  const bands = ['accent-strong', 'link', 'primary', 'foreground']
+function Bands({ ground, sun, bands }: { ground: string; sun: string; bands: string[] }) {
   return (
     <svg className="showcase-art pst-art" viewBox="0 0 40 40" aria-hidden>
-      <rect width="40" height="40" style={fill('accent')} />
-      <circle cx="20" cy="22" r="13" style={fill('primary')} />
+      <rect width="40" height="40" style={fill(ground)} />
+      <circle cx="20" cy="22" r="13" style={fill(sun)} />
       {bands.map((t, i) => (
-        <rect key={t} x="0" y={24 + i * 4} width="40" height="4" style={fill(t)} />
+        <rect key={i} x="0" y={24 + i * 4} width="40" height="4" style={fill(t)} />
       ))}
       {/* Cuts in the poster's ground, widening toward the horizon. */}
       {[0, 1, 2, 3, 4].map((i) => (
-        <rect key={i} x="0" y={11 + i * 2.6} width="40" height={0.25 + i * 0.22} style={fill('accent')} />
+        <rect key={i} x="0" y={11 + i * 2.6} width="40" height={0.25 + i * 0.22} style={fill(ground)} />
       ))}
     </svg>
   )

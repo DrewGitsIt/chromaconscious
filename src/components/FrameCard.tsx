@@ -5,6 +5,8 @@ import type { Vision } from '../engine/cvd'
 import { VISIONS } from '../engine/cvd'
 import { withKey } from '../shortcuts'
 import { useDismiss } from './useDismiss'
+import type { Budget } from '../budget'
+import { BUDGETS } from '../budget'
 import './FrameCard.css'
 
 export interface FrameCardProps {
@@ -14,6 +16,8 @@ export interface FrameCardProps {
   mockup: string
   mode: 'light' | 'dark'
   supportsDark: boolean
+  /** The frame's colour budget; null when the mockup doesn't offer one. */
+  budget: Budget | null
   vision: Vision
   /** 0..1; how far toward the full dichromacy. Ignored for typical. */
   strength: number
@@ -24,6 +28,7 @@ export interface FrameCardProps {
   onSelect: () => void
   onChangeMockup: (id: string) => void
   onToggleMode: () => void
+  onChangeBudget: (budget: Budget) => void
   onChangeVision: (vision: Vision, strength: number) => void
   onCopyTo: () => void
 }
@@ -53,6 +58,7 @@ export function FrameCard({
   mockup,
   mode,
   supportsDark,
+  budget,
   vision,
   strength,
   copyTarget,
@@ -60,6 +66,7 @@ export function FrameCard({
   onSelect,
   onChangeMockup,
   onToggleMode,
+  onChangeBudget,
   onChangeVision,
   onCopyTo,
 }: FrameCardProps): ReactElement {
@@ -120,6 +127,22 @@ export function FrameCard({
           <Sun size={14} strokeWidth={1.75} aria-hidden />
         )}
       </button>
+      {budget !== null && (
+        <span className="frame-budget" role="radiogroup" aria-label={`colour budget for frame ${label}`}>
+          {BUDGETS.map((b) => (
+            <button
+              key={b.id}
+              role="radio"
+              aria-checked={budget === b.id}
+              className={`frame-budget-opt${budget === b.id ? ' on' : ''}`}
+              title={`${b.id}: ${b.hint}`}
+              onClick={() => onChangeBudget(b.id)}
+            >
+              {b.id}
+            </button>
+          ))}
+        </span>
+      )}
       <span className="frame-vision" ref={ref}>
         <button
           ref={eyeRef}

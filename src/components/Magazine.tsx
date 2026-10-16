@@ -28,7 +28,7 @@ import './Magazine.css'
  * as print does. Photographs are public domain or CC0
  * (src/assets/magazine/SOURCES.md).
  */
-export function Magazine({ tokens, mode, uid, effects }: TokenSpaceProps) {
+export function Magazine({ tokens, mode, uid, effects, budget = 'full' }: TokenSpaceProps) {
   const vars = {
     ...Object.fromEntries(Object.entries(tokens).map(([k, v]) => [`--${k}`, v])),
     ...effects,
@@ -38,7 +38,7 @@ export function Magazine({ tokens, mode, uid, effects }: TokenSpaceProps) {
     src: string,
     stops: string[],
     rest: Omit<TokenPhotoProps, 'id' | 'src' | 'stops' | 'tokens' | 'className'>,
-  ) => <TokenPhoto id={`mag-${name}-${uid}`} src={src} stops={stops} tokens={tokens} className="mag-photo" {...rest} />
+  ) => <TokenPhoto id={`mag-${name}-${uid}`} src={src} stops={stops} tokens={tokens} budget={budget} className="mag-photo" {...rest} />
 
   return (
     <div className={`preview-root mag ${mode === 'dark' ? 'dark' : ''}`} style={vars}>

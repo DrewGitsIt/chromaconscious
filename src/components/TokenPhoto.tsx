@@ -1,3 +1,5 @@
+import type { Budget } from '../budget'
+import { photoStops } from '../budget'
 import { gradientMap } from './gradientMap'
 import './TokenPhoto.css'
 
@@ -14,6 +16,8 @@ export interface TokenPhotoProps {
   position?: string
   /** The figure's class: each mockup lays its photographs out itself. */
   className: string
+  /** The frame's colour budget: the stops it doesn't spend are traded (budget.ts photoStops). */
+  budget?: Budget
 }
 
 /**
@@ -23,7 +27,18 @@ export interface TokenPhotoProps {
  * Text never sits on one of these: a photo is no surface the contrast report
  * checks.
  */
-export function TokenPhoto({ id, src, stops, tokens, alt, contrast = 1, position, className }: TokenPhotoProps) {
+export function TokenPhoto({
+  id,
+  src,
+  stops: asked,
+  tokens,
+  alt,
+  contrast = 1,
+  position,
+  className,
+  budget = 'full',
+}: TokenPhotoProps) {
+  const stops = photoStops(asked, budget)
   const [r, g, b] = gradientMap(tokens, stops)
   const k = contrast
   const lift = (1 - k) / 2

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Minus, Plus, RotateCcw, ShoppingBag, Star, Truck } from 'lucide-react'
+import type { Budget } from '../budget'
 import type { TokenSpaceProps } from '../mockups'
 import { TokenPhoto } from './TokenPhoto'
 import pitcher from '../assets/shop/pitcher.jpg'
@@ -23,13 +24,17 @@ import './Shop.css'
  * contrast report checks, never on a photograph. e2e/mockup-shop.spec.ts
  * holds it to that in every state the controls reach.
  */
-export function Shop({ tokens, mode, uid, effects }: TokenSpaceProps) {
+export function Shop({ tokens, mode, uid, effects, budget = 'full' }: TokenSpaceProps) {
   const vars = {
     ...Object.fromEntries(Object.entries(tokens).map(([k, v]) => [`--${k}`, v])),
     ...effects,
   } as CSSProperties
   const [view, setView] = useState(0)
-  const [finish, setFinish] = useState<Finish>(FINISHES[1])
+  // Three finishes the budget can show; a pick the budget drops falls back
+  // to the first, and comes back when the budget does.
+  const finishes = FINISHES.filter((f) => f.budgets.includes(budget))
+  const [picked, setFinish] = useState('Primary enamel')
+  const finish = finishes.find((f) => f.name === picked) ?? finishes[0]
   const [qty, setQty] = useState(1)
   const [bag, setBag] = useState<Record<string, number>>({})
   const [bagOpen, setBagOpen] = useState(false)
@@ -41,7 +46,7 @@ export function Shop({ tokens, mode, uid, effects }: TokenSpaceProps) {
     setAdded(`Added ${n} × ${name} to your bag.`)
   }
   const count = Object.values(bag).reduce((a, b) => a + b, 0)
-  const total = Object.entries(bag).reduce((sum, [name, n]) => sum + n * PRICES[name], 0)
+  const total = Object.entries(bag).reduce((sum, [name, n]) => sum + n * priceOf(name), 0)
   const productName = `Dome teapot, ${finish.name.toLowerCase()}`
 
   const photo = (name: string, src: string, stops: string[], className: string, alt: string) => (
@@ -50,6 +55,7 @@ export function Shop({ tokens, mode, uid, effects }: TokenSpaceProps) {
       src={src}
       stops={stops}
       tokens={tokens}
+      budget={budget}
       contrast={1.1}
       className={className}
       alt={alt}
@@ -92,7 +98,7 @@ export function Shop({ tokens, mode, uid, effects }: TokenSpaceProps) {
                         <span>
                           {n} × {name}
                         </span>
-                        <span>€{n * PRICES[name]}</span>
+                        <span>€{n * priceOf(name)}</span>
                       </li>
                     ))}
                   </ul>
@@ -147,7 +153,7 @@ export function Shop({ tokens, mode, uid, effects }: TokenSpaceProps) {
                 126 reviews
               </button>
             </div>
-            <p className="shp-price">€{PRICES['Dome teapot']}</p>
+            <p className="shp-price">€{priceOf('Dome teapot')}</p>
             <p className="shp-desc">
               A low, domed pot with a long straight spout and a wooden handle set high over the lid, so it stays cool.
               Holds one litre, about four cups.
@@ -158,13 +164,13 @@ export function Shop({ tokens, mode, uid, effects }: TokenSpaceProps) {
                 Finish: <b>{finish.name}</b>
               </legend>
               <div className="shp-swatches">
-                {FINISHES.map((f) => (
+                {finishes.map((f) => (
                   <label key={f.name} className="shp-swatch" title={f.name}>
                     <input
                       type="radio"
                       name={`shp-finish-${uid}`}
                       checked={f.name === finish.name}
-                      onChange={() => setFinish(f)}
+                      onChange={() => setFinish(f.name)}
                       aria-label={f.name}
                     />
                     <i style={{ background: `var(--${f.swatch})` }} />
@@ -280,11 +286,11 @@ export function Shop({ tokens, mode, uid, effects }: TokenSpaceProps) {
           <div className="shp-cards">
             {RELATED.map((r) => (
               <article key={r.name} className="shp-card">
-                {photo(`rel-${r.id}`, r.src, ['foreground', 'muted-foreground', 'card'], 'shp-card-photo', r.alt)}
+                {photo(`rel-${r.id}`, r.src, ['foreground', 'card'], 'shp-card-photo', r.alt)}
                 <div className="shp-card-row">
                   <div>
                     <h3>{r.name}</h3>
-                    <p>€{PRICES[r.name]}</p>
+                    <p>€{priceOf(r.name)}</p>
                   </div>
                   <button
                     type="button"
@@ -315,13 +321,38 @@ interface Finish {
   stops: string[]
   /** The token the swatch shows. */
   swatch: string
+  /** The budgets that offer it: only ones whose colours that budget spends. */
+  budgets: Budget[]
 }
 
-/** Three finishes, each the palette's own. */
+/**
+ * The finishes are the palette's own, three to a budget so the swatches stay
+ * three different colours: full offers both brand colours, brand trades the
+ * accent for ink, and ink trades the primary for chalk.
+ */
 const FINISHES: Finish[] = [
-  { name: 'Steel', stops: ['foreground', 'muted-foreground', 'background'], swatch: 'muted-foreground' },
-  { name: 'Primary enamel', stops: ['foreground', 'primary', 'background'], swatch: 'primary' },
-  { name: 'Accent enamel', stops: ['foreground', 'accent-strong', 'background'], swatch: 'accent-strong' },
+  {
+    name: 'Steel',
+    // Ink to paper, no middle stop: muted-foreground is a light tone in dark
+    // mode and would wash the mid-tones out.
+    stops: ['foreground', 'background'],
+    swatch: 'muted-foreground',
+    budgets: ['full', 'brand', 'ink'],
+  },
+  {
+    name: 'Primary enamel',
+    stops: ['foreground', 'primary', 'background'],
+    swatch: 'primary',
+    budgets: ['full', 'brand'],
+  },
+  {
+    name: 'Accent enamel',
+    stops: ['foreground', 'accent-strong', 'background'],
+    swatch: 'accent-strong',
+    budgets: ['full'],
+  },
+  { name: 'Ink', stops: ['foreground', 'muted-foreground'], swatch: 'foreground', budgets: ['brand', 'ink'] },
+  { name: 'Chalk', stops: ['muted-foreground', 'border', 'background'], swatch: 'border', budgets: ['ink'] },
 ]
 
 const VIEWS = [
@@ -337,13 +368,12 @@ const VIEWS = [
 
 const PRICES: Record<string, number> = {
   'Dome teapot': 148,
-  'Dome teapot, steel': 148,
-  'Dome teapot, primary enamel': 148,
-  'Dome teapot, accent enamel': 148,
   'Cream jug': 64,
   'Sugar bowl': 58,
   'Bud vase': 42,
 }
+/** Every finish of the teapot is one price. */
+const priceOf = (name: string) => PRICES[name.startsWith('Dome teapot') ? 'Dome teapot' : name]
 
 const RELATED = [
   { id: 'pitcher', name: 'Cream jug', src: pitcher, alt: 'A small jug' },

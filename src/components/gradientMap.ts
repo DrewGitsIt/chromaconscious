@@ -16,7 +16,10 @@ const luminance = ([r, g, b]: [number, number, number]) => 0.2126 * linear(r) + 
  * light one) never prints the photograph as a negative.
  */
 export function gradientMap(tokens: Record<string, string>, stops: string[]): [string, string, string] {
-  let cols = stops.map((t) => channels(tokens[t] ?? '#000000'))
+  // Two stops of one colour would flatten the ramp between them; keep one.
+  let cols = stops
+    .map((t) => channels(tokens[t] ?? '#000000'))
+    .filter((c, i, all) => i === 0 || c.some((v, n) => v !== all[i - 1][n]))
   if (luminance(cols[0]) > luminance(cols[cols.length - 1])) cols = [...cols].reverse()
   return [0, 1, 2].map((n) => cols.map((c) => Number(c[n].toFixed(4))).join(' ')) as [string, string, string]
 }
