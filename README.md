@@ -18,7 +18,7 @@ What ChromaConscious provides:
 
 ## How it works
 
-You bring as many or as few colors as you like. The engine casts them into **seats**, the jobs a UI needs colors for, derives whatever is missing, and solves a full token set for light and dark mode. Every text pairing is then checked for contrast.
+You bring as many or as few colors as you like. The engine casts them into **seats**, the jobs a web UI needs colors for, then derives whatever is missing, and solves a full token set for light and dark mode. Every text pairing is then checked for contrast.
 
 ```mermaid
 flowchart LR
@@ -48,7 +48,7 @@ flowchart LR
     TH -. riff: walk the palette,<br/>locked seats stay put .-> S
 ```
 
-A few properties make it something you can build on, not just a toy:
+A few rules in this project's paradigm:
 
 - **Your colors are respected, or the change is explained.** By default a color that doesn't suit its role (a primary too close to danger, a chart color too pale to see) is nudged, and the engine says which color moved, why, and how to stop it. At `taste=1` your colors are kept exactly as typed.
 - **Riff walks the palette; locks hold it.** Riff steps through nearby palettes from the same inputs. Lock any seat and every later step keeps it exactly.
@@ -65,7 +65,7 @@ Four mockups (an app dashboard, an analytics console, a marketing page and a bra
 
 ![The same theme in light mode on the analytics console mockup, with its five-color chart series across line, donut and heatmap charts](docs/images/analytics-light.png)
 
-## One engine, two ways in
+## One engine, two interfaces
 
 The web app and the API run the same engine with the same verbs (generate, riff, lock, export). A theme can move between a person and an agent in either direction.
 
