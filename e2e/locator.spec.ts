@@ -47,14 +47,16 @@ test.describe('color locator', () => {
     // accent descendants stay verbatim
     expect(await rgbOf(page, '.banner-action')).toBe(linkBefore)
     // primary-derived button goes near-gray
-    expect(spread(await newProjectBg(page))).toBeLessThanOrEqual(8)
+    // polled: the button eases into the located colour (transition-all)
+    await expect.poll(async () => spread(await newProjectBg(page))).toBeLessThanOrEqual(8)
   })
 
   test('leaving the board restores the mockup', async ({ page }) => {
     await bootPicnic(page)
     await seat(page, 'accent').hover()
     await page.waitForTimeout(300)
-    expect(spread(await newProjectBg(page))).toBeLessThanOrEqual(8)
+    // polled: the button eases into the located colour (transition-all)
+    await expect.poll(async () => spread(await newProjectBg(page))).toBeLessThanOrEqual(8)
     // moving off the board restores full color
     await page.locator('.stage').hover({ position: { x: 400, y: 300 } })
     await page.waitForTimeout(300)
@@ -79,6 +81,7 @@ test.describe('color locator', () => {
     await page.waitForTimeout(300)
     expect(await rgbOf(page, '.preview-root', 'background-color')).toBe(bgBefore)
     // ...while the primary-derived button, which is not the neutral's, grays out
-    expect(spread(await newProjectBg(page))).toBeLessThanOrEqual(8)
+    // polled: the button eases into the located colour (transition-all)
+    await expect.poll(async () => spread(await newProjectBg(page))).toBeLessThanOrEqual(8)
   })
 })

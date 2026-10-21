@@ -3,9 +3,9 @@ import type { CSSProperties, Dispatch } from 'react'
 import {
   Archive,
   ArrowLeft,
-  BarChart3,
   Check,
   CircleAlert,
+  ChevronsUpDown,
   CircleCheck,
   ExternalLink,
   FolderKanban,
@@ -14,16 +14,28 @@ import {
   LoaderCircle,
   Plus,
   Rocket,
+  Search,
   ScrollText,
   Settings,
   Share,
   Trash2,
   TriangleAlert,
   Undo2,
+  UserPlus,
   X,
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import type { Command } from './DashboardParts'
+import { REQUESTS_TOTAL } from './dashboardData'
+import {
+  CommandMenu,
+  FeedMark,
+  InviteDialog,
+  RequestsChart,
+  Sparkline,
+  UptimeStrip,
+} from './DashboardParts'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -123,6 +135,27 @@ const TRAFFIC = [
   { label: 'Social', share: 13, token: 'chart-4' },
   { label: 'Email', share: 8, token: 'chart-5' },
 ]
+
+/** The stat tiles. Churn falling is good news, so its pill is green. */
+const KPIS = [
+  { label: 'Revenue', value: '$48,210', delta: '+4.2%', good: true, trend: [38, 41, 40, 44, 43, 47, 46, 45, 49, 52, 50, 54, 55, 58] },
+  { label: 'Active users', value: '3,842', delta: '+12.1%', good: true, trend: [30, 31, 33, 32, 35, 37, 36, 39, 41, 40, 43, 45, 44, 47] },
+  { label: 'Churn', value: '2.1%', delta: '−0.4%', good: true, trend: [27, 26, 27, 25, 26, 24, 25, 24, 23, 24, 22, 23, 22, 21] },
+]
+
+/** A project's status as a feed level, for the rail's dots. */
+const STATUS_LEVEL: Record<Status, Level> = {
+  live: 'ok',
+  degraded: 'warn',
+  down: 'error',
+  queued: 'info',
+  deploying: 'info',
+}
+
+/* Every control on the rail: hover in the sidebar's accent, focus in its own
+   ring (`ring` is tuned against `background`, and would go invisible here). */
+const RAIL_CONTROL =
+  'outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring aria-expanded:bg-sidebar-accent aria-expanded:text-sidebar-accent-foreground'
 
 const RANK: Record<Role, number> = { viewer: 0, editor: 1, admin: 2 }
 const PERMISSIONS: Array<{ label: string; min: Role }> = [
@@ -454,6 +487,12 @@ export function Preview({ tokens, mode, uid, effects }: TokenSpaceProps) {
     ...effects,
   } as CSSProperties
   const [s, dispatch] = useReducer(reducer, INITIAL)
+  const [cmdOpen, setCmdOpen] = useState(false)
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const commands: Command[] = [
+    ...NAV.map(({ id, label }) => ({ id: `page-${id}`, label, group: 'Page', run: () => dispatch({ type: 'nav', page: id }) })),
+    ...s.projects.map((p) => ({ id: `project-${p.id}`, label: p.id, group: 'Project', run: () => dispatch({ type: 'open', id: p.id }) })),
+  ]
 
   // Deploys advance on a timer; the effect re-arms off the deploy object, so a
   // finished run (deploy === null) simply stops scheduling.
@@ -509,42 +548,129 @@ export function Preview({ tokens, mode, uid, effects }: TokenSpaceProps) {
     <div
       className={`preview-root relative flex min-h-[680px] overflow-hidden bg-background text-sm text-foreground ${mode === 'dark' ? 'dark' : ''}`}
       style={vars}
+      // ⌘K opens search while focus is anywhere in this frame: the app's own
+      // shortcuts ignore modified keys, so nothing else claims it.
+      onKeyDown={(e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault()
+          setCmdOpen(true)
+        }
+      }}
     >
       {/* rail */}
-      <div className="flex w-44 shrink-0 flex-col border-r border-sidebar-border bg-sidebar p-3 text-sidebar-foreground">
-        <div className="mb-4 px-2 text-base font-bold text-sidebar-primary">Acme</div>
-        <nav className="flex flex-col gap-1">
+      <div className="flex w-56 shrink-0 flex-col gap-5 border-r border-sidebar-border bg-sidebar px-3 py-4 text-sidebar-foreground">
+        {/* The team: a menu, because a mark that looks clickable has to be. */}
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <button
+                className={`act-workspace flex items-center gap-2.5 rounded-md p-1 text-left ${RAIL_CONTROL}`}
+                aria-label={`${TEAM_NAME}, team menu`}
+              >
+                <span className="grid size-7.5 shrink-0 place-items-center rounded-[calc(var(--radius)*0.8)] bg-sidebar-primary font-heading text-[15px] leading-none font-[var(--font-heading-weight,600)] text-sidebar-primary-foreground">
+                  A
+                </span>
+                <span className="min-w-0 flex-1">
+                  <b className="block text-sm leading-tight font-semibold">{TEAM_NAME}</b>
+                  <span className="text-xs">Team plan</span>
+                </span>
+                <ChevronsUpDown className="size-4 shrink-0" />
+              </button>
+            }
+          />
+          <DropdownMenuContent
+            style={vars}
+            align="start"
+            className="workspace-menu w-56 shadow-[shadow:var(--elevation-2)]"
+          >
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>{TEAM_NAME} · Team plan</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="ws-settings" onClick={() => dispatch({ type: 'nav', page: 'settings' })}>
+                <Settings className="size-4" /> Team settings
+              </DropdownMenuItem>
+              <DropdownMenuItem className="ws-projects" onClick={() => dispatch({ type: 'nav', page: 'projects' })}>
+                <FolderKanban className="size-4" /> Projects
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="ws-invite" onClick={() => setInviteOpen(true)}>
+                <UserPlus className="size-4" /> Invite people…
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <button
+          className={`act-search flex h-8 items-center gap-2 rounded-md border border-sidebar-border px-2.5 text-[13px] ${RAIL_CONTROL}`}
+          onClick={() => setCmdOpen(true)}
+        >
+          <Search className="size-4" /> Search
+          <kbd className="ml-auto font-mono text-[11px]">⌘K</kbd>
+        </button>
+
+        <nav className="flex flex-col gap-0.5">
           {NAV.map(({ id, label: navLabel, icon: Icon }) => (
             <button
               key={id}
               onClick={() => dispatch({ type: 'nav', page: id })}
               aria-current={s.page === id ? 'page' : undefined}
-              /* The sidebar owns its own focus color: `ring` is tuned against
-                 `background`, and would go invisible on the rail. */
-              className={`nav-item flex items-center gap-2 rounded-md px-2 py-1.5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring ${
-                s.page === id
-                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                  : 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+              /* Selection speaks in the accent's voice, as the tabs do; the
+                 brand mark above is the rail's one spend of primary. */
+              className={`nav-item flex h-8 items-center gap-2.5 rounded-md px-2.5 text-left font-medium ${RAIL_CONTROL} ${
+                s.page === id ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''
               }`}
             >
               <Icon className="size-4" />
               {navLabel}
-              {id === 'projects' && (
-                <span className="ml-auto text-xs tabular-nums opacity-70">{s.projects.length}</span>
-              )}
+              {id === 'projects' && <span className="ml-auto text-xs tabular-nums">{s.projects.length}</span>}
             </button>
           ))}
         </nav>
-        <div className="mt-auto px-2 text-xs text-muted-foreground">v2.4.1</div>
+
+        <div className="grid gap-0.5">
+          <p className="px-2.5 pb-1 text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+            Projects
+          </p>
+          {s.projects.slice(0, 6).map((p) => (
+            <button
+              key={p.id}
+              className={`rail-project flex h-7 items-center gap-2.5 rounded-md px-2.5 text-left font-mono text-[12.5px] ${RAIL_CONTROL}`}
+              onClick={() => dispatch({ type: 'open', id: p.id })}
+            >
+              <LevelDot level={STATUS_LEVEL[p.status]} />
+              <span className="truncate">{p.id}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-auto flex items-center gap-2.5 border-t border-sidebar-border px-1 pt-3">
+          <span className="grid size-7 shrink-0 place-items-center rounded-full bg-secondary text-[11px] font-semibold text-secondary-foreground">
+            AN
+          </span>
+          <span className="min-w-0">
+            <b className="block text-[13px] leading-tight font-semibold">Ana Ito</b>
+            <span className="text-xs text-muted-foreground">v2.4.1</span>
+          </span>
+        </div>
       </div>
 
       {/* main */}
       {/* A container, not a viewport: split view halves this column and the
           stat tiles have to reflow off *its* width, not the window's. */}
-      <div className="@container flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
-        <header className="flex items-center justify-between">
-          <strong className="text-base capitalize">{s.page}</strong>
-          <div className="flex items-center gap-2">
+      <div className="@container flex min-w-0 flex-1 flex-col gap-5 overflow-y-auto px-7 pt-5 pb-7">
+        <header className="flex flex-wrap items-end gap-4">
+          <div className="min-w-0">
+            <p className="mb-1.5 text-[13px]">
+              {TEAM_NAME} / <span className="capitalize">{s.page}</span>
+            </p>
+            <h1 className="page-title font-heading text-[28px] leading-tight font-[var(--font-heading-weight,600)] tracking-[-0.025em] capitalize">
+              {s.page}
+            </h1>
+            {s.page === 'dashboard' && (
+              <p className="mt-1 text-[13px] text-muted-foreground">Thursday 16 October · production</p>
+            )}
+          </div>
+          <div className="ml-auto flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
@@ -622,121 +748,149 @@ export function Preview({ tokens, mode, uid, effects }: TokenSpaceProps) {
 
         {s.page === 'dashboard' && (
           <>
-            <Alert className="border-success bg-success-subtle text-success-subtle-foreground">
-              <AlertTitle>Deploy succeeded</AlertTitle>
-              <AlertDescription className="text-success-subtle-foreground/90">
-                All 42 checks passed on production.{' '}
+            {/* Two notices, one quiet line each: news, not a wall. Each sits
+                on its status pair, and the deploy's report is a link on the
+                success tint, a pair the report checks. */}
+            <div className="grid gap-2.5 @3xl:grid-cols-2">
+              <p className="notice notice-ok flex min-w-0 items-center gap-2.5 rounded-[var(--radius)] bg-success-subtle px-3 py-2.5 text-[13px] text-success-subtle-foreground">
+                <CircleCheck className="size-4 shrink-0" />
+                <b className="font-semibold whitespace-nowrap">Deploy succeeded</b>
+                <span className="truncate">42 checks passed</span>
                 <button
                   onClick={() => dispatch({ type: 'logs', key: 'report' })}
-                  className="banner-action act-view-report cursor-pointer font-medium text-link underline decoration-link/40 underline-offset-2 outline-none hover:decoration-link focus-visible:ring-2 focus-visible:ring-ring"
+                  className="banner-action act-view-report ml-auto shrink-0 cursor-pointer font-medium text-link underline decoration-link/40 underline-offset-2 outline-none hover:decoration-link focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   View report
                 </button>
-              </AlertDescription>
-            </Alert>
-            <Alert className="flex items-center justify-between border-warning bg-warning-subtle text-warning-subtle-foreground">
-              <AlertTitle>Certificate expires in 12 days</AlertTitle>
-              {/* Deliberately dead: renewal is the registrar's job, so the
-                  button states that instead of pretending to work. */}
-              <Button
-                size="sm"
-                variant="outline"
-                disabled
-                aria-disabled
-                title="Renewal is handled by your DNS provider — nothing to do here"
-                className="border-warning bg-transparent text-warning-subtle-foreground"
-              >
-                Renew now
-              </Button>
-            </Alert>
-
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                ['Revenue', '$48,210', '+4.2%', 'chart-1'],
-                ['Active users', '3,842', '+12.1%', 'chart-2'],
-                ['Churn', '2.1%', '-0.4%', 'chart-3'],
-              ].map(([title, value, delta, chart]) => (
-                /* Level 1: a stat tile is a resting raised surface. The ring
-                   the Card already carries stays — under `flat` it is the
-                   only thing separating the tile from the page. */
-                <Card key={title} className="stat-tile shadow-[shadow:var(--elevation-1)]">
-                  <CardHeader>
-                    <CardDescription>{title}</CardDescription>
-                    <CardTitle className="text-xl @2xl:text-2xl">{value}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {/* Chart marks follow the corners setting down to sharp
-                        but never past today's 6px: at round, a short bar's
-                        top would become a half-circle and stop reading as a
-                        value. Same cap on every chart mark in the mockups. */}
-                    <div className="flex h-9 items-end gap-1">
-                      {[40, 65, 45, 80, 55, 90, 70].map((h, i) => (
-                        <div
-                          key={i}
-                          className="flex-1 rounded-t-[min(var(--radius)*0.6,6px)]"
-                          style={{ height: `${h}%`, background: `var(--${chart})` }}
-                        />
-                      ))}
-                    </div>
-                    <div className="mt-2 text-xs text-muted-foreground">{delta} vs. last month</div>
-                  </CardContent>
-                </Card>
-              ))}
+              </p>
+              {/* Renewal is automatic, so this says when rather than offering
+                  a button that could only ever be disabled. */}
+              <p className="notice notice-warn flex min-w-0 items-center gap-2.5 rounded-[var(--radius)] bg-warning-subtle px-3 py-2.5 text-[13px] text-warning-subtle-foreground">
+                <TriangleAlert className="size-4 shrink-0" />
+                <b className="font-semibold whitespace-nowrap">Certificate expires in 12 days</b>
+                <span className="truncate">auto-renews 28 Oct</span>
+              </p>
             </div>
-            <TrafficCard source={s.source} onSource={(label) => dispatch({ type: 'source', label })} />
 
-            {/* Selection speaks in the accent's voice, not the brand's: the
-                active tab carries an accent-strong indicator bar. */}
-            <Tabs value={s.tab} onValueChange={(v) => dispatch({ type: 'tab', tab: String(v) })}>
-              <TabsList>
-                <TabsTrigger value="activity" className="tab-activity">
-                  <BarChart3 className="size-4" /> Activity
-                  {s.tab === 'activity' && <TabIndicator />}
-                </TabsTrigger>
-                <TabsTrigger value="alerts" className="tab-alerts">
-                  Alerts
-                  {s.tab === 'alerts' && <TabIndicator />}
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="activity">
-                <Card className="activity-card shadow-[shadow:var(--elevation-1)]">
-                  <CardHeader>
-                    <CardTitle>Activity</CardTitle>
-                    <CardDescription>Everything the team did today.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="feed flex flex-col">
-                      {s.feed.map((f) => (
-                        <li
-                          key={f.id}
-                          className="flex items-center gap-2 border-b border-border py-1.5 last:border-0"
+            {/* Row one: the page's focal point, and the numbers beside it. */}
+            <div className="grid gap-4 @3xl:grid-cols-[minmax(0,1fr)_15.5rem]">
+              <Card className="hero-card shadow-[shadow:var(--elevation-1)]">
+                <CardHeader className="flex flex-row items-baseline justify-between">
+                  <CardTitle className="text-sm">Requests</CardTitle>
+                  <span className="text-xs text-muted-foreground">last 7 days</span>
+                </CardHeader>
+                <CardContent className="flex flex-1 flex-col gap-1.5">
+                  <div className="flex flex-wrap items-end gap-x-3.5 gap-y-1">
+                    <span className="font-heading text-[40px] leading-none font-[var(--font-heading-weight,600)] tracking-[-0.035em] tabular-nums">
+                      {REQUESTS_TOTAL.toLocaleString('en')}
+                    </span>
+                    <Delta good>+8.2%</Delta>
+                    <span className="pb-0.5 text-[13px] text-muted-foreground">vs. the 7 days before</span>
+                  </div>
+                  <RequestsChart />
+                </CardContent>
+              </Card>
+              <div className="grid gap-3">
+                {KPIS.map((k) => (
+                  /* Level 1: a stat tile is a resting raised surface. */
+                  <Card key={k.label} size="sm" className="stat-tile gap-1 shadow-[shadow:var(--elevation-1)]">
+                    <CardContent>
+                      <div className="flex items-center justify-between gap-2">
+                        <CardDescription className="text-[11px] font-semibold tracking-[0.08em] uppercase">
+                          {k.label}
+                        </CardDescription>
+                        <Delta good={k.good}>{k.delta}</Delta>
+                      </div>
+                      <CardTitle className="mt-1 text-2xl tracking-[-0.03em] tabular-nums group-data-[size=sm]/card:text-2xl">
+                        {k.value}
+                      </CardTitle>
+                      <Sparkline data={k.trend} />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Row two: where the traffic came from, and how each service held up. */}
+            <div className="grid gap-4 @3xl:grid-cols-2">
+              <TrafficCard source={s.source} onSource={(label) => dispatch({ type: 'source', label })} />
+              <Card className="health-card shadow-[shadow:var(--elevation-1)]">
+                <CardHeader className="flex flex-row items-baseline justify-between">
+                  <CardTitle className="text-sm">Service health</CardTitle>
+                  <span className="text-xs text-muted-foreground">last 30 days</span>
+                </CardHeader>
+                <CardContent className="grid">
+                  {s.projects.map((p) => (
+                    <div
+                      key={p.id}
+                      className="svc grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 border-t border-border py-2.5 first:border-0 first:pt-0"
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <button
+                          className="svc-link truncate rounded-sm font-mono text-[13px] font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                          onClick={() => dispatch({ type: 'open', id: p.id })}
                         >
-                          <LevelDot level={f.level} />
-                          <span className="min-w-0 flex-1 truncate">{f.text}</span>
-                          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                            {f.at}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              <TabsContent value="alerts">
-                <Alert className="border-destructive bg-destructive-subtle text-destructive-subtle-foreground">
-                  <AlertTitle>Build failed on main</AlertTitle>
-                  <AlertDescription className="text-destructive-subtle-foreground/90">
-                    2 test errors in billing-service.{' '}
+                          {p.id}
+                        </button>
+                        <StatusBadge status={p.status} />
+                      </span>
+                      <span className="text-[13px] tabular-nums">{p.uptime}</span>
+                      <UptimeStrip id={p.id} />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Row three: what happened. Selection speaks in the accent's
+                voice: the active tab carries an accent-strong bar. */}
+            <Card className="activity-card gap-0 py-0 shadow-[shadow:var(--elevation-1)]">
+              <Tabs value={s.tab} onValueChange={(v) => dispatch({ type: 'tab', tab: String(v) })}>
+                <TabsList
+                  variant="line"
+                  className="h-11 w-full justify-start gap-5 border-b border-border px-4.5 group-data-horizontal/tabs:h-11"
+                >
+                  <TabsTrigger value="activity" className="tab-activity flex-none px-0 after:hidden">
+                    Activity
+                    {s.tab === 'activity' && <TabIndicator />}
+                  </TabsTrigger>
+                  <TabsTrigger value="alerts" className="tab-alerts flex-none px-0 after:hidden">
+                    Alerts
+                    <Badge className="h-4.5 bg-destructive px-1.5 text-destructive-foreground tabular-nums">
+                      1
+                    </Badge>
+                    {s.tab === 'alerts' && <TabIndicator />}
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="activity">
+                  <ol className="feed flex flex-col px-4.5 pb-2.5">
+                    {s.feed.map((f) => (
+                      <li
+                        key={f.id}
+                        className="flex items-center gap-3 border-t border-border py-2.5 text-[13.5px] first:border-0"
+                      >
+                        <FeedMark text={f.text} level={f.level} people={OWNERS} />
+                        <span className="min-w-0 flex-1 truncate">{f.text}</span>
+                        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{f.at}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </TabsContent>
+                <TabsContent value="alerts" className="px-4.5 py-3">
+                  <p className="flex min-w-0 items-center gap-2.5 rounded-[var(--radius)] bg-destructive-subtle px-3 py-2.5 text-[13px] text-destructive-subtle-foreground">
+                    <CircleAlert className="size-4 shrink-0" />
+                    <b className="font-semibold whitespace-nowrap">Build failed on main</b>
+                    <span className="truncate">2 test errors in billing-service</span>
                     <button
                       onClick={() => dispatch({ type: 'logs', key: 'failure' })}
-                      className="banner-action act-view-logs cursor-pointer font-medium underline decoration-current/40 underline-offset-2 outline-none hover:decoration-current focus-visible:ring-2 focus-visible:ring-ring"
+                      className="banner-action act-view-logs ml-auto shrink-0 cursor-pointer font-medium underline decoration-current/40 underline-offset-2 outline-none hover:decoration-current focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       View logs
                     </button>
-                  </AlertDescription>
-                </Alert>
-              </TabsContent>
-            </Tabs>
+                  </p>
+                </TabsContent>
+              </Tabs>
+            </Card>
           </>
         )}
 
@@ -988,6 +1142,14 @@ export function Preview({ tokens, mode, uid, effects }: TokenSpaceProps) {
 
       {/* Toasts step aside for the drawer instead of stacking on top of it. */}
       <ToastStack toasts={s.toasts} shifted={!!s.logKey} dispatch={dispatch} />
+      <CommandMenu open={cmdOpen} onOpenChange={setCmdOpen} uid={uid} vars={vars} commands={commands} />
+      <InviteDialog
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        uid={uid}
+        vars={vars}
+        onInvite={(email) => dispatch({ type: 'toast', level: 'ok', text: `Invite sent to ${email}` })}
+      />
     </div>
   )
 }
@@ -997,7 +1159,7 @@ function TabIndicator() {
   return (
     <span
       aria-hidden
-      className="tab-accent-indicator pointer-events-none absolute inset-x-1 bottom-0 h-0.5 rounded-full bg-accent-strong"
+      className="tab-accent-indicator pointer-events-none absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-accent-strong"
     />
   )
 }
@@ -1024,7 +1186,9 @@ function StatusBadge({ status }: { status: Status }) {
   if (status === 'live') return <Badge className="bg-success text-success-foreground">live</Badge>
   if (status === 'degraded')
     return <Badge className="bg-warning text-warning-foreground">degraded</Badge>
-  if (status === 'down') return <Badge variant="destructive">down</Badge>
+  // The solid pair, as live and degraded wear theirs: the tinted variant set
+  // destructive text on a 10% wash, a pair nothing checks.
+  if (status === 'down') return <Badge className="bg-destructive text-destructive-foreground">down</Badge>
   // In-flight isn't a *status* color — it borrows the accent, and as text it
   // has to use `link` (accent-strong is a mark color, with no paired ink).
   if (status === 'deploying')
@@ -1050,26 +1214,28 @@ function TrafficCard({
 }) {
   const active = TRAFFIC.find((t) => t.label === source)
   return (
-    <Card className="traffic-card shadow-[shadow:var(--elevation-1)]" size="sm">
+    <Card className="traffic-card shadow-[shadow:var(--elevation-1)]">
       <CardHeader className="flex flex-row items-end justify-between">
         <div className="grid gap-1">
-          <CardDescription>{active ? active.label : 'Traffic by source'}</CardDescription>
-          <CardTitle className="text-xl tabular-nums @2xl:text-2xl">
-            {active ? `${active.share}%` : '12,904'}
+          <CardDescription className="font-semibold text-card-foreground">
+            {active ? active.label : 'Traffic by source'}
+          </CardDescription>
+          <CardTitle className="text-2xl tracking-[-0.03em] tabular-nums">
+            {active ? `${active.share}%` : REQUESTS_TOTAL.toLocaleString('en')}
           </CardTitle>
         </div>
         <span className="text-xs text-muted-foreground">
-          {active ? 'click again for the full mix' : 'last 7 days'}
+          {active ? 'click again for the full mix' : 'visits, last 7 days'}
         </span>
       </CardHeader>
       <CardContent className="grid gap-2">
-        {/* 2px surface gaps keep adjacent hues from fusing into one band. */}
-        <div className="traffic-bar flex h-2.5 gap-0.5">
+        {/* 3px surface gaps keep adjacent hues from fusing into one band. */}
+        <div className="traffic-bar flex h-3 gap-[3px]">
           {TRAFFIC.map((t) => (
             <div
               key={t.label}
               title={`${t.label} — ${t.share}%`}
-              className="rounded-full motion-safe:transition-opacity"
+              className="rounded-[min(var(--radius)*0.6,6px)] motion-safe:transition-opacity"
               style={{
                 flex: `${t.share} 0 0`,
                 background: `var(--${t.token})`,
@@ -1078,30 +1244,45 @@ function TrafficCard({
             />
           ))}
         </div>
-        {/* Identity never rides on color alone: every series is named here. */}
-        <ul className="traffic-legend flex flex-wrap gap-x-4 gap-y-1">
+        {/* Identity never rides on color alone: every series is named here,
+            with its count, so the legend is also the table. */}
+        <ul className="traffic-legend -mx-2 grid">
           {TRAFFIC.map((t) => (
             <li key={t.label}>
               <button
                 onClick={() => onSource(source === t.label ? null : t.label)}
                 aria-pressed={source === t.label}
-                className={`traffic-key flex items-center gap-1.5 rounded-sm text-left text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                  source === t.label ? 'font-medium text-foreground' : 'text-muted-foreground'
+                className={`traffic-key grid h-9 w-full grid-cols-[0.75rem_1fr_auto_2.75rem] items-center gap-2.5 rounded-md px-2 text-left text-[13px] outline-none hover:bg-muted hover:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring ${
+                  source === t.label ? 'bg-muted font-semibold text-muted-foreground' : ''
                 }`}
               >
                 <span
                   aria-hidden
-                  className="size-2 shrink-0 rounded-[min(var(--radius)*0.2,2px)]"
+                  className="size-2.5 rounded-[min(var(--radius)*0.3,3px)]"
                   style={{ background: `var(--${t.token})` }}
                 />
-                {t.label}
-                <span className="tabular-nums opacity-70">{t.share}%</span>
+                <span>{t.label}</span>
+                <span className="tabular-nums">{Math.round((REQUESTS_TOTAL * t.share) / 100).toLocaleString('en')}</span>
+                <span className="text-right tabular-nums">{t.share}%</span>
               </button>
             </li>
           ))}
         </ul>
       </CardContent>
     </Card>
+  )
+}
+
+/** A change, on the pair that says whether it is good news. */
+function Delta({ good = true, children }: { good?: boolean; children: React.ReactNode }) {
+  return (
+    <span
+      className={`inline-flex h-5.5 shrink-0 items-center rounded-full px-2 text-xs font-semibold tabular-nums ${
+        good ? 'bg-success-subtle text-success-subtle-foreground' : 'bg-destructive-subtle text-destructive-subtle-foreground'
+      }`}
+    >
+      {children}
+    </span>
   )
 }
 

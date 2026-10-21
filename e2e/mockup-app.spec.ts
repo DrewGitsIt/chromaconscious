@@ -489,7 +489,7 @@ test.describe('split view', () => {
     await a.getByRole('checkbox', { name: 'Select marketing-site' }).click()
     await expect(a.locator('.act-archive')).toHaveText('Archive selected (1)')
     // B is untouched: still on the dashboard, nothing selected
-    await expect(b.locator('header strong')).toHaveText('dashboard')
+    await expect(b.locator('.page-title')).toHaveText('dashboard')
     await b.locator('.nav-item:nth-child(2)').click()
     await expect(b.locator('.act-archive')).toHaveText('Archive selected')
 
@@ -749,3 +749,127 @@ function hexToRgb(hex: string) {
   if (!m) return hex
   return `rgb(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)})`
 }
+
+test.describe('dashboard touchpoints', () => {
+  test('the certificate notice says when it renews, with no dead button in it', async ({ page }) => {
+    await boot(page)
+    const notice = page.locator('.notice-warn')
+    await expect(notice).toContainText('Certificate expires in 12 days')
+    await expect(notice).toContainText('auto-renews 28 Oct')
+    await expect(notice.locator('button')).toHaveCount(0)
+  })
+
+  test('the team menu goes to settings and projects, and invites someone', async ({ page }) => {
+    await boot(page)
+    await page.locator('.act-workspace').click()
+    const menu = page.locator('.workspace-menu')
+    await expect(menu).toContainText('Acme Web · Team plan')
+    await menu.locator('.ws-settings').click()
+    await expect(page.locator('.act-save')).toBeVisible()
+
+    await page.locator('.act-workspace').click()
+    await page.locator('.ws-projects').click()
+    await expect(page.locator('.act-deploy')).toBeVisible()
+
+    await page.locator('.act-workspace').click()
+    await page.locator('.ws-invite').click()
+    const dialog = page.locator('.invite-dialog')
+    await expect(dialog).toBeVisible()
+    const send = dialog.locator('.act-invite')
+    await expect(send).toBeDisabled()
+    await dialog.getByLabel('Email').fill('not-an-email')
+    await dialog.getByLabel('Email').blur()
+    await expect(dialog.locator('.invite-error')).toContainText('not a valid email')
+    await dialog.getByLabel('Email').fill('teo@acme.com')
+    await expect(send).toBeEnabled()
+    await send.click()
+    await expect(dialog).toHaveCount(0)
+    await expect(toast(page)).toContainText('Invite sent to teo@acme.com')
+  })
+
+  test('search narrows pages and projects, and Enter goes there', async ({ page }) => {
+    await boot(page)
+    await page.locator('.act-search').click()
+    const input = page.locator('.cmd-input')
+    await expect(input).toBeFocused()
+    await expect(page.locator('.cmd-item')).toHaveCount(7)
+    await input.fill('leg')
+    await expect(page.locator('.cmd-item')).toHaveCount(1)
+    await input.press('Enter')
+    await expect(page.locator('.project-detail')).toContainText('legacy-importer')
+
+    // the arrows move the selection, and the input keeps the keyboard
+    await page.locator('.act-search').click()
+    await input.fill('page')
+    await expect(page.locator('.cmd-item[aria-selected="true"]')).toHaveText(/Dashboard/)
+    await input.press('ArrowDown')
+    await input.press('ArrowDown')
+    await expect(page.locator('.cmd-item[aria-selected="true"]')).toHaveText(/Settings/)
+    await input.press('Enter')
+    await expect(page.locator('.act-save')).toBeVisible()
+
+    await page.locator('.act-search').click()
+    await input.fill('zzz')
+    await expect(page.locator('.cmd-empty')).toContainText('Nothing matches')
+    await input.press('Escape')
+    await expect(page.locator('.cmd-menu')).toHaveCount(0)
+  })
+
+  test('⌘K opens search from anywhere in the frame', async ({ page }) => {
+    await boot(page)
+    await nav(page, 1).focus()
+    await page.keyboard.press('ControlOrMeta+k')
+    await expect(page.locator('.cmd-input')).toBeFocused()
+  })
+
+  test('the rail projects and the health rows open the project', async ({ page }) => {
+    await boot(page)
+    await page.locator('.rail-project', { hasText: 'docs-portal' }).click()
+    await expect(page.locator('.project-detail')).toContainText('docs-portal')
+    await nav(page, 1).click()
+    const health = page.locator('.health-card')
+    await expect(health.locator('.svc')).toHaveCount(4)
+    await expect(health.locator('.uptime-strip').first().locator('i')).toHaveCount(30)
+    await health.locator('.svc-link', { hasText: 'billing-service' }).click()
+    await expect(page.locator('.project-detail')).toContainText('billing-service')
+  })
+
+  test('the requests chart reads an hour back on hover, and agrees with traffic', async ({ page }) => {
+    await boot(page)
+    const chart = page.locator('.requests-chart')
+    await expect(page.locator('.requests-tip')).toHaveCount(0)
+    await chart.hover({ position: { x: 200, y: 120 } })
+    await expect(page.locator('.requests-tip')).toContainText(/\d+ requests · (Fri|Sat|Sun|Mon|Tue|Wed|Thu) \d\d:00/)
+    await page.mouse.move(0, 0)
+    await expect(page.locator('.requests-tip')).toHaveCount(0)
+    await expect(page.locator('.requests-failed')).toHaveText('billing-service #4821 failed')
+    // one week, one number: the hero's total is the traffic card's
+    await expect(page.locator('.hero-card')).toContainText('12,904')
+    await expect(page.locator('.traffic-card [data-slot="card-title"]')).toHaveText('12,904')
+  })
+})
+
+test.describe('disabled buttons', () => {
+  for (const mode of ['light', 'dark'] as const)
+    test(`stay readable in ${mode}: the muted pair at full opacity, a dashed edge, the reason on hover`, async ({
+      page,
+    }) => {
+      await boot(page)
+      if (mode === 'light') await page.getByRole('button', { name: 'switch frame A to light' }).click()
+      await settings(page)
+      const save = page.locator('.act-save')
+      await expect(save).toBeDisabled()
+      const look = await save.evaluate((el) => {
+        const cs = getComputedStyle(el)
+        return { opacity: cs.opacity, color: cs.color, bg: cs.backgroundColor, border: cs.borderTopStyle, cursor: cs.cursor, events: cs.pointerEvents }
+      })
+      expect(look.opacity).toBe('1')
+      expect(look.border).toBe('dashed')
+      expect(look.cursor).toBe('not-allowed')
+      // pointer events stay on, so the title (the reason) can show
+      expect(look.events).not.toBe('none')
+      expect(look.color).toBe(hexToRgb(await previewVar(page, '--muted-foreground')))
+      expect(look.bg).toBe(hexToRgb(await previewVar(page, '--muted')))
+      expect(contrast(look.color, look.bg)).toBeGreaterThanOrEqual(4.5)
+    })
+})

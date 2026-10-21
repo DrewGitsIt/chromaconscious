@@ -1,0 +1,1246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="icon" href="data:," />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ChromaConscious — app dashboard, redesign draft</title>
+<style>
+  /* ============================================================
+     App dashboard, redesign draft: direction 1, a calm operations
+     console. The same app and the same states as Preview.tsx, which is now
+     the live version (two notices, stat tiles, five traffic series, activity and alerts
+     tabs, export and new project), held to the magazine's
+     discipline:
+
+     1. One thing leads. The requests chart is the page's focal
+        point; everything else is quieter than it.
+     2. Colour has a job. Neutrals carry the page. Primary is spent
+        on the brand mark, the main action, the hero series and the
+        deploys that shipped; status colours only on status; the
+        chart palette only on traffic, where five series need it;
+        accent-strong only on the selected tab.
+     3. Numbers agree. Traffic visits and the day totals both sum
+        to the headline 12,904; every sparkline is its own data.
+     4. Every colour is a token. The tokens below are the engine's
+        real output for each preset at its defaults, dumped
+        2026-10-16. Text sits on checked pairs, plus muted-foreground
+        on background and card, which clears every preset more
+        easily than its checked pair on muted does.
+     ============================================================ */
+
+  /* engine output, 2026-10-16: each preset at its defaults */
+  .dash[data-theme="Coastal starter"] {
+    --background: #f6fff3;
+    --foreground: #222821;
+    --card: #f2fbef;
+    --card-foreground: #222821;
+    --popover: #f2fbef;
+    --popover-foreground: #222821;
+    --primary: #db2d1c;
+    --primary-foreground: #fdf9f8;
+    --secondary: #e8f1e5;
+    --secondary-foreground: #222821;
+    --muted: #e8f1e5;
+    --muted-foreground: #666d64;
+    --accent: #e0f0fc;
+    --accent-foreground: #092637;
+    --accent-strong: #5f96bb;
+    --link: #527083;
+    --destructive: #c92f34;
+    --destructive-foreground: #fdf9f8;
+    --destructive-subtle: #ffe7e5;
+    --destructive-subtle-foreground: #a4514d;
+    --destructive-strong: #f65c59;
+    --success: #517c36;
+    --success-foreground: #f9fbf7;
+    --success-subtle: #e4f3dd;
+    --success-subtle-foreground: #59724c;
+    --success-strong: #709c56;
+    --warning: #f29520;
+    --warning-foreground: #100c09;
+    --warning-subtle: #ffe9d5;
+    --warning-subtle-foreground: #915f28;
+    --warning-strong: #d07c00;
+    --border: #c6cfc4;
+    --input: #b5beb2;
+    --ring: #5f96bb;
+    --chart-1: #86cccf;
+    --chart-2: #385681;
+    --chart-3: #00976d;
+    --chart-4: #0090a3;
+    --chart-5: #007df3;
+    --sidebar: #f2fbef;
+    --sidebar-foreground: #222821;
+    --sidebar-primary: #db2d1c;
+    --sidebar-primary-foreground: #fdf9f8;
+    --sidebar-accent: #e0f0fc;
+    --sidebar-accent-foreground: #092637;
+    --sidebar-border: #c6cfc4;
+    --sidebar-ring: #5f96bb;
+  }
+  .dash[data-theme="Coastal starter"].dark {
+    --background: #0e140c;
+    --foreground: #e5ece2;
+    --card: #131911;
+    --card-foreground: #e5ece2;
+    --popover: #131911;
+    --popover-foreground: #e5ece2;
+    --primary: #ce412e;
+    --primary-foreground: #fdf9f8;
+    --secondary: #1b2119;
+    --secondary-foreground: #e5ece2;
+    --muted: #1b2119;
+    --muted-foreground: #b4bab1;
+    --accent: #152129;
+    --accent-foreground: #d5eeff;
+    --accent-strong: #659dc2;
+    --link: #a4bccc;
+    --destructive: #c74647;
+    --destructive-foreground: #fdf9f8;
+    --destructive-subtle: #321614;
+    --destructive-subtle-foreground: #eaa8a2;
+    --destructive-strong: #fc615e;
+    --success: #5c7d48;
+    --success-foreground: #f9fbf7;
+    --success-subtle: #182313;
+    --success-subtle-foreground: #aabf9f;
+    --success-strong: #76a35c;
+    --warning: #e89a46;
+    --warning-foreground: #100c09;
+    --warning-subtle: #2e1a06;
+    --warning-subtle-foreground: #dab189;
+    --warning-strong: #d88200;
+    --border: #333a31;
+    --input: #464d43;
+    --ring: #659dc2;
+    --chart-1: #8fcacc;
+    --chart-2: #7591b8;
+    --chart-3: #00c18d;
+    --chart-4: #00b9d0;
+    --chart-5: #61a7ff;
+    --sidebar: #131911;
+    --sidebar-foreground: #e5ece2;
+    --sidebar-primary: #ce412e;
+    --sidebar-primary-foreground: #fdf9f8;
+    --sidebar-accent: #152129;
+    --sidebar-accent-foreground: #d5eeff;
+    --sidebar-border: #333a31;
+    --sidebar-ring: #659dc2;
+  }
+  .dash[data-theme="Ink & sky"] {
+    --background: #f5f8ff;
+    --foreground: #181b23;
+    --card: #eff4ff;
+    --card-foreground: #181b23;
+    --popover: #eff4ff;
+    --popover-foreground: #181b23;
+    --primary: #0079a9;
+    --primary-foreground: #f7fbfd;
+    --secondary: #e2ebff;
+    --secondary-foreground: #181b23;
+    --muted: #e2ebff;
+    --muted-foreground: #656972;
+    --accent: #eeebff;
+    --accent-foreground: #261c41;
+    --accent-strong: #9282ce;
+    --link: #6f6691;
+    --destructive: #c72c53;
+    --destructive-foreground: #fdf9f9;
+    --destructive-subtle: #ffe7e9;
+    --destructive-subtle-foreground: #a3505d;
+    --destructive-strong: #f15675;
+    --success: #0d815e;
+    --success-foreground: #f7fbf9;
+    --success-subtle: #daf5e8;
+    --success-subtle-foreground: #427560;
+    --success-strong: #399e79;
+    --warning: #cdac00;
+    --warning-foreground: #0f0d08;
+    --warning-subtle: #f7eecc;
+    --warning-subtle-foreground: #7c691c;
+    --warning-strong: #a78b00;
+    --border: #c3ccde;
+    --input: #b3bbcb;
+    --ring: #9282ce;
+    --chart-1: #8373bd;
+    --chart-2: #a761b0;
+    --chart-3: #c35871;
+    --chart-4: #bf641f;
+    --chart-5: #958000;
+    --sidebar: #eff4ff;
+    --sidebar-foreground: #181b23;
+    --sidebar-primary: #0079a9;
+    --sidebar-primary-foreground: #f7fbfd;
+    --sidebar-accent: #eeebff;
+    --sidebar-accent-foreground: #261c41;
+    --sidebar-border: #c3ccde;
+    --sidebar-ring: #9282ce;
+  }
+  .dash[data-theme="Ink & sky"].dark {
+    --background: #0b111f;
+    --foreground: #e5eaf4;
+    --card: #111724;
+    --card-foreground: #e5eaf4;
+    --popover: #111724;
+    --popover-foreground: #e5eaf4;
+    --primary: #49b0e1;
+    --primary-foreground: #090e11;
+    --secondary: #191f2c;
+    --secondary-foreground: #e5eaf4;
+    --muted: #191f2c;
+    --muted-foreground: #b4b9c2;
+    --accent: #201c2e;
+    --accent-foreground: #ebe7ff;
+    --accent-strong: #9c8cd8;
+    --link: #bab5d8;
+    --destructive: #c5445f;
+    --destructive-foreground: #fdf9f9;
+    --destructive-subtle: #311619;
+    --destructive-subtle-foreground: #eaa6ad;
+    --destructive-strong: #fb5f7d;
+    --success: #2f7f63;
+    --success-foreground: #f7fbf9;
+    --success-subtle: #0f241b;
+    --success-subtle-foreground: #9ac1ae;
+    --success-strong: #44a881;
+    --warning: #c9ac36;
+    --warning-foreground: #0f0d08;
+    --warning-subtle: #261f03;
+    --warning-subtle-foreground: #c7b883;
+    --warning-strong: #b29400;
+    --border: #323844;
+    --input: #444a58;
+    --ring: #9c8cd8;
+    --chart-1: #9184c4;
+    --chart-2: #ce85d7;
+    --chart-3: #ec7d94;
+    --chart-4: #e7894a;
+    --chart-5: #bca424;
+    --sidebar: #111724;
+    --sidebar-foreground: #e5eaf4;
+    --sidebar-primary: #49b0e1;
+    --sidebar-primary-foreground: #090e11;
+    --sidebar-accent: #201c2e;
+    --sidebar-accent-foreground: #ebe7ff;
+    --sidebar-border: #323844;
+    --sidebar-ring: #9c8cd8;
+  }
+  .dash[data-theme="Pastel picnic"] {
+    --background: #fff9f9;
+    --foreground: #261d1d;
+    --card: #fff3f3;
+    --card-foreground: #261d1d;
+    --popover: #fff3f3;
+    --popover-foreground: #261d1d;
+    --primary: #aa5a60;
+    --primary-foreground: #fdf9f9;
+    --secondary: #fde7e6;
+    --secondary-foreground: #261d1d;
+    --muted: #fde7e6;
+    --muted-foreground: #726766;
+    --accent: #e4eeff;
+    --accent-foreground: #13233d;
+    --accent-strong: #6e8fc7;
+    --link: #596d8c;
+    --destructive: #c92e38;
+    --destructive-foreground: #fdf9f8;
+    --destructive-subtle: #ffe7e5;
+    --destructive-subtle-foreground: #a4514f;
+    --destructive-strong: #f4595b;
+    --success: #9fd395;
+    --success-foreground: #0b0e0a;
+    --success-subtle: #e3f3e0;
+    --success-subtle-foreground: #577251;
+    --success-strong: #6a9a5f;
+    --warning: #eec695;
+    --warning-foreground: #100d09;
+    --warning-subtle: #f8ebdd;
+    --warning-subtle-foreground: #7c664d;
+    --warning-strong: #ae8758;
+    --border: #dcc6c6;
+    --input: #cab5b4;
+    --ring: #6e8fc7;
+    --chart-1: #8baee8;
+    --chart-2: #c2c37c;
+    --chart-3: #73cfd8;
+    --chart-4: #009297;
+    --chart-5: #3f86bd;
+    --sidebar: #fff3f3;
+    --sidebar-foreground: #261d1d;
+    --sidebar-primary: #aa5a60;
+    --sidebar-primary-foreground: #fdf9f9;
+    --sidebar-accent: #e4eeff;
+    --sidebar-accent-foreground: #13233d;
+    --sidebar-border: #dcc6c6;
+    --sidebar-ring: #6e8fc7;
+  }
+  .dash[data-theme="Pastel picnic"].dark {
+    --background: #1b0d0d;
+    --foreground: #f4e7e6;
+    --card: #211313;
+    --card-foreground: #f4e7e6;
+    --popover: #211313;
+    --popover-foreground: #f4e7e6;
+    --primary: #de9a9a;
+    --primary-foreground: #110c0b;
+    --secondary: #2a1b1b;
+    --secondary-foreground: #f4e7e6;
+    --muted: #2a1b1b;
+    --muted-foreground: #c3b5b5;
+    --accent: #181f2d;
+    --accent-foreground: #deebff;
+    --accent-strong: #7598d0;
+    --link: #a9bad4;
+    --destructive: #c7454a;
+    --destructive-foreground: #fdf9f8;
+    --destructive-subtle: #321615;
+    --destructive-subtle-foreground: #eaa7a3;
+    --destructive-strong: #fc6161;
+    --success: #a5d09c;
+    --success-foreground: #0b0e0a;
+    --success-subtle: #172315;
+    --success-subtle-foreground: #a8bfa3;
+    --success-strong: #72a367;
+    --warning: #eac79e;
+    --warning-foreground: #100d09;
+    --warning-subtle: #261d13;
+    --warning-subtle-foreground: #c7b6a1;
+    --warning-strong: #b7905f;
+    --border: #433333;
+    --input: #574545;
+    --ring: #7598d0;
+    --chart-1: #90aee0;
+    --chart-2: #c1c287;
+    --chart-3: #81ccd4;
+    --chart-4: #35b9bf;
+    --chart-5: #65ace5;
+    --sidebar: #211313;
+    --sidebar-foreground: #f4e7e6;
+    --sidebar-primary: #de9a9a;
+    --sidebar-primary-foreground: #110c0b;
+    --sidebar-accent: #181f2d;
+    --sidebar-accent-foreground: #deebff;
+    --sidebar-border: #433333;
+    --sidebar-ring: #7598d0;
+  }
+  .dash[data-theme="Neon arcade"] {
+    --background: #fff6f8;
+    --foreground: #20171a;
+    --card: #fff0f4;
+    --card-foreground: #20171a;
+    --popover: #fff0f4;
+    --popover-foreground: #20171a;
+    --primary: #e00072;
+    --primary-foreground: #fdf9fa;
+    --secondary: #fee4ea;
+    --secondary-foreground: #20171a;
+    --muted: #fee4ea;
+    --muted-foreground: #716668;
+    --accent: #f2e9ff;
+    --accent-foreground: #2e0b4c;
+    --accent-strong: #a876e0;
+    --link: #7d5da3;
+    --destructive: #c72c4f;
+    --destructive-foreground: #fdf9f9;
+    --destructive-subtle: #ffe7e8;
+    --destructive-subtle-foreground: #a4505b;
+    --destructive-strong: #f15671;
+    --success: #517c36;
+    --success-foreground: #f9fbf7;
+    --success-subtle: #e4f3dd;
+    --success-subtle-foreground: #59724c;
+    --success-strong: #6d9953;
+    --warning: #f29520;
+    --warning-foreground: #100c09;
+    --warning-subtle: #ffe9d5;
+    --warning-subtle-foreground: #915f28;
+    --warning-strong: #cb7a00;
+    --border: #dcc5cb;
+    --input: #c9b4ba;
+    --ring: #a876e0;
+    --chart-1: #7826ba;
+    --chart-2: #4d35bf;
+    --chart-3: #4462ea;
+    --chart-4: #46c4eb;
+    --chart-5: #008db4;
+    --sidebar: #fff0f4;
+    --sidebar-foreground: #20171a;
+    --sidebar-primary: #e00072;
+    --sidebar-primary-foreground: #fdf9fa;
+    --sidebar-accent: #f2e9ff;
+    --sidebar-accent-foreground: #2e0b4c;
+    --sidebar-border: #dcc5cb;
+    --sidebar-ring: #a876e0;
+  }
+  .dash[data-theme="Neon arcade"].dark {
+    --background: #1c0c11;
+    --foreground: #f4e7ea;
+    --card: #221216;
+    --card-foreground: #f4e7ea;
+    --popover: #221216;
+    --popover-foreground: #f4e7ea;
+    --primary: #d12f70;
+    --primary-foreground: #fdf9fa;
+    --secondary: #2a1a1f;
+    --secondary-foreground: #f4e7ea;
+    --muted: #2a1a1f;
+    --muted-foreground: #c1b5b8;
+    --accent: #241931;
+    --accent-foreground: #f0e6ff;
+    --accent-strong: #b27feb;
+    --link: #c6afe5;
+    --destructive: #c6445c;
+    --destructive-foreground: #fdf9f9;
+    --destructive-subtle: #311619;
+    --destructive-subtle-foreground: #eaa6ac;
+    --destructive-strong: #fb5f78;
+    --success: #5c7d48;
+    --success-foreground: #f9fbf7;
+    --success-subtle: #182313;
+    --success-subtle-foreground: #aabf9f;
+    --success-strong: #76a35c;
+    --warning: #e89a46;
+    --warning-foreground: #100c09;
+    --warning-subtle: #2e1a06;
+    --warning-subtle-foreground: #dab189;
+    --warning-strong: #d88200;
+    --border: #423337;
+    --input: #56454a;
+    --ring: #b27feb;
+    --chart-1: #a86de8;
+    --chart-2: #837df4;
+    --chart-3: #6485f9;
+    --chart-4: #5fc2e2;
+    --chart-5: #00b5e5;
+    --sidebar: #221216;
+    --sidebar-foreground: #f4e7ea;
+    --sidebar-primary: #d12f70;
+    --sidebar-primary-foreground: #fdf9fa;
+    --sidebar-accent: #241931;
+    --sidebar-accent-foreground: #f0e6ff;
+    --sidebar-border: #423337;
+    --sidebar-ring: #b27feb;
+  }
+  .dash[data-theme="Mono + ember"] {
+    --background: #fcfcfc;
+    --foreground: #222222;
+    --card: #f7f7f7;
+    --card-foreground: #222222;
+    --popover: #f7f7f7;
+    --popover-foreground: #222222;
+    --primary: #cf4200;
+    --primary-foreground: #fdf9f8;
+    --secondary: #ededed;
+    --secondary-foreground: #222222;
+    --muted: #ededed;
+    --muted-foreground: #6a6a6a;
+    --accent: #f5eecc;
+    --accent-foreground: #2a2300;
+    --accent-strong: #a58f00;
+    --link: #7b6b18;
+    --destructive: #c83317;
+    --destructive-foreground: #fdf9f8;
+    --destructive-subtle: #ffe8e2;
+    --destructive-subtle-foreground: #a35343;
+    --destructive-strong: #f45e42;
+    --success: #517c36;
+    --success-foreground: #f9fbf7;
+    --success-subtle: #e4f3dd;
+    --success-subtle-foreground: #59724c;
+    --success-strong: #6f9b55;
+    --warning: #f29520;
+    --warning-foreground: #100c09;
+    --warning-subtle: #ffe9d5;
+    --warning-subtle-foreground: #915f28;
+    --warning-strong: #ce7c00;
+    --border: #cccccc;
+    --input: #bababa;
+    --ring: #a58f00;
+    --chart-1: #948000;
+    --chart-2: #649100;
+    --chart-3: #00967a;
+    --chart-4: #008fab;
+    --chart-5: #3975fb;
+    --sidebar: #f7f7f7;
+    --sidebar-foreground: #222222;
+    --sidebar-primary: #cf4200;
+    --sidebar-primary-foreground: #fdf9f8;
+    --sidebar-accent: #f5eecc;
+    --sidebar-accent-foreground: #2a2300;
+    --sidebar-border: #cccccc;
+    --sidebar-ring: #a58f00;
+  }
+  .dash[data-theme="Mono + ember"].dark {
+    --background: #121212;
+    --foreground: #eaeaea;
+    --card: #171717;
+    --card-foreground: #eaeaea;
+    --popover: #171717;
+    --popover-foreground: #eaeaea;
+    --primary: #cd4514;
+    --primary-foreground: #fdf9f8;
+    --secondary: #1f1f1f;
+    --secondary-foreground: #eaeaea;
+    --muted: #1f1f1f;
+    --muted-foreground: #b8b8b8;
+    --accent: #251f03;
+    --accent-foreground: #f6ebb1;
+    --accent-strong: #ad9600;
+    --link: #c4b981;
+    --destructive: #c74830;
+    --destructive-foreground: #fdf9f8;
+    --destructive-subtle: #311711;
+    --destructive-subtle-foreground: #eaa89a;
+    --destructive-strong: #fb6448;
+    --success: #5c7d48;
+    --success-foreground: #f9fbf7;
+    --success-subtle: #182313;
+    --success-subtle-foreground: #aabf9f;
+    --success-strong: #76a35c;
+    --warning: #e89a46;
+    --warning-foreground: #100c09;
+    --warning-subtle: #2e1a06;
+    --warning-subtle-foreground: #dab189;
+    --warning-strong: #d88200;
+    --border: #383838;
+    --input: #4a4a4a;
+    --ring: #ad9600;
+    --chart-1: #a58f00;
+    --chart-2: #81b900;
+    --chart-3: #00c09d;
+    --chart-4: #00b7da;
+    --chart-5: #74a2ff;
+    --sidebar: #171717;
+    --sidebar-foreground: #eaeaea;
+    --sidebar-primary: #cd4514;
+    --sidebar-primary-foreground: #fdf9f8;
+    --sidebar-accent: #251f03;
+    --sidebar-accent-foreground: #f6ebb1;
+    --sidebar-border: #383838;
+    --sidebar-ring: #ad9600;
+  }
+  .dash[data-theme="Terracotta"] {
+    --background: #fdfae3;
+    --foreground: #1f1e16;
+    --card: #f9f6df;
+    --card-foreground: #1f1e16;
+    --popover: #f9f6df;
+    --popover-foreground: #1f1e16;
+    --primary: #606c38;
+    --primary-foreground: #f9fbf7;
+    --secondary: #f0ecd6;
+    --secondary-foreground: #1f1e16;
+    --muted: #f0ecd6;
+    --muted-foreground: #6b6960;
+    --accent: #ffe9d9;
+    --accent-foreground: #371900;
+    --accent-strong: #cc7a36;
+    --link: #90613e;
+    --destructive: #bd4600;
+    --destructive-foreground: #fdf9f7;
+    --destructive-subtle: #ffe8df;
+    --destructive-subtle-foreground: #a15537;
+    --destructive-strong: #ef611c;
+    --success: #567d37;
+    --success-foreground: #f9fbf7;
+    --success-subtle: #e4f3dd;
+    --success-subtle-foreground: #59724c;
+    --success-strong: #6e9a54;
+    --warning: #dda15e;
+    --warning-foreground: #100d09;
+    --warning-subtle: #fdead7;
+    --warning-subtle-foreground: #856441;
+    --warning-strong: #bc823f;
+    --border: #d0cdb9;
+    --input: #bebbaa;
+    --ring: #cc7a36;
+    --chart-1: #c87732;
+    --chart-2: #3f5328;
+    --chart-3: #5182c1;
+    --chart-4: #8a70b8;
+    --chart-5: #ae648f;
+    --sidebar: #f9f6df;
+    --sidebar-foreground: #1f1e16;
+    --sidebar-primary: #606c38;
+    --sidebar-primary-foreground: #f9fbf7;
+    --sidebar-accent: #ffe9d9;
+    --sidebar-accent-foreground: #371900;
+    --sidebar-border: #d0cdb9;
+    --sidebar-ring: #cc7a36;
+  }
+  .dash[data-theme="Terracotta"].dark {
+    --background: #151203;
+    --foreground: #ecebdf;
+    --card: #1a1708;
+    --card-foreground: #ecebdf;
+    --popover: #1a1708;
+    --popover-foreground: #ecebdf;
+    --primary: #6e7750;
+    --primary-foreground: #f9fbf7;
+    --secondary: #222011;
+    --secondary-foreground: #ecebdf;
+    --muted: #222011;
+    --muted-foreground: #bab9ae;
+    --accent: #2d1a0b;
+    --accent-foreground: #ffe5d3;
+    --accent-strong: #d5833f;
+    --link: #d7b195;
+    --destructive: #c44d18;
+    --destructive-foreground: #fdf9f7;
+    --destructive-subtle: #31170d;
+    --destructive-subtle-foreground: #e7aa92;
+    --destructive-strong: #f86927;
+    --success: #5c7d48;
+    --success-foreground: #f9fbf7;
+    --success-subtle: #182313;
+    --success-subtle-foreground: #aabf9f;
+    --success-strong: #76a35c;
+    --warning: #d6a46c;
+    --warning-foreground: #100d09;
+    --warning-subtle: #2a1c0d;
+    --warning-subtle-foreground: #cfb497;
+    --warning-strong: #c58b47;
+    --border: #3b382b;
+    --input: #4d4b3c;
+    --ring: #d5833f;
+    --chart-1: #c27d47;
+    --chart-2: #839770;
+    --chart-3: #74a7e8;
+    --chart-4: #af95df;
+    --chart-5: #d688b5;
+    --sidebar: #1a1708;
+    --sidebar-foreground: #ecebdf;
+    --sidebar-primary: #6e7750;
+    --sidebar-primary-foreground: #f9fbf7;
+    --sidebar-accent: #2d1a0b;
+    --sidebar-accent-foreground: #ffe5d3;
+    --sidebar-border: #3b382b;
+    --sidebar-ring: #d5833f;
+  }
+  .dash[data-theme="Corporate blue"] {
+    --background: #fafcff;
+    --foreground: #242528;
+    --card: #f6f8fb;
+    --card-foreground: #242528;
+    --popover: #f6f8fb;
+    --popover-foreground: #242528;
+    --primary: #1a6be7;
+    --primary-foreground: #f8fafe;
+    --secondary: #eceef0;
+    --secondary-foreground: #242528;
+    --muted: #eceef0;
+    --muted-foreground: #696b6d;
+    --accent: #e3eeff;
+    --accent-foreground: #021f4c;
+    --accent-strong: #5490eb;
+    --link: #4b6c9f;
+    --destructive: #c72c53;
+    --destructive-foreground: #fdf9f9;
+    --destructive-subtle: #ffe7e9;
+    --destructive-subtle-foreground: #a3505d;
+    --destructive-strong: #f45978;
+    --success: #0d815e;
+    --success-foreground: #f7fbf9;
+    --success-subtle: #daf5e8;
+    --success-subtle-foreground: #427560;
+    --success-strong: #3ca17b;
+    --warning: #cdac00;
+    --warning-foreground: #0f0d08;
+    --warning-subtle: #f7eecc;
+    --warning-subtle-foreground: #7c691c;
+    --warning-strong: #aa8e00;
+    --border: #cacccf;
+    --input: #b9bbbd;
+    --ring: #5490eb;
+    --chart-1: #34587e;
+    --chart-2: #d13b92;
+    --chart-3: #de3f14;
+    --chart-4: #a77600;
+    --chart-5: #6d8e00;
+    --sidebar: #f6f8fb;
+    --sidebar-foreground: #242528;
+    --sidebar-primary: #1a6be7;
+    --sidebar-primary-foreground: #f8fafe;
+    --sidebar-accent: #e3eeff;
+    --sidebar-accent-foreground: #021f4c;
+    --sidebar-border: #cacccf;
+    --sidebar-ring: #5490eb;
+  }
+  .dash[data-theme="Corporate blue"].dark {
+    --background: #101214;
+    --foreground: #e8eaec;
+    --card: #161719;
+    --card-foreground: #e8eaec;
+    --popover: #161719;
+    --popover-foreground: #e8eaec;
+    --primary: #2d6ed7;
+    --primary-foreground: #f8fafe;
+    --secondary: #1e1f21;
+    --secondary-foreground: #e8eaec;
+    --muted: #1e1f21;
+    --muted-foreground: #b7b8bb;
+    --accent: #121f34;
+    --accent-foreground: #deebff;
+    --accent-strong: #5a97f1;
+    --link: #9fbae4;
+    --destructive: #c5445f;
+    --destructive-foreground: #fdf9f9;
+    --destructive-subtle: #311619;
+    --destructive-subtle-foreground: #eaa6ad;
+    --destructive-strong: #fb5f7d;
+    --success: #2f7f63;
+    --success-foreground: #f7fbf9;
+    --success-subtle: #0f241b;
+    --success-subtle-foreground: #9ac1ae;
+    --success-strong: #44a881;
+    --warning: #c9ac36;
+    --warning-foreground: #0f0d08;
+    --warning-subtle: #261f03;
+    --warning-subtle-foreground: #c7b883;
+    --warning-strong: #b29400;
+    --border: #36383a;
+    --input: #494a4d;
+    --ring: #5a97f1;
+    --chart-1: #7292b5;
+    --chart-2: #fc65b7;
+    --chart-3: #ff7453;
+    --chart-4: #d59800;
+    --chart-5: #8cb600;
+    --sidebar: #161719;
+    --sidebar-foreground: #e8eaec;
+    --sidebar-primary: #2d6ed7;
+    --sidebar-primary-foreground: #f8fafe;
+    --sidebar-accent: #121f34;
+    --sidebar-accent-foreground: #deebff;
+    --sidebar-border: #36383a;
+    --sidebar-ring: #5a97f1;
+  }
+  html, body { margin: 0; }
+  body {
+    background: #0e0f12;
+    color: #ededee;
+    font: 13px/1.4 ui-sans-serif, system-ui, sans-serif;
+  }
+  .bar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+    padding: 10px 20px;
+    background: #14151a; border-bottom: 1px solid #2a2c33;
+  }
+  .bar b { font-weight: 600; margin-right: 8px; }
+  .bar label { display: inline-flex; gap: 6px; align-items: center; color: #a3a3a8; }
+  .bar select, .bar input[type=range] {
+    font: inherit; color: #ededee; background: #1f2127;
+    border: 1px solid #33363f; border-radius: 6px; padding: 4px 8px;
+  }
+  .bar output { font-family: ui-monospace, monospace; color: #ededee; min-width: 3ch; }
+  .bar .note { margin-left: auto; color: #6e6e74; }
+
+  /* ================================================================
+     The mockup. Every colour below is a theme token; see the header.
+     ================================================================ */
+  .dash {
+    --radius: 10px;
+    --font-sans: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-heading: var(--font-sans);
+    --font-heading-weight: 600;
+    /* Effects, as the engine's `layered` separation emits them: shadows
+       are effects, not palette colours. */
+    --elevation-1: 0 1px 2px rgb(0 0 0 / 0.05), 0 1px 1px rgb(0 0 0 / 0.03);
+    --elevation-2: 0 6px 16px -4px rgb(0 0 0 / 0.14), 0 2px 4px rgb(0 0 0 / 0.06);
+    width: 1064px;
+    min-height: 860px;
+    margin: 32px auto 80px;
+    display: grid;
+    grid-template-columns: 232px 1fr;
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--background);
+    color: var(--foreground);
+    font: 14px/1.45 var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  .dash.dark {
+    --elevation-1: 0 1px 2px rgb(0 0 0 / 0.4);
+    --elevation-2: 0 8px 20px -4px rgb(0 0 0 / 0.6);
+  }
+  .dash :where(h1, h2, h3, p, ul, ol, dl, dd, figure) { margin: 0; }
+  .dash :where(ul, ol) { padding: 0; list-style: none; }
+  .dash button { font: inherit; color: inherit; cursor: pointer; }
+  .dash svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+  .num { font-variant-numeric: tabular-nums; }
+  .heading { font-family: var(--font-heading); font-weight: var(--font-heading-weight); }
+  .quiet { color: var(--muted-foreground); }
+  /* Small caps labels: the one place type goes uppercase. */
+  .label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted-foreground); }
+
+  /* ---------------------------------------------------------- the rail */
+  .rail {
+    display: flex; flex-direction: column; gap: 22px;
+    padding: 16px 12px;
+    border-right: 1px solid var(--sidebar-border);
+    background: var(--sidebar); color: var(--sidebar-foreground);
+  }
+  .ws { display: flex; align-items: center; gap: 10px; padding: 4px; }
+  .ws-mark {
+    display: grid; place-items: center; width: 30px; height: 30px;
+    border-radius: calc(var(--radius) * 0.8);
+    background: var(--sidebar-primary); color: var(--sidebar-primary-foreground);
+    font: var(--font-heading-weight) 15px/1 var(--font-heading);
+  }
+  .ws b { display: block; font-size: 14px; font-weight: 600; line-height: 1.2; }
+  .ws span { font-size: 12px; }
+  .search {
+    display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px;
+    border: 1px solid var(--sidebar-border); border-radius: var(--radius);
+    font-size: 13px;
+  }
+  .search kbd { margin-left: auto; font: 11px ui-monospace, monospace; }
+  .nav { display: grid; gap: 2px; }
+  .nav a {
+    position: relative; display: flex; align-items: center; gap: 10px;
+    height: 32px; padding: 0 10px; border-radius: var(--radius);
+    color: inherit; text-decoration: none; font-weight: 500;
+  }
+  .nav a .count { margin-left: auto; font-size: 12px; }
+  /* Selection speaks in the accent's voice, as the app's tabs do. */
+  .nav a[aria-current] { background: var(--sidebar-accent); color: var(--sidebar-accent-foreground); }
+  .rail-sec { display: grid; gap: 6px; }
+  .rail-sec .label { padding: 0 10px; }
+  .proj { display: flex; align-items: center; gap: 10px; height: 28px; padding: 0 10px; font-size: 13px; }
+  .proj code { font: 12.5px ui-monospace, SFMono-Regular, monospace; }
+  .dot { width: 8px; height: 8px; border-radius: 99px; flex: none; }
+  .dot.ok { background: var(--success-strong); }
+  .dot.warn { background: var(--warning-strong); }
+  .dot.err { background: var(--destructive-strong); }
+  .me { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 8px 4px 0; border-top: 1px solid var(--sidebar-border); }
+  .me b { display: block; font-size: 13px; font-weight: 600; line-height: 1.2; }
+  .me span { font-size: 12px; }
+  .avatar {
+    display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 99px;
+    background: var(--secondary); color: var(--secondary-foreground);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+  }
+
+  /* ---------------------------------------------------------- the page */
+  .page { display: flex; flex-direction: column; gap: 20px; padding: 22px 28px 28px; min-width: 0; }
+  .head { display: flex; align-items: flex-end; gap: 16px; }
+  .head h1 { font-size: 28px; letter-spacing: -0.025em; line-height: 1.1; }
+  .head .crumbs { margin-bottom: 6px; font-size: 13px; }
+  .head .sub { margin-top: 4px; font-size: 13px; }
+  .actions { margin-left: auto; display: flex; gap: 8px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--background); font-weight: 500; font-size: 13px;
+  }
+  .btn.primary { border-color: var(--primary); background: var(--primary); color: var(--primary-foreground); }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn.sm { height: 28px; padding: 0 10px; font-size: 12px; }
+
+  /* The two banners, as one quiet line each: news, not a wall. */
+  .notices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .notice {
+    display: flex; align-items: center; gap: 10px; min-width: 0;
+    padding: 9px 12px; border-radius: var(--radius); font-size: 13px;
+  }
+  .notice b { font-weight: 600; white-space: nowrap; }
+  .notice span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .notice.ok { background: var(--success-subtle); color: var(--success-subtle-foreground); }
+  .notice.warn { background: var(--warning-subtle); color: var(--warning-subtle-foreground); }
+  .notice .act { margin-left: auto; flex: none; }
+  .notice a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; font-weight: 500; }
+  .notice.warn .btn { border-color: var(--warning); background: transparent; }
+
+  .card {
+    border: 1px solid var(--border); border-radius: calc(var(--radius) * 1.2);
+    background: var(--card); color: var(--card-foreground);
+    box-shadow: var(--elevation-1);
+  }
+  .card-head { display: flex; align-items: baseline; gap: 12px; padding: 16px 18px 0; }
+  .card-head h2 { font-size: 14px; font-weight: 600; }
+  .card-head .aside { margin-left: auto; font-size: 12px; }
+
+  /* ---------------------------------------------------- row one: hero */
+  .row1 { display: grid; grid-template-columns: 1fr 248px; gap: 16px; }
+  .hero-top { display: flex; align-items: flex-end; gap: 14px; padding: 6px 18px 0; }
+  .big { font: var(--font-heading-weight) 40px/1 var(--font-heading); letter-spacing: -0.035em; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 99px;
+    font-size: 12px; font-weight: 600;
+  }
+  .pill.up { background: var(--success-subtle); color: var(--success-subtle-foreground); }
+  .pill.down { background: var(--destructive-subtle); color: var(--destructive-subtle-foreground); }
+  .pill.flat { background: var(--secondary); color: var(--secondary-foreground); }
+  .hero-top .vs { padding-bottom: 3px; font-size: 13px; }
+  .hero { display: flex; flex-direction: column; position: relative; }
+  .hero-chart { display: block; flex: 1; width: 100%; min-height: 214px; margin: 6px 0 4px; }
+  .hero-chart text { font: 11px var(--font-sans); fill: var(--muted-foreground); }
+
+  .kpis { display: grid; gap: 12px; }
+  .kpi { padding: 14px 16px 12px; }
+  .kpi-top { display: flex; align-items: baseline; justify-content: space-between; }
+  .kpi .label { margin-bottom: 4px; }
+  .kpi .val { font: var(--font-heading-weight) 24px/1.1 var(--font-heading); letter-spacing: -0.03em; }
+  .kpi svg { display: block; width: 100%; height: 30px; margin-top: 8px; }
+
+  /* ------------------------------------------- row two: traffic, health */
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .traffic-bar { display: flex; gap: 3px; height: 12px; margin: 14px 18px 6px; }
+  .traffic-bar i { display: block; border-radius: min(var(--radius) * 0.4, 4px); }
+  .sources { padding: 4px 10px 12px; }
+  .sources button {
+    display: grid; grid-template-columns: 12px 1fr auto 42px; gap: 10px; align-items: center;
+    width: 100%; height: 36px; padding: 0 8px; border: 0; border-radius: var(--radius);
+    background: none; text-align: left; font-size: 13px;
+  }
+  .sources button:hover { background: var(--muted); color: var(--muted-foreground); }
+  .sources .sw { width: 10px; height: 10px; border-radius: 3px; }
+  .sources .n { font-weight: 500; }
+  .sources .pct { text-align: right; }
+
+  .health { padding: 6px 18px 14px; }
+  .svc { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; padding: 10px 0; border-top: 1px solid var(--border); }
+  .svc:first-child { border-top: 0; }
+  .svc-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .svc-name code { font: 500 13px ui-monospace, SFMono-Regular, monospace; }
+  .svc-up { font-size: 13px; text-align: right; }
+  .strip { grid-column: 1 / -1; display: flex; gap: 2px; height: 18px; }
+  .strip i { flex: 1; border-radius: 2px; }
+  .strip i.ok { background: var(--success-strong); }
+  .strip i.warn { background: var(--warning-strong); }
+  .strip i.err { background: var(--destructive-strong); }
+  .badge {
+    display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 99px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge.live { background: var(--success-subtle); color: var(--success-subtle-foreground); }
+  .badge.degraded { background: var(--warning-subtle); color: var(--warning-subtle-foreground); }
+  .badge.down { background: var(--destructive); color: var(--destructive-foreground); }
+
+  /* ------------------------------------------------- row three: the feed */
+  .tabs { display: flex; gap: 22px; padding: 0 18px; border-bottom: 1px solid var(--border); }
+  .tabs button {
+    position: relative; display: flex; align-items: center; gap: 6px;
+    height: 42px; padding: 0; border: 0; background: none; font-weight: 500; font-size: 13px;
+    color: var(--muted-foreground);
+  }
+  .tabs button[aria-selected=true] { color: var(--card-foreground); }
+  .tabs button[aria-selected=true]::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+    background: var(--accent-strong);
+  }
+  .tabs .badge { height: 18px; }
+  .feed { padding: 4px 18px 10px; }
+  .feed li { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--border); font-size: 13.5px; }
+  .feed li:first-child { border-top: 0; }
+  .feed .what { min-width: 0; flex: 1; }
+  .feed .what b { font-weight: 600; }
+  .feed code { font: 12.5px ui-monospace, SFMono-Regular, monospace; }
+  .feed time { font-size: 12px; }
+  .sys {
+    display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 99px;
+    border: 1px solid var(--border);
+  }
+  .sys.ok { color: var(--success-strong); }
+  .sys.warn { color: var(--warning-strong); }
+  .sys.err { color: var(--destructive-strong); }
+  .row3 { display: grid; grid-template-columns: 1fr; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-dash" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-err" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></symbol>
+  <symbol id="i-updown" viewBox="0 0 24 24"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></symbol>
+</svg>
+
+<div class="bar">
+  <b>App dashboard · draft</b>
+  <label>theme <select id="theme"></select></label>
+  <label>mode <select id="mode"><option>light</option><option>dark</option></select></label>
+  <label>font
+    <select id="font">
+      <option value="system">System UI</option>
+      <option value="inter">Inter</option>
+      <option value="space-grotesk">Space Grotesk</option>
+      <option value="fraunces">Fraunces</option>
+      <option value="barlow">Barlow Condensed</option>
+    </select>
+  </label>
+  <label>corners <input id="radius" type="range" min="0" max="20" value="10" /> <output id="radius-out">10px</output></label>
+  <span class="note">direction 1, calm operations console · tokens: the engine's real output per preset</span>
+</div>
+
+<div class="dash" id="dash">
+  <!-- ============================================================ rail -->
+  <aside class="rail">
+    <div class="ws">
+      <span class="ws-mark">A</span>
+      <div><b>Acme Web</b><span>Team plan</span></div>
+      <svg class="i" style="margin-left:auto"><use href="#i-updown"/></svg>
+    </div>
+    <div class="search"><svg class="i"><use href="#i-search"/></svg>Search<kbd>⌘K</kbd></div>
+    <nav class="nav">
+      <a href="#" aria-current="page"><svg class="i"><use href="#i-dash"/></svg>Dashboard</a>
+      <a href="#"><svg class="i"><use href="#i-folder"/></svg>Projects<span class="count num">4</span></a>
+      <a href="#"><svg class="i"><use href="#i-gear"/></svg>Settings</a>
+    </nav>
+    <div class="rail-sec">
+      <p class="label">Projects</p>
+      <div class="proj"><i class="dot ok"></i><code>marketing-site</code></div>
+      <div class="proj"><i class="dot warn"></i><code>billing-service</code></div>
+      <div class="proj"><i class="dot err"></i><code>legacy-importer</code></div>
+      <div class="proj"><i class="dot ok"></i><code>docs-portal</code></div>
+    </div>
+    <div class="me">
+      <span class="avatar">AN</span>
+      <div><b>Ana Ito</b><span>v2.4.1</span></div>
+    </div>
+  </aside>
+
+  <!-- ============================================================ page -->
+  <main class="page">
+    <header class="head">
+      <div>
+        <p class="crumbs">Acme Web / Dashboard</p>
+        <h1 class="heading">Dashboard</h1>
+        <p class="sub quiet">Thursday 16 October · production</p>
+      </div>
+      <div class="actions">
+        <button class="btn"><svg class="i"><use href="#i-share"/></svg>Export</button>
+        <button class="btn primary"><svg class="i"><use href="#i-plus"/></svg>New project</button>
+      </div>
+    </header>
+
+    <div class="notices">
+      <p class="notice ok">
+        <svg class="i"><use href="#i-ok"/></svg>
+        <b>Deploy succeeded</b><span>42 checks passed</span>
+        <a class="act" href="#">View report</a>
+      </p>
+      <p class="notice warn">
+        <svg class="i"><use href="#i-warn"/></svg>
+        <b>Certificate expires in 12 days</b><span>auto-renews 28 Oct</span>
+      </p>
+    </div>
+
+    <!-- row one: the one thing to read first, and the numbers beside it -->
+    <section class="row1">
+      <article class="card hero">
+        <div class="card-head"><h2>Requests</h2><span class="aside quiet">last 7 days</span></div>
+        <div class="hero-top">
+          <span class="big num">12,904</span>
+          <span class="pill up num">+8.2%</span>
+          <span class="vs quiet">vs. the 7 days before</span>
+        </div>
+        <svg class="hero-chart" id="hero" aria-label="Requests per hour, Friday to Thursday"></svg>
+      </article>
+      <div class="kpis">
+        <article class="card kpi" data-spark="38 41 40 44 43 47 46 45 49 52 50 54 55 58">
+          <div class="kpi-top"><p class="label">Revenue</p><span class="pill up num">+4.2%</span></div>
+          <p class="val num">$48,210</p>
+          <svg viewBox="0 0 200 30" preserveAspectRatio="none"></svg>
+        </article>
+        <article class="card kpi" data-spark="30 31 33 32 35 37 36 39 41 40 43 45 44 47">
+          <div class="kpi-top"><p class="label">Active users</p><span class="pill up num">+12.1%</span></div>
+          <p class="val num">3,842</p>
+          <svg viewBox="0 0 200 30" preserveAspectRatio="none"></svg>
+        </article>
+        <article class="card kpi" data-spark="27 26 27 25 26 24 25 24 23 24 22 23 22 21">
+          <div class="kpi-top"><p class="label">Churn</p><span class="pill up num">−0.4%</span></div>
+          <p class="val num">2.1%</p>
+          <svg viewBox="0 0 200 30" preserveAspectRatio="none"></svg>
+        </article>
+      </div>
+    </section>
+
+    <!-- row two: where the traffic came from, and how each service held up -->
+    <section class="row2">
+      <article class="card traffic">
+        <div class="card-head"><h2>Traffic by source</h2><span class="aside quiet num">12,904 visits</span></div>
+        <div class="traffic-bar" id="tbar"></div>
+        <div class="sources" id="sources"></div>
+      </article>
+      <article class="card">
+        <div class="card-head"><h2>Service health</h2><span class="aside quiet">last 30 days</span></div>
+        <div class="health" id="health"></div>
+      </article>
+    </section>
+
+    <!-- row three: what happened -->
+    <section class="card row3">
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="activity">Activity</button>
+        <button role="tab" aria-selected="false" data-tab="alerts">Alerts <span class="badge down num">1</span></button>
+      </div>
+      <ol class="feed" id="activity">
+        <li><span class="avatar">AN</span><span class="what"><b>ana</b> deployed <code>marketing-site</code> to production</span><time class="quiet num">09:42</time></li>
+        <li><span class="sys warn"><svg class="i"><use href="#i-warn"/></svg></span><span class="what"><code>billing-service</code> p95 latency above 400 ms</span><time class="quiet num">09:31</time></li>
+        <li><span class="sys err"><svg class="i"><use href="#i-err"/></svg></span><span class="what"><code>legacy-importer</code> health check failed 3× in a row</span><time class="quiet num">09:12</time></li>
+        <li><span class="avatar">KA</span><span class="what"><b>kai</b> opened “Rewrite the docs search index”</span><time class="quiet num">08:58</time></li>
+        <li><span class="sys ok"><svg class="i"><use href="#i-ok"/></svg></span><span class="what">Certificate renewed for <code>docs-portal</code></span><time class="quiet num">08:40</time></li>
+      </ol>
+      <div class="feed" id="alerts" hidden>
+        <p class="notice" style="background:var(--destructive-subtle);color:var(--destructive-subtle-foreground);margin:12px 0">
+          <svg class="i"><use href="#i-err"/></svg><b>Build failed on main</b><span>2 test errors in billing-service</span>
+          <a class="act" href="#" style="color:inherit">View logs</a>
+        </p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  const FONTS = {
+    system: { stack: 'ui-sans-serif, system-ui, -apple-system, sans-serif', heading: 600 },
+    inter: { css: '@fontsource-variable/inter', stack: "'Inter Variable', ui-sans-serif, system-ui, sans-serif", heading: 600 },
+    'space-grotesk': { css: '@fontsource-variable/space-grotesk', stack: "'Space Grotesk Variable', ui-sans-serif, system-ui, sans-serif", heading: 600 },
+    fraunces: { css: '@fontsource-variable/fraunces', stack: "'Fraunces Variable', ui-serif, Georgia, serif", heading: 600 },
+    barlow: { css: '@fontsource/barlow-condensed/700.css', stack: "'Barlow Condensed', ui-sans-serif, system-ui, sans-serif", heading: 700 },
+  }
+  const dash = document.getElementById('dash')
+  const $ = (id) => document.getElementById(id)
+  const THEMES = ["Coastal starter", "Ink & sky", "Pastel picnic", "Neon arcade", "Mono + ember", "Terracotta", "Corporate blue"]
+  for (const name of THEMES) $('theme').add(new Option(name, name))
+  const ink = (t) => `var(--${t})`
+
+  // ---- the hero: requests per hour, Friday to Thursday ---------------------
+  // Day totals sum to the headline (12,904); each day breathes with the hour.
+  const DAYS = [['Fri', 1610], ['Sat', 1702], ['Sun', 1874], ['Mon', 1938], ['Tue', 1795], ['Wed', 2041], ['Thu', 1944]]
+  // An hour's share of its day: low overnight, a broad working-day hump.
+  const hourShare = Array.from({ length: 24 }, (_, h) => 0.55 + 0.9 * Math.max(0, Math.sin(((h - 6) / 16) * Math.PI)) ** 1.2)
+  const shareSum = hourShare.reduce((a, b) => a + b, 0)
+  const series = DAYS.flatMap(([, total]) => hourShare.map((k) => (total * k) / shareSum))
+  // Deploys that shipped (primary), and the build that failed (destructive), by hour.
+  const SHIPS = [3 * 24 + 15, 4 * 24 + 11, 5 * 24 + 16, 6 * 24 + 9.7]
+  const FAILED = { at: 6 * 24 + 9.2, label: 'billing-service #4821 failed' }
+  /** A smooth path through points (Catmull-Rom as cubic Béziers). */
+  const smooth = (p) =>
+    p.reduce((d, [x, y], i) => {
+      if (!i) return `M${x},${y}`
+      const [x0, y0] = p[i - 2] ?? p[i - 1], [x1, y1] = p[i - 1], [x3, y3] = p[i + 1] ?? [x, y]
+      return d + `C${x1 + (x - x0) / 6},${y1 + (y - y0) / 6} ${x - (x3 - x1) / 6},${y - (y3 - y1) / 6} ${x},${y}`
+    }, '')
+  function hero() {
+    const svg = $('hero')
+    const W = svg.clientWidth, H = svg.clientHeight, L = 4, R = 36, T = 34, B = 24
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`)
+    // The axis tops out on a round number above the busiest hour.
+    const max = Math.ceil(Math.max(...series) / 50) * 50
+    const x = (i) => L + (i / (series.length - 1)) * (W - L - R)
+    const y = (v) => T + (1 - v / max) * (H - T - B)
+    const pts = series.map((v, i) => [x(i), y(v)])
+    const line = smooth(pts)
+    let s = ''
+    for (const g of [0, max / 3, (2 * max) / 3, max]) {
+      s += `<line x1="${L}" x2="${W - R}" y1="${y(g)}" y2="${y(g)}" style="stroke:${ink('border')};stroke-dasharray:${g ? '2 4' : 'none'}"/>`
+      s += `<text x="${W - R + 8}" y="${y(g) + 4}">${Math.round(g)}</text>`
+    }
+    DAYS.forEach(([d], i) => (s += `<text x="${x(i * 24 + 12)}" y="${H - 5}" text-anchor="middle">${d}</text>`))
+    s += `<path d="${line}L${x(series.length - 1)},${y(0)}L${x(0)},${y(0)}Z" style="fill:${ink('secondary')}"/>`
+    s += `<path d="${line}" style="fill:none;stroke:${ink('primary')};stroke-width:2"/>`
+    for (const i of SHIPS) s += `<path d="M${x(i) - 4} ${y(0) + 7}h8l-4 -6z" style="fill:${ink('primary')}"/>`
+    const fx = x(FAILED.at)
+    const fy = y(series[Math.round(FAILED.at)])
+    s += `<line x1="${fx}" x2="${fx}" y1="${T - 22}" y2="${y(0)}" style="stroke:${ink('destructive-strong')};stroke-dasharray:3 3"/>`
+    s += `<circle cx="${fx}" cy="${fy}" r="4" style="fill:${ink('card')};stroke:${ink('destructive-strong')};stroke-width:2"/>`
+    svg.innerHTML = s
+    // The annotation is HTML on its own surface, never text on the chart:
+    // pinned left of the marker, in a lane above the plot.
+    const card = svg.closest('.card')
+    const tag = $('hero-tag') ?? card.appendChild(Object.assign(document.createElement('span'), { id: 'hero-tag', className: 'badge' }))
+    tag.textContent = FAILED.label
+    Object.assign(tag.style, { position: 'absolute', background: ink('destructive-subtle'), color: ink('destructive-subtle-foreground') })
+    const box = svg.getBoundingClientRect(), cbox = card.getBoundingClientRect()
+    tag.style.left = `${box.left - cbox.left + fx - tag.offsetWidth - 8}px`
+    tag.style.top = `${box.top - cbox.top + T - 32}px`
+  }
+  addEventListener('resize', hero)
+
+  // ---- sparklines: their own data, never one shape in three colours --------
+  function sparks() {
+    document.querySelectorAll('[data-spark]').forEach((card) => {
+      const d = card.dataset.spark.split(' ').map(Number)
+      const lo = Math.min(...d) - 2, hi = Math.max(...d) + 2
+      const p = d.map((v, i) => [(i / (d.length - 1)) * 192 + 4, 26 - ((v - lo) / (hi - lo)) * 22])
+      const [ex, ey] = p[p.length - 1]
+      card.querySelector('svg').innerHTML =
+        `<polyline points="${p.map((q) => q.join(',')).join(' ')}" style="fill:none;stroke:${ink('muted-foreground')};stroke-width:1.5" vector-effect="non-scaling-stroke"/>` +
+        `<circle cx="${ex}" cy="${ey}" r="3" style="fill:${ink('primary')}"/>`
+    })
+  }
+
+  // ---- traffic: the one place chart-4 and chart-5 speak -------------------
+  const TRAFFIC = [['Direct', 4387, 34, 'chart-1'], ['Organic search', 3484, 27, 'chart-2'], ['Referral', 2323, 18, 'chart-3'], ['Social', 1678, 13, 'chart-4'], ['Email', 1032, 8, 'chart-5']]
+  let picked = null
+  function traffic() {
+    $('tbar').innerHTML = TRAFFIC.map(([n, , pct, t]) => `<i style="flex:${pct};background:${picked && picked !== n ? ink('muted') : ink(t)}"></i>`).join('')
+    $('sources').innerHTML = TRAFFIC.map(([n, v, pct, t]) =>
+      `<button data-src="${n}" aria-pressed="${picked === n}"><i class="sw" style="background:${ink(t)}"></i><span class="n">${n}</span><span class="num quiet">${v.toLocaleString('en')}</span><span class="pct num">${pct}%</span></button>`).join('')
+    $('sources').querySelectorAll('button').forEach((b) => (b.onclick = () => { picked = picked === b.dataset.src ? null : b.dataset.src; traffic() }))
+  }
+
+  // ---- service health: thirty days each, one mark a day -------------------
+  const HEALTH = [
+    ['marketing-site', 'live', '99.98%', 'ok', [17]],
+    ['billing-service', 'degraded', '97.20%', 'ok', [22, 25, 26, 27, 28, 29], [28]],
+    ['legacy-importer', 'down', '61.05%', 'ok', [12, 13, 20, 21], [14, 15, 16, 22, 23, 24, 25, 26, 27, 28, 29]],
+    ['docs-portal', 'live', '99.99%', 'ok', []],
+  ]
+  function health() {
+    $('health').innerHTML = HEALTH.map(([name, status, up, , warn = [], err = []]) =>
+      `<div class="svc"><span class="svc-name"><code>${name}</code><span class="badge ${status}">${status}</span></span><span class="svc-up num">${up}</span>` +
+      `<span class="strip">${Array.from({ length: 30 }, (_, d) => `<i class="${err.includes(d) ? 'err' : warn.includes(d) ? 'warn' : 'ok'}"></i>`).join('')}</span></div>`).join('')
+  }
+
+  // ---- tabs -----------------------------------------------------------------
+  document.querySelectorAll('[data-tab]').forEach((t) => (t.onclick = () => {
+    document.querySelectorAll('[data-tab]').forEach((u) => u.setAttribute('aria-selected', u === t))
+    $('activity').hidden = t.dataset.tab !== 'activity'
+    $('alerts').hidden = t.dataset.tab !== 'alerts'
+  }))
+
+  // ---- controls -------------------------------------------------------------
+  function apply() {
+    dash.dataset.theme = $('theme').value
+    dash.classList.toggle('dark', $('mode').value === 'dark')
+  }
+  async function setFont(id) {
+    const f = FONTS[id]
+    if (f.css && !document.querySelector(`link[data-font="${id}"]`)) {
+      const link = Object.assign(document.createElement('link'), { rel: 'stylesheet', href: `/node_modules/${f.css}${f.css.endsWith('.css') ? '' : '/index.css'}` })
+      link.dataset.font = id
+      document.head.append(link)
+      await new Promise((r) => (link.onload = r))
+    }
+    dash.style.setProperty('--font-sans', f.stack)
+    dash.style.setProperty('--font-heading', f.stack)
+    dash.style.setProperty('--font-heading-weight', f.heading)
+  }
+  $('theme').onchange = $('mode').onchange = apply
+  $('font').onchange = (e) => setFont(e.target.value)
+  $('radius').oninput = (e) => {
+    dash.style.setProperty('--radius', `${e.target.value}px`)
+    $('radius-out').value = `${e.target.value}px`
+  }
+  // ?theme=Terracotta&mode=dark&font=inter&radius=4, so a screenshot run can set it all
+  const q = new URLSearchParams(location.search)
+  if (q.has('theme')) $('theme').value = q.get('theme')
+  if (q.has('mode')) $('mode').value = q.get('mode')
+  if (q.has('font')) $('font').value = q.get('font')
+  if (q.has('radius')) { $('radius').value = q.get('radius'); $('radius').oninput({ target: $('radius') }) }
+  apply(); hero(); sparks(); traffic(); health()
+  setFont($('font').value)
+</script>
+</body>
+</html>
