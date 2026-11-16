@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { paneSettled } from './open-sections'
 
 /**
  * Drag and drop between the seats, the series tray and "unused" (which
@@ -37,6 +38,7 @@ const sourceOf = async (page: Page, role: string): Promise<string> => {
 const boot = async (page: Page) => {
   await page.getByRole('button', { name: 'Coastal starter' }).click()
   await expect(page.locator('.role-board')).toBeVisible()
+  await paneSettled(page)
 }
 
 /**

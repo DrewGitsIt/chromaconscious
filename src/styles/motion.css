@@ -89,6 +89,7 @@
     --d-stage: 0.001ms;
     --d-xfade: 0.001ms;
     --d-arrow: 0.001ms;
+    --d-pane: 0.001ms;
   }
   .stagger > * {
     animation: none;

@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { openAll } from './open-sections'
 
 /**
  * Separation is the border↔shadow balance. The control itself is easy to make
@@ -16,6 +17,7 @@ const boot = async (page: Page) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Coastal starter' }).click()
   await expect(page.locator('.preview-root').first()).toBeVisible()
+  await openAll(page)
   await expect(page.locator('.sep-seg')).toBeVisible()
 }
 

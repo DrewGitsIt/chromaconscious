@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { openAll } from './open-sections'
 
 /**
  * The Analytics console is the only mockup that renders chart-1…chart-5 at
@@ -14,6 +15,7 @@ const boot = async (page: Page, preset = 'Coastal starter') => {
   await page.goto('/')
   await page.getByRole('button', { name: preset }).click()
   await expect(page.locator('.role-board')).toBeVisible()
+  await openAll(page)
   await page.locator('.frame-mockup').first().selectOption('analytics')
   // Panels only exist after the cold load resolves — see the skeleton spec.
   await expect(page.locator('.an-panel').first()).toBeVisible()

@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { openAll } from './open-sections'
 
 /**
  * The marketing mockup is the one that fills LARGE fields with the brand color,
@@ -13,6 +14,7 @@ const boot = async (page: Page, preset = 'Coastal starter') => {
   await page.goto('/')
   await page.getByRole('button', { name: preset }).click()
   await expect(page.locator('.preview-root').first()).toBeVisible()
+  await openAll(page)
   await page.locator('.frame-mockup').first().selectOption('marketing')
   await expect(page.locator('.mkt-hero').first()).toBeVisible()
 }

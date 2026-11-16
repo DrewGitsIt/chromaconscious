@@ -16,14 +16,39 @@
     background: var(--surface-1);
     font-size: var(--fs-m);
     overflow: hidden; /* the footer's frost must not bleed past the edge */
+    transition: margin-left var(--d-pane) var(--ease-out);
+  }
+  /* Before a theme exists the stage is the way in, and the pane is off the
+     edge. It slides in WITH the theme, and out again on start over. A
+     negative margin rather than a width, so nothing inside reflows. */
+  .sidebar-shell.away {
+    margin-left: -321px;
   }
 
   /* ---------- header: fixed, never scrolls away ---------- */
+  /* wordmark and the pane's verbs share a row; the tagline runs under both */
   .sb-head {
     flex-shrink: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: var(--gap-m);
     padding: 18px var(--pad-side) 14px;
     position: relative;
     z-index: 2;
+  }
+  .sb-tagline {
+    grid-column: 1 / -1;
+  }
+  /* the pane's own verbs: start over and the keyboard map. They belong to the
+     whole flow, not to any one section, so they sit at the flow's level. */
+  .sb-head-act {
+    margin-left: auto;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
   }
   .sb-wordmark {
     margin: 0;
@@ -53,7 +78,7 @@
     inset: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 4px var(--pad-side) var(--pad-side);
+    padding: 4px var(--pad-side) var(--pad-side) var(--rail-gutter);
     /* the rail is the scrollbar; a native one beside it would be a second */
     scrollbar-width: none;
   }
@@ -61,93 +86,31 @@
     display: none;
   }
 
-  /* ---------- the rail: one tick per section that exists ---------- */
-  .rail {
-    position: absolute;
-    left: 3px;
-    top: 10px;
-    bottom: 10px;
-    width: 14px;
-    z-index: 3;
+
+  /* ---------- the rail: the section numbers, threaded on one line ----------
+     The gutter left of the content holds the numbers; a line joins each to
+     the next, and a white tracer runs down it as you read (tracer.ts). */
+  .sidebar-shell {
+    --rail-gutter: 34px;
+    /* the space between sections; the rail's line spans it */
+    --sec-gap: 28px;
+    /* the numbers' centre line, from the scroller's left edge */
+    --rail-x: 16px;
   }
-  .rail-line {
+  .tracer {
     position: absolute;
-    left: 6px;
+    left: calc(var(--rail-x) - 1px);
     top: 0;
-    bottom: 0;
-    width: 1px;
-    background: var(--line-card);
-  }
-  /* No transition on the thumb or the ticks' position: they track the scroll
-     1:1. The mockup's v1 eased them, and 60ms of lag read as a bug. */
-  .rail-thumb {
-    position: absolute;
-    left: 5px;
-    width: 3px;
+    width: 2px;
+    height: 0;
     border-radius: 2px;
-    background: var(--ink-ghost);
-  }
-  .rail-tick {
-    position: absolute;
-    left: 0;
-    width: 14px;
-    height: 14px;
-    margin-top: -7px;
-    border: 0;
-    padding: 0;
-    background: none;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-  }
-  .rail-tick i {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--ink-faint);
-    box-shadow: 0 0 0 3px var(--surface-1);
-    transition:
-      transform var(--d-base) var(--ease),
-      background var(--d-base) var(--ease);
-    animation: tick-in var(--d-slow) var(--ease-out) backwards;
-  }
-  .rail-tick.here i {
     background: var(--ink);
-    transform: scale(1.5);
-  }
-  .rail-tick:hover i,
-  .rail-tick:focus-visible i {
-    transform: scale(1.7);
-  }
-  .rail-tick:focus-visible {
-    outline: none;
-  }
-  .rail-tick:focus-visible i {
-    box-shadow: 0 0 0 3px var(--surface-1), 0 0 0 4px var(--line-active);
-  }
-  .rail-tip {
-    position: absolute;
-    left: 20px;
-    top: -1px;
-    font-size: var(--fs-xs);
-    color: var(--ink-muted);
-    background: var(--surface-2);
-    border: 1px solid var(--line-card);
-    border-radius: 6px;
-    padding: 1px 7px;
-    white-space: nowrap;
-    opacity: 0;
+    box-shadow: 0 0 6px rgb(237 237 238 / 0.35);
     pointer-events: none;
-    transition: opacity var(--d-fast) var(--ease);
+    z-index: 0;
   }
-  .rail-tick:hover .rail-tip,
-  .rail-tick:focus-visible .rail-tip {
-    opacity: 1;
-  }
-  @keyframes tick-in {
-    from {
-      transform: scale(0);
-    }
+  .tracer.glide {
+    transition: height var(--d-slow) var(--ease-out);
   }
 
   /* ---------- footer: pinned, frosted, shadowed only when earned ---------- */
@@ -184,10 +147,11 @@
      even an identity transform makes the section a containing block for
      every position:fixed descendant (the sidebar-controls trap). */
   .sec {
+    position: relative;
     animation: sec-in var(--d-slow) var(--ease-out) backwards;
   }
   .sec + .sec {
-    margin-top: 28px;
+    margin-top: var(--sec-gap);
   }
   .sec-head {
     position: relative;
@@ -221,11 +185,82 @@
     outline: 1px solid var(--line-active);
     outline-offset: 3px;
   }
+  /* The number is the rail's node: outlined until reached, grey once
+     visited, white where you are. It hangs in the gutter, centred on the
+     header row, above the line and the tracer. */
   .sec-n {
+    position: absolute;
+    left: calc(var(--rail-x) - var(--rail-gutter) - 9px);
+    top: 3px;
+    z-index: 1;
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--line-ctl);
+    background: var(--surface-1);
     font-family: var(--font-code);
     font-size: var(--fs-xs);
+    line-height: 1;
     color: var(--ink-faint);
-    min-width: 8px;
+    transition:
+      background var(--d-base) var(--ease),
+      color var(--d-base) var(--ease),
+      border-color var(--d-base) var(--ease),
+      transform var(--d-base) var(--ease);
+  }
+  .sec-toggle:hover .sec-n {
+    transform: scale(1.08);
+  }
+  .sec[data-visited] .sec-n {
+    background: var(--surface-active);
+    border-color: var(--surface-active);
+    color: var(--ink);
+  }
+  .sec[data-here] .sec-n {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--stage);
+  }
+  /* the push: a ring tightens on the number as the tip closes the gap */
+  .sec[data-armed] .sec-n {
+    border-color: var(--ink-muted);
+    color: var(--ink);
+  }
+  .sec[data-armed] .sec-n::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: var(--radius-pill);
+    border: 1.5px solid var(--ink);
+    opacity: calc(0.22 + var(--push, 0) * 0.78);
+    transform: scale(calc(0.7 + var(--push, 0) * 0.3));
+  }
+  .sec[data-popped] .sec-n {
+    animation: node-pop var(--d-slow) var(--ease-out);
+  }
+  @keyframes node-pop {
+    40% {
+      transform: scale(1.25);
+      box-shadow: 0 0 0 6px rgb(237 237 238 / 0.18);
+    }
+  }
+  /* the line from this number to the next: header centre to header centre
+     across the 22px gap. Brighter once you have been at both ends. */
+  .sec:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: calc(var(--rail-x) - var(--rail-gutter) - 0.5px);
+    top: 12px;
+    /* to the next number's centre: across the gap, then half a header */
+    bottom: calc(-1 * (var(--sec-gap) + 12px));
+    width: 1px;
+    background: var(--line-card);
+    transition: background var(--d-slow) var(--ease);
+  }
+  .sec[data-lit]::before {
+    background: var(--ink-ghost);
   }
   /* "1 colors": the section's name in the UI voice, lowercase. Two steps
      above a control's name (size and weight), so a heading never reads as one
@@ -316,8 +351,12 @@
       transition: none;
     }
     .sec,
-    .rail-tick i {
+    .sec-n {
       animation: none;
+    }
+    .tracer.glide,
+    .sidebar-shell {
+      transition: none;
     }
   }
 }

@@ -1,9 +1,9 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Ban,
   Columns2,
   ExternalLink,
   Guitar,
+  RotateCcw,
   SlidersHorizontal,
   Undo2,
   X,
@@ -40,14 +40,15 @@ import { ReportPanel } from './components/ReportPanel'
 import { AssignPopover, PlacePopover, PresetPopover, RoleTooltip, ShipPopover } from './components/RolePopover'
 import type { PaneSection } from './components/SidebarShell'
 import { SidebarShell } from './components/SidebarShell'
-import { revealSection } from './components/rail'
 import { ColorsSectionBody } from './components/sections/ColorsSection'
 import { CompareSectionBody } from './components/sections/CompareSection'
 import { InputSectionBody } from './components/sections/InputSection'
 import { RiffSectionBody } from './components/sections/RiffSection'
+import { START_DRAFT, StartStage } from './components/StartStage'
 import { TuningSectionBody } from './components/sections/TuningSection'
 import { ShortcutsFlyout } from './components/Shortcuts'
 import type { SectionId } from './shortcuts'
+import type { Preset } from './presets'
 import { SHORTCUTS, isTypingTarget, withKey } from './shortcuts'
 import { StatusChip } from './components/StatusChip'
 import type { MockupProps } from './mockups'
@@ -124,7 +125,9 @@ const FRAME_LABEL = ['A', 'B'] as const
 const emptyFrameState = (): FrameState => ({
   ...emptyThemeState(),
   mode: 'dark',
-  mockup: 'app',
+  // The start screen paints its live specimen into the marketing page, and
+  // that specimen becomes the frame you land in, so a theme starts there.
+  mockup: 'marketing',
   vision: 'typical',
   strength: 1,
   budget: 'full',
@@ -301,6 +304,21 @@ export default function App() {
   }
 
   const results = [useThemeResult(frames[0]), useThemeResult(frames[1])]
+
+  // ---- the way in -----------------------------------------------------------
+  // Before a theme exists (one frame, no colours, not an embed) the stage IS
+  // the way in: StartStage over a live specimen of frame A, painted from
+  // whatever you are choosing, and the pane is off the edge until it lands.
+  // A theme link (#s= or #t_) opens a theme, not the start screen: until it
+  // resolves (or fails) the stage stays blank, so the start screen never
+  // flashes up in front of a theme that is on its way.
+  const [linking, setLinking] = useState(() => !EMBED && parseThemeHash(location.hash) != null)
+  const starting = frames.length === 1 && frames[0].candidates.length === 0 && !EMBED && !linking
+  const [previewColors, setPreviewColors] = useState<string[]>([START_DRAFT])
+  const previewCandidates = useMemo(() => candidatesFromList(previewColors), [previewColors])
+  const previewResult = useThemeResult(starting ? { ...frames[0], candidates: previewCandidates } : undefined)
+  // Where a first colour flies from, into the seat it became (see the effect below).
+  const flyFrom = useRef<DOMRect | null>(null)
   const result = results[active]
 
   // The board is a pure read of the engine's result — see src/board.ts.
@@ -435,6 +453,7 @@ export default function App() {
   ) => {
     const prev = frames[i]
     dispatchTo(i, { op: 'start', candidates, preset })
+    if (prev.candidates.length === 0 && candidates.length > 0) beginFlow()
     setPicking(false)
     setSeatMenu(null)
     if (prev.candidates.length > 0) {
@@ -453,7 +472,21 @@ export default function App() {
     }
   }
 
-  /** The header's one verb: clear the set. Undoable from the toast. */
+  /**
+   * A new flow opens on colours: tuning and riff wait folded below, their
+   * headers carrying live readouts, and the rail's push (or a header click)
+   * unfolds them. Called when a set lands on an empty frame.
+   */
+  function beginFlow() {
+    setFolded(new Set<SectionId>(['tuning', 'riff']))
+  }
+  /** Paint from the start screen, or the pane's input in a split: the first colours. */
+  const paintColors = (colors: string[], from: HTMLElement | null) => {
+    flyFrom.current = from?.getBoundingClientRect() ?? null
+    if (dispatch({ op: 'add', colors }) && emptyFrame) beginFlow()
+  }
+
+  /** The pane's way out: clear the set, back to the start. Undoable from the toast. */
   const startEmpty = () => {
     if (frame.candidates.length === 0) return
     startOverAt(active, [], null, `cleared ${frame.candidates.length} color${frame.candidates.length === 1 ? '' : 's'}`)
@@ -498,6 +531,7 @@ export default function App() {
       })
       setActive(0)
       setToast({ text: note, undo: null })
+      setLinking(false)
     }
     if (link.state !== undefined) {
       // A malformed link opens the start screen with a quiet note; never a crash.
@@ -505,6 +539,7 @@ export default function App() {
         open(decodeState(payloadState(link.state)), 'opened the theme in this link')
       } catch (err) {
         setToast({ text: `couldn't read this link: ${err instanceof Error ? err.message : String(err)}`, undo: null })
+        setLinking(false)
       }
       return
     }
@@ -517,6 +552,7 @@ export default function App() {
       })
       .catch((err: unknown) => {
         if (live) setToast({ text: err instanceof Error ? err.message : `couldn't open ${id}`, undo: null })
+        if (live) setLinking(false)
       })
     return () => {
       live = false
@@ -705,6 +741,8 @@ export default function App() {
       // A key aimed at a folded section opens it and brings it into view
       // first, so the press is never silent and its result is on screen. An
       // open section is left where it is: no scroll jump on every riff.
+      // (The shell treats any open as a reach: the tracer runs to it and a
+      // header low in the pane scrolls up into view.)
       if (hit.section && folded.has(hit.section)) {
         const id = hit.section
         setFolded((prev) => {
@@ -712,7 +750,6 @@ export default function App() {
           next.delete(id)
           return next
         })
-        requestAnimationFrame(() => revealSection(id))
       }
       switch (hit.id) {
         case 'help':
@@ -838,23 +875,20 @@ export default function App() {
   // "input", and nothing greyed out beneath it. It becomes "colors" (a new key,
   // so it re-enters) with tuning and riff after it; compare joins only while
   // the stage is split. The shell numbers them and gives each a rail tick.
-  const colorsActions = (
-    <span className="sec-tools">
-      {/* The header keeps exactly one verb. An image or a preset start over
-          from the foot of this section, where the ways in fold once colours
-          exist; this is the one way out. A plain button rather than a menu of
-          one, and no confirm: the toast's undo forgives it, the same
-          forgiveness every other replace-the-set gets. */}
-      <button
-        className="mini ctl-head"
-        onClick={startEmpty}
-        title={withKey('startOver', `start empty — clears your ${nColors}; undo is one click`)}
-      >
-        <Ban size={12} strokeWidth={1.75} />
-        start empty
-      </button>
-      {/* The keyboard map lives up here rather than in the row it documents:
-          flex squeezed it under the target floor there. */}
+  // The pane's own verbs sit beside the wordmark: start over belongs to the
+  // whole flow, not to "colors", and the keyboard map documents every section.
+  const headActions = (
+    <>
+      {!emptyFrame && (
+        <button
+          className="mini ctl-head"
+          onClick={startEmpty}
+          title={withKey('startOver', `start over — clears your ${nColors}; undo is one click`)}
+        >
+          <RotateCcw size={12} strokeWidth={1.75} />
+          start over
+        </button>
+      )}
       <button
         className="mini ctl-head ctl-help"
         onClick={() => setHelpOpen((o) => !o)}
@@ -865,17 +899,21 @@ export default function App() {
         ?
       </button>
       {helpOpen && <ShortcutsFlyout onClose={() => setHelpOpen(false)} />}
-    </span>
+    </>
   )
 
   const sections: PaneSection[] = []
-  if (emptyFrame || !view) {
+  if (starting || linking) {
+    // the way in is on the stage (or a linked theme is on its way); the pane
+    // is away and holds nothing
+  } else if (emptyFrame || !view) {
+    // an emptied frame in a split (or an embed): the ways in, in the pane
     sections.push({
       id: 'input',
       label: 'input',
       body: (
         <InputSectionBody
-          onAddColors={(inputs) => dispatch({ op: 'add', colors: inputs })}
+          onAddColors={(inputs) => paintColors(inputs, null)}
           onImage={(candidates) => startOverAt(active, candidates, null, 'extracted colors')}
           onPreset={(p) =>
             startOverAt(active, candidatesFromList(p.colors), p.name, `started with ${p.name}`)
@@ -890,7 +928,6 @@ export default function App() {
         id: 'colors',
         label: 'colors',
         readout: `${yours} yours · ${view.slots.length - yours} derived`,
-        actions: colorsActions,
         body: (
           <ColorsSectionBody
             controls={{
@@ -1011,9 +1048,57 @@ export default function App() {
     }
   }
 
+  // Your first colour travels from where you chose it into the seat it
+  // became, so the first thing the board says is "this one is yours". The
+  // pane is still sliding in when this runs, so it aims at where the seat
+  // will land, not where it is.
+  useEffect(() => {
+    const from = flyFrom.current
+    if (!from || starting || !view) return
+    flyFrom.current = null
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const raf = requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>('.rb-slot[data-role="primary"] .rb-in')
+      const shell = document.querySelector<HTMLElement>('.sidebar-shell')
+      if (!target || !shell) return
+      const to = target.getBoundingClientRect()
+      const dx = -Math.min(0, shell.getBoundingClientRect().left)
+      const fly = document.createElement('div')
+      fly.className = 'flyer'
+      Object.assign(fly.style, {
+        left: `${from.left}px`,
+        top: `${from.top}px`,
+        width: `${from.width}px`,
+        height: `${from.height}px`,
+        background: getComputedStyle(target).backgroundColor,
+      })
+      document.body.appendChild(fly)
+      target.style.visibility = 'hidden'
+      fly
+        .animate(
+          [
+            { transform: 'none', borderRadius: `${Math.min(from.width, from.height) / 2}px` },
+            {
+              transform: `translate(${to.left + dx - from.left}px, ${to.top - from.top}px)`,
+              width: `${to.width}px`,
+              height: `${to.height}px`,
+              borderRadius: getComputedStyle(target).borderRadius,
+            },
+          ],
+          { duration: 560, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'forwards' },
+        )
+        .finished.catch(() => {})
+        .finally(() => {
+          target.style.visibility = ''
+          fly.remove()
+        })
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [view, starting])
+
   return (
     <div
-      className={`app${EMBED ? ' embed' : ''}${drawerOpen ? ' drawer-open' : ''}`}
+      className={`app${EMBED ? ' embed' : ''}${drawerOpen ? ' drawer-open' : ''}${starting ? ' starting' : ''}`}
       onDragEnter={(e) => {
         if (Array.from(e.dataTransfer.types).includes('Files')) {
           e.preventDefault()
@@ -1024,9 +1109,11 @@ export default function App() {
       <SidebarShell
         title="ChromaConscious"
         tagline="any colors in, working theme out"
+        headActions={headActions}
         sections={sections}
         folded={folded}
         onToggle={toggleSection}
+        away={starting || linking}
         footer={
           <div className="foot-stack">
             {checkStats && (
@@ -1190,15 +1277,17 @@ export default function App() {
         <div className="drawer-scrim" aria-hidden="true" onClick={() => setDrawerOpen(false)} />
       )}
       <main className="stage">
-        {emptyFrame && !split ? (
+        {linking && emptyFrame ? null : emptyFrame && !split && !starting ? (
           <StageEmpty />
         ) : (
           <div className={`boards${split ? ' split' : ''}`}>
             {frames.map((f, i) => (
               <section
                 key={i}
-                className={`artboard${active === i ? ' active' : ''}`}
+                className={`artboard${active === i ? ' active' : ''}${starting ? ' under' : ''}`}
                 aria-label={`frame ${FRAME_LABEL[i]}`}
+                // the specimen under the start screen: real, but not yet yours
+                inert={starting}
                 onClickCapture={split ? () => setActive(i) : undefined}
               >
                 <FrameCard
@@ -1306,6 +1395,18 @@ export default function App() {
                           budget={f.budget ?? 'full'}
                         />
                       </PreviewBoundary>
+                    ) : starting && previewResult ? (
+                      <PreviewBoundary>
+                        <FrameMockup
+                          mockup={f.mockup}
+                          result={previewResult}
+                          mode={f.mode}
+                          uid={FRAME_LABEL[i].toLowerCase()}
+                          locateTarget={null}
+                          page={{ radius: f.radius, font: f.font }}
+                          budget={f.budget ?? 'full'}
+                        />
+                      </PreviewBoundary>
                     ) : (
                       <StageEmpty frame={FRAME_LABEL[i]} />
                     )}
@@ -1314,6 +1415,17 @@ export default function App() {
               </section>
             ))}
           </div>
+        )}
+        {starting && (
+          <StartStage
+            onPreview={setPreviewColors}
+            onPaint={paintColors}
+            onPreset={(p: Preset, from) => {
+              flyFrom.current = from?.getBoundingClientRect() ?? null
+              startOverAt(active, candidatesFromList(p.colors), p.name, `started with ${p.name}`)
+            }}
+            onImage={() => fileInputRef.current?.click()}
+          />
         )}
         {reportOpen && result && (
           <aside className="report-drawer">

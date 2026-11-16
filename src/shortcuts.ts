@@ -41,11 +41,11 @@ export const SHORTCUTS: Shortcut[] = [
   // z, not b: this is an undo, and it reads as one everywhere else.
   { id: 'back', key: 'z', label: 'back one riff', section: 'riff' },
   { id: 'reset', key: 'x', label: 'clear your placements', section: 'colors' },
-  { id: 'startOver', key: 'o', label: 'start empty — undo is one click', section: 'colors' },
+  // start over and the map sit in the pane head, which no fold hides
+  { id: 'startOver', key: 'o', label: 'start over — undo is one click' },
   { id: 'chart', key: 'c', label: 'show or fold the chart series', section: 'colors' },
   { id: 'vision', key: 'v', label: 'vision — cycle typical, protan, deutan, tritan' },
-  // the flyout hangs off the colors header, which a fold hides
-  { id: 'help', key: '?', label: 'this list', section: 'colors' },
+  { id: 'help', key: '?', label: 'this list' },
 ]
 
 const BY_ID = new Map(SHORTCUTS.map((s) => [s.id, s]))

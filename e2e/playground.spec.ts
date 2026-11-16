@@ -5,21 +5,20 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/')
 })
 
-/** Boot past the first-run hero by clicking a preset card. */
+/** Boot past the start screen by clicking a preset. */
 const bootCoastal = async (page: Page) => {
   await page.getByRole('button', { name: 'Coastal starter' }).click()
 }
 
 /**
- * The palette's verbs, addressed by title. They live in two places now —
- * `start empty` and the frame controls stayed in the section header
- * (`.sec-act .mini`), while mono/reset/riff/back moved to the labelled row
- * beneath it (`.ctl-row .ctl`) — so this matches either. Titles carry their
+ * The palette's verbs, addressed by title. `start over` sits in the pane head
+ * (`.sb-head-act .mini`), mono/reset/riff/back in the labelled rows
+ * (`.ctl-row .ctl`), the frame controls on the stage — so this matches any. Titles carry their
  * shortcut key appended ("… · R"), which is why the match is a substring.
  */
 const tool = (page: Page, title: string) =>
   page.locator(
-    `.sec-act .mini[title*="${title}"], .ctl-row .ctl[title*="${title}"], .board-btn[title*="${title}"]`,
+    `.sb-head-act .mini[title*="${title}"], .ctl-row .ctl[title*="${title}"], .board-btn[title*="${title}"]`,
   )
 
 /** A frame read back off its label row, e.g. `B · dark · editing`: the mode
@@ -48,18 +47,18 @@ const seatFrom = (page: Page, role: string, hex: string) =>
   expect(seat(page, role).locator('.rb-body')).toHaveAttribute('title', new RegExp(hex))
 
 test.describe('first run', () => {
-  test('boots into the hero; a preset card builds the first theme', async ({ page }) => {
-    await expect(page.getByText('a single color is enough')).toBeVisible()
+  test('boots onto the start screen; a preset builds the first theme', async ({ page }) => {
+    await expect(page.getByText('Start with a color.')).toBeVisible()
     await expect(page.locator('.role-board')).toHaveCount(0)
     await bootCoastal(page)
-    await expect(page.locator('.start-hero')).toHaveCount(0)
+    await expect(page.locator('.start-stage')).toHaveCount(0)
     await expect(page.locator('.preview-root')).toBeVisible()
     await seatFrom(page, 'primary', '#e63946')
   })
 
-  test('typing colors into the hero builds a theme from them', async ({ page }) => {
-    await page.getByPlaceholder(/or type/).fill('#101010 #ababab')
-    await page.getByRole('button', { name: 'Add', exact: true }).click()
+  test('typing colors on the start screen and painting builds a theme from them', async ({ page }) => {
+    await page.locator('.ss-hex').fill('#101010 #ababab')
+    await page.getByRole('button', { name: 'Paint', exact: true }).click()
     await expect(page.locator('.role-board')).toHaveAttribute('class', /role-board/)
     await expect(page.locator('.rb-body[title*="#101010"]')).toHaveCount(1)
     await expect(page.locator('.rb-body[title*="#ababab"]')).toHaveCount(1)
@@ -74,26 +73,32 @@ const openAddPopover = async (page: Page) => {
 }
 
 test.describe('color input', () => {
-  test('pick a color in the hero popover, then the main Add button adds it', async ({ page }) => {
-    await page.getByRole('button', { name: 'Pick a color', exact: true }).click()
+  test('pick a color on the start screen, then Paint paints it', async ({ page }) => {
+    await page.locator('.ss-swatch').click()
     await page.locator('.react-colorful__saturation').click({ position: { x: 30, y: 40 } })
     // react-colorful commits the picked value asynchronously — wait it out
-    await expect(page.locator('.picker-pop input')).not.toHaveValue('#7aa2f7')
-    const hex = await page.locator('.picker-pop input').inputValue()
+    await expect(page.locator('.ss-pop input')).not.toHaveValue('#5b7cfa')
+    const hex = await page.locator('.ss-pop input').inputValue()
     expect(hex).toMatch(/^#[0-9a-f]{6}$/)
-    await page.getByRole('button', { name: 'Add', exact: true }).click()
+    // Paint is outside the picker: pressing it closes the picker (which adds
+    // the colour) and paints
+    await page.getByRole('button', { name: 'Paint', exact: true }).click()
     // one color, so it takes primary and the engine derives the rest
     await seatFrom(page, 'primary', hex)
   })
 
-  test('the hero popover Add color button commits directly, without duplicates', async ({
-    page,
-  }) => {
-    await page.getByRole('button', { name: 'Pick a color', exact: true }).click()
+  test('the start picker adds a color once when it closes, and never twice', async ({ page }) => {
+    await page.locator('.ss-swatch').click()
     await page.locator('.react-colorful__saturation').click({ position: { x: 60, y: 60 } })
-    await expect(page.locator('.picker-pop input')).not.toHaveValue('#7aa2f7')
-    const hex = await page.locator('.picker-pop input').inputValue()
-    await page.getByRole('button', { name: 'Add color', exact: true }).click()
+    await expect(page.locator('.ss-pop input')).not.toHaveValue('#5b7cfa')
+    const hex = await page.locator('.ss-pop input').inputValue()
+    await page.locator('.ss-title').click()
+    await expect(page.locator('.ss-coin')).toHaveCount(1)
+    // reopened and closed on the same colour: nothing new was chosen
+    await page.locator('.ss-swatch').click()
+    await page.locator('.ss-title').click()
+    await expect(page.locator('.ss-coin')).toHaveCount(1)
+    await page.getByRole('button', { name: 'Paint', exact: true }).click()
     await seatFrom(page, 'primary', hex)
     // the sidebar's + popover is where a second add would happen, and it
     // refuses: the colour is already on the board
@@ -102,8 +107,8 @@ test.describe('color input', () => {
     await expect(page.locator('.pk-msg')).toContainText('already on the board')
     await expect(page.locator('.pk-add')).toBeDisabled()
     await page.keyboard.press('Escape')
-    // the start-empty button counts the whole set out loud
-    await expect(tool(page, 'start empty')).toHaveAttribute('title', /clears your 1 color;/)
+    // the start-over button counts the whole set out loud
+    await expect(tool(page, 'start over')).toHaveAttribute('title', /clears your 1 color;/)
   })
 
   test('the + popover grows an existing set additively; the extras land in unused', async ({
@@ -128,8 +133,8 @@ test.describe('color input', () => {
     // became three fragments and vanished; `rgb(91, 124, 250)` left `124`,
     // which parses as the hex #124 — so a light blue quietly added a dark navy.
     await page.goto('/')
-    await page.getByPlaceholder(/or type/).fill('rgb(91, 124, 250)')
-    await page.getByRole('button', { name: 'Add', exact: true }).click()
+    await page.locator('.ss-hex').fill('rgb(91, 124, 250)')
+    await page.getByRole('button', { name: 'Paint', exact: true }).click()
     await expect(page.locator('.preview-root')).toBeVisible()
     // The seat records what you typed as its source; #5b7cfa is that colour,
     // #112244 is what the old tokenizer silently substituted for it.
@@ -210,11 +215,11 @@ test.describe('color input', () => {
 })
 
 test.describe('start over', () => {
-  test('start empty returns to the hero; undo brings the colors back', async ({ page }) => {
+  test('start over returns to the start screen; undo brings the colors back', async ({ page }) => {
     await bootCoastal(page)
-    await expect(tool(page, 'start empty')).toHaveAttribute('title', /clears your 5 colors;/)
-    await tool(page, 'start empty').click()
-    await expect(page.getByText('a single color is enough')).toBeVisible()
+    await expect(tool(page, 'start over')).toHaveAttribute('title', /clears your 5 colors;/)
+    await tool(page, 'start over').click()
+    await expect(page.getByText('Start with a color.')).toBeVisible()
     await expect(page.locator('.toast')).toContainText('cleared 5 colors')
     await page.getByRole('button', { name: 'undo' }).click()
     await seatFrom(page, 'primary', '#e63946')

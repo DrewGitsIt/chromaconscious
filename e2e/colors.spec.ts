@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { openAll } from './open-sections'
 
 /**
  * The colour rows: `[your colour] [what happened] [what ships]` per seat.
@@ -10,6 +11,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Coastal starter' }).click()
   await expect(page.locator('.role-board')).toBeVisible()
+  await openAll(page)
 })
 
 const seat = (page: Page, role: string) => page.locator(`.rb-slot[data-role="${role}"]`)

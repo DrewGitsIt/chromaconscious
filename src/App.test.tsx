@@ -139,9 +139,9 @@ const monoBtn = (): HTMLButtonElement =>
 /** The riff hop badge, or null before the first hop. */
 const hop = (): string | null =>
   document.querySelector('.ctl-hop')?.textContent ?? null
-/** `start empty` is the one verb in the header. */
+/** `start over` sits in the pane head, beside the keyboard map. */
 const startEmptyBtn = (): HTMLButtonElement =>
-  document.querySelector('.sec-act .mini[title^="start empty"]') as HTMLButtonElement
+  document.querySelector('.sb-head-act .mini[title^="start over"]') as HTMLButtonElement
 const startEmpty = () => fireEvent.click(startEmptyBtn())
 /** The presets button at the foot of "1 colors" opens the preset popover. */
 const openPresets = () =>
@@ -163,7 +163,7 @@ const selectedPreset = (): string | null => {
   return name
 }
 
-/** Boot past the first-run hero by clicking a preset card. */
+/** Boot past the start screen by clicking a preset. */
 const bootCoastal = () => {
   render(<App />)
   fireEvent.click(screen.getByRole('button', { name: 'Coastal starter' }))
@@ -171,8 +171,8 @@ const bootCoastal = () => {
 /** Boot with a single user color, so five seats are the engine's. */
 const bootOneColor = (hex = '#7c3aed') => {
   render(<App />)
-  fireEvent.change(screen.getByPlaceholderText(/or type/), { target: { value: hex } })
-  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  fireEvent.change(document.querySelector('.ss-hex') as HTMLInputElement, { target: { value: hex } })
+  fireEvent.click(screen.getByRole('button', { name: 'Paint' }))
 }
 /** Boot enough colors to fill all six seats AND all five chart slots. */
 const bootFullBoard = () =>
@@ -205,58 +205,49 @@ const stubClipboard = () => {
 const exportBtn = () => document.querySelector('.sidebar-shell .export-btn') as HTMLButtonElement
 
 describe('first run', () => {
-  it('boots empty into the hero — three doors, no sidebar controls', () => {
+  it('boots onto the start screen: three ways in over a live specimen, the pane away', () => {
     render(<App />)
-    expect(document.querySelector('.start-hero')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Pick a color' })).toBeTruthy()
-    expect(screen.getByText(/drop an image here/)).toBeTruthy()
+    expect(document.querySelector('.start-stage')).toBeTruthy()
+    expect(document.querySelectorAll('.ss-panel')).toHaveLength(3)
+    expect(screen.getByRole('button', { name: 'Paint' })).toBeTruthy()
+    expect(screen.getByText(/drop an image here/i)).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Neon arcade' })).toBeTruthy()
-    // The three doors are the pane's only section, "1 input" — nothing else
-    // is mounted, greyed or otherwise, until there is a colour.
-    expect(document.querySelector('.sidebar-shell [data-sec="input"] .start-hero')).toBeTruthy()
-    expect([...document.querySelectorAll('.sec .sec-label')].map((e) => e.textContent)).toEqual([
-      'input',
-    ])
-    expect(document.querySelector('.sidebar-shell')).toBeTruthy()
+    // the specimen is real engine output, quieted under the sheet, on the
+    // page a theme will land on
+    expect(document.querySelector('.artboard.under .preview-root')).toBeTruthy()
+    expect((document.querySelector('.frame-mockup') as HTMLSelectElement).value).toBe('marketing')
+    // the pane is off the edge, inert, and holds no sections, greyed or otherwise
+    const shell = document.querySelector('.sidebar-shell') as HTMLElement
+    expect(shell.classList.contains('away')).toBe(true)
+    expect(shell.hasAttribute('inert')).toBe(true)
+    expect(document.querySelectorAll('.sec')).toHaveLength(0)
     expect(document.querySelector('.role-board')).toBeNull()
-    expect(document.querySelector('.dial')).toBeNull()
-    // the one deliberate grey: Export is there, disabled, and says what it will give you
-    const exp = exportBtn()
-    expect(exp.getAttribute('aria-disabled')).toBe('true')
-    expect(exp.getAttribute('aria-describedby')).toBe('exp-cap')
-    fireEvent.click(exp)
-    expect(document.querySelector('[role="dialog"]')).toBeNull()
-    expect(screen.getByText(/add a color to export CSS, Tailwind, Figma variables or a share link/)).toBeTruthy()
     expect(document.querySelector('.status-chip')).toBeNull()
   })
 
-  it('the hero yields to the working layout after the first colors', () => {
+  it('Paint takes the colors in; a new flow opens on colors with tuning and riff folded', () => {
     render(<App />)
-    fireEvent.change(screen.getByPlaceholderText(/or type/), {
+    fireEvent.change(document.querySelector('.ss-hex') as HTMLInputElement, {
       target: { value: '#101010 #ababab' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
-    expect(document.querySelector('.start-hero')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Paint' }))
+    expect(document.querySelector('.start-stage')).toBeNull()
+    expect(document.querySelector('.sidebar-shell')?.classList.contains('away')).toBe(false)
     expect(document.querySelector('.role-board')).toBeTruthy()
     expect(seatOrigins()).toContain('#101010')
     expect(seatOrigins()).toContain('#ababab')
     expect(document.querySelector('.addsw')).toBeTruthy()
     expect(document.querySelector('.preview-root')).toBeTruthy()
-    // canvas controls live on the stage now, above each frame
     expect([...document.querySelectorAll('.sec .sec-label')].map((e) => e.textContent)).toEqual([
       'colors',
       'tuning',
       'riff',
     ])
-    // "1 input" became "1 colors"; the numbers run 1..3 with no gaps
-    expect([...document.querySelectorAll('.sec .sec-n')].map((e) => e.textContent)).toEqual([
-      '1',
-      '2',
-      '3',
-    ])
-    // Export is live now, and its caption has done its job
+    expect([...document.querySelectorAll('.sec .sec-n')].map((e) => e.textContent)).toEqual(['1', '2', '3'])
+    const expanded = (id: string) =>
+      document.querySelector(`[data-sec="${id}"] .sec-toggle`)?.getAttribute('aria-expanded')
+    expect([expanded('colors'), expanded('tuning'), expanded('riff')]).toEqual(['true', 'false', 'false'])
     expect(exportBtn().getAttribute('aria-disabled')).toBeNull()
-    expect(screen.queryByText(/add a color to export/)).toBeNull()
   })
 
   it('a hero preset card applies its palette and keeps its name until you edit', () => {
@@ -775,14 +766,16 @@ describe('the colour rows', () => {
 })
 
 describe('color input', () => {
-  it('the hero picker commits a first color and the hero yields', () => {
+  it('the start picker adds a color when it closes on a new one; Paint paints it', () => {
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: 'Pick a color' }))
-    const hexInput = document.querySelector('.picker-pop input') as HTMLInputElement
+    fireEvent.click(document.querySelector('.ss-swatch') as HTMLElement)
+    const hexInput = document.querySelector('.ss-pop input') as HTMLInputElement
     fireEvent.change(hexInput, { target: { value: '405480' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Add color' }))
+    fireEvent.pointerDown(document.body)
+    expect(document.querySelectorAll('.ss-coin')).toHaveLength(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Paint' }))
     expect(boardState().primary).toBe('#405480 yours')
-    expect(document.querySelector('.start-hero')).toBeNull()
+    expect(document.querySelector('.start-stage')).toBeNull()
   })
 
   it('the + opens a picker, and what you type in it lands on the board', () => {
@@ -832,19 +825,19 @@ describe('color input', () => {
 })
 
 describe('start over', () => {
-  it('the header holds one verb, start empty: a plain button, forgiven by undo', () => {
+  it('start over sits in the pane head: a plain button, forgiven by undo', () => {
     bootCoastal()
     // image and presets live at the foot of "1 colors" now, not in a menu here
     expect(document.querySelector('.startover-menu')).toBeNull()
-    expect(startEmptyBtn().textContent).toBe('start empty')
-    expect(startEmptyBtn().title).toMatch(/^start empty — clears your 5 colors; undo is one click {2}· {2}O$/)
+    expect(startEmptyBtn().textContent).toBe('start over')
+    expect(startEmptyBtn().title).toMatch(/^start over — clears your 5 colors; undo is one click {2}· {2}O$/)
     startEmpty()
-    expect(document.querySelector('.start-hero')).toBeTruthy()
+    expect(document.querySelector('.start-stage')).toBeTruthy()
     expect(document.querySelector('.role-board')).toBeNull()
     expect(document.querySelector('.toast')?.textContent).toContain('cleared 5 colors')
   })
 
-  it('o is start empty, and undo brings the set back', () => {
+  it('o is start over, and undo brings the set back', () => {
     bootCoastal()
     const before = boardState()
     fireEvent.keyDown(window, { key: 'o' })
@@ -1280,26 +1273,30 @@ describe('the pane sections', () => {
 
   it('each header is a real button that folds its own section; several stay open at once', () => {
     bootCoastal()
+    // a new flow opens on colors; the rest wait folded, saying what they hold
+    expect(head('colors').getAttribute('aria-expanded')).toBe('true')
+    for (const id of ['tuning', 'riff']) {
+      expect(head(id).getAttribute('aria-expanded'), id).toBe('false')
+      // a folded body cannot take focus or a click
+      expect(body(id).hasAttribute('inert'), id).toBe(true)
+    }
+    expect(document.querySelector('[data-sec="tuning"] .sec-read')?.textContent).toMatch(/^0\.50 · layered/)
+    fireEvent.click(head('tuning'))
+    fireEvent.click(head('riff'))
     for (const id of ['colors', 'tuning', 'riff']) {
       expect(head(id).getAttribute('aria-expanded'), id).toBe('true')
       expect(body(id).hasAttribute('inert'), id).toBe(false)
     }
     fireEvent.click(head('tuning'))
     expect(head('tuning').getAttribute('aria-expanded')).toBe('false')
-    // a folded body cannot take focus or a click
-    expect(body('tuning').hasAttribute('inert')).toBe(true)
     // the others are untouched
     expect(head('colors').getAttribute('aria-expanded')).toBe('true')
     expect(head('riff').getAttribute('aria-expanded')).toBe('true')
-    // folded, the header says what it holds
-    expect(document.querySelector('[data-sec="tuning"] .sec-read')?.textContent).toMatch(/^0\.50 · layered/)
-    fireEvent.click(head('tuning'))
-    expect(head('tuning').getAttribute('aria-expanded')).toBe('true')
   })
 
   it('a hotkey aimed at a folded section opens it before acting', () => {
     bootCoastal()
-    fireEvent.click(head('riff'))
+    // riff starts folded in a new flow
     expect(head('riff').getAttribute('aria-expanded')).toBe('false')
     fireEvent.keyDown(window, { key: 'r' })
     expect(head('riff').getAttribute('aria-expanded')).toBe('true')
@@ -1328,14 +1325,13 @@ describe('the pane sections', () => {
     expect(document.querySelector('[data-sec="compare"]')).toBeNull()
   })
 
-  it('one rail tick per section that exists', () => {
+  it('the numbers are the rail: one per section that exists, threaded by the tracer', () => {
     render(<App />)
-    expect([...document.querySelectorAll('.rail-tick')].map((t) => t.getAttribute('data-tick'))).toEqual(['input'])
+    expect(document.querySelectorAll('.sec-n')).toHaveLength(0)
     fireEvent.click(screen.getByRole('button', { name: 'Coastal starter' }))
-    expect([...document.querySelectorAll('.rail-tick')].map((t) => t.getAttribute('data-tick'))).toEqual([
-      'colors',
-      'tuning',
-      'riff',
-    ])
+    expect([...document.querySelectorAll('.sec-n')].map((n) => n.textContent)).toEqual(['1', '2', '3'])
+    expect(document.querySelector('.sb-body > .tracer')).toBeTruthy()
+    // the first number is where a new flow starts
+    expect(document.querySelector('[data-sec="colors"]')?.hasAttribute('data-visited')).toBe(true)
   })
 })

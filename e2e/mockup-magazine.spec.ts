@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { openAll } from './open-sections'
 import { expectHonest, setMode, textOnSurfaces } from './showcase'
 
 /**
@@ -18,6 +19,7 @@ const boot = async (page: Page, preset = 'Terracotta') => {
   await page.goto('/')
   await page.getByRole('button', { name: preset }).click()
   await expect(page.locator('.preview-root').first()).toBeVisible()
+  await openAll(page)
   await page.locator('.frame-mockup').first().selectOption('magazine')
   await expect(page.locator('.mag-spread')).toHaveCount(5)
 }

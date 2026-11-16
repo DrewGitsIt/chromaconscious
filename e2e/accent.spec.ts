@@ -1,11 +1,15 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { openAll } from './open-sections'
 
 /** Boot past the hero into the pastel-picnic theme — the "where is my blue" palette. */
 const bootPastel = async (page: Page) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Pastel picnic' }).click()
+  // these are the app dashboard's accent jobs; a theme lands on marketing
+  await page.locator('.frame-mockup').first().selectOption('app')
   await expect(page.locator('.preview-root')).toBeVisible()
+  await openAll(page)
 }
 
 /** Read an engine-generated CSS variable off the preview root (hex string). */

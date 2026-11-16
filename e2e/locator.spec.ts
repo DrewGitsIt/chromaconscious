@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { paneSettled } from './open-sections'
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/')
@@ -19,6 +20,10 @@ const seatFrom = (page: Page, role: string, hex: string) =>
 const bootPicnic = async (page: Page) => {
   await page.getByRole('button', { name: 'Pastel picnic' }).click()
   await seatFrom(page, 'accent', '#a0c4ff')
+  await paneSettled(page)
+  // the locator is tested against the app dashboard; a theme lands on marketing
+  await page.locator('.frame-mockup').first().selectOption('app')
+  await expect(page.locator('.preview-root button', { hasText: 'New project' })).toBeVisible()
 }
 
 const rgbOf = async (page: Page, selector: string, prop = 'color') =>
@@ -43,24 +48,22 @@ test.describe('color locator', () => {
     // from the accent, so it is what must stay lit while the rest grays.
     const linkBefore = await rgbOf(page, '.banner-action')
     await seat(page, 'accent').hover()
-    await page.waitForTimeout(300) // locate enter debounce is 150ms
+    // locate's enter debounce is 150ms, then the mockup's colour transitions
+    // run; poll rather than guess how long a freshly mounted mockup takes
+    // primary-derived button goes near-gray
+    await expect.poll(async () => spread(await newProjectBg(page))).toBeLessThanOrEqual(8)
     // accent descendants stay verbatim
     expect(await rgbOf(page, '.banner-action')).toBe(linkBefore)
-    // primary-derived button goes near-gray
-    // polled: the button eases into the located colour (transition-all)
-    await expect.poll(async () => spread(await newProjectBg(page))).toBeLessThanOrEqual(8)
   })
 
   test('leaving the board restores the mockup', async ({ page }) => {
     await bootPicnic(page)
     await seat(page, 'accent').hover()
-    await page.waitForTimeout(300)
     // polled: the button eases into the located colour (transition-all)
     await expect.poll(async () => spread(await newProjectBg(page))).toBeLessThanOrEqual(8)
     // moving off the board restores full color
     await page.locator('.stage').hover({ position: { x: 400, y: 300 } })
-    await page.waitForTimeout(300)
-    expect(spread(await newProjectBg(page))).toBeGreaterThan(8)
+    await expect.poll(async () => spread(await newProjectBg(page))).toBeGreaterThan(8)
   })
 
   /**

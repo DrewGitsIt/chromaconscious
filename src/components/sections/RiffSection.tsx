@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import type { ReactElement } from 'react'
 import { Guitar, Undo2 } from 'lucide-react'
 import { withKey } from '../../shortcuts'
@@ -37,6 +38,23 @@ export function RiffSectionBody({
   trail,
   onJump,
 }: RiffSectionBodyProps): ReactElement {
+  // The trail is what a riff shows you. Riff sits last in the pane, so its
+  // newest column used to land under the pinned footer; after every hop,
+  // bring the trail into view (only as far as it takes).
+  // The trail is built from a deferred copy of the state, so it lands a frame
+  // after the hop does: follow the trail's own size, not just the hop.
+  const trailRef = useRef<HTMLDivElement>(null)
+  const seen = useRef<string | null>(null)
+  const columns = trail?.columns.length ?? 0
+  const trailKey = `${hop}:${trail?.first ?? 0}:${columns}`
+  useEffect(() => {
+    const before = seen.current
+    seen.current = trailKey
+    // not on mount: opening the section is not a riff
+    if (before === null || columns === 0) return
+    const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+    trailRef.current?.scrollIntoView?.({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' })
+  }, [trailKey, columns])
   return (
     <>
     {/* Both stay mounted and grey out in place, so riff never slides out from
@@ -70,7 +88,7 @@ export function RiffSectionBody({
       </button>
     </div>
     {trail && trail.columns.length > 0 && (
-      <div className="trail" role="group" aria-label="riff trail">
+      <div className="trail" role="group" aria-label="riff trail" ref={trailRef}>
         {trail.first > 0 && (
           <button
             type="button"

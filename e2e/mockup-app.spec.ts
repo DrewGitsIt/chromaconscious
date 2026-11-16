@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { openAll } from './open-sections'
 
 /**
  * The App dashboard mockup is the theme's test bench, so every control in it
@@ -17,6 +18,7 @@ const boot = async (page: Page) => {
   await page.getByRole('button', { name: 'Coastal starter' }).click()
   await page.locator('.frame-mockup').first().selectOption('app')
   await expect(page.locator('.preview-root')).toBeVisible()
+  await openAll(page)
 }
 
 const nav = (page: Page, i: number) => page.locator(`.nav-item:nth-child(${i})`)

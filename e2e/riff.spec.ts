@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { openAll } from './open-sections'
 
 /**
  * Riff is a WALK, and a lock is the only thing that stops it.
@@ -14,9 +15,10 @@ import { expect, test } from '@playwright/test'
 /** Boot from a single typed color — it takes primary, the engine derives the rest. */
 const bootSingle = async (page: Page) => {
   await page.goto('/')
-  await page.getByPlaceholder(/or type/).fill('#7c3aed')
-  await page.getByRole('button', { name: 'Add', exact: true }).click()
+  await page.locator('.ss-hex').fill('#7c3aed')
+  await page.getByRole('button', { name: 'Paint', exact: true }).click()
   await expect(page.locator('.preview-root')).toBeVisible()
+  await openAll(page)
 }
 
 /**
@@ -27,10 +29,11 @@ const bootSingle = async (page: Page) => {
 const bootFullBoard = async (page: Page) => {
   await page.goto('/')
   await page
-    .getByPlaceholder(/or type/)
+    .locator('.ss-hex')
     .fill('#e63946 #457b9d #f1faee #ef4444 #22c55e #eab308 #3b82f6 #a855f7 #14b8a6 #ec4899 #84cc16')
-  await page.getByRole('button', { name: 'Add', exact: true }).click()
+  await page.getByRole('button', { name: 'Paint', exact: true }).click()
   await expect(page.locator('.preview-root')).toBeVisible()
+  await openAll(page)
 }
 
 /**

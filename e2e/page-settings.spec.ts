@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { openAll } from './open-sections'
 
 /**
  * Corners and font: theme state the preview draws and every export writes.
@@ -11,7 +12,10 @@ import { expect, test } from '@playwright/test'
 const boot = async (page: Page) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Coastal starter' }).click()
+  // the defaults are measured on the app dashboard; a theme lands on marketing
+  await page.locator('.frame-mockup').first().selectOption('app')
   await expect(page.locator('.preview-root').first()).toBeVisible()
+  await openAll(page)
 }
 
 const card = (page: Page) => page.locator('.preview-root [data-slot="card"]').first()
@@ -121,6 +125,8 @@ test.describe('corners and font', () => {
     )
     await page.goto('/#t_abcdefghijkl&radius=0&font=jetbrains-mono')
     await expect(page.locator('.preview-root').first()).toBeVisible()
+    // the corners are measured on the app dashboard's card; themes land on marketing
+    await page.locator('.frame-mockup').first().selectOption('app')
     await expect(corners(page)).toHaveValue('0')
     await expect(typeTrigger(page)).toContainText('JetBrains Mono')
     expect(await css(card(page), 'borderTopLeftRadius')).toBe('0px')

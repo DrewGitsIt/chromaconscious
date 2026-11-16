@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { openAll } from './open-sections'
 
 /**
  * The contrast level is easy to leave inert — a slider that redraws its own
@@ -39,6 +40,7 @@ test('the contrast slider raises measured contrast on real token pairs, in both 
   await page.goto('/')
   await page.getByRole('button', { name: 'Coastal starter' }).click()
   await expect(page.locator('.preview-root').first()).toBeVisible()
+  await openAll(page)
 
   const slider = page.getByRole('slider', { name: 'contrast' })
   await expect(slider).toHaveValue('0')

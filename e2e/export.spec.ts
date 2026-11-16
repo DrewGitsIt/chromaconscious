@@ -4,6 +4,7 @@
  * and the backdrop never touches the swatches the user judges colour with.
  */
 import { expect, test, type Page } from '@playwright/test'
+import { openAll } from './open-sections'
 
 test.use({ viewport: { width: 1440, height: 900 } })
 
@@ -16,6 +17,7 @@ async function boot(page: Page) {
   await page.goto('/')
   await page.getByRole('button', { name: 'Coastal starter' }).click()
   await expect(page.locator('.role-board')).toBeVisible()
+  await openAll(page)
 }
 
 async function open(page: Page) {
@@ -25,18 +27,16 @@ async function open(page: Page) {
   await expect(dialog(page).locator('.xd-id')).toHaveText(/^t_[a-z2-7]{12}$/)
 }
 
-test('before any input Export is there, greyed, says why, and a press does nothing', async ({ page }) => {
+// Before input the pane, Export with it, is off the edge and inert: the
+// start screen on the stage is the way in, and nothing can be exported yet.
+test('before any input Export is out of reach with the pane, and opens once a theme lands', async ({ page }) => {
   await page.goto('/')
-  const btn = exportBtn(page)
-  await expect(btn).toBeVisible()
-  await expect(btn).toBeDisabled() // aria-disabled: announced as dimmed, still focusable
-  await expect(btn).toHaveAccessibleDescription(
-    'add a color to export CSS, Tailwind, Figma variables or a share link',
-  )
-  await btn.click({ force: true })
-  await btn.focus()
-  await page.keyboard.press('Enter')
-  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.locator('.sidebar-shell')).toHaveClass(/away/)
+  await expect(page.locator('.sidebar-shell')).toHaveAttribute('inert', '')
+  await expect(exportBtn(page)).not.toBeInViewport()
+  await page.getByRole('button', { name: 'Coastal starter' }).click()
+  await expect(exportBtn(page)).toBeInViewport()
+  await expect(exportBtn(page)).toBeEnabled()
 })
 
 test('open, walk the formats by keyboard, copy, and Esc returns focus to Export', async ({ page, context }) => {
@@ -208,7 +208,7 @@ test('a malformed share link opens the start screen with a quiet note', async ({
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto('/#s=AQMDGR01Vz_YHVmR42')
   await expect(page.getByText(/couldn't read this link/)).toBeVisible()
-  await expect(page.locator('[data-sec="input"]')).toBeVisible()
+  await expect(page.locator('.start-stage')).toBeVisible()
   await page.goto('/#s=BA&vision=deutan')
   await page.reload()
   await expect(page.getByText(/newer ChromaConscious/)).toBeVisible()

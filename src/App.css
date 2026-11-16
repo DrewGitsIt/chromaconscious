@@ -237,6 +237,31 @@
       transform: translateY(6px);
     }
   }
+  /* The specimen under the start screen: real engine output for whatever you
+     are choosing, quieted so the sheet over it reads. When the theme lands
+     it is the same element, so it simply lifts into place. */
+  .artboard {
+    transition:
+      filter var(--d-slow) var(--ease),
+      transform var(--d-slow) var(--ease-out);
+  }
+  .artboard.under {
+    filter: saturate(0.95) brightness(0.62) blur(1px);
+    transform: scale(0.975);
+  }
+  .artboard.under .frame-card {
+    opacity: 0;
+  }
+  .frame-card {
+    transition: opacity var(--d-base) var(--ease);
+  }
+  /* your first colour, on its way into the seat it became */
+  .flyer {
+    position: fixed;
+    z-index: 70;
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.5);
+  }
 
   /* The frame is an object on the table: rounded, inset, shadowed. Two
      rings — a light hairline so a black palette still has an edge, a dark

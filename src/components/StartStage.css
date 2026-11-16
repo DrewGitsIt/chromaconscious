@@ -1,0 +1,336 @@
+/* The way in, set on the stage over a live specimen (StartStage.tsx). One
+   frosted sheet holds the title and three equal panels, so nothing floats
+   over whatever colour the specimen happens to be. */
+@layer chrome-base, chrome;
+
+@layer chrome {
+  .start-stage {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    animation: ss-in var(--d-slow) var(--ease-out) backwards;
+  }
+  @keyframes ss-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.985);
+    }
+  }
+  .ss-sheet {
+    width: min(960px, 100%);
+    padding: 22px;
+    border-radius: 20px;
+    background: rgb(17 17 18 / 0.86);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgb(255 255 255 / 0.09);
+    box-shadow: 0 30px 90px rgb(0 0 0 / 0.6);
+  }
+  .ss-head {
+    margin: 0 2px 16px;
+  }
+  .ss-wordmark {
+    margin: 0 0 10px;
+    font-size: var(--fs-s);
+    color: var(--ink-faint);
+  }
+  .ss-title {
+    margin: 0;
+    font-size: 30px;
+    line-height: 1.1;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+  }
+  .ss-panels {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .ss-panel {
+    min-height: 330px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 13px;
+    background: rgb(255 255 255 / 0.025);
+    border: 1px solid var(--line-card);
+  }
+  .ss-panel-h {
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: var(--fs-m);
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .ss-panel-h span {
+    font-family: var(--font-code);
+    font-size: var(--fs-xs);
+    font-weight: 400;
+    color: var(--ink-faint);
+  }
+
+  /* ---- a colour: coins, swatch, field ---- */
+  /* the row of your colours: no height until there is one */
+  .ss-coins {
+    display: grid;
+    grid-template-rows: 0fr;
+    margin-top: -12px;
+    transition:
+      grid-template-rows var(--d-slow) var(--ease-out),
+      margin var(--d-slow) var(--ease-out);
+  }
+  .ss-coins.has {
+    grid-template-rows: 1fr;
+    margin-top: 0;
+  }
+  .ss-coins-in {
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 5px 2px 6px;
+  }
+  .ss-coin {
+    position: relative;
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: var(--radius-pill);
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.16);
+  }
+  .ss-coin.in {
+    animation: coin-in var(--d-slow) var(--ease-out) backwards;
+  }
+  @keyframes coin-in {
+    from {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+  }
+  /* the first is read first: a dot under it says so, quietly */
+  .ss-coin.lead::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -6px;
+    width: 4px;
+    height: 4px;
+    margin-left: -2px;
+    border-radius: var(--radius-pill);
+    background: var(--ink-muted);
+  }
+  .ss-coin-x {
+    position: absolute;
+    right: -5px;
+    top: -5px;
+    width: 15px;
+    height: 15px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-pill);
+    background: var(--surface-4);
+    border: 1px solid var(--line-active);
+    color: var(--ink);
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(0.6);
+    transition:
+      opacity var(--d-fast) var(--ease),
+      transform var(--d-fast) var(--ease);
+  }
+  .ss-coin:hover .ss-coin-x,
+  .ss-coin-x:focus-visible {
+    opacity: 1;
+    transform: none;
+  }
+  .ss-swatch-anchor {
+    position: relative;
+    flex: 1;
+    min-height: 120px;
+    display: flex;
+  }
+  .ss-swatch {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    padding: 10px;
+    border: 0;
+    border-radius: 11px;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+    cursor: pointer;
+    transition: background-color var(--d-base) var(--ease);
+  }
+  .ss-swatch:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+  .ss-swatch-hex {
+    font-family: var(--font-code);
+    font-size: var(--fs-s);
+  }
+  .ss-pop {
+    top: 8px;
+    left: 8px;
+  }
+  .ss-field {
+    display: flex;
+    gap: 6px;
+    height: 42px;
+  }
+  .ss-hex {
+    flex: 1;
+    min-width: 0;
+    padding: 0 10px;
+    border-radius: 9px;
+    border: 1px solid var(--line-ctl);
+    background: var(--surface-2);
+    color: var(--ink);
+    font-family: var(--font-code);
+    font-size: var(--fs-m);
+    outline: none;
+  }
+  .ss-hex::placeholder {
+    color: var(--ink-ghost);
+  }
+  .ss-hex:focus {
+    border-color: var(--line-active);
+  }
+  .ss-paint {
+    flex: none;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 9px;
+    background: var(--ink);
+    color: var(--stage);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .ss-paint:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+  .ss-problem {
+    margin: -6px 2px 0;
+    min-height: 0;
+    font-size: var(--fs-s);
+    color: var(--warn);
+  }
+  .ss-problem:empty {
+    display: none;
+  }
+
+  /* ---- an image ---- */
+  .ss-drop {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 11px;
+    border: 1.5px dashed var(--line-ctl);
+    background: transparent;
+    color: var(--ink-muted);
+    font-size: var(--fs-m);
+    text-align: center;
+    cursor: pointer;
+    transition:
+      border-color var(--d-fast) var(--ease),
+      background var(--d-fast) var(--ease),
+      color var(--d-fast) var(--ease);
+  }
+  .ss-drop:hover,
+  .ss-drop:focus-visible {
+    border-color: var(--line-active);
+    background: var(--surface-2);
+    color: var(--ink);
+    outline: none;
+  }
+  .ss-drop small {
+    font-size: var(--fs-xs);
+    color: var(--ink-faint);
+  }
+
+  /* ---- a preset: coins, then a name ---- */
+  .ss-presets {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .ss-preset {
+    height: 32px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 12px 0 9px;
+    border-radius: 9px;
+    border: 1px solid var(--line-card);
+    background: var(--surface-1);
+    color: var(--ink-muted);
+    font-size: var(--fs-m);
+    text-align: left;
+    cursor: pointer;
+    transition:
+      border-color var(--d-fast) var(--ease),
+      color var(--d-fast) var(--ease),
+      background var(--d-fast) var(--ease);
+  }
+  .ss-preset:hover,
+  .ss-preset:focus-visible {
+    border-color: var(--line-active);
+    background: var(--surface-2);
+    color: var(--ink);
+    outline: none;
+  }
+  .ss-minis {
+    display: flex;
+  }
+  .ss-mini {
+    display: block;
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-pill);
+    box-shadow: 0 0 0 2px var(--surface-1);
+    transition:
+      margin var(--d-base) var(--ease),
+      box-shadow var(--d-fast) var(--ease);
+  }
+  .ss-mini + .ss-mini {
+    margin-left: -7px;
+  }
+  .ss-preset:hover .ss-mini + .ss-mini,
+  .ss-preset:focus-visible .ss-mini + .ss-mini {
+    margin-left: -3px;
+  }
+  .ss-preset:hover .ss-mini,
+  .ss-preset:focus-visible .ss-mini {
+    box-shadow: 0 0 0 2px var(--surface-2);
+  }
+
+  /* narrow stages: the panels stack, and the sheet scrolls */
+  @media (max-width: 1100px) {
+    .start-stage {
+      overflow-y: auto;
+      place-items: start center;
+    }
+    .ss-panels {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .ss-panel {
+      min-height: 0;
+    }
+    .ss-swatch-anchor {
+      min-height: 90px;
+    }
+  }
+}
