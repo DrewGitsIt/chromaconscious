@@ -2,8 +2,7 @@
    token (set inline on .preview-root by the token space), corners are
    --radius and display type is `.font-heading` at --font-heading-weight, so
    the page follows the theme's corners and face. Sizes are cqi of the spread:
-   the composition scales with the frame, as print does. Ported from
-   mockups/magazine.html, the draft that set the bar. */
+   the composition scales with the frame, as print does. */
 @layer chrome-base, chrome;
 
 @layer chrome {

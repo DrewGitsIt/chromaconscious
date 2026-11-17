@@ -20,7 +20,7 @@ import { REQUEST_DAYS, REQUESTS_TOTAL } from './dashboardData'
  * the state machine and this one the drawing. Nothing here owns app state:
  * every part takes plain data and callbacks.
  *
- * The page's discipline (the redesign drafted in mockups/dashboard.html):
+ * The page's discipline:
  * neutrals carry it, and each colour has one job. Primary marks the brand,
  * the main action, the requests line and the deploys that shipped; status
  * colours mark only status; the chart palette appears only on traffic.
