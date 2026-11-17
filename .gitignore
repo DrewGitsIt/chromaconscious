@@ -32,3 +32,6 @@ playwright-report
 blob-report
 # visual-parity baselines: recorded locally on demand, never committed
 e2e/*-snapshots/
+
+# a symlink to a shared skill in another repo; local only
+.claude/skills/playwright-ui-testing
