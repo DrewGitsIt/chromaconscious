@@ -1,0 +1,20 @@
+theme t_gbjq4hmqx64r   (riff 0 · taste 1.00 · separation layered · contrast standard)
+
+seats
+  primary   #1f3a5f  yours
+  accent    #f2a541  yours
+  neutral   #5d646e  derived
+  danger    #c72c53  derived
+  success   #158561  derived
+  warning   #b5a600  derived
+chart       #f2a541 yours · #af648d derived · #b86656 derived · #a57626 derived · #768a39 derived
+bench       —
+adjusted    —
+
+contrast  light 26/26 · dark 26/26   (text ≥ Lc 62 · 4.5:1)
+spacing   ok
+judge     0.84
+
+open     https://drewkidwell.com/chromaconscious#t_gbjq4hmqx64r
+export   https://drewkidwell.com/api/chromaconscious/v1/export?theme=t_gbjq4hmqx64r&format=css
+

@@ -1,0 +1,147 @@
+{
+ "version": 1,
+ "kind": "app",
+ "at": "2026-11-01T05:35:46.021Z",
+ "seed": 1921735786,
+ "input": {
+  "kind": "wallet",
+  "brief": "Community solar co-op member home: solar credit, energy use budget, array output, peak pricing",
+  "theme": "light",
+  "screens": [
+   "home"
+  ],
+  "keep": [
+   "palette"
+  ],
+  "style": "pastel-consumer"
+ },
+ "style": {
+  "id": "pastel-consumer",
+  "name": "Pastel consumer",
+  "theme": "light",
+  "basis": "2 screens: a wallet home and a personal finance home",
+  "suits": [
+   "wallet",
+   "finance"
+  ],
+  "idea": "Categories are coded by pale tints whose ink is the dark of the same hue, all under one large radius, and each headline sum sits inside the card that explains it.",
+  "colourBudget": "5-8%, as pale tiles and data marks",
+  "tokens": {
+   "ground": "#f3f5f7",
+   "surface": "#ffffff",
+   "raised": "#f2f8fd",
+   "border": "#e6e6e6",
+   "rule": "#f4f4f4",
+   "control": "#d6d9dd",
+   "text": "#1b1d1f",
+   "muted": "#5c6064",
+   "accent": "#1d5fd6",
+   "accentSoft": "#dcf1ff",
+   "accentInk": "#0a3a80",
+   "positive": "#2f7a45",
+   "negative": "#c41c29",
+   "warning": "#92400e",
+   "chart": [
+    "#1d5fd6",
+    "#b45309",
+    "#2a8798"
+   ],
+   "pills": {
+    "positive": [
+     "#dcfae5",
+     "#04250e"
+    ],
+    "negative": [
+     "#ffedea",
+     "#831c1e"
+    ],
+    "warning": [
+     "#fffbeb",
+     "#92400e"
+    ],
+    "neutral": [
+     "#eef1f4",
+     "#3a3d40"
+    ],
+    "accent": [
+     "#dcf1ff",
+     "#0a3a80"
+    ]
+   },
+   "radius": {
+    "card": 20,
+    "control": 10
+   },
+   "font": {
+    "family": "Manrope",
+    "second": null,
+    "fallback": "Inter, system-ui, sans-serif",
+    "sizes": {
+     "title": 28,
+     "section": 20,
+     "kpi": 32,
+     "body": 16,
+     "small": 14
+    },
+    "weights": [
+     400,
+     500,
+     600
+    ],
+    "note": "Money at 24-32px; card titles regular; semibold for net worth, bill amounts and actions."
+   },
+   "density": "medium",
+   "rowHeight": 72,
+   "sidebarWidth": 240,
+   "gap": 24,
+   "pad": 24,
+   "controlHeight": 40
+  },
+  "shell": "open-plane",
+  "shellAlternatives": [
+   "icon-rail"
+  ],
+  "signature": "Pale category tiles with the dark of their own hue as ink (#dcf1ff with #0a3a80), one large radius (20px on cards, stepping down to 10, 8 and 5 inside), and quiet money polarity: income green with a plus sign, spending in ink, no red on ordinary outgoings. Tints go on small tiles, avatars and chips; a panel that holds a list stays white. When the product has people (two partners, a family), each gets one hue, at least 60 degrees from the next.",
+  "identity": [
+   "The tile hues from the account's own colours (the card's colour, each pot's colour in the app) in place of the dealt cobalt, each tile pale with the dark of its own hue as ink.",
+   "The money's own objects: the card art at its real ratio, merchant marks at 24px in the rows, the goal's picture on its pot.",
+   "Manrope's figures carry the balance: 30-36px at 600 with tabular figures and the pence in a smaller grey, so the number itself is the face."
+  ],
+  "avoid": [
+   "a gradient balance card",
+   "two data palettes on one page (flagged in the study)",
+   "red on every outgoing amount",
+   "a 624px phone-width column on a desktop screen (flagged as a stretched phone screen)",
+   "a KPI strip on top: the sums belong in their cards",
+   "whole panels tinted per person or category beside white cards (two surface languages on one screen)"
+  ],
+  "notes": "The two studied screens used a pure #0000ff and an indigo #4723f5 as their brand colour, and pastels such as #7cbecf that fall under 3:1 on white. The library uses a cobalt that reads as blue rather than indigo, and data colours darkened to at least 3:1 on the card."
+ },
+ "shell": {
+  "id": "icon-rail",
+  "name": "Icon rail",
+  "basis": "3 of 23 screens",
+  "suits": [
+   "markets",
+   "devtools",
+   "finance",
+   "wallet"
+  ],
+  "numbers": {
+   "railWidth": "50-60, median 55",
+   "icon": "15-18px outline",
+   "pitch": "34-49",
+   "active": "icon colour alone, or a full-bleed 50px band at a 2% tint, or a 1px accent bar on the rail's border",
+   "groups": "short 20px hairlines, no labels",
+   "utilities": "pushed to the bottom after a gap of about 200px"
+  },
+  "blueprint": "An unlabelled rail of 50-60px carries the brand mark at the top and 15-18px outline icons on a 34-49px pitch; groups are split by 20px hairlines, utilities sit at the bottom. The rail sits on the page ground with a 1px edge, or is white with a faint 4px shadow on a grey ground. It saves about 180px of width against a labelled sidebar, so it suits products with few destinations and screens that need the width. Icons need tooltips and an accessible name.",
+  "phone": "The rail becomes a bottom bar with the same four or five icons, each with a short label under it."
+ },
+ "screens": [
+  {
+   "name": "home",
+   "pattern": null
+  }
+ ]
+}

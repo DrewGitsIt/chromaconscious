@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sunshare · Home</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app {
+    max-width: 390px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding: 0 16px calc(96px + env(safe-area-inset-bottom));
+    background: var(--background);
+  }
+  .num { font-variant-numeric: tabular-nums; }
+  svg { display: block; }
+
+  /* Header */
+  .top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 4px 16px;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 650; font-size: 15px; letter-spacing: -0.01em; }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--primary); color: var(--primary-foreground);
+    display: grid; place-items: center;
+  }
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 999px; border: 0;
+    background: var(--secondary); color: var(--secondary-foreground);
+    display: grid; place-items: center; cursor: pointer; position: relative;
+  }
+  .icon-btn:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 999px;
+    background: var(--muted); color: var(--foreground);
+    display: grid; place-items: center; font-weight: 600; font-size: 14px;
+  }
+  .top-right { display: flex; gap: 8px; }
+
+  .greeting { padding: 4px 4px 16px; }
+  .greeting h1 { margin: 0; font-size: 24px; line-height: 1.2; font-weight: 650; letter-spacing: -0.02em; }
+  .greeting p { margin: 4px 0 0; color: var(--muted-foreground); font-size: 14px; }
+
+  /* Hero: the one bold field */
+  .hero {
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-radius: 24px;
+    padding: 22px 22px 20px;
+    box-shadow: var(--elevation-2);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: ""; position: absolute; right: -60px; top: -60px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle, color-mix(in oklab, var(--primary-foreground) 10%, transparent) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-label { font-size: 13px; opacity: 0.78; font-weight: 500; }
+  .hero-amount {
+    font-size: 52px; line-height: 1.05; font-weight: 650; letter-spacing: -0.035em;
+    margin: 6px 0 4px;
+  }
+  .hero-amount .cents { font-size: 28px; letter-spacing: -0.02em; opacity: 0.85; }
+  .hero-sub { font-size: 14px; opacity: 0.78; }
+  .hero-foot {
+    margin-top: 18px; padding-top: 14px;
+    border-top: 1px solid color-mix(in oklab, var(--primary-foreground) 18%, transparent);
+    display: flex; justify-content: space-between; align-items: center; font-size: 13px;
+  }
+  .hero-foot span { opacity: 0.78; }
+  .hero-foot a { color: var(--primary-foreground); font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+
+  /* Cards */
+  .section { margin-top: 16px; }
+  .card {
+    background: var(--card);
+    color: var(--card-foreground);
+    border-radius: 20px;
+    padding: 18px;
+  }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .card-title { font-size: 13px; color: var(--muted-foreground); font-weight: 500; margin: 0; }
+  .card-meta { font-size: 13px; color: var(--muted-foreground); }
+
+  /* Usage meter */
+  .usage-figure { margin-top: 8px; display: flex; align-items: baseline; gap: 6px; }
+  .usage-figure strong { font-size: 28px; font-weight: 650; letter-spacing: -0.02em; }
+  .usage-figure span { color: var(--muted-foreground); font-size: 14px; }
+  .meter {
+    position: relative; height: 10px; border-radius: 999px;
+    background: var(--muted); margin: 14px 0 10px; overflow: visible;
+  }
+  .meter-fill {
+    height: 100%; width: 78%; border-radius: 999px;
+    background: var(--accent-strong);
+  }
+  .meter-pace {
+    position: absolute; top: -4px; bottom: -4px; left: 70%;
+    width: 2px; border-radius: 2px; background: var(--foreground); opacity: 0.55;
+  }
+  .meter-legend { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted-foreground); }
+  .meter-legend b { color: var(--foreground); font-weight: 600; }
+
+  /* Two-up row */
+  .row { display: grid; grid-template-columns: 1fr; gap: 12px; }
+
+  .output { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .output-figure { margin-top: 6px; font-size: 28px; font-weight: 650; letter-spacing: -0.02em; }
+  .output-figure small { font-size: 15px; font-weight: 500; color: var(--muted-foreground); letter-spacing: 0; }
+  .delta {
+    display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;
+    font-size: 13px; font-weight: 600; color: var(--success-subtle-foreground);
+  }
+  .delta span { color: var(--muted-foreground); font-weight: 400; }
+  .spark { width: 116px; height: 52px; flex: none; color: var(--foreground); }
+
+  /* Peak notice */
+  .notice {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 16px 18px 18px;
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px 4px 8px; border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    background: var(--warning-subtle); color: var(--warning-subtle-foreground);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--warning-subtle-foreground) 22%, transparent);
+  }
+  .notice h3 { margin: 12px 0 4px; font-size: 17px; font-weight: 650; letter-spacing: -0.01em; }
+  .notice p { margin: 0; color: var(--muted-foreground); font-size: 14px; }
+  .notice-actions { display: flex; align-items: center; gap: 16px; margin-top: 14px; }
+  .btn {
+    appearance: none; border: 0; cursor: pointer;
+    font: inherit; font-size: 14px; font-weight: 600;
+    height: 44px; padding: 0 18px; border-radius: 12px;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary { background: var(--primary); color: var(--primary-foreground); }
+  .btn-primary:hover { background: color-mix(in oklab, var(--primary) 88%, var(--foreground)); }
+  .btn-text { background: none; color: var(--muted-foreground); padding: 0 4px; }
+  .btn-text:hover { color: var(--foreground); }
+
+  /* Activity */
+  .list-head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 4px 8px; }
+  .list-head h2 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -0.01em; }
+  .list-head a { font-size: 14px; color: var(--link); text-decoration: none; font-weight: 500; }
+  .activity { list-style: none; margin: 0; padding: 4px 0; background: var(--card); border-radius: 20px; }
+  .activity li { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
+  .activity li + li { border-top: 1px solid color-mix(in oklab, var(--border) 55%, var(--card)); }
+  .act-icon {
+    width: 36px; height: 36px; border-radius: 12px; flex: none;
+    background: var(--muted); color: var(--foreground);
+    display: grid; place-items: center;
+  }
+  .act-body { flex: 1; min-width: 0; }
+  .act-title { font-size: 15px; font-weight: 550; }
+  .act-sub { font-size: 13px; color: var(--muted-foreground); }
+  .act-amt { font-size: 15px; font-weight: 600; text-align: right; }
+  .tag {
+    font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+    background: var(--muted); color: var(--muted-foreground);
+  }
+
+  /* Tab bar */
+  .tabbar {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: 0;
+    width: 100%; max-width: 390px;
+    background: color-mix(in oklab, var(--background) 92%, transparent);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid color-mix(in oklab, var(--border) 60%, var(--background));
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    padding: 6px 8px calc(10px + env(safe-area-inset-bottom));
+  }
+  .tab {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 8px 0 2px; text-decoration: none;
+    color: var(--muted-foreground); font-size: 11px; font-weight: 500;
+    position: relative;
+  }
+  .tab[aria-current="page"] { color: var(--foreground); font-weight: 650; }
+  .tab[aria-current="page"]::before {
+    content: ""; position: absolute; top: -7px; width: 28px; height: 3px;
+    border-radius: 0 0 3px 3px; background: var(--accent-strong);
+  }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </div>
+      Sunshare
+    </div>
+    <div class="top-right">
+      <button class="icon-btn" aria-label="Notifications">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      </button>
+      <div class="avatar" aria-label="Maya Ortiz">MO</div>
+    </div>
+  </header>
+
+  <section class="greeting">
+    <h1>Good afternoon, Maya</h1>
+    <p>Your share of the Elm Street array is working for you.</p>
+  </section>
+
+  <!-- Focal point -->
+  <section class="hero" aria-labelledby="credit-label">
+    <div class="hero-label" id="credit-label">Solar credit earned · June</div>
+    <div class="hero-amount num">$48<span class="cents">.60</span></div>
+    <div class="hero-sub">Applied to your next power bill</div>
+    <div class="hero-foot">
+      <span class="num">$212.40 earned this year</span>
+      <a href="#">Details
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- Usage vs budget -->
+  <section class="section card" aria-labelledby="usage-title">
+    <div class="card-head">
+      <h2 class="card-title" id="usage-title">Electricity use this month</h2>
+      <span class="card-meta">9 days left</span>
+    </div>
+    <div class="usage-figure num">
+      <strong>312</strong><span>of 400 kWh budget</span>
+    </div>
+    <div class="meter" role="meter" aria-valuemin="0" aria-valuemax="400" aria-valuenow="312" aria-label="312 of 400 kWh used">
+      <div class="meter-fill"></div>
+      <div class="meter-pace" title="Where you'd be at an even pace"></div>
+    </div>
+    <div class="meter-legend num">
+      <span><b>88 kWh</b> left · about 9.8 a day</span>
+      <span>78%</span>
+    </div>
+  </section>
+
+  <!-- Array output -->
+  <section class="section card" aria-labelledby="output-title">
+    <div class="output">
+      <div>
+        <h2 class="card-title" id="output-title">Today's array output</h2>
+        <div class="output-figure num">1,840 <small>kWh</small></div>
+        <div class="delta num">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
+          12% <span>above forecast</span>
+        </div>
+      </div>
+      <svg class="spark" viewBox="0 0 116 52" aria-hidden="true">
+        <path d="M2 50 C 22 50, 30 36, 44 20 S 66 2, 76 6 S 98 30, 114 48" fill="none" stroke="currentColor" stroke-opacity="0.25" stroke-width="1.6" stroke-dasharray="3 3"/>
+        <path d="M2 50 C 20 50, 28 32, 42 16 S 62 -2, 74 2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="74" cy="2.5" r="3" fill="currentColor"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Peak pricing heads-up -->
+  <section class="section notice" aria-labelledby="peak-title">
+    <span class="pill">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      Peak pricing today
+    </span>
+    <h3 id="peak-title">Rates are higher from 5–8 pm</h3>
+    <p>Running big appliances before 5 or after 8 keeps more of your credit on your bill.</p>
+    <div class="notice-actions">
+      <button class="btn btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="13" r="5"/><path d="M8 6h.01M11 6h.01"/></svg>
+        Shift laundry to off-peak
+      </button>
+      <button class="btn btn-text">Not now</button>
+    </div>
+  </section>
+
+  <!-- Recent activity -->
+  <section class="section" aria-labelledby="activity-title" style="margin-top:24px">
+    <div class="list-head">
+      <h2 id="activity-title">Recent activity</h2>
+      <a href="#">See all</a>
+    </div>
+    <ul class="activity">
+      <li>
+        <div class="act-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg>
+        </div>
+        <div class="act-body">
+          <div class="act-title">May bill paid</div>
+          <div class="act-sub">Jun 3 · Autopay</div>
+        </div>
+        <div class="act-amt num">$64.18</div>
+      </li>
+      <li>
+        <div class="act-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </div>
+        <div class="act-body">
+          <div class="act-title">Solar credit applied</div>
+          <div class="act-sub">Jun 1 · May production</div>
+        </div>
+        <div class="act-amt num">−$41.20</div>
+      </li>
+      <li>
+        <div class="act-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+        </div>
+        <div class="act-body">
+          <div class="act-title">You invited a neighbor</div>
+          <div class="act-sub">May 29 · sam.lee@…</div>
+        </div>
+        <span class="tag">Pending</span>
+      </li>
+    </ul>
+  </section>
+
+</div>
+
+<nav class="tabbar" aria-label="Main">
+  <a class="tab" href="#" aria-current="page">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+    Home
+  </a>
+  <a class="tab" href="#">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>
+    Usage
+  </a>
+  <a class="tab" href="#">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18h18l-3-10H6z"/><path d="M4.5 13h15M10 8l-1 10M14 8l1 10M12 18v3M8 21h8"/></svg>
+    Array
+  </a>
+  <a class="tab" href="#">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+    Account
+  </a>
+</nav>
+</body>
+</html>

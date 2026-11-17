@@ -1,0 +1,5 @@
+const { generateTheme, candidatesFromList } = await import(process.argv[2])
+const r = generateTheme({ candidates: candidatesFromList(['#1f6feb']), fidelity: 0.5, seed: 0 })
+console.log(Object.keys(r.light.tokens).join(' '))
+console.log(JSON.stringify(r.light.tokens).slice(0,1500))
+console.log(r.assignments.map(a=>a.role+':'+JSON.stringify(a.seed)).join('\n'))

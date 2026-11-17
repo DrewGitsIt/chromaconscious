@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sunshare</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+*{box-sizing:border-box;margin:0}
+body{background:var(--background);color:var(--foreground);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:430px;min-height:100vh;padding:20px 16px 96px;display:flex;flex-direction:column;gap:14px}
+header{display:flex;justify-content:space-between;align-items:center;padding:4px 4px 0}
+header p{color:var(--muted-foreground);font-size:13px}
+header h1{font-size:20px;font-weight:600}
+.av{width:38px;height:38px;border-radius:50%;background:var(--muted);display:grid;place-items:center;font-weight:600;font-size:14px}
+.hero{background:var(--primary);color:var(--primary-foreground);border-radius:24px;padding:24px 22px;box-shadow:var(--elevation-2)}
+.hero .l{font-size:14px;opacity:.85}
+.hero .n{font-size:60px;font-weight:700;letter-spacing:-.03em;line-height:1.05;margin:6px 0 8px}
+.hero .s{font-size:13px;opacity:.85}
+.card{background:var(--card);border-radius:20px;padding:18px;box-shadow:var(--elevation-1)}
+.row{display:flex;justify-content:space-between;align-items:baseline}
+.lbl{font-size:13px;color:var(--muted-foreground)}
+.big{font-size:28px;font-weight:650;letter-spacing:-.02em}
+.big small{font-size:15px;font-weight:500;color:var(--muted-foreground);letter-spacing:0}
+.track{height:10px;border-radius:99px;background:var(--muted);margin:14px 0 10px;overflow:hidden}
+.fill{height:100%;width:78%;background:var(--primary);border-radius:99px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--success-subtle);color:var(--success-subtle-foreground);margin-top:6px}
+.peak{background:var(--warning-subtle);color:var(--warning-subtle-foreground);box-shadow:none}
+.peak .t{display:flex;gap:10px;align-items:center;font-weight:600}
+.peak p{font-size:14px;margin:4px 0 14px 30px}
+.btn{font:inherit;font-weight:600;font-size:14px;border:1px solid var(--input);background:var(--card);color:var(--foreground);border-radius:12px;padding:10px 14px;width:100%}
+h2{font-size:16px;font-weight:600;margin:6px 4px 0}
+ul{list-style:none;padding:0;display:flex;flex-direction:column}
+li{display:flex;gap:12px;align-items:center;padding:12px 0}
+li+li{border-top:1px solid var(--border)}
+li .i{width:34px;height:34px;border-radius:50%;background:var(--muted);display:grid;place-items:center;flex:none}
+li .b{flex:1}li b{font-weight:600;display:block;font-size:14px}li span{font-size:12px;color:var(--muted-foreground)}
+li em{font-style:normal;font-size:13px;font-weight:600}
+li .st{font-size:12px;font-weight:600;color:var(--muted-foreground)}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--card);border-top:1px solid var(--border);display:flex;padding:8px 8px 18px}
+nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:500;color:var(--muted-foreground);text-decoration:none;padding:6px 0}
+nav a.on{color:var(--primary);font-weight:700}
+svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+li svg,.peak svg{width:18px;height:18px}
+</style></head><body>
+<main class="app">
+<header><div><p>Saturday, May 24</p><h1>Good morning, Maya</h1></div><div class="av">M</div></header>
+
+<section class="hero">
+<div class="l">Solar credit earned this month</div>
+<div class="n">$48.20</div>
+<div class="s">Applied to your next power bill</div>
+</section>
+
+<section class="card">
+<div class="row"><span class="lbl">Electricity use this month</span><span class="lbl">9 days left</span></div>
+<div class="big" style="margin-top:4px">312 <small>of 400 kWh budget</small></div>
+<div class="track" role="img" aria-label="312 of 400 kilowatt-hours used"><div class="fill"></div></div>
+<div class="row"><span class="lbl">78% used</span><span class="lbl">88 kWh left</span></div>
+</section>
+
+<section class="card">
+<div class="lbl">Today's array output</div>
+<div class="big" style="margin-top:4px">1,840 <small>kWh</small></div>
+<span class="pill"><svg viewBox="0 0 24 24" style="width:12px;height:12px"><path d="M6 15l6-6 6 6"/></svg>12% above forecast</span>
+</section>
+
+<section class="card peak">
+<div class="t"><svg viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>Peak pricing 5–8 pm today</div>
+<p>Rates are higher for these three hours.</p>
+<button class="btn">Shift laundry to off-peak</button>
+</section>
+
+<h2>Recent activity</h2>
+<section class="card"><ul>
+<li><div class="i"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div><div class="b"><b>May bill paid</b><span>May 18</span></div><em>$61.40</em></li>
+<li><div class="i"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg></div><div class="b"><b>Credit applied</b><span>May 15</span></div><em>+$12.75</em></li>
+<li><div class="i"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c1-4 4-5 7-5s6 1 7 5M19 8v6M16 11h6"/></svg></div><div class="b"><b>Invited a neighbor</b><span>May 12</span></div><span class="st">Pending</span></li>
+</ul></section>
+</main>
+
+<nav>
+<a class="on" href="#"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>Home</a>
+<a href="#"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Usage</a>
+<a href="#"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="1"/><path d="M9 5v12M15 5v12M3 11h18M8 21h8"/></svg>Array</a>
+<a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 4-6 8-6s7 1 8 6"/></svg>Account</a>
+</nav>
+</body></html>

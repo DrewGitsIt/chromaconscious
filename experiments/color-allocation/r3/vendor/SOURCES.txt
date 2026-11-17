@@ -1,0 +1,3 @@
+frontend-design anthropics/claude-plugins-official
+impeccable pbakaus/impeccable 4f95649 (scripts/ omitted)
+taste-skill Leonxlnx/taste-skill 12af471

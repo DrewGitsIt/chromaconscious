@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home · Sunshare</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+/* Style: pastel-consumer (taste-skill app sheet, seed 1487815514), brand palette kept from theme.css.
+   Phone grid: 390 = 16 + 358 + 16. One gutter: 12px between blocks, 20px card padding.
+   Radii step down: card 20, inner tile 12, control 999 (pill), chip 6. */
+:root {
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --gap: 12px;
+  --pad: 20px;
+  --edge: 16px;
+  --r-card: 20px;
+  --r-tile: 12px;
+  --r-chip: 6px;
+  --hairline: color-mix(in oklab, var(--border) 55%, var(--card));
+  --rule: color-mix(in oklab, var(--border) 45%, var(--card));
+  --track: color-mix(in oklab, var(--border) 50%, var(--muted));
+  --tab-h: 64px;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--foreground);
+  background: var(--background);
+  -webkit-font-smoothing: antialiased;
+}
+.num { font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; cursor: pointer; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 8px; }
+
+.app { max-width: 560px; margin: 0 auto; padding: 0 var(--edge) calc(var(--tab-h) + 28px); }
+
+/* ---------- top bar ---------- */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px; margin: 0 calc(var(--edge) * -1); padding: 0 var(--edge);
+}
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 18px; letter-spacing: -0.01em; color: var(--primary); text-decoration: none; }
+.brand svg { display: block; }
+.top-actions { display: flex; align-items: center; gap: 4px; }
+.icon-btn {
+  width: 44px; height: 44px; display: grid; place-items: center;
+  border: 0; background: transparent; border-radius: 999px; color: var(--foreground);
+  position: relative; transition: background-color .15s, transform .1s;
+}
+.icon-btn:hover { background: var(--muted); }
+.icon-btn:active { transform: scale(.94); }
+.avatar {
+  width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center;
+  background: var(--primary); color: var(--primary-foreground);
+  font-size: 13px; font-weight: 600; letter-spacing: .02em;
+}
+.avatar-btn { width: 44px; height: 44px; padding: 0; border: 0; background: transparent; display: grid; place-items: center; border-radius: 999px; }
+.avatar-btn:active .avatar { transform: scale(.94); }
+
+/* ---------- greeting ---------- */
+.title { padding: 12px 0 18px; }
+h1 { margin: 0; font-size: 24px; line-height: 30px; font-weight: 700; letter-spacing: -0.015em; }
+.title p { margin: 2px 0 0; color: var(--muted-foreground); font-size: 15px; }
+
+/* ---------- blocks ---------- */
+.stack { display: grid; gap: var(--gap); }
+.card {
+  background: var(--card); color: var(--card-foreground);
+  border: 1px solid var(--hairline); border-radius: var(--r-card); padding: var(--pad);
+}
+h2 { margin: 0; font-size: 15px; line-height: 20px; font-weight: 600; }
+.label { margin: 0; font-size: 14px; color: var(--muted-foreground); }
+
+/* the credit: the screen's answer, in the brand's amber tile */
+.credit {
+  background: var(--accent); color: var(--accent-foreground);
+  border: 0; padding: 22px var(--pad) 20px;
+}
+.credit h2 { font-size: 15px; font-weight: 500; color: var(--accent-foreground); }
+.credit-figure {
+  margin: 6px 0 0; font-size: 40px; line-height: 46px; font-weight: 700; letter-spacing: -0.025em;
+  color: var(--accent-foreground);
+}
+.credit-figure .cents { font-size: 26px; letter-spacing: -0.01em; color: color-mix(in oklab, var(--accent-foreground) 72%, var(--accent)); }
+.credit-figure .cur { font-size: 28px; vertical-align: 12px; margin-right: 2px; font-weight: 600; }
+.credit-note {
+  margin: 14px 0 0; display: flex; align-items: center; gap: 8px;
+  font-size: 14px; color: var(--accent-foreground);
+}
+.credit-note svg { flex: none; }
+.sunmark { position: absolute; right: -28px; top: -28px; pointer-events: none; }
+.credit { position: relative; overflow: hidden; }
+
+/* peak pricing: time-sensitive, sits right under the answer */
+.peak {
+  background: var(--warning-subtle); border-color: color-mix(in oklab, var(--warning) 30%, var(--warning-subtle));
+  padding: 18px var(--pad) var(--pad);
+}
+.peak-head { display: flex; gap: 12px; align-items: flex-start; }
+.peak-head svg { flex: none; margin-top: 1px; color: var(--warning-subtle-foreground); }
+.peak h2 { color: var(--foreground); }
+.peak h2 .when { white-space: nowrap; }
+.peak p { margin: 2px 0 0; font-size: 14px; color: var(--warning-subtle-foreground); }
+.actions { display: flex; gap: 8px; margin-top: 16px; }
+.actions .btn { white-space: nowrap; }
+.btn {
+  height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid transparent;
+  font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
+  transition: background-color .15s, transform .1s, border-color .15s;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary { background: var(--primary); color: var(--primary-foreground); flex: 1; }
+.btn-primary:hover { background: color-mix(in oklab, var(--primary) 88%, var(--foreground)); }
+.btn-ghost { background: transparent; color: var(--foreground); border-color: color-mix(in oklab, var(--warning) 35%, var(--border)); }
+.btn-ghost:hover { background: color-mix(in oklab, var(--warning-subtle) 60%, var(--border)); }
+
+/* usage + array: two peers side by side */
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+.metric { padding: 16px; display: flex; flex-direction: column; }
+.metric h2 { font-weight: 500; font-size: 14px; line-height: 18px; color: var(--muted-foreground); min-height: 36px; }
+.metric .value { margin: 8px 0 0; font-size: 26px; line-height: 30px; font-weight: 650; letter-spacing: -0.02em; }
+.metric .unit { font-size: 15px; font-weight: 500; color: var(--muted-foreground); letter-spacing: 0; margin-left: 2px; }
+.metric .of { margin: 2px 0 0; font-size: 13px; color: var(--muted-foreground); }
+.bar { position: relative; height: 8px; border-radius: 999px; background: color-mix(in oklab, var(--border) 60%, var(--card)); margin-top: 14px; }
+.bar > i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--primary); }
+.bar .tick { position: absolute; top: -4px; bottom: -4px; width: 2px; border-radius: 1px; background: var(--foreground); }
+.metric .foot { margin: 10px 0 0; font-size: 13px; line-height: 18px; color: var(--muted-foreground); }
+.metric .foot strong { font-weight: 600; color: var(--foreground); }
+.up { color: var(--success); font-weight: 600; }
+.bar.solar > i { background: var(--accent-strong); }
+
+/* recent activity */
+.activity { padding: 18px 0 6px; }
+.activity header { display: flex; align-items: baseline; justify-content: space-between; padding: 0 var(--pad); margin-bottom: 4px; }
+.activity header a { font-size: 14px; font-weight: 600; color: var(--link); text-decoration: none; padding: 8px 0; }
+.activity header a:hover { text-decoration: underline; }
+.activity ul { list-style: none; margin: 0; padding: 0; }
+.activity li + li .row { border-top: 1px solid var(--rule); }
+.activity li { padding: 0 var(--pad); }
+.row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 12px 0; }
+.mark {
+  flex: none; width: 36px; height: 36px; border-radius: var(--r-tile); display: grid; place-items: center;
+}
+.mark.bill { background: var(--secondary); color: var(--primary); }
+.mark.credit-m { background: var(--accent); color: var(--accent-foreground); }
+.mark.person { background: var(--success-subtle); color: var(--success-subtle-foreground); font-size: 12px; font-weight: 600; border-radius: 999px; }
+.row .what { flex: 1; min-width: 0; }
+.row .name { margin: 0; font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .meta { margin: 1px 0 0; font-size: 13px; color: var(--muted-foreground); }
+.row .amt { flex: none; text-align: right; font-size: 15px; font-weight: 600; }
+.amt.in { color: var(--success); }
+.pill {
+  flex: none; white-space: nowrap; height: 24px; padding: 0 10px; border-radius: 999px; display: inline-flex; align-items: center;
+  font-size: 12px; font-weight: 600; background: var(--muted); color: var(--muted-foreground);
+}
+
+/* bottom tab bar */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  background: var(--background); border-top: 1px solid var(--hairline);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tabbar ul { list-style: none; margin: 0 auto; padding: 0 8px; max-width: 560px; display: grid; grid-template-columns: repeat(4, 1fr); }
+.tabbar a {
+  height: var(--tab-h); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  text-decoration: none; font-size: 12px; font-weight: 500; color: var(--muted-foreground);
+  transition: color .15s;
+}
+.tabbar a:hover { color: var(--foreground); }
+.tabbar a[aria-current="page"] { color: var(--primary); font-weight: 700; }
+.tabbar a[aria-current="page"] .ic { background: var(--secondary); }
+.tabbar .ic { width: 52px; height: 28px; border-radius: 999px; display: grid; place-items: center; transition: background-color .15s; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Sunshare home">
+      <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+        <circle cx="13" cy="13" r="13" fill="var(--primary)"/>
+        <circle cx="13" cy="11" r="4.2" fill="var(--chart-1)"/>
+        <path d="M5.5 19.5h15M8 16.5h10" stroke="var(--chart-1)" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      Sunshare
+    </a>
+    <div class="top-actions">
+      <button class="icon-btn" type="button" aria-label="Notifications">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9Z"/><path d="M10 19a2 2 0 0 0 4 0"/>
+        </svg>
+      </button>
+      <button class="avatar-btn" type="button" aria-label="Account, Maya">
+        <span class="avatar" aria-hidden="true">MA</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="title">
+      <h1>Good morning, Maya</h1>
+      <p>Friday, June 21</p>
+    </section>
+
+    <div class="stack">
+      <section class="card credit" aria-labelledby="credit-h">
+        <svg class="sunmark" width="150" height="150" viewBox="0 0 150 150" aria-hidden="true">
+          <g stroke="var(--chart-1)" stroke-width="3" stroke-linecap="round" opacity=".55">
+            <path d="M75 8v16M75 126v16M8 75h16M126 75h16M27.6 27.6l11.3 11.3M111.1 111.1l11.3 11.3M27.6 122.4l11.3-11.3M111.1 38.9l11.3-11.3"/>
+          </g>
+          <circle cx="75" cy="75" r="34" fill="var(--chart-1)" opacity=".45"/>
+        </svg>
+        <h2 id="credit-h">Solar credit earned this month</h2>
+        <p class="credit-figure num" data-v="credit"><span class="cur">$</span>48<span class="cents">.20</span></p>
+        <p class="credit-note">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10v18l-2.5-1.6L12 21l-2.5-1.6L7 21Z"/><path d="M10 8h4M10 12h4"/></svg>
+          Applied to your next power bill
+        </p>
+      </section>
+
+      <section class="card peak" aria-labelledby="peak-h">
+        <div class="peak-head">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <div>
+            <h2 id="peak-h">Peak pricing today, <span class="when">5–8 pm</span></h2>
+            <p>Rates are higher during these hours.</p>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" type="button">Shift laundry to off-peak</button>
+          <button class="btn btn-ghost" type="button">Later</button>
+        </div>
+      </section>
+
+      <div class="pair">
+        <section class="card metric" aria-labelledby="use-h">
+          <h2 id="use-h">Electricity use this month</h2>
+          <p class="value num">312<span class="unit">kWh</span></p>
+          <p class="of num">of 400 kWh budget</p>
+          <div class="bar" role="img" aria-label="312 of 400 kWh used, 78%"><i id="use-fill"></i></div>
+          <p class="foot"><strong>9 days</strong> left</p>
+        </section>
+
+        <section class="card metric" aria-labelledby="arr-h">
+          <h2 id="arr-h">Today’s array output</h2>
+          <p class="value num">1,840<span class="unit">kWh</span></p>
+          <p class="of"><span class="up num">12% above</span> forecast</p>
+          <div class="bar solar" role="img" aria-label="1,840 kWh against a forecast of 1,643 kWh"><i id="arr-fill"></i><span class="tick" id="arr-tick"></span></div>
+          <p class="foot num">Forecast 1,643 kWh</p>
+        </section>
+      </div>
+
+      <section class="card activity" aria-labelledby="act-h">
+        <header>
+          <h2 id="act-h">Recent activity</h2>
+          <a href="#">See all</a>
+        </header>
+        <ul>
+          <li><div class="row">
+            <span class="mark bill" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 5 13h6l-1 9 8-11h-6Z"/></svg></span>
+            <div class="what"><p class="name">May bill paid</p><p class="meta">Jun 3 · Autopay</p></div>
+            <span class="amt num">$64.18</span>
+          </div></li>
+          <li><div class="row">
+            <span class="mark credit-m" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg></span>
+            <div class="what"><p class="name">Solar credit applied</p><p class="meta">Jun 1</p></div>
+            <span class="amt in num">−$42.52</span>
+          </div></li>
+          <li><div class="row">
+            <span class="mark person" aria-hidden="true">JL</span>
+            <div class="what"><p class="name">You invited Jordan Lee</p><p class="meta">May 29</p></div>
+            <span class="pill">Pending</span>
+          </div></li>
+        </ul>
+      </section>
+    </div>
+  </main>
+</div>
+
+<nav class="tabbar" aria-label="Main">
+  <ul>
+    <li><a href="#" aria-current="page"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1Z"/></svg></span>Home</a></li>
+    <li><a href="#"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>Usage</a></li>
+    <li><a href="#"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14l2 10H3Z"/><path d="M4 10h16M9.5 5l-1 10M14.5 5l1 10M12 15v5M8 20h8"/></svg></span>Array</a></li>
+    <li><a href="#"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>Account</a></li>
+  </ul>
+</nav>
+
+<script>
+  // One source for the figures that drive the bars; the copy above shows the same values.
+  const data = { used: 312, budget: 400, output: 1840, forecast: 1643 };
+  const pctAbove = Math.round((data.output / data.forecast - 1) * 100);
+  console.assert(pctAbove === 12, "array output should be 12% above forecast", pctAbove);
+  document.getElementById("use-fill").style.width = (data.used / data.budget * 100) + "%";
+  // Array bar: scale so the larger value sits at 92% of the track; tick marks the forecast.
+  const max = Math.max(data.output, data.forecast) / 0.92;
+  document.getElementById("arr-fill").style.width = (data.output / max * 100) + "%";
+  document.getElementById("arr-tick").style.left = "calc(" + (data.forecast / max * 100) + "% - 1px)";
+</script>
+</body>
+</html>

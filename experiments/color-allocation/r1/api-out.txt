@@ -1,0 +1,130 @@
+theme t_gbjq4hmqx64r   (riff 0 · taste 1.00 · separation layered · contrast standard)
+
+seats
+  primary   #1f3a5f  yours
+  accent    #f2a541  yours
+  neutral   #5d646e  derived
+  danger    #c72c53  derived
+  success   #158561  derived
+  warning   #b5a600  derived
+chart       #f2a541 yours · #af648d derived · #b86656 derived · #a57626 derived · #768a39 derived
+bench       —
+adjusted    —
+
+contrast  light 26/26 · dark 26/26   (text ≥ Lc 62 · 4.5:1)
+spacing   ok
+judge     0.84
+
+open     https://drewkidwell.com/chromaconscious#t_gbjq4hmqx64r
+export   https://drewkidwell.com/api/chromaconscious/v1/export?theme=t_gbjq4hmqx64r&format=css
+
+=====CSS=====
+/* ChromaConscious t_gbjq4hmqx64r · https://drewkidwell.com/chromaconscious#s=AgECAR86XwLypUFk */
+:root {
+  --background: #fafcff;
+  --foreground: #1f242b;
+  --card: #f3f8ff;
+  --card-foreground: #1f242b;
+  --popover: #f3f8ff;
+  --popover-foreground: #1f242b;
+  --primary: #1f3a5f;
+  --primary-foreground: #f8fafe;
+  --secondary: #e6eefa;
+  --secondary-foreground: #1f242b;
+  --muted: #e6eefa;
+  --muted-foreground: #656b73;
+  --accent: #ffead3;
+  --accent-foreground: #341d00;
+  --accent-strong: #ca7f00;
+  --link: #946937;
+  --destructive: #c72c53;
+  --destructive-foreground: #fdf9f9;
+  --destructive-subtle: #fff4f5;
+  --destructive-subtle-foreground: #a3505d;
+  --destructive-strong: #f45978;
+  --success: #0d815e;
+  --success-foreground: #f7fbf9;
+  --success-subtle: #edfbf4;
+  --success-subtle-foreground: #427560;
+  --success-strong: #3ca07b;
+  --warning: #b5a600;
+  --warning-foreground: #0e0d09;
+  --warning-subtle: #faf8e9;
+  --warning-subtle-foreground: #746c27;
+  --warning-strong: #9f9100;
+  --border: #c5cdd8;
+  --input: #b3bbc6;
+  --ring: #ca7f00;
+  --chart-1: #f2a541;
+  --chart-2: #af648d;
+  --chart-3: #b86656;
+  --chart-4: #a57626;
+  --chart-5: #768a39;
+  --sidebar: #f3f8ff;
+  --sidebar-foreground: #1f242b;
+  --sidebar-primary: #1f3a5f;
+  --sidebar-primary-foreground: #f8fafe;
+  --sidebar-accent: #ffead3;
+  --sidebar-accent-foreground: #341d00;
+  --sidebar-border: #c5cdd8;
+  --sidebar-ring: #ca7f00;
+  --elevation-1: 0px 1px 2px 0px rgb(21 27 35 / 0.03), 0px 2px 6px -1px rgb(21 27 35 / 0.045);
+  --elevation-2: 0px 1px 2px 0px rgb(21 27 35 / 0.05), 0px 8px 20px -6px rgb(21 27 35 / 0.09);
+  --elevation-3: 0px 1px 2px 0px rgb(21 27 35 / 0.08), 0px 24px 48px -12px rgb(21 27 35 / 0.18);
+  --scrim: rgb(21 27 35 / 0.32);
+}
+
+.dark {
+  --background: #0c121a;
+  --foreground: #e4ebf4;
+  --card: #121820;
+  --card-foreground: #e4ebf4;
+  --popover: #121820;
+  --popover-foreground: #e4ebf4;
+  --primary: #5e7297;
+  --primary-foreground: #f8fafe;
+  --secondary: #1a2028;
+  --secondary-foreground: #e4ebf4;
+  --muted: #1a2028;
+  --muted-foreground: #b2b9c2;
+  --accent: #2c1b06;
+  --accent-foreground: #ffe6ca;
+  --accent-strong: #d18612;
+  --link: #d3b18b;
+  --destructive: #c5445f;
+  --destructive-foreground: #fdf9f9;
+  --destructive-subtle: #201314;
+  --destructive-subtle-foreground: #eaa6ad;
+  --destructive-strong: #fb5f7d;
+  --success: #2f7f63;
+  --success-foreground: #f7fbf9;
+  --success-subtle: #101a15;
+  --success-subtle-foreground: #9ac1ae;
+  --success-strong: #44a881;
+  --warning: #b2a639;
+  --warning-foreground: #0e0d09;
+  --warning-subtle: #19180c;
+  --warning-subtle-foreground: #bfba88;
+  --warning-strong: #a69900;
+  --border: #323842;
+  --input: #444b54;
+  --ring: #d18612;
+  --chart-1: #eaa95a;
+  --chart-2: #d788b2;
+  --chart-3: #e18a79;
+  --chart-4: #cb9b4f;
+  --chart-5: #99af5e;
+  --sidebar: #121820;
+  --sidebar-foreground: #e4ebf4;
+  --sidebar-primary: #5e7297;
+  --sidebar-primary-foreground: #f8fafe;
+  --sidebar-accent: #2c1b06;
+  --sidebar-accent-foreground: #ffe6ca;
+  --sidebar-border: #323842;
+  --sidebar-ring: #d18612;
+  --elevation-1: 0px 1px 2px 0px rgb(0 0 1 / 0.18), 0px 2px 6px -1px rgb(0 0 1 / 0.26), inset 0px 1px 0px 0px rgb(255 255 255 / 0.045);
+  --elevation-2: 0px 1px 2px 0px rgb(0 0 1 / 0.28), 0px 8px 20px -6px rgb(0 0 1 / 0.4), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063);
+  --elevation-3: 0px 1px 2px 0px rgb(0 0 1 / 0.38), 0px 24px 48px -12px rgb(0 0 1 / 0.55), inset 0px 1px 0px 0px rgb(255 255 255 / 0.063);
+  --scrim: rgb(0 0 1 / 0.58);
+}
+

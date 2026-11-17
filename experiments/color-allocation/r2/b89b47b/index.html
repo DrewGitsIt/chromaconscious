@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sunshare</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+*{box-sizing:border-box;margin:0}
+body{background:var(--background);color:var(--foreground);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.4;-webkit-font-smoothing:antialiased}
+.app{max-width:430px;min-width:320px;margin:0 auto;min-height:100vh;padding:16px 16px 96px;position:relative}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:20px;letter-spacing:-.01em;color:var(--primary)}
+.brand svg{color:var(--accent-strong)}
+.right{display:flex;align-items:center;gap:10px}
+.icon-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--foreground);display:grid;place-items:center;position:relative;cursor:pointer}
+.icon-btn i{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--accent-strong);border:2px solid var(--card)}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--primary);color:var(--primary-foreground);display:grid;place-items:center;font-weight:600;font-size:14px}
+h1{font-size:26px;letter-spacing:-.02em;line-height:1.15}
+.date{color:var(--muted-foreground);font-size:14px;margin-top:4px;margin-bottom:20px}
+.hero{background:var(--primary);color:var(--primary-foreground);border-radius:20px;padding:22px 20px;box-shadow:var(--elevation-2);position:relative;overflow:hidden}
+.hero .sun{position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:50%;background:var(--chart-1);opacity:.22}
+.hero .sun.s2{right:-10px;top:-10px;width:90px;height:90px;opacity:.3}
+.hero small{display:block;font-size:14px;opacity:.85;position:relative}
+.hero .amt{font-size:52px;font-weight:700;letter-spacing:-.03em;line-height:1.1;margin:6px 0 4px;color:var(--chart-1);position:relative}
+.hero p{font-size:14px;opacity:.85;position:relative}
+.grid{display:grid;gap:12px;margin-top:12px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--elevation-1)}
+.label{font-size:13px;color:var(--muted-foreground);font-weight:500}
+.big{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
+.big span{font-size:14px;font-weight:500;color:var(--muted-foreground);letter-spacing:0}
+.bar{height:8px;border-radius:99px;background:var(--muted);margin:12px 0 8px;overflow:hidden}
+.bar b{display:block;height:100%;width:78%;background:var(--primary);border-radius:99px}
+.row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted-foreground)}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--success-subtle);color:var(--success-subtle-foreground);border:1px solid color-mix(in oklab,var(--success) 25%,transparent)}
+.out{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.alert{background:var(--warning-subtle);border:1px solid color-mix(in oklab,var(--warning) 45%,transparent);border-radius:16px;padding:16px;margin-top:12px;color:var(--warning-subtle-foreground)}
+.alert h2{font-size:16px;color:var(--foreground);display:flex;align-items:center;gap:8px}
+.alert h2 svg{color:var(--warning-strong)}
+.alert p{font-size:14px;margin:6px 0 14px;color:var(--foreground)}
+.btns{display:flex;gap:10px}
+.btn{font:inherit;font-weight:600;font-size:14px;border-radius:12px;padding:11px 16px;min-height:44px;cursor:pointer;border:1px solid transparent}
+.btn.p{background:var(--primary);color:var(--primary-foreground);flex:1}
+.btn.g{background:transparent;color:var(--foreground);border-color:var(--input)}
+.btn:focus-visible,.tab:focus-visible,a:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.sec{display:flex;justify-content:space-between;align-items:baseline;margin:26px 0 10px}
+.sec h2{font-size:18px;letter-spacing:-.01em}
+.sec a{font-size:14px;font-weight:600;color:var(--link);text-decoration:none}
+.list{padding:4px 16px}
+.item{display:flex;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid var(--border)}
+.item:last-child{border:0}
+.item strong{font-size:15px;font-weight:600;display:block}
+.item span.m{font-size:13px;color:var(--muted-foreground)}
+.item .r{text-align:right}
+.item .r strong{font-variant-numeric:tabular-nums}
+.credit{color:var(--success)}
+.pend{color:var(--muted-foreground)}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--card);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);padding:8px 8px 14px}
+.tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;color:var(--muted-foreground);text-decoration:none;padding:6px 0;border-radius:12px;font-weight:500}
+.tab.on{color:var(--primary);font-weight:700}
+.tab.on .ic{background:var(--accent);color:var(--accent-foreground)}
+.ic{width:52px;height:30px;border-radius:99px;display:grid;place-items:center}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    Sunshare
+  </div>
+  <div class="right">
+    <button class="icon-btn" aria-label="Notifications"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><i></i></button>
+    <div class="avatar" aria-label="Member MA">MA</div>
+  </div>
+</header>
+
+<h1>Good morning, Maya</h1>
+<p class="date">Friday, June 21</p>
+
+<section class="hero">
+  <div class="sun"></div><div class="sun s2"></div>
+  <small>Solar credit earned this month</small>
+  <div class="amt">$48.20</div>
+  <p>Applied to your next power bill</p>
+</section>
+
+<div class="alert" role="note">
+  <h2><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg>Peak pricing today, 5–8 pm</h2>
+  <p>Rates are higher during these hours.</p>
+  <div class="btns"><button class="btn p">Shift laundry to off-peak</button><button class="btn g">Later</button></div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="label">Electricity use this month</div>
+    <div class="big">312 kWh <span>of a 400 kWh budget</span></div>
+    <div class="bar"><b></b></div>
+    <div class="row"><span>9 days left</span></div>
+  </div>
+  <div class="card">
+    <div class="out"><div>
+      <div class="label">Today's array output</div>
+      <div class="big">1,840 kWh</div></div>
+      <span class="pill">12% above forecast</span></div>
+    <div class="row" style="margin-top:8px"><span>Forecast of 1,643 kWh</span></div>
+  </div>
+</div>
+
+<div class="sec"><h2>Recent activity</h2><a href="#">See all</a></div>
+<div class="card list">
+  <div class="item"><div><strong>May bill paid</strong><span class="m">Jun 3 · Autopay</span></div><div class="r"><strong>$64.18</strong></div></div>
+  <div class="item"><div><strong>Solar credit applied</strong><span class="m">Jun 1</span></div><div class="r"><strong class="credit">−$42.52</strong></div></div>
+  <div class="item"><div><strong>You invited Jordan Lee</strong><span class="m">May 29</span></div><div class="r"><strong class="pend">Pending</strong></div></div>
+</div>
+</div>
+
+<nav aria-label="Main">
+  <a class="tab on" href="#" aria-current="page"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11 12 3l9 8v10h-6v-6H9v6H3z"/></svg></span>Home</a>
+  <a class="tab" href="#"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>Usage</a>
+  <a class="tab" href="#"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m4 20 3-10h14l-3 10zM9 10 8 4M14 10l-1-6M5.5 15h14"/></svg></span>Array</a>
+  <a class="tab" href="#"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span>Account</a>
+</nav>
+</body>
+</html>

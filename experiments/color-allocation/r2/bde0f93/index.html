@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sunshare</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+/*
+ COLOR PLAN
+ 1. primary (navy) = "act here, and where you are": solid buttons, active tab.
+    accent-strong (amber) = "what you earn / solar": credit figure, sun icon, credit row icon.
+ 2. Attention: the credit is the subject (largest). Peak pricing is the one
+    needs-action-soon item: warning-subtle container with icon, heading, own actions, placed right after.
+    Everything else (usage, history) is neutral. Output delta is good news: success text + arrow.
+ 3. Actions: "Shift laundry to off-peak" solid primary; "Later" and "See all" are link text.
+ Usage meter is neutral (foreground fill on muted track); it would turn warning past threshold.
+*/
+*{box-sizing:border-box;margin:0}
+body{background:var(--background);color:var(--foreground);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.app{max-width:390px;margin:0 auto;min-height:100vh;padding:0 20px 96px;position:relative}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 0 8px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:18px;letter-spacing:-.01em}
+.brand svg{color:var(--accent-strong)}
+.right{display:flex;align-items:center;gap:12px}
+.bell{width:40px;height:40px;border-radius:50%;border:0;background:transparent;color:var(--foreground);display:grid;place-items:center}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--secondary);color:var(--secondary-foreground);font-weight:600;font-size:13px;display:grid;place-items:center;border:1px solid var(--border)}
+.hello{padding:12px 0 18px}
+.hello h1{font-size:24px;letter-spacing:-.02em;line-height:1.2}
+.hello p{color:var(--muted-foreground);font-size:14px;margin-top:2px}
+.hero{background:var(--accent);color:var(--accent-foreground);border-radius:20px;padding:22px 20px;box-shadow:var(--elevation-1)}
+.hero .label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+.hero .label svg{color:var(--accent-strong)}
+.hero .amt{font-size:56px;font-weight:700;letter-spacing:-.04em;line-height:1.05;margin:10px 0 6px}
+.hero .sub{font-size:14px}
+.alert{margin-top:16px;background:var(--warning-subtle);border:1px solid color-mix(in oklab,var(--warning) 40%,var(--warning-subtle));border-radius:16px;padding:16px}
+.alert .top{display:flex;gap:12px}
+.alert .ic{flex:none;width:32px;height:32px;border-radius:50%;background:var(--warning);color:var(--warning-foreground);display:grid;place-items:center}
+.alert h2{font-size:16px;line-height:1.3}
+.alert p{font-size:14px;color:var(--warning-subtle-foreground);margin-top:2px}
+.actions{display:flex;align-items:center;gap:8px;margin-top:14px}
+.btn{font:inherit;font-weight:600;font-size:14px;border:0;border-radius:12px;min-height:44px;padding:0 16px;background:var(--primary);color:var(--primary-foreground)}
+.btn.quiet{background:transparent;color:var(--link);padding:0 12px}
+.stats{margin-top:16px;display:grid;gap:12px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px}
+.card h3{font-size:14px;font-weight:600;color:var(--muted-foreground)}
+.big{font-size:28px;font-weight:700;letter-spacing:-.02em;margin-top:4px}
+.big small{font-size:14px;font-weight:500;color:var(--muted-foreground);letter-spacing:0}
+.meter{height:8px;border-radius:99px;background:var(--muted);margin:12px 0 8px;overflow:hidden}
+.meter i{display:block;height:100%;width:78%;background:var(--foreground);border-radius:99px}
+.meta{display:flex;justify-content:space-between;font-size:13px;color:var(--muted-foreground)}
+.delta{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:14px}
+.delta b{color:var(--success);display:inline-flex;align-items:center;gap:4px;font-weight:600}
+.delta span{color:var(--muted-foreground)}
+.sec{display:flex;align-items:baseline;justify-content:space-between;margin:28px 0 4px}
+.sec h2{font-size:18px;letter-spacing:-.01em}
+.sec a{color:var(--link);font-size:14px;font-weight:600;text-decoration:none;padding:10px 0}
+ul{list-style:none;padding:0}
+li{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+li:last-child{border-bottom:0}
+.ri{flex:none;width:40px;height:40px;border-radius:12px;background:var(--muted);color:var(--muted-foreground);display:grid;place-items:center}
+.ri.earn{background:var(--accent);color:var(--accent-strong)}
+.rt{flex:1;min-width:0}
+.rt b{display:block;font-weight:600;font-size:15px}
+.rt span{font-size:13px;color:var(--muted-foreground)}
+.ra{text-align:right;font-weight:600;font-size:15px}
+.ra.earn{color:var(--accent-foreground)}
+.ra small{display:block;font-weight:400;font-size:13px;color:var(--muted-foreground)}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:390px;background:var(--card);border-top:1px solid var(--border);display:flex;padding:8px 8px 14px}
+nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;color:var(--muted-foreground);font-size:12px;font-weight:500;text-decoration:none}
+nav a[aria-current]{color:var(--primary);font-weight:700}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      Sunshare
+    </div>
+    <div class="right">
+      <button class="bell" aria-label="Notifications"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></button>
+      <div class="avatar" aria-label="Member MA">MA</div>
+    </div>
+  </header>
+
+  <section class="hello">
+    <h1>Good morning, Maya</h1>
+    <p>Friday, June 21</p>
+  </section>
+
+  <section class="hero">
+    <div class="label">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      Solar credit earned this month
+    </div>
+    <div class="amt">$48.20</div>
+    <div class="sub">Applied to your next power bill</div>
+  </section>
+
+  <section class="alert" role="alert">
+    <div class="top">
+      <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17.5v.01"/></svg></div>
+      <div>
+        <h2>Peak pricing today, 5–8 pm</h2>
+        <p>Rates are higher during these hours.</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn">Shift laundry to off-peak</button>
+      <button class="btn quiet">Later</button>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="card">
+      <h3>Electricity use this month</h3>
+      <div class="big">312 kWh <small>of a 400 kWh budget</small></div>
+      <div class="meter" role="img" aria-label="312 of 400 kWh used"><i></i></div>
+      <div class="meta"><span>312 kWh used</span><span>9 days left</span></div>
+    </div>
+    <div class="card">
+      <h3>Today's array output</h3>
+      <div class="big">1,840 kWh</div>
+      <div class="delta">
+        <b><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>12% above forecast</b>
+        <span>forecast 1,643 kWh</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="sec"><h2>Recent activity</h2><a href="#">See all</a></div>
+  <ul>
+    <li>
+      <div class="ri"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2V3zM9 8h6M9 12h6"/></svg></div>
+      <div class="rt"><b>May bill paid</b><span>Jun 3 · Autopay</span></div>
+      <div class="ra">$64.18</div>
+    </li>
+    <li>
+      <div class="ri earn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></div>
+      <div class="rt"><b>Solar credit applied</b><span>Jun 1</span></div>
+      <div class="ra earn">−$42.52</div>
+    </li>
+    <li>
+      <div class="ri"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M19 8v6M16 11h6"/></svg></div>
+      <div class="rt"><b>You invited Jordan Lee</b><span>May 29</span></div>
+      <div class="ra" style="font-weight:400;color:var(--muted-foreground);font-size:13px">Pending</div>
+    </li>
+  </ul>
+</div>
+
+<nav aria-label="Primary">
+  <a href="#" aria-current="page"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 3l9 8M5 10v10h14V10"/></svg>Home</a>
+  <a href="#"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Usage</a>
+  <a href="#"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17 6 5h12l3 12zM9 5l-1 12M15 5l1 12M4.5 11h15"/></svg>Array</a>
+  <a href="#"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Account</a>
+</nav>
+</body>
+</html>

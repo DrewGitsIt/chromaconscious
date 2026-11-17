@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sunshare</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--muted);color:var(--foreground);display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+.app{width:100%;max-width:390px;min-height:100vh;background:var(--background);position:relative;padding:20px 16px 96px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.hi{font-size:14px;color:var(--muted-foreground)}
+h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--accent);color:var(--accent-foreground);display:grid;place-items:center;font-weight:700;font-size:15px}
+.hero{background:var(--primary);color:var(--primary-foreground);border-radius:22px;padding:22px 20px 20px;box-shadow:var(--elevation-2);position:relative;overflow:hidden}
+.hero .sun{position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:var(--chart-1);opacity:.18}
+.hero .sun.s2{right:-6px;top:-6px;width:92px;height:92px;opacity:.22}
+.label{font-size:13px;opacity:.82;display:flex;gap:6px;align-items:center}
+.credit{font-size:48px;font-weight:800;letter-spacing:-.03em;margin:6px 0 4px;color:var(--chart-1);line-height:1.05}
+.credit small{font-size:26px;font-weight:700;vertical-align:.35em;margin-right:1px}
+.sub{font-size:13px;opacity:.85}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px;margin-top:14px;box-shadow:var(--elevation-1)}
+.row{display:flex;justify-content:space-between;align-items:baseline}
+h2{font-size:15px;font-weight:650}
+.muted{color:var(--muted-foreground);font-size:13px}
+.big{font-size:28px;font-weight:700;letter-spacing:-.02em;margin-top:10px}
+.big span{font-size:14px;font-weight:500;color:var(--muted-foreground);letter-spacing:0}
+.bar{height:10px;border-radius:99px;background:var(--muted);margin:10px 0 8px;overflow:hidden}
+.bar i{display:block;height:100%;width:78%;background:var(--primary);border-radius:99px}
+.two{display:grid;grid-template-columns:1fr;}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;background:var(--success-subtle);color:var(--success-subtle-foreground);border:1px solid color-mix(in oklab,var(--success) 25%,transparent);padding:3px 9px;border-radius:99px}
+.alert{background:var(--warning-subtle);border:1px solid color-mix(in oklab,var(--warning) 45%,transparent);border-radius:18px;padding:14px 16px;margin-top:14px;display:flex;gap:12px}
+.alert .ic{flex:none;width:36px;height:36px;border-radius:12px;background:var(--warning);color:var(--warning-foreground);display:grid;place-items:center}
+.alert b{display:block;font-size:15px;color:var(--foreground)}
+.alert p{font-size:13px;color:var(--warning-subtle-foreground);margin-top:2px}
+.btn{margin-top:12px;display:inline-flex;align-items:center;gap:6px;border:0;background:var(--primary);color:var(--primary-foreground);font:600 14px inherit;font-family:inherit;padding:10px 16px;border-radius:12px}
+ul{list-style:none;padding:0;margin-top:6px}
+li{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--border)}
+li:first-child{border-top:0}
+li .ic{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center}
+li .t{flex:1;font-size:14px;font-weight:550}
+li .t small{display:block;font-weight:400;color:var(--muted-foreground);font-size:12px;margin-top:1px}
+.ok{background:var(--success-subtle);color:var(--success)}
+.cr{background:var(--accent);color:var(--accent-foreground)}
+.pd{background:var(--muted);color:var(--muted-foreground)}
+.amt{font-size:14px;font-weight:650}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:390px;background:var(--card);border-top:1px solid var(--border);display:flex;padding:8px 8px 14px}
+nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:550;color:var(--muted-foreground);text-decoration:none;padding:6px 0;border-radius:12px}
+nav a.on{color:var(--primary)}
+nav a.on .pillbg{background:var(--accent)}
+.pillbg{width:52px;height:30px;border-radius:99px;display:grid;place-items:center}
+svg{display:block}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div><div class="hi">Good morning</div><h1>Maya Alvarez</h1></div>
+  <div class="avatar">MA</div>
+</header>
+
+<section class="hero">
+  <div class="sun"></div><div class="sun s2"></div>
+  <div class="label">Solar credit earned this month</div>
+  <div class="credit"><small>$</small>48.20</div>
+  <div class="sub">Applied to your June bill</div>
+</section>
+
+<section class="card">
+  <div class="row"><h2>Electricity use</h2><span class="muted">9 days left</span></div>
+  <div class="big">312 <span>of 400 kWh budget</span></div>
+  <div class="bar" role="progressbar" aria-valuenow="312" aria-valuemin="0" aria-valuemax="400"><i></i></div>
+  <div class="row"><span class="muted">78% used</span><span class="muted">88 kWh left</span></div>
+</section>
+
+<section class="card">
+  <div class="row"><h2>Today's array output</h2><span class="pill">▲ 12% above forecast</span></div>
+  <div class="big">1,840 <span>kWh</span></div>
+</section>
+
+<section class="alert">
+  <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></div>
+  <div>
+    <b>Peak pricing 5–8 pm today</b>
+    <p>Rates are higher in this window. Use less power to protect your credit.</p>
+    <button class="btn">Shift laundry to off-peak</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Recent activity</h2>
+  <ul>
+    <li><span class="ic ok"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span><span class="t">May bill paid<small>Paid in full</small></span></li>
+    <li><span class="ic cr"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></span><span class="t">Credit applied<small>Solar credit on your bill</small></span></li>
+    <li><span class="ic pd"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M2 21c0-4 3-6 8-6M18 14v6M15 17h6"/></svg></span><span class="t">You invited a neighbor<small>Pending</small></span></li>
+  </ul>
+</section>
+</div>
+
+<nav>
+  <a class="on" href="#"><span class="pillbg"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11 12 3l9 8v10h-6v-6H9v6H3z"/></svg></span>Home</a>
+  <a href="#"><span class="pillbg"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 21V11M12 21V4M19 21v-7"/></svg></span>Usage</a>
+  <a href="#"><span class="pillbg"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 4h12l3 10H3zM12 4v10M8 14l-1 6M16 14l1 6"/></svg></span>Array</a>
+  <a href="#"><span class="pillbg"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span>Account</a>
+</nav>
+</body>
+</html>

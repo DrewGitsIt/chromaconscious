@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sunshare</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+/* COLOR PLAN
+   1. Meanings: --primary = "act here, and where you are" (main buttons, active tab, avatar, usage meter).
+      --accent-strong / --accent = "what you earn" (solar credit figure badge, credit icons in history).
+      Warning = caution (peak pricing). Success = good news (output above forecast).
+   2. Attention: the credit figure (subject), then peak pricing (tinted warning container, high on screen).
+   3. Actions: "Shift laundry to off-peak" solid primary; "Later" quiet; "See all" link text.
+   Everything else is neutral surfaces, borders and muted text. */
+* { box-sizing: border-box; margin: 0; }
+body {
+  background: var(--muted);
+  color: var(--foreground);
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  display: flex; justify-content: center;
+}
+.app {
+  width: 100%; max-width: 390px; min-height: 100vh;
+  background: var(--background);
+  position: relative; padding-bottom: 88px;
+}
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 8px;
+}
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 18px; letter-spacing: -.01em; }
+.brand svg { color: var(--accent-strong); }
+.hr { display: flex; align-items: center; gap: 12px; }
+.bell { width: 40px; height: 40px; border-radius: 50%; border: 0; background: transparent; color: var(--foreground); display: grid; place-items: center; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: var(--primary-foreground); display: grid; place-items: center; font-size: 13px; font-weight: 600; }
+main { padding: 8px 20px 0; display: flex; flex-direction: column; gap: 16px; }
+.greet h1 { font-size: 24px; letter-spacing: -.02em; }
+.greet p { color: var(--muted-foreground); font-size: 14px; margin-top: 2px; }
+
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--elevation-1); }
+.credit { padding: 20px; }
+.label { font-size: 14px; color: var(--muted-foreground); display: flex; align-items: center; gap: 8px; }
+.chip { width: 28px; height: 28px; border-radius: 8px; background: var(--accent); color: var(--accent-strong); display: grid; place-items: center; }
+.big { font-size: 48px; font-weight: 700; letter-spacing: -.03em; line-height: 1.1; margin-top: 12px; font-variant-numeric: tabular-nums; }
+.credit .sub { margin-top: 6px; font-size: 14px; color: var(--muted-foreground); }
+
+.alert { background: var(--warning-subtle); border: 1px solid color-mix(in oklab, var(--warning) 45%, var(--warning-subtle)); border-radius: 16px; padding: 16px; }
+.alert .top { display: flex; gap: 12px; }
+.alert .ic { color: var(--warning-strong); flex: none; margin-top: 2px; }
+.alert h2 { font-size: 16px; color: var(--foreground); }
+.alert p { font-size: 14px; color: var(--warning-subtle-foreground); margin-top: 2px; }
+.actions { display: flex; gap: 8px; margin-top: 14px; align-items: center; }
+.btn { font: inherit; font-size: 14px; font-weight: 600; min-height: 44px; padding: 0 16px; border-radius: 12px; border: 0; cursor: pointer; }
+.btn.primary { background: var(--primary); color: var(--primary-foreground); flex: 1; }
+.btn.quiet { background: transparent; color: var(--foreground); padding: 0 14px; }
+
+.pair { display: flex; flex-direction: column; }
+.sec { padding: 18px 20px; }
+.sec + .sec { border-top: 1px solid var(--border); }
+.row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.row .t { font-size: 14px; color: var(--muted-foreground); }
+.row .d { font-size: 13px; color: var(--muted-foreground); }
+.val { font-size: 28px; font-weight: 700; letter-spacing: -.02em; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.val small { font-size: 14px; font-weight: 500; color: var(--muted-foreground); letter-spacing: 0; }
+.track { height: 8px; border-radius: 99px; background: var(--muted); margin-top: 12px; overflow: hidden; }
+.fill { height: 100%; width: 78%; background: var(--primary); border-radius: 99px; }
+.delta { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 14px; color: var(--success); font-weight: 600; }
+.delta span.n { color: var(--muted-foreground); font-weight: 400; }
+
+.head { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.head h2 { font-size: 18px; letter-spacing: -.01em; }
+.head a { color: var(--link); font-size: 14px; font-weight: 600; text-decoration: none; min-height: 44px; display: flex; align-items: center; }
+ul { list-style: none; padding: 0; margin: -8px 0 0; }
+li { display: flex; align-items: center; gap: 12px; padding: 14px 0; }
+li + li { border-top: 1px solid var(--border); }
+.ico { width: 36px; height: 36px; border-radius: 10px; background: var(--muted); color: var(--muted-foreground); display: grid; place-items: center; flex: none; }
+.ico.earn { background: var(--accent); color: var(--accent-strong); }
+li .m { flex: 1; min-width: 0; }
+li .m b { display: block; font-weight: 600; font-size: 15px; }
+li .m span { font-size: 13px; color: var(--muted-foreground); }
+li .amt { font-weight: 600; font-size: 15px; font-variant-numeric: tabular-nums; }
+li .amt.earn { color: var(--foreground); }
+li .pend { font-size: 13px; font-weight: 500; color: var(--muted-foreground); }
+
+nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 390px; height: 72px;
+  background: var(--card); border-top: 1px solid var(--border);
+  display: grid; grid-template-columns: repeat(4, 1fr);
+}
+nav a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; color: var(--muted-foreground); text-decoration: none; }
+nav a[aria-current] { color: var(--primary); font-weight: 700; }
+nav a[aria-current] .pill { background: var(--secondary); }
+.pill { width: 56px; height: 30px; border-radius: 99px; display: grid; place-items: center; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      Sunshare
+    </div>
+    <div class="hr">
+      <button class="bell" aria-label="Notifications"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></button>
+      <div class="avatar" aria-label="Member MA">MA</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="greet">
+      <h1>Good morning, Maya</h1>
+      <p>Friday, June 21</p>
+    </div>
+
+    <section class="card credit">
+      <div class="label"><span class="chip"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></span>Solar credit earned this month</div>
+      <div class="big">$48.20</div>
+      <div class="sub">Applied to your next power bill</div>
+    </section>
+
+    <section class="alert" aria-labelledby="peak">
+      <div class="top">
+        <svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <div>
+          <h2 id="peak">Peak pricing today, 5–8 pm</h2>
+          <p>Rates are higher during these hours.</p>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn primary">Shift laundry to off-peak</button>
+        <button class="btn quiet">Later</button>
+      </div>
+    </section>
+
+    <section class="card pair">
+      <div class="sec">
+        <div class="row"><span class="t">Electricity use this month</span><span class="d">9 days left</span></div>
+        <div class="val">312 kWh <small>of a 400 kWh budget</small></div>
+        <div class="track" role="progressbar" aria-valuenow="312" aria-valuemin="0" aria-valuemax="400"><div class="fill"></div></div>
+      </div>
+      <div class="sec">
+        <div class="row"><span class="t">Today's array output</span></div>
+        <div class="val">1,840 kWh</div>
+        <div class="delta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>12% above forecast <span class="n">of 1,643 kWh</span></div>
+      </div>
+    </section>
+
+    <div class="head"><h2>Recent activity</h2><a href="#">See all</a></div>
+    <ul>
+      <li>
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>
+        <div class="m"><b>May bill paid</b><span>Jun 3 · Autopay</span></div>
+        <span class="amt">$64.18</span>
+      </li>
+      <li>
+        <span class="ico earn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></span>
+        <div class="m"><b>Solar credit applied</b><span>Jun 1</span></div>
+        <span class="amt earn">−$42.52</span>
+      </li>
+      <li>
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M1 21a8 8 0 0 1 16 0M19 8v6M16 11h6"/></svg></span>
+        <div class="m"><b>You invited Jordan Lee</b><span>May 29</span></div>
+        <span class="pend">Pending</span>
+      </li>
+    </ul>
+  </main>
+
+  <nav aria-label="Primary">
+    <a href="#" aria-current="page"><span class="pill"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M3 11 12 3l9 8v10h-6v-6H9v6H3z"/></svg></span>Home</a>
+    <a href="#"><span class="pill"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg></span>Usage</a>
+    <a href="#"><span class="pill"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 8h18l-2 9H5zM8 8l-1 9M13 8v9M18 8l1 9M2 20h20"/></svg></span>Array</a>
+    <a href="#"><span class="pill"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>Account</a>
+  </nav>
+</div>
+</body>
+</html>

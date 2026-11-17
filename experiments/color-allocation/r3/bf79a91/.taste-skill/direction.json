@@ -1,0 +1,152 @@
+{
+ "version": 1,
+ "kind": "app",
+ "at": "2026-11-01T05:35:38.074Z",
+ "seed": 1487815514,
+ "input": {
+  "kind": "wallet",
+  "brief": "community solar co-op member home: monthly bill credit, usage budget, array output, peak pricing",
+  "theme": "light",
+  "screens": [
+   "home"
+  ],
+  "keep": [
+   "palette",
+   "type"
+  ],
+  "style": "pastel-consumer"
+ },
+ "style": {
+  "id": "pastel-consumer",
+  "name": "Pastel consumer",
+  "theme": "light",
+  "basis": "2 screens: a wallet home and a personal finance home",
+  "suits": [
+   "wallet",
+   "finance"
+  ],
+  "idea": "Categories are coded by pale tints whose ink is the dark of the same hue, all under one large radius, and each headline sum sits inside the card that explains it.",
+  "colourBudget": "5-8%, as pale tiles and data marks",
+  "tokens": {
+   "ground": "#f3f5f7",
+   "surface": "#ffffff",
+   "raised": "#f2f8fd",
+   "border": "#e6e6e6",
+   "rule": "#f4f4f4",
+   "control": "#d6d9dd",
+   "text": "#1b1d1f",
+   "muted": "#5c6064",
+   "accent": "#1d5fd6",
+   "accentSoft": "#dcf1ff",
+   "accentInk": "#0a3a80",
+   "positive": "#2f7a45",
+   "negative": "#c41c29",
+   "warning": "#92400e",
+   "chart": [
+    "#1d5fd6",
+    "#b45309",
+    "#2a8798"
+   ],
+   "pills": {
+    "positive": [
+     "#dcfae5",
+     "#04250e"
+    ],
+    "negative": [
+     "#ffedea",
+     "#831c1e"
+    ],
+    "warning": [
+     "#fffbeb",
+     "#92400e"
+    ],
+    "neutral": [
+     "#eef1f4",
+     "#3a3d40"
+    ],
+    "accent": [
+     "#dcf1ff",
+     "#0a3a80"
+    ]
+   },
+   "radius": {
+    "card": 20,
+    "control": 10
+   },
+   "font": {
+    "family": "Manrope",
+    "second": null,
+    "fallback": "Inter, system-ui, sans-serif",
+    "sizes": {
+     "title": 28,
+     "section": 20,
+     "kpi": 32,
+     "body": 16,
+     "small": 14
+    },
+    "weights": [
+     400,
+     500,
+     600
+    ],
+    "note": "Money at 24-32px; card titles regular; semibold for net worth, bill amounts and actions."
+   },
+   "density": "medium",
+   "rowHeight": 72,
+   "sidebarWidth": 240,
+   "gap": 24,
+   "pad": 24,
+   "controlHeight": 40
+  },
+  "shell": "open-plane",
+  "shellAlternatives": [
+   "icon-rail"
+  ],
+  "signature": "Pale category tiles with the dark of their own hue as ink (#dcf1ff with #0a3a80), one large radius (20px on cards, stepping down to 10, 8 and 5 inside), and quiet money polarity: income green with a plus sign, spending in ink, no red on ordinary outgoings. Tints go on small tiles, avatars and chips; a panel that holds a list stays white. When the product has people (two partners, a family), each gets one hue, at least 60 degrees from the next.",
+  "identity": [
+   "The tile hues from the account's own colours (the card's colour, each pot's colour in the app) in place of the dealt cobalt, each tile pale with the dark of its own hue as ink.",
+   "The money's own objects: the card art at its real ratio, merchant marks at 24px in the rows, the goal's picture on its pot.",
+   "Manrope's figures carry the balance: 30-36px at 600 with tabular figures and the pence in a smaller grey, so the number itself is the face."
+  ],
+  "avoid": [
+   "a gradient balance card",
+   "two data palettes on one page (flagged in the study)",
+   "red on every outgoing amount",
+   "a 624px phone-width column on a desktop screen (flagged as a stretched phone screen)",
+   "a KPI strip on top: the sums belong in their cards",
+   "whole panels tinted per person or category beside white cards (two surface languages on one screen)"
+  ],
+  "notes": "The two studied screens used a pure #0000ff and an indigo #4723f5 as their brand colour, and pastels such as #7cbecf that fall under 3:1 on white. The library uses a cobalt that reads as blue rather than indigo, and data colours darkened to at least 3:1 on the card."
+ },
+ "shell": {
+  "id": "open-plane",
+  "name": "Open plane",
+  "basis": "5 of 23 screens",
+  "suits": [
+   "finance",
+   "wallet",
+   "workspace",
+   "creator",
+   "analytics"
+  ],
+  "numbers": {
+   "sidebarWidth": "230-256 (230, 240, 256 in the study; 280 and 292 with a built-in icon rail)",
+   "separation": "none, or one 1px hairline; the sidebar sits on the page ground or within 1-2% of it",
+   "navPitch": 34,
+   "navRowHeight": 32,
+   "navIcon": "16px outline, about 1.5px stroke",
+   "navLabel": "14px, 400, grey or ink",
+   "activeItem": "neutral grey pill, radius 6-12, inset 8-12px from the sidebar edges (#e9e9e9-#ededed)",
+   "topBar": "none",
+   "canvas": "fluid with a 24-64px gutter, or a centred 1100px column"
+  },
+  "blueprint": "The labelled sidebar sits on the page ground with nothing or one hairline between it and the canvas; there is no top bar, and the page header and cards sit straight on the ground about 32-36px from the top. Workspace or account switcher at the top of the sidebar, primary nav on a 34px pitch, groups under 12-13px sentence-case grey labels with 22-56px of air above, utilities and the user row pushed to the bottom. Cards are white on the off-white ground (or the sidebar is white with a 1px border on a #f9fafb canvas). The canvas is fluid with one gutter value, or a centred column for personal homes.",
+  "phone": "The sidebar folds into a 48px top bar holding the screen's name, a menu button that opens a full-screen sheet with the nav and the switcher, and at most one action. Content takes the full width with 16px margins."
+ },
+ "screens": [
+  {
+   "name": "home",
+   "pattern": null
+  }
+ ]
+}

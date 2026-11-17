@@ -1,0 +1,2693 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<meta http-equiv="Content-Language" content="en">
+<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" name="viewport">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-touch-fullscreen" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Huemint - About Huemint - Machine learning for graphic design colorization</title>
+<link rel="icon" href="/assets/img/logo-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/assets/img/logo-16.png" type="image/png" sizes="16x16">
+<link rel="stylesheet" href="/assets/vendor/pace/pace.css">
+<script src="/assets/vendor/pace/pace.min.js"></script>
+<!--vendors-->
+<link rel="stylesheet" type="text/css" href="/assets/vendor/bootstrap-datepicker/css/bootstrap-datepicker3.min.css">
+<link rel="stylesheet" type="text/css" href="/assets/vendor/jquery-scrollbar/jquery.scrollbar.css">
+<link rel="stylesheet" href="/assets/vendor/select2/css/select2.min.css">
+<link rel="stylesheet" href="/assets/vendor/jquery-ui/jquery-ui.min.css">
+<link rel="stylesheet" href="/assets/vendor/daterangepicker/daterangepicker.css">
+<link rel="stylesheet" href="/assets/vendor/timepicker/bootstrap-timepicker.min.css">
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,500,600" rel="stylesheet">
+<!--Material Icons-->
+<link rel="stylesheet" type="text/css" href="/assets/fonts/materialdesignicons/materialdesignicons.min.css">
+<!--Material Icons-->
+<link rel="stylesheet" type="text/css" href="/assets/fonts/feather/feather-icons.css">
+<!--Bootstrap + atmos Admin CSS-->
+<link rel="stylesheet" type="text/css" href="/assets/css/atmos.min.css">
+<style>
+@media only screen and (max-width: 430px) {
+#tools-nav .mobile-menu{
+    position:fixed;
+    top: 62px;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    border: 0;
+    margin: 0;
+    border-radius: 0;
+}
+}
+
+.admin-header .color-dropdown a.nav-link button:hover{
+    box-shadow: 0 3px 5px 0 rgb(0 0 0 / 35%);
+}
+</style>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-WNE8M0G9NB"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-WNE8M0G9NB');
+</script>
+
+</head>
+<body class="sidebar-pinned ">
+<aside class="admin-sidebar">
+    <div class="admin-sidebar-brand">
+        <!-- begin sidebar branding-->
+        <img class="admin-brand-logo" src="/assets/img/logo-icon.svg" width="36" height="36" alt="Huemint Icon">
+        <!-- end sidebar branding-->
+        <div class="ml-auto">
+            <!-- sidebar pin-->
+            <a href="#" class="admin-pin-sidebar btn-ghost btn btn-rounded-circle"></a>
+            <!-- sidebar close for mobile device-->
+            <a href="#" class="admin-close-sidebar"></a>
+        </div>
+    </div>
+    <div class="admin-sidebar-wrapper js-scrollbar">
+        <ul class="menu">
+            <li class="menu-item ">
+                <a href="#" class="open-dropdown menu-link">
+					<span class="menu-label">
+						<span class="menu-name">Brand
+							<span class="menu-arrow"></span>
+						</span>
+					</span>
+                    <span class="menu-icon">
+						 <i class="icon-placeholder fe fe-zap"></i>
+					</span>
+                </a>
+                <ul class="sub-menu" >
+                    <li class="menu-item ">
+                        <a href="/brand-1/" class="menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">1 Color</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder fe fe-zap"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/brand-2/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">2 Colors</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder fe fe-zap"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/brand-3/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">3 Colors</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder fe fe-zap"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/brand-intersection/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">Intersection</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder fe fe-zap"></i>
+                            </span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li class="menu-item ">
+                <a href="#" class="open-dropdown menu-link">
+					<span class="menu-label">
+						<span class="menu-name">Website
+							<span class="menu-arrow"></span>
+						</span>
+					</span>
+                    <span class="menu-icon">
+						 <i class="icon-placeholder fe fe-compass"></i>
+					</span>
+                </a>
+                <ul class="sub-menu" >
+                    <li class="menu-item ">
+                        <a href="/website-magazine/" class="menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">Magazine</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder fe fe-compass"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/website-monochrome/" class="menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">Monochrome</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder fe fe-compass"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/website-1/" class="menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">1 Accent</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder fe fe-compass"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/website-2/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">2 Accents</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder fe fe-compass"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/website-3/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">3 Accents</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder fe fe-compass"></i>
+                            </span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li class="menu-item ">
+                <a href="#" class="open-dropdown menu-link">
+					<span class="menu-label">
+						<span class="menu-name">Gradient
+							<span class="menu-arrow"></span>
+						</span>
+					</span>
+                    <span class="menu-icon">
+						 <i class="icon-placeholder mdi mdi-gradient"></i>
+					</span>
+                </a>
+                <ul class="sub-menu" >
+                    <li class="menu-item ">
+                        <a href="/gradient-2/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">2 Colors</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder mdi mdi-gradient"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/gradient-3/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">3 Colors</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder mdi mdi-gradient"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/gradient-4/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">4 Colors</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder mdi mdi-gradient"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/gradient-5/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">5 Colors</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder mdi mdi-gradient"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/gradient-6/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">6 Colors</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder mdi mdi-gradient"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/gradient-7/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">7 Colors</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder mdi mdi-gradient"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/gradient-8/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">8 Colors</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder mdi mdi-gradient"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/gradient-9/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">9 Colors</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder mdi mdi-gradient"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/gradient-10/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">10 Colors</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder mdi mdi-gradient"></i>
+                            </span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li class="menu-item ">
+                <a href="#" class="open-dropdown menu-link">
+					<span class="menu-label">
+						<span class="menu-name">Gradient + Background
+							<span class="menu-arrow"></span>
+						</span>
+					</span>
+                    <span class="menu-icon">
+						 <i class="icon-placeholder mdi mdi-gradient"></i>
+					</span>
+                </a>
+                <ul class="sub-menu" >
+                    <li class="menu-item ">
+                        <a href="/back-gradient-2/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">2 Colors</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder mdi mdi-gradient"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/back-gradient-3/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">3 Colors</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder mdi mdi-gradient"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/back-gradient-4/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">4 Colors</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder mdi mdi-gradient"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/back-gradient-5/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">5 Colors</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder mdi mdi-gradient"></i>
+                            </span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li class="menu-item ">
+                <a href="#" class="open-dropdown menu-link">
+					<span class="menu-label">
+						<span class="menu-name">Illustration
+							<span class="menu-arrow"></span>
+						</span>
+					</span>
+                    <span class="menu-icon">
+						 <i class="icon-placeholder mdi mdi-flower-tulip-outline"></i>
+					</span>
+                </a>
+                <ul class="sub-menu" >
+                    <li class="menu-item ">
+                        <a href="/illustration-1/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">Illustration 1</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder mdi mdi-flower-tulip-outline"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/illustration-2/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">Illustration 2</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder mdi mdi-flower-tulip-outline"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/illustration-3/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">Illustration 3</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder mdi mdi-flower-tulip-outline"></i>
+                            </span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li class="menu-item ">
+                <a href="#" class="open-dropdown menu-link">
+					<span class="menu-label">
+						<span class="menu-name">Bootstrap
+							<span class="menu-arrow"></span>
+						</span>
+					</span>
+                    <span class="menu-icon">
+						 <i class="icon-placeholder fe fe-code"></i>
+					</span>
+                </a>
+                <ul class="sub-menu" >
+                    <li class="menu-item ">
+                        <a href="/bootstrap-basic/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">Basic</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder fe fe-code"></i>
+                            </span>
+                        </a>
+                    </li>
+                    <li class="menu-item ">
+                        <a href="/bootstrap-plus/" class=" menu-link">
+                            <span class="menu-label">
+                                <span class="menu-name">Plus</span>
+                            </span>
+                            <span class="menu-icon">
+                                <i class="icon-placeholder fe fe-code"></i>
+                            </span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li class="menu-item ">
+                <a href="/upload/" class="menu-link">
+					<span class="menu-label">
+						<span class="menu-name">Upload image</span>
+					</span>
+                    <span class="menu-icon">
+						 <i class="icon-placeholder fe fe-upload"></i>
+					</span>
+                </a>
+            </li>
+            <li class="menu-item active">
+                <a href="/about/" class="menu-link">
+					<span class="menu-label">
+						<span class="menu-name">About</span>
+					</span>
+                    <span class="menu-icon">
+						 <i class="icon-placeholder mdi mdi-information-outline"></i>
+					</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</aside>
+
+<main class="admin-main">
+<header class="admin-header" style="height: auto; padding: 6px 0">
+    <a href="#" class="sidebar-toggle" data-toggleclass="sidebar-open" data-target="body" style="position: fixed; top: 14px; left: 0;"> </a>
+    
+    
+    <nav class="ml-auto">       
+        
+        <ul class="nav align-items-center float-right" id="tools-nav">
+            <li class="nav-item divider d-none d-lg-block"></li>
+            
+                        <li class="nav-item">
+                <div class="dropdown">
+                    <a href="#" class="nav-link nav-config pl-2 pr-2 pl-sm-3 pr-sm-3" id="btn-link"> <i class="mdi mdi-24px mdi-link-variant"></i></a>
+                    <div class="dropdown-menu mobile-menu notification-container dropdown-menu-right shadow-lg" id="link-menu">
+                        <div class="d-flex p-all-15 bg-white justify-content-between border-bottom ">
+                            <span class="h6 m-0 p-t-5">Link to this page</span>
+                        </div>
+                        <div class="notification-events">
+                                                        <input type="text" class="form-control w-100" id="share-input" value="https://huemint.com/about/#palette=ffffff-ffffff-ffffff" /> <a href="#" class="btn btn-primary m-t-10" id="share-copy">Copy Link</a>
+                        </div>
+
+                    </div>
+                </div>
+            </li>
+            
+            <li class="nav-item">
+                <div class="dropdown">
+                    <a href="#" class="nav-link nav-config pl-2 pr-2 pl-sm-3 pr-sm-3" id="btn-model"> <i class="mdi mdi-24px mdi-atom"></i></a>
+                    <div class="dropdown-menu mobile-menu notification-container dropdown-menu-right shadow-lg" id="model-menu">
+                        <div class="d-flex p-all-15 bg-white justify-content-between border-bottom ">
+                            <span class="h6 m-0 p-t-5">Generation options</span>
+                        </div>
+                        <div class="p-t-15 p-l-15 p-r-15 p-b-5">
+                            <div class="option-box w-100">
+                                <input id="radio-preset-transformer" name="radio-preset-transformer" type="radio" checked="checked">
+                                <label for="radio-preset-transformer" class="w-100">
+                                    <span class="radio-content float-left">
+                                        <span class="h6 d-block ml-1">Transformer <span class="ml-2 badge-soft-primary badge">AI</span></span>
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="option-box w-100">
+                                <input id="radio-preset-diffusion" name="radio-preset-transformer" type="radio">
+                                <label for="radio-preset-diffusion" class="w-100">
+                                    <span class="radio-content float-left">
+                                        <span class="h6 d-block ml-1">Diffusion Model <span class="ml-2 badge-soft-primary badge">AI</span></span>
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="option-box w-100">
+                                <input id="radio-preset-random" name="radio-preset-transformer" type="radio">
+                                <label for="radio-preset-random" class="w-100">
+                                    <span class="radio-content float-left">
+                                        <span class="h6 d-block ml-1">Random <span class="ml-2 badge-soft-primary badge">Creative</span></span>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div class="m-t-15">
+                                <span class="h6 d-block">Creativity <span class="badge-soft-primary badge" id="temperature-label">1.3</span>
+                                <input type="range" class="custom-range" min="0.0" value="1.3" max="2.4" step="0.02" id="temperature-range">
+                            </div>
+                            <small class="text-muted text-small d-block m-b-10">
+                                Higher creativity will result in more random and potentially creative results. Low temperature will result in more "average" or typical colors.
+                            </small>
+                        </div>
+
+                        </div>
+                    </div>
+                </div>
+            </li>
+
+            <li class="nav-item">
+                <div class="dropdown">
+                    <a href="#" class="nav-link nav-config pl-2 pr-2 pl-sm-3 pr-sm-3" id="btn-config"> <i class="mdi mdi-24px mdi-settings-outline"></i></a>                    <div class="dropdown-menu mobile-menu notification-container dropdown-menu-right shadow-lg" id="config-menu">
+                        <div class="p-t-15 p-l-15 p-r-15 p-b-5">
+                            <ul class="nav nav-pills nav-justified" id="config-tabs" role="tablist">
+                                                                <li class="nav-item">
+                                    <a class="nav-link nav-config active" id="preset-tab" data-toggle="tab" href="#pillpresets" role="tab" aria-controls="presets" aria-selected="true">Presets</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link nav-config" id="preset-2-tab" data-toggle="tab" href="#pillpresets-2" role="tab" aria-controls="presets-2" aria-selected="true">Simple</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link nav-config" id="advanced-tab" data-toggle="tab" href="#pilladvanced" role="tab" aria-controls="advanced" aria-selected="false">Advanced</a>
+                                </li>
+                                                            </ul>
+                            <div class="tab-content" id="config-tabs-content">
+                                                                <div class="tab-pane fade active show p-t-15" id="pillpresets" role="tabpanel" aria-labelledby="presets-tab">
+                                    <div class="option-box w-100">
+                                        <input id="radio-preset-default" name="radio-preset" type="radio" checked="checked">
+                                        <label for="radio-preset-default" class="w-100">
+                                            <span class="radio-content float-left">
+                                                <span class="h6 d-block ml-1">Default</span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                    <div class="option-box w-100">
+                                        <input id="radio-preset-high-contrast" name="radio-preset" type="radio">
+                                        <label for="radio-preset-high-contrast" class="w-100">
+                                            <span class="radio-content float-left">
+                                                <span class="h6 d-block ml-1">High Contrast</span>
+                                            </span>
+                                            <span class="btn btn-rounded-circle float-right" style="background-color: #ffffff"><i class="mdi mdi-solid" style="color: #222222"></i></span>
+                                            <span class="btn btn-rounded-circle float-right m-r-10" style="background-color: #ffffff"><i class="mdi mdi-solid" style="color: #203AD3"></i></span>
+                                        </label>
+                                    </div>
+                                    <div class="option-box w-100">
+                                        <input id="radio-preset-bright-light" name="radio-preset" type="radio">
+                                        <label for="radio-preset-bright-light" class="w-100">
+                                            <span class="radio-content float-left">
+                                                <span class="h6 d-block ml-1">Bright &amp; Light</span>
+                                            </span>
+                                            <span class="btn btn-rounded-circle float-right" style="background-color: #FEFFFE"><i class="mdi mdi-solid" style="color: #6CC4FF"></i></span>
+                                            <span class="btn btn-rounded-circle float-right m-r-10" style="background-color: #FFFCFF"><i class="mdi mdi-solid" style="color: #FF92D8"></i></span>
+                                        </label>
+                                    </div>
+                                    <div class="option-box w-100">
+                                        <input id="radio-preset-pastel" name="radio-preset" type="radio">
+                                        <label for="radio-preset-pastel" class="w-100">
+                                            <span class="radio-content float-left">
+                                                <span class="h6 d-block ml-1">Pastel</span>
+                                            </span>
+                                            <span class="btn btn-rounded-circle float-right" style="background-color: #FFFFBA"><i class="mdi mdi-solid" style="color: #A9D6FF"></i></span>
+                                            <span class="btn btn-rounded-circle float-right m-r-10" style="background-color: #9FF7C3"><i class="mdi mdi-solid" style="color: #ffffff"></i></span>
+                                        </label>
+                                    </div>
+                                    <div class="option-box w-100">
+                                        <input id="radio-preset-vibrant" name="radio-preset" type="radio">
+                                        <label for="radio-preset-vibrant" class="w-100">
+                                            <span class="radio-content float-left">
+                                                <span class="h6 d-block ml-1">Vibrant</span>
+                                            </span>
+                                            <span class="btn btn-rounded-circle float-right" style="background-color: #ffffff"><i class="mdi mdi-solid" style="color: #24E271"></i></span>
+                                            <span class="btn btn-rounded-circle float-right m-r-10" style="background-color: #ffffff"><i class="mdi mdi-solid" style="color: #37A0EF"></i></span>
+                                        </label>
+                                    </div>
+                                    <div class="option-box w-100">
+                                        <input id="radio-preset-dark" name="radio-preset" type="radio">
+                                        <label for="radio-preset-dark" class="w-100">
+                                            <span class="radio-content float-left">
+                                                <span class="h6 d-block ml-1">Dark</span>
+                                            </span>
+                                            <span class="btn btn-rounded-circle float-right" style="background-color: #333333"><i class="mdi mdi-solid" style="color: #00ffd4"></i></span>
+                                            <span class="btn btn-rounded-circle float-right m-r-10" style="background-color: #333333"><i class="mdi mdi-solid" style="color: #FF3D1D"></i></span>
+                                        </label>
+                                    </div>
+                                    <div class="option-box w-100">
+                                        <input id="radio-preset-hyper-color" name="radio-preset" type="radio">
+                                        <label for="radio-preset-hyper-color" class="w-100">
+                                            <span class="radio-content float-left">
+                                                <span class="h6 d-block ml-1">Hyper Color</span>
+                                            </span>
+                                            <span class="btn btn-rounded-circle float-right" style="background-color: #242FFF"><i class="mdi mdi-solid" style="color: #FFFF00"></i></span>
+                                            <span class="btn btn-rounded-circle float-right m-r-10" style="background-color: #FFC200"><i class="mdi mdi-solid" style="color: #000000"></i></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="tab-pane fade p-t-15" id="pillpresets-2" role="tabpanel" aria-labelledby="presets-2-tab">
+                                    <div class="row">
+                                        <div class="col-6" style="padding-right: 7px">
+                                            <div class="option-box w-100">
+                                                <input id="radio-preset-red" name="radio-preset" type="radio" data-hue="red">
+                                                <label for="radio-preset-red" class="w-100">
+                                                    <span class="radio-content float-left">
+                                                        <span class="h6 d-block ml-1">Red</span>
+                                                    </span>
+                                                    <span class="btn btn-rounded-circle float-right" style="background-color: #ffffff"><i class="mdi mdi-solid" style="color: #F42525"></i></span>
+                                                </label>
+                                            </div>
+                                            
+                                            <div class="option-box w-100">
+                                                <input id="radio-preset-yellow" name="radio-preset" type="radio" data-hue="yellow">
+                                                <label for="radio-preset-yellow" class="w-100">
+                                                    <span class="radio-content float-left">
+                                                        <span class="h6 d-block ml-1">Yellow</span>
+                                                    </span>
+                                                    <span class="btn btn-rounded-circle float-right" style="background-color: #ffffff"><i class="mdi mdi-solid" style="color: #EDED00"></i></span>
+                                                </label>
+                                            </div>
+                                            
+                                            <div class="option-box w-100">
+                                                <input id="radio-preset-cyan" name="radio-preset" type="radio" data-hue="cyan">
+                                                <label for="radio-preset-cyan" class="w-100">
+                                                    <span class="radio-content float-left">
+                                                        <span class="h6 d-block ml-1">Cyan</span>
+                                                    </span>
+                                                    <span class="btn btn-rounded-circle float-right" style="background-color: #ffffff"><i class="mdi mdi-solid" style="color: #14F2F2"></i></span>
+                                                </label>
+                                            </div>
+                                            
+                                            <div class="option-box w-100">
+                                                <input id="radio-preset-violet" name="radio-preset" type="radio" data-hue="violet">
+                                                <label for="radio-preset-violet" class="w-100">
+                                                    <span class="radio-content float-left">
+                                                        <span class="h6 d-block ml-1">Violet</span>
+                                                    </span>
+                                                    <span class="btn btn-rounded-circle float-right" style="background-color: #ffffff"><i class="mdi mdi-solid" style="color: #802DEA"></i></span>
+                                                </label>
+                                            </div>
+                                            
+                                        </div>
+                                        <div class="col-6" style="padding-left: 7px">
+                                            <div class="option-box w-100">
+                                                <input id="radio-preset-orange" name="radio-preset" type="radio" data-hue="orange">
+                                                <label for="radio-preset-orange" class="w-100">
+                                                    <span class="radio-content float-left">
+                                                        <span class="h6 d-block ml-1">Orange</span>
+                                                    </span>
+                                                    <span class="btn btn-rounded-circle float-right" style="background-color: #ffffff"><i class="mdi mdi-solid" style="color: #FF9906"></i></span>
+                                                </label>
+                                            </div>
+                                            
+                                            <div class="option-box w-100">
+                                                <input id="radio-preset-green" name="radio-preset" type="radio" data-hue="green">
+                                                <label for="radio-preset-green" class="w-100">
+                                                    <span class="radio-content float-left">
+                                                        <span class="h6 d-block ml-1">Green</span>
+                                                    </span>
+                                                    <span class="btn btn-rounded-circle float-right" style="background-color: #ffffff"><i class="mdi mdi-solid" style="color: #2FE21B"></i></span>
+                                                </label>
+                                            </div>
+                                            
+                                            <div class="option-box w-100">
+                                                <input id="radio-preset-blue" name="radio-preset" type="radio" data-hue="blue">
+                                                <label for="radio-preset-blue" class="w-100">
+                                                    <span class="radio-content float-left">
+                                                        <span class="h6 d-block ml-1">Blue</span>
+                                                    </span>
+                                                    <span class="btn btn-rounded-circle float-right" style="background-color: #ffffff"><i class="mdi mdi-solid" style="color: #347BF7"></i></span>
+                                                </label>
+                                            </div>
+                                            
+                                            <div class="option-box w-100">
+                                                <input id="radio-preset-pink" name="radio-preset" type="radio" data-hue="pink">
+                                                <label for="radio-preset-pink" class="w-100">
+                                                    <span class="radio-content float-left">
+                                                        <span class="h6 d-block ml-1">Pink</span>
+                                                    </span>
+                                                    <span class="btn btn-rounded-circle float-right" style="background-color: #ffffff"><i class="mdi mdi-solid" style="color: #F22FE4"></i></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                    </div>
+                                </div>
+                                
+                                <div class="tab-pane fade p-all-15" id="pilladvanced" role="tabpanel" aria-labelledby="advanced-tab">
+                                    <div class="m-t-10">
+                                                                        <span class="h6 d-block">Target contrast <span class="badge-soft-primary badge">color graph</span></span>
+                                    <table class="table" id="contrast-matrix">
+                                    <tr><td></td><td>0</td><td>1</td><td>2</td></tr><tr><td>0</td><td></td><td><input type="number" id="matrix-0-1" name="matrix-0-1" value="0" min="0" max="100" style="width: 3em" /></td><td><input type="number" id="matrix-0-2" name="matrix-0-2" value="0" min="0" max="100" style="width: 3em" /></td></tr><tr><td>1</td><td></td><td></td><td><input type="number" id="matrix-1-2" name="matrix-1-2" value="0" min="0" max="100" style="width: 3em" /></td></tr><tr><td>2</td><td></td><td></td><td></td></tr>                                    </table>
+                                    <small class="text-muted text-small d-block m-b-10">
+                                        This matrix defines the desired contrast between each color in the palette. Enter a number between 0-100, where 0 = "any contrast", 1 = no contrast, 100 = maximum contrast (black/white).
+                                    </small>
+                                    <small class="text-muted text-small d-block m-b-10">
+                                    For example, to indicate that the first foreground color should have high contrast against the background, enter 80 in the row labelled 0 and the column labelled 1
+                                    </small>
+                                                                        </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            <li class="nav-item mr-1 mr-sm-2 ml-1 ml-sm-2">
+                <a href="#" class="btn btn-white disabled" id="btn-generate-back"><i class="mdi mdi-arrow-left"></i></a>
+            </li>
+            <li class="nav-item mr-2 mr-sm-3">
+                <a href="#" class="btn btn-dark" id="btn-generate"><span>Generate </span><i class="mdi mdi-arrow-right"></i></a>
+            </li>
+        </ul>
+        
+        <ul id="top-nav" class="nav align-items-center ml-4 ml-lg-5 pl-lg-5 float-right">
+                        <li class="nav-item dropdown color-dropdown">
+                <a class="nav-link p-l-10 p-r-10" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <button type="button" class="btn btn-rounded-circle btn-light border-0 bg-color-0"><i class="mdi mdi-lock text-color-1 invisible"></i></button>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <a class="dropdown-item btn-color-lock" href="#"><i class="mdi mdi-lock mr-2"></i> <span>Lock</span></a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item btn-color-copy" href="#"><i class="mdi mdi-content-copy mr-2"></i> Copy code</a>
+                    <div class="dropdown-divider"></div>
+                    <!--<a class="dropdown-item btn-color-edit d-none d-xl-block" href="#"><label for="input-color-0"><i class="mdi mdi-pencil mr-2"></i> Edit</label></a>
+                    <div class="dropdown-divider d-none d-xl-block"></div>-->
+                    <input type="color" id="input-color-0" name="input-color-0" value="#ffffff" class="color m-l-10 m-t-30" style="position: relative; top: -2em" />
+                    <input type="text" id="input-color-hex-0" name="input-color-hex-0" value="#ffffff" class="form-control hex" style="margin:-1.5em auto 0 auto; width: 88%;" />
+                </div>
+            </li>
+                        <li class="nav-item dropdown color-dropdown">
+                <a class="nav-link p-l-10 p-r-10" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <button type="button" class="btn btn-rounded-circle btn-light border-0 bg-color-1"><i class="mdi mdi-lock text-color-0 invisible"></i></button>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <a class="dropdown-item btn-color-lock" href="#"><i class="mdi mdi-lock mr-2"></i> <span>Lock</span></a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item btn-color-copy" href="#"><i class="mdi mdi-content-copy mr-2"></i> Copy code</a>
+                    <div class="dropdown-divider"></div>
+                    <!--<a class="dropdown-item btn-color-edit d-none d-xl-block" href="#"><label for="input-color-1"><i class="mdi mdi-pencil mr-2"></i> Edit</label></a>
+                    <div class="dropdown-divider d-none d-xl-block"></div>-->
+                    <input type="color" id="input-color-1" name="input-color-1" value="#ffffff" class="color m-l-10 m-t-30" style="position: relative; top: -2em" />
+                    <input type="text" id="input-color-hex-1" name="input-color-hex-1" value="#ffffff" class="form-control hex" style="margin:-1.5em auto 0 auto; width: 88%;" />
+                </div>
+            </li>
+                        <li class="nav-item dropdown color-dropdown">
+                <a class="nav-link p-l-10 p-r-10" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <button type="button" class="btn btn-rounded-circle btn-light border-0 bg-color-2"><i class="mdi mdi-lock text-color-0 invisible"></i></button>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <a class="dropdown-item btn-color-lock" href="#"><i class="mdi mdi-lock mr-2"></i> <span>Lock</span></a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item btn-color-copy" href="#"><i class="mdi mdi-content-copy mr-2"></i> Copy code</a>
+                    <div class="dropdown-divider"></div>
+                    <!--<a class="dropdown-item btn-color-edit d-none d-xl-block" href="#"><label for="input-color-2"><i class="mdi mdi-pencil mr-2"></i> Edit</label></a>
+                    <div class="dropdown-divider d-none d-xl-block"></div>-->
+                    <input type="color" id="input-color-2" name="input-color-2" value="#ffffff" class="color m-l-10 m-t-30" style="position: relative; top: -2em" />
+                    <input type="text" id="input-color-hex-2" name="input-color-hex-2" value="#ffffff" class="form-control hex" style="margin:-1.5em auto 0 auto; width: 88%;" />
+                </div>
+            </li>
+                    </ul>
+    </nav>
+</header>
+
+<style>
+#tools-nav, #top-nav{
+display: none;
+}
+.admin-header{
+border: 0;
+background-color: transparent;
+}
+</style>
+<section class="admin-content">
+    <div class="m-b-20" style="background-color: #038AF9; color: #fff; margin-top: -65px">
+        <div class="container">
+            <div class="row p-b-60 p-t-60 justify-content-center">
+
+                <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                    <div class="media">
+                        <div class="avatar avatar mr-3">
+                            <div class="avatar-title rounded-circle mdi mdi-library-books bg-light" style="color: #038AF9"></div>
+                        </div>
+                        <div class="media-body">
+                            <h1>About Huemint</h1>
+                            <p class="opacity-75">
+                                <span class="badge badge-soft-light"><span style="color: #038AF9">TLDR</span></span> Huemint uses machine learning to generate colors for graphic design. Instead of generating a flat palette and leaving you to figure out how to apply it, it can generate colors based on how each color will be used in the final design.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row p-t-60 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <div class="media">
+                    <div class="avatar avatar mr-3">
+                        <div class="avatar-title rounded-circle mdi mdi-star text-light bg-dark"></div>
+                    </div>
+                    <div class="media-body">
+                        <h2>Using Huemint</h2>
+                        <p>There are a lot of color generation tools on the web, but most of them generate a flat palette of 5 colors. This is great as a starting point, but it still takes experience and intuition to apply these colors properly.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row p-b-60 p-t-40 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/palette-example.svg" width="512" height="512" alt="applying a color palette" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>Huemint is a machine-learning system for generating colors based on context, ready to be used in the final design. It knows which colors are meant to be the background, which are meant to be the foreground, and which are meant to be accents. To get started, select a design template and click the (generate) button on the top right of the page.</p>
+            </div>
+        </div>
+        
+        <div class="row p-b-60 p-t-40 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/generate.png" width="684" height="896" alt="generating colors" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>If you find a color that you'd like to keep, click on the circular swatch to lock it. When you click (generate) again, the next results will take your locked colors into account.</p>
+                <p>If you'd like to see more diverse and creative results, try going into the settings and increase the "creativity" slider (aka sampling temperature). Alternatively, see the single most statistically probable colors by reducing the creativity slider to zero.</p>
+            </div>
+        </div>
+        
+        <div class="row p-b-60 p-t-40 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/creativity-slider.png" width="1004" height="597" alt="creativity slider" style="width: 100%; height: auto" />
+            </div>
+        </div>
+
+        
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>You can also upload your own design in the upload image tab, but make sure the image only contains flat areas of color, without photos or gradients.</p>
+            </div>
+        </div>
+        
+        <div class="row p-t-60 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <div class="media">
+                    <div class="avatar avatar mr-3">
+                        <div class="avatar-title rounded-circle mdi mdi-brightness-6 text-light bg-dark"></div>
+                    </div>
+                    <div class="media-body">
+                        <a name="machine-learning"></a>
+                        <h2>Machine learning for color design</h2>
+                        <p>When choosing colors for a website, app or other graphic design, your choices are often constrained by utilitarian considerations.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-10 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/layout.svg" width="512" height="512" alt="example layout" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>Take for instance this simple layout with 4 distinct colors: text, logo, navbar and background - we probably want high contrast between the main text and background, low contrast between the background and navbar, and high contrast again between the logo and navbar.</p>
+                <p>When a designer produces a color palette for this layout, it should ideally be aesthetically pleasing while satisfying the required contrast relationship for all 4 colors.</p>
+
+                <p>In order to feed these requirements to an ML model, we can put the contrast relationships in a table like this:</p>
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-10 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/matrix.svg" width="512" height="512" alt="4 color adjacency matrix" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>This structure encodes the contrast requirements as a weighted graph. It just says that the contrast between node 1-2 should be low, 1-3/2-4 should be high.</p>
+                <p>In this matrix each contrast value is defined using CIE Delta-E, where 100 = max contrast, 1 = min contrast and 0 = not connected. (here we also define a canonical node ordering, from background to foreground)</p>
+                <p>Using this definition, we can extract the contrast relationships of an existing design. For example, here is the color contrast graph of a Mondrian painting:</p>
+            </div>
+        </div>
+        <div class="row p-b-50 p-t-50 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/mondrian.svg" width="512" height="512" alt="Mondrian painting" style="width: 100%; height: auto" />
+            </div>
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/mondrian-matrix.svg" width="512" height="512" alt="adjacency matrix for the Mondrian painting" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>A simple gradient:</p>
+            </div>
+        </div>
+        <div class="row p-b-50 p-t-50 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/gradient.svg" width="512" height="512" alt="black and white gradient" style="width: 100%; height: auto" />
+            </div>
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/gradient-matrix.svg" width="512" height="512" alt="adjacency matrix for the gradient" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>The overall goal of our ML system is to take a color contrast graph as input and produce a color palette as output.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row p-b-30 p-t-30 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <div class="media">
+                    <div class="avatar avatar mr-3">
+                        <div class="avatar-title rounded-circle mdi mdi-ruler text-light bg-dark"></div>
+                    </div>
+                    <div class="media-body">
+                        <h2>Geometric intuition</h2>
+                        <p>To gain an intuitive understanding of what the contrast matrix means, we can mentally visualize the solutions in a 3D space (Lab or RGB, take your pick). Take for example, this simple contrast graph:</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row p-b-20 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 text-center">
+                <img src="/assets/img/about/matrix-2color.svg" width="256" height="256" alt="simple 2 color contrast matrix" style="width: 50%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>All this means is that we have 2 colors, and the Euclidean distance (in colorspace) between them is 50. If you mentally visualize the two colors as points in a 3D space, it would form a line segment. Any rotation or translation of this line segment would result in 2 new colors with the same distance between them.</p>
+            </div>
+        </div>
+        <div class="row p-b-20 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 text-center">
+                <img src="/assets/img/about/matrix-3color.svg" width="256" height="256" alt="simple 3 color contrast matrix" style="width: 50%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>If we extend this idea to 3 colors, the relationship between the 3 points now form an equilateral triangle. As before, you can arbitrarily translate and rotate this triangle to create new color combinations. As long as the vertices of the triangle do not go out of bounds, their contrast relationship will remain constant.</p>
+                <p>We can also scale the triangle up and down (say, 100 instead of 50) But at a certain point the triangle will be too big to fit in the RGB/Lab cube, in which case the matrix is overconstrained and there are no solutions - in other words, the only two colors with 100 contrast between them are pure black and pure white, so there's no possible 3rd color that can also have 100 contrast against both of them.</p>
+                <p>For 4 colors, the shape becomes a regular tetrahedron. The example breaks down at n=5 or more, because there are no more regular polyhedrons with equidistant points (so a matrix of all 50s for 5 colors would have no solutions)</p>
+                <p>You might ask at this point, if we can enumerate all possible solutions like this, why not just generate colors from first principles - why is machine learning even needed? The answer is basically that translation and rotation in colorspace might be contrast-invariant, but they're not *preference* invariant. Humans have subjective preferences for certain color combinations over others, so to generate pleasing color combinations we need to quantify which areas in the configuration space people generally prefer.</p>
+                <p>If you're not convinced of this, try this experiment: take your favorite graphic design and randomly rotate its hue in photoshop. Generally the resulting colors will not look good, even though the contrast relationships should be at least similar.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="row p-b-30 p-t-30 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <div class="media">
+                    <div class="avatar avatar mr-3">
+                        <div class="avatar-title rounded-circle mdi mdi-brush text-light bg-dark"></div>
+                    </div>
+                    <div class="media-body">
+                        <h2>The designer color distribution</h2>
+                        <p>To quantify which color combinations graphic designers prefer, I started by scraping design thumbnails from the web.</p>
+                        <p>Graphic designs tend to contain gradients, photos and other visual effects, but these elements can confound our model by introducing random colors that the designer did not specifically choose. In order to isolate intentional color decisions, the next step is to filter out samples with photos and gradients, so that only designs containing flat areas of color remain.</p>
+                        <p>After filtering I ended up with 1.2 million images. Here is a visualization of a subset of the samples plotted in CIE-lab space:</p>
+                        <p><a class="badge badge-primary" href="/visualization/">Launch 3D Visualization</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row p-b-50 p-t-20 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4">
+                <img src="/assets/img/about/visualization-preview.png" width="1200" height="787" alt="visualization screenshot" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>In this visualization each point is an instance where the color was used. You can see the RGB cube embedded in Lab space, as well as the slightly inset boundaries of CMYK.</p>
+                <p>Some general observations:</p>
+                <p>- 90-95% of designs contain a near-white or near-black, depending on the threshold</p>
+                <p>- Designers really like the edges of the color cube (saturated colors)</p>
+                <p>- At the corners of the color cube, blues and reds are popular, green and yellows less so, and magentas are quite sparse</p>
+                <p>The main takeaway is that the distribution of colors designers tend to use is highly non-uniform. Just by sampling from this designer distribution we can get colors that look "designery" (biased toward colors that designers typically choose)</p>
+                <p>For a laugh, you can also do the opposite by deliberately sampling the low-probability areas. I made a separate demo of what that would look like: <a href="https://poolors.com">Poolors</a></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row p-b-30 p-t-30 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <div class="media">
+                    <div class="avatar avatar mr-3">
+                        <div class="avatar-title rounded-circle mdi mdi-cube text-light bg-dark"></div>
+                    </div>
+                    <div class="media-body">
+                        <h2>Generative models</h2>
+                        <p>At this point we have a decent sized dataset to train our ML model. The overall approach is to treat the problem as conditional image generation - the color contrast graph is the input and the corresponding color palette is the output.</p>
+                        <p>A color palette is essentially a tiny one-dimensional image, which means we can use almost any model from the generative image field. I ended up implementing three separate algorithms, mostly because it's interesting to see the differences between each approach.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <h4 class="p-t-20">Random</h4>
+                <p>As a baseline, I implemented a non-ML algorithm. This mode works by creating palettes completely at random, sampling each color from the designer distribution. The top 1% of these random palettes that happen by chance to come closest to the desired contrast is returned.</p>
+                <p>To test how well this system conforms to the given contrast requirements, we can ask it to generate a gradient palette. A gradient ensures that mistakes made by the model are visually obvious.</p>
+            </div>
+        </div>
+        <div class="row p-b-50 p-t-20 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-4 col-xxl-3">
+                <img src="/assets/img/about/random-3.svg" width="512" height="512" alt="random 3 color gradient" style="width: 100%; height: auto" />
+            </div>
+            <div class="col-12 col-md-10 col-lg-8 col-xl-4 col-xxl-3">
+                <img src="/assets/img/about/random-4.svg" width="512" height="512" alt="random 4 color gradient" style="width: 100%; height: auto" />
+            </div>
+            <div class="col-12 col-md-10 col-lg-8 col-xl-4 col-xxl-3">
+                <img src="/assets/img/about/random-5.svg" width="512" height="512" alt="random 5 color gradient" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>This system can occasionally produce something good, but the hit rate is pretty low. It's also good for getting some fresh ideas outside of conventional design orthodoxy.</p>
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <h4 class="p-t-20">Transformer</h4>
+                <p>Transformers have been widely applied in NLP but has only recently taken off in image generation. To use it in the image domain we take a page from OpenAI's image GPT and quantize each pixel into a discrete token - specifically we use a 4096 token codebook quantized by applying K-means clustering to the designer color distribution.</p>
+                <p>The input contrast graph is quantized and encoded as a separate set of tokens, then given to the transformer as input (we use an encoder-decoder transformer instead of decoder-only) This is actually a bit weird but it worked first try so I didn't bother with more complex formulations.</p>
+                <p>Because the pixel tokens are generated one at a time in auto-regressive fashion, we have a few more knobs to tweak at run time. After a bit of experimentation I ended up using top-p sampling with a threshold of 0.8 (sampling 80% of the probability mass) and a temperature of 1.2</p>
+                <p>In the NLP domain this value would be extremely high, but in our case we are deliberately trying to sample more diverse results so there's more tolerance for "off" values.</p>
+                <p>Here are some generations at various temperatures, using the same gradient contrast matrix as input:</p>
+            </div>
+        </div>
+        <div class="row p-b-50 p-t-20 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-4 col-xxl-3">
+                <img src="/assets/img/about/transformer-0-5.svg" width="512" height="512" alt="transformer generated palette with temperature set to 0.5" style="width: 100%; height: auto" />
+            </div>
+            <div class="col-12 col-md-10 col-lg-8 col-xl-4 col-xxl-3">
+                <img src="/assets/img/about/transformer-0-9.svg" width="512" height="512" alt="transformer generated palette with temperature set to 0.9" style="width: 100%; height: auto" />
+            </div>
+            <div class="col-12 col-md-10 col-lg-8 col-xl-4 col-xxl-3">
+                <img src="/assets/img/about/transformer-1-2.svg" width="512" height="512" alt="transformer generated palette with temperature set to 1.2" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-50 p-t-20 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-4 col-xxl-3">
+                <img src="/assets/img/about/transformer-1-5.svg" width="512" height="512" alt="transformer generated palette with temperature set to 1.5" style="width: 100%; height: auto" />
+            </div>
+            <div class="col-12 col-md-10 col-lg-8 col-xl-4 col-xxl-3">
+                <img src="/assets/img/about/transformer-2-0.svg" width="512" height="512" alt="transformer generated palette with temperature set to 2.0" style="width: 100%; height: auto" />
+            </div>
+            <div class="col-12 col-md-10 col-lg-8 col-xl-4 col-xxl-3">
+                <img src="/assets/img/about/transformer-2-4.svg" width="512" height="512" alt="transformer generated palette with temperature set to 2.4" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>Low temperature values result in only high-probability palettes being returned, while high temperatures allow more diversity but may not match our contrast requirements.</p>
+                <p>If we lock one color and generate at temperature=0, only the single most probable result is returned. For two-color designs the most common generations are black/white.</p>
+            </div>
+        </div>
+        <div class="row p-b-50 p-t-50 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/locked-left.svg" width="512" height="512" alt="generations where the left color is locked" style="width: 100%; height: auto" />
+            </div>
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/locked-right.svg" width="512" height="512" alt="generations where the right color is locked" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>We can also try giving it under-constrained and over-constrained values (matrix of all 0s and all 100s) to see how it breaks. In this case the model pretty much just ignores some of the contrast values. It handles it surprisingly well considering that this type of data is not in the training set.</p>
+            </div>
+        </div>
+        <div class="row p-b-50 p-t-50 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/underconstrained.svg" width="512" height="512" alt="underconstrained input" style="width: 100%; height: auto" />
+            </div>
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/overconstrained.svg" width="512" height="512" alt="overconstrained input" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <h4 class="p-t-20">Diffusion Model</h4>
+                <p>DDPM or Denoising Diffusion Probabilistic Models are a new class of generative models that take inspiration from ideas in physics. After OpenAI released their code for Improved DDPM models, I immediately thought to apply it for color generation.</p>
+                <p>One of the biggest problems of DDPMs are the long generation times (about 2 orders of magnitude slower than GANs), which cannot be sped up by GPUs because the process is inherently serial.</p>
+                <p>Fortunately for us, the image we seek to generate is extremely trivial (12 pixels total), which makes this less of an issue.</p>
+                <p>Although our input data is nominally a graph, the graph is again extremely trivial. The majority of flat-designs have less than 12 distinct colors, the adjacency matrix for which can be represented in less than 72 values. This means we can treat the adjacency matrix as an embedding and inject it directly into the model.</p>
+                <p>Since OpenAI's code already contains a category embedding, we can easily swap it out for a linear layer that projects the adjacency embeddings into the temporal embedding space.</p> 
+                <p>Here are some sample generations from the DDPM model, again with the same gradient input.</p>
+            </div>
+        </div>
+        <div class="row p-b-50 p-t-50 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/ddpm.svg" width="512" height="512" alt="OpenAI improved DDPM model" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>Generative models are typically evaluated using FID score, but FID is based on imagenet and our data has nothing to do with photography, which makes it difficult to evaluate the model objectively.</p>
+                <p>To see the differences between the three approaches we can treat the generated palettes as a high-dimensional vector, and use UMAP to visualize the palettes in 2 dimensions.</p>
+            </div>
+        </div>
+        <div class="row p-b-50 p-t-50 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-5 col-xxxl-5">
+                <img src="/assets/img/about/plot-1.png" width="1598" height="1355" alt="UMAP plot of generated palettes" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>Red = random, blue = transformer, green = diffusion</p>
+                <p>The random palettes are easily separable, with the diffusion and transformer results pretty close together. The left and right clusters appear to correspond to gradients that contain near-white and near-black.</p>
+            </div>
+        </div>
+        <div class="row p-b-50 p-t-50 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-5 col-xxxl-5">
+                <img src="/assets/img/about/plot-2.png" width="1598" height="1355" alt="UMAP plot of generated palettes" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>A UMAP plot of the transformer model generations, temperature from low to high. The low-temperature samples form tight clusters whereas the high-temperature samples are a lot more diffuse.</p>
+                <p>The next thing I wanted to see was how well the results conformed to the given contrast requirements. I generated a thousand palettes for each method, then plotted the mean difference between the input contrast and the contrast of each resulting color palette.</p>
+            </div>
+        </div>
+        <div class="row p-b-50 p-t-50 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/histogram-5-in.png" width="2560" height="1920" alt="histogram evaluation with 5 colors" style="width: 100%; height: auto" />
+                5 colors
+            </div>
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/histogram-10-in.png" width="2560" height="1920" alt="histogram evaluation with 10 colors" style="width: 100%; height: auto" />
+                10 colors
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>For this test, the inputs were the contrast matrices from the training set. The results are about as expected, with the diffusion model conforming better to the input contrast (you can see this visually in the gradient generation templates).</p>
+                <p>To see how well the system generalizes, the next test is to give it inputs not seen during training. To do this I created palettes at random, then extracted the contrast matrix from these random colors. These effecively random contrast matrices are then used to generate color palettes for the second test.</p>
+            </div>
+        </div>
+        <div class="row p-b-50 p-t-50 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/histogram-5-out.png" width="2560" height="1920" alt="histogram evaluation with 5 colors" style="width: 100%; height: auto" />
+                5 colors
+            </div>
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/histogram-10-out.png" width="2560" height="1920" alt="histogram evaluation with 10 colors" style="width: 100%; height: auto" />
+                10 colors
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>The absolute contrast values slide a bit, but this looks pretty good.</p>
+                <p>The last test I had in mind was how well the system worked when there were one or more locked colors.</p>
+            </div>
+        </div>
+        <div class="row p-b-50 p-t-50 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/histogram-6-locked.png" width="2560" height="1920" alt="histogram evaluation with one locked color" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>Most of the generations seem fine, but there is a weird failure mode with the diffusion model.</p>
+                <p>Here are some examples of the failure cases (second color locked to white, third color should be high-contrast):</p>
+            </div>
+        </div>
+        <div class="row p-b-50 p-t-10 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/diffusion-failure.svg" width="512" height="512" alt="failed palette generations" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>After examining the sampling process for the failure modes, I'm pretty sure the issue is in the way I implemented locking colors. At this point all I'm doing is overwriting the output of the model with the locked colors at every time step. This works as long as the locked color is close to a "natural" generation, but it fails if there's too much divergence. In this particular case, at each timestep the model tries to darken the background and lighten the foreground, while I manually set the background to white and undoing its work.</p>
+
+                <p>The root of the issue is that locked colors aren't seen during training and only implemented afterward at runtime. I basically went back and added an additional input to the unet in the DDPM model, and trained it again from scratch. This allowed the model to see locked colors during training and appears to have fixed the problem. Here is the test re-run on the updated model:</p>
+            </div>
+        </div>
+        <div class="row p-b-50 p-t-50 justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-5 col-xxl-4 col-xxxl-3">
+                <img src="/assets/img/about/histogram-6-locked-fixed.png" width="2560" height="1920" alt="histogram evaluation with one locked color" style="width: 100%; height: auto" />
+            </div>
+        </div>
+        <div class="row p-b-10 p-t-8 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <p>So after all of this, I'd like to circle back and point out that the goal of this system is not to get these histograms to 0. What we want is for the system to come up with fresh color design ideas, which is at odds with the desire for the results to conform to our inputs exactly. So ultimately we want the resulting palettes to only loosely follow the contrast input, adding noise to the process so that some kind of serendipity can occur. For the transformer model this noise is conveniently added by increasing sampling temperature, but how do we implement this with the diffusion model?</p>
+                <p>The answer I came up with is early stopping - typically the DDPM model requires 100-200 iterations to fully denoise the image, but if we stop before the full set of denoising passes some of the original noise remains. I set the scaling so that at temperature=1.2 (the default) there is no early stopping, and at max temperature only 70% of the denoising steps are performed (those last 30% make a big difference, apparently). This makes the behavior between transformer and DDPM models sort of similar at each temperature value.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row p-b-30 p-t-30 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <div class="media">
+                    <div class="avatar avatar mr-3">
+                        <div class="avatar-title rounded-circle mdi mdi-space-invaders text-light bg-dark"></div>
+                    </div>
+                    <div class="media-body">
+                        <h2>Future work</h2>
+                        <p>Treating color generation as a conditional image generation task is an extremely efficient way to create colors for graphic design. By abstracting graphic designs as a color contrast graph, we avoid the need to deal with dense pixel values, allowing us to use otherwise computationally intractable techniques like DDPM.</p>
+                        <p>However, this abstraction removes certain key context which may aid in more precise color generation. For example, if the design contains a person we may want to restrict the output to skin tones, or if the color is for a warning message we may want only red shades. For more context-aware generation it may be beneficial to add additional class labels.<p>
+                        <p>A fixed contrast value can be restrictive in some circumstances - sometimes you might want a minimum contrast, maximum contrast or a range of possible values. This would require a more complex encoding of the requirements.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row p-b-30 p-t-30 justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8 col-xxl-7 col-xxxl-6">
+                <div class="media">
+                    <div class="avatar avatar mr-3">
+                        <div class="avatar-title rounded-circle mdi mdi-power-plug text-light bg-dark"></div>
+                    </div>
+                    <div class="media-body">
+                        <h2>API</h2>
+                        <p>Feel free to use the public API for non-commercial applications, but the service is provided "as is" and uptime is not guaranteed.</p>
+                        <div>
+<code>
+// example<br /><br />
+
+var json_data = {<br />
+   "mode":"transformer" // transformer, diffusion or random<br />
+   "num_colors":4, // max 12, min 2<br />
+   "temperature":"1.2", // max 2.4, min 0<br />
+   "num_results":50, // max 50 for transformer, 5 for diffusion<br />
+   "adjacency":[ "0", "65", "45", "35", "65", "0", "35", "65", "45", "35", "0", "35", "35", "65", "35", "0"], // nxn adjacency matrix as a flat array of strings<br />
+   "palette":["#ffffff", "-", "-", "-"], // locked colors as hex codes, or '-' if blank<br />
+}<br />
+<br />
+$.ajax({<br />
+    type: "post",<br />
+    url: "https://api.huemint.com/color",<br />
+    data: JSON.stringify(json_data),<br />
+    contentType: "application/json; charset=utf-8",<br />
+    dataType: "json"<br />
+});
+</code>
+<p class="p-t-20 p-b-100">Each generated palette also comes with a score value which you can use for further filtering. For the transformer mode this score is the negative log likelihood of the generation (closer to 0 is more probable), for the random mode it's the sum of the squares of the difference to the input contrast (smaller is better). For the diffusion model it's the largest absolute difference from the input contrast.</p>
+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+</main>
+
+
+<script src="/assets/vendor/jquery/jquery.min.js"   ></script>
+<script src="/assets/vendor/jquery-ui/jquery-ui.min.js"   ></script>
+<script src="/assets/vendor/popper/popper.js"   ></script>
+<script src="/assets/vendor/bootstrap/js/bootstrap.min.js"   ></script>
+<script src="/assets/vendor/select2/js/select2.full.min.js"   ></script>
+<script src="/assets/vendor/jquery-scrollbar/jquery.scrollbar.min.js"   ></script>
+<script src="/assets/vendor/listjs/listjs.min.js"></script>
+<script src="/assets/vendor/moment/moment.min.js"></script>
+<script src="/assets/vendor/daterangepicker/daterangepicker.js"></script>
+<script src="/assets/vendor/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
+<script src="/assets/vendor/bootstrap-notify/bootstrap-notify.min.js"   ></script>
+<script src="/assets/js/atmos.min.js"></script>
+<script src="/assets/js/hsluv-0.1.0.min.js"></script>
+<!--page specific scripts for demo-->
+
+<!--Additional Page includes-->
+<script src="/assets/vendor/apexchart/apexcharts.min.js"></script>
+<!--chart data for current dashboard-->
+<script src="/assets/js/dashboard-01.js" ></script>
+
+<script type="text/javascript">
+
+var palette_num = 3;
+
+// utils
+_now = Date.now || function() {
+    return new Date().getTime();
+};
+
+_throttle = function(func, wait, options) {
+    var context, args, result;
+    var timeout = null;
+    var previous = 0;
+    if (!options) options = {};
+    var later = function() {
+      previous = options.leading === false ? 0 : _now();
+      timeout = null;
+      result = func.apply(context, args);
+      if (!timeout) context = args = null;
+    };
+    return function() {
+      var now = _now();
+      if (!previous && options.leading === false) previous = now;
+      var remaining = wait - (now - previous);
+      context = this;
+      args = arguments;
+      if (remaining <= 0 || remaining > wait) {
+        if (timeout) {
+          clearTimeout(timeout);
+          timeout = null;
+        }
+        previous = now;
+        result = func.apply(context, args);
+        if (!timeout) context = args = null;
+      } else if (!timeout && options.trailing !== false) {
+        timeout = setTimeout(later, remaining);
+      }
+      return result;
+    };
+};
+
+function shuffle_array(array) {
+    for (var i = array.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+}
+
+var palettes = [["#ffffff","#ffffff","#ffffff"]];
+var current_index = 0;
+
+var query_hash = window.location.hash.substr(1);
+
+if(query_hash.substr(0,8) == 'palette='){
+    var hex_codes = query_hash.substr(8).split('-');
+    var pal = [];
+    for(var i=0; i<hex_codes.length; i++){
+        var code = hex_codes[i].toLowerCase();
+        code = code.replace(/[^a-z0-9]/gi,'');
+        if(code){
+            pal.push('#'+code);
+        }
+    }
+    
+    palettes.unshift(pal);
+}
+
+function reset_palette(){
+    if(palettes.length > 0 && current_index >= 0){
+        palettes = palettes.slice(0, current_index+1)
+    }
+}
+
+function device_ratio(){
+    return window.devicePixelRatio || 1;
+}
+
+function hex_to_rgb(hex) {
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
+
+function check_webp_feature(feature, callback) {
+    var kTestImages = {
+        lossy: "UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA",
+        lossless: "UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA==",
+        alpha: "UklGRkoAAABXRUJQVlA4WAoAAAAQAAAAAAAAAAAAQUxQSAwAAAARBxAR/Q9ERP8DAABWUDggGAAAABQBAJ0BKgEAAQAAAP4AAA3AAP7mtQAAAA==",
+        animation: "UklGRlIAAABXRUJQVlA4WAoAAAASAAAAAAAAAAAAQU5JTQYAAAD/////AABBTk1GJgAAAAAAAAAAAAAAAAAAAGQAAABWUDhMDQAAAC8AAAAQBxAREYiI/gcA"
+    };
+    var img = new Image();
+    img.onload = function () {
+        var result = (img.width > 0) && (img.height > 0);
+        callback(feature, result);
+    };
+    img.onerror = function () {
+        callback(feature, false);
+    };
+    img.src = "data:image/webp;base64," + kTestImages[feature];
+}
+
+function copy_to_clipboard(text) {
+   const elem = document.createElement('textarea');
+   elem.value = text;
+   document.body.appendChild(elem);
+   elem.select();
+   document.execCommand('copy');
+   document.body.removeChild(elem);
+}
+
+function is_hex_color(hex) {
+  return typeof hex === 'string'
+      && hex.length === 6
+      && !isNaN(Number('0x' + hex))
+}
+
+function apply_palette(pal){
+    for(var i=0; i<pal.length; i++){
+        $('.bg-color-'+i).css('background-color',pal[i]);
+        $('.text-color-'+i).css('color',pal[i]);
+        $('.fill-'+i).attr('fill',pal[i]);        
+        $('.hex-code-'+i).text(pal[i]);
+        $('.stop-'+i).attr('style','stop-color:'+pal[i]);
+        
+        var rgb = hex_to_rgb(pal[i]);
+        if(rgb){
+            var m = '0 0 0 0 '+(rgb.r/255)+'  0 0 0 0 '+(rgb.g/255)+'  0 0 0 0 '+(rgb.b/255)+'  0 0 0 1 0';
+            $('.filter-'+i).attr('values', m);
+        }
+    }
+    
+    // we don't have a way to generate green/yellow/red colors specifically, so generate them here heuristically
+    if(typeof generate_bootstrap != 'undefined'){
+        var green_hex = get_green_color(pal[3], pal.slice(3)); // mix with primary
+        var yellow_hex = get_yellow_color(pal[3], pal.slice(3));
+        var red_hex = get_red_color(pal[3], pal.slice(3));
+        
+        $('.bg-color-success').css('background-color',green_hex);
+        $('.bg-color-warning').css('background-color',yellow_hex);
+        $('.bg-color-danger').css('background-color',red_hex);
+        $('.text-color-success').css('color',green_hex);
+        $('.text-color-warning').css('color',yellow_hex);
+        $('.text-color-danger').css('color',red_hex);
+        $('.hex-code-success').text(green_hex);
+        $('.hex-code-warning').text(yellow_hex);
+        $('.hex-code-danger').text(red_hex);
+    }
+    
+    if(upload_image){
+        colorize_canvas(upload_image, $('#uploaded_image').get(0), upload_quant, pal);
+    }
+    
+    var pal_string = [];
+    for(var i=0; i<pal.length; i++){
+        pal_string.push(pal[i].substr(1));
+    }
+    $('#share-input').val('https://huemint.com/about/#palette='+pal_string.join('-'));
+}
+
+var apply_palette_throttle = _throttle(apply_palette, 1000);
+
+function apply_palette_swatches(pal){
+    for(var i=0; i<pal.length; i++){
+        var input = $('.color-dropdown input.color').eq(i);
+        if(!$('.color-dropdown .nav-link i').eq(i).hasClass('visible')){
+            input.val(pal[i]);
+            $('.color-dropdown input.hex').eq(i).val(pal[i]);
+        }
+        else{
+            $('.color-dropdown .bg-color-'+i).css('background-color',input.val());
+            $('.color-dropdown .text-color-'+i).css('color',input.val());
+        }
+    }
+}
+
+function release_lock(){
+    $('.color-dropdown .btn-color-lock i').addClass('mdi-lock').removeClass('mdi-lock-open');
+    $('.color-dropdown .btn-color-lock span').text('Lock');
+    $('.color-dropdown .nav-link i').removeClass('visible').addClass('invisible');
+}
+
+function matrix_to_input(m){
+    for(var i=0; i<palette_num; i++){ // row
+        for(var j=0; j<palette_num; j++){ // col
+            if(j > i){
+                var index = i*palette_num + j;
+                $('input#matrix-'+i+'-'+j).val(m[index]);
+            }
+        }
+    }
+}
+
+function input_to_matrix(){
+    var m = [];
+    for(var i=0; i<palette_num; i++){ // row
+        for(var j=0; j<palette_num; j++){ // col
+            if(j > i){
+                m.push($('input#matrix-'+i+'-'+j).val());
+            }
+            else if(i > j){
+                m.push($('input#matrix-'+j+'-'+i).val());
+            }
+            else{
+                m.push(0);
+            }
+        }
+    }
+    
+    return m;
+}
+
+function random_vibrant_color(){
+    var h = 360*Math.random();
+    var l = 50;
+    if(h < 20){
+        l = 50;
+    }
+    else if(h < 30){
+        l = 65;
+    }
+    else if(h < 80){
+        l = 85;
+    }
+    else if(h < 210){
+        l = 80;
+    }
+    else if(h < 230){
+        l = 65;
+    }
+    else if(h < 260){
+        l = 55;
+    }
+    else if(h < 290){
+        l = 40;
+    }
+    else{
+        l = 50;
+    }
+    
+    return window.hsluv.hsluvToHex([h, 95+5*Math.random(), l]);
+}
+
+function random_pastel_color(){
+    var h = 360*Math.random();
+    var l = 50;
+    if(h < 30){
+        l = 80 + 10*Math.random();
+        s = 50 + 50*Math.random();
+    }
+    else if(h < 80){
+        l = 85 + 5*Math.random();
+        s = 70 + 30*Math.random();
+    }
+    else if(h < 230){
+        l = 85 + 10*Math.random();
+        s = 50 + 25*Math.random();
+    }
+    else if(h < 290){
+        l = 80 + 10*Math.random();
+        s = 80 + 20*Math.random();
+    }
+    else{
+        l = 80 + 10*Math.random();
+        s = 50 + 50*Math.random();
+    }
+    return window.hsluv.hsluvToHex([h, s, l]);
+}
+
+function random_dark_color(){
+    return window.hsluv.hsluvToHex([360*Math.random(), 100*Math.random(), 20*Math.random()]);
+}
+
+function get_green_color(overlay_hex, sample_palette){
+    var overlay_hsl = window.hsluv.hexToHsluv(overlay_hex);
+    
+    var max_saturation = 0;
+    var mean_lightness = 0;
+    for(var i=0; i<sample_palette.length; i++){
+        var sample = window.hsluv.hexToHsluv(sample_palette[i]);
+        if(sample[1] > max_saturation){
+            max_saturation = sample[1];
+        }
+        
+        mean_lightness += sample[2];
+    }
+    mean_lightness /= sample_palette.length;
+    mean_lightness -= 40;
+    mean_lightness *= 1.66;
+    if(mean_lightness < 0){
+        mean_lightness = 0;
+    }
+    
+    var l = 55 + 0.35*mean_lightness;
+    
+    max_saturation -= 50;
+    max_saturation *= 2;
+    if(max_saturation < 0){
+        max_saturation = 0;
+    }
+    
+    var s = 80 + 0.2*max_saturation;
+    
+    var h = 0.9*128+0.1*overlay_hsl[0];
+    
+    return window.hsluv.hsluvToHex([h, s, l]);
+}
+
+function get_yellow_color(overlay_hex, sample_palette){
+    var overlay_hsl = window.hsluv.hexToHsluv(overlay_hex);
+    
+    var max_saturation = 0;
+    var mean_lightness = 0;
+    for(var i=0; i<sample_palette.length; i++){
+        var sample = window.hsluv.hexToHsluv(sample_palette[i]);
+        if(sample[1] > max_saturation){
+            max_saturation = sample[1];
+        }
+        
+        mean_lightness += sample[2];
+    }
+    mean_lightness /= sample_palette.length;
+    mean_lightness -= 40;
+    mean_lightness *= 1.66;
+    if(mean_lightness < 0){
+        mean_lightness = 0;
+    }
+    
+    var l = 80 + 0.1*mean_lightness;
+    
+    max_saturation -= 50;
+    max_saturation *= 2;
+    if(max_saturation < 0){
+        max_saturation = 0;
+    }
+    
+    var s = 90 + 0.1*max_saturation;
+    
+    var h = 0.9*55+0.1*overlay_hsl[0];
+    
+    return window.hsluv.hsluvToHex([h, s, l]);
+}
+
+function get_red_color(overlay_hex, sample_palette){    
+    var max_saturation = 0;
+    var mean_lightness = 0;
+    for(var i=0; i<sample_palette.length; i++){
+        var sample = window.hsluv.hexToHsluv(sample_palette[i]);
+        if(sample[1] > max_saturation){
+            max_saturation = sample[1];
+        }
+        
+        mean_lightness += sample[2];
+    }
+    mean_lightness /= sample_palette.length;
+    mean_lightness -= 40;
+    mean_lightness *= 1.66;
+    if(mean_lightness < 0){
+        mean_lightness = 0;
+    }
+    
+    var l = 50 + 0.1*mean_lightness;
+    
+    max_saturation -= 50;
+    max_saturation *= 2;
+    if(max_saturation < 0){
+        max_saturation = 0;
+    }
+    
+    var s = 90 + 0.1*max_saturation;
+        
+    var overlay_hsl = window.hsluv.hexToHsluv(overlay_hex);
+    var h = 0;
+    if(overlay_hsl > 180){
+        h = 0.95*360 + 0.05*overlay_hsl[0];
+    }
+    else{
+        h = 0 + 0.05*overlay_hsl[0];
+    }
+    return window.hsluv.hsluvToHex([h, s, l]);
+}
+
+function random_hue(hue){
+    if(hue == 'red'){
+        var h = 25*Math.random() - 5;
+        if(h < 0){
+            h += 360;
+        }
+        return window.hsluv.hsluvToHex([h, 80+20*Math.random(), 45+10*Math.random()]);
+    }
+    else if(hue == 'orange'){
+        return window.hsluv.hsluvToHex([20+15*Math.random(), 95+5*Math.random(), 50+25*Math.random()]);
+    }
+    else if(hue == 'yellow'){
+        return window.hsluv.hsluvToHex([50+15*Math.random(), 95+5*Math.random(), 70+15*Math.random()]);
+    }
+    else if(hue == 'green'){
+        return window.hsluv.hsluvToHex([90+40*Math.random(), 80+20*Math.random(), 50+30*Math.random()]);
+    }
+    else if(hue == 'cyan'){
+        return window.hsluv.hsluvToHex([140+40*Math.random(), 95+5*Math.random(), 70+20*Math.random()]);
+    }
+    else if(hue == 'blue'){
+        return window.hsluv.hsluvToHex([185+85*Math.random(), 80+20*Math.random(), 30+25*Math.random()]);
+    }
+    else if(hue == 'violet'){
+        return window.hsluv.hsluvToHex([270+20*Math.random(), 90+10*Math.random(), 40+15*Math.random()]);
+    }
+    else if(hue == 'pink'){
+        return window.hsluv.hsluvToHex([295+65*Math.random(), 80+10*Math.random(), 50+20*Math.random()]);
+    }
+}
+
+if(typeof seed_pastel_indices == 'undefined'){
+    var seed_pastel_indices = [0];
+}
+
+if(typeof seed_vibrant_indices == 'undefined'){
+    var seed_vibrant_indices = [1];
+}
+
+if(typeof seed_hyper_color_indices == 'undefined'){
+    var seed_hyper_color_indices = [0];
+}
+
+if(typeof seed_dark_indices == 'undefined'){
+    var seed_dark_indices = [0];
+}
+
+function seed_pastel(num){
+    var colors = [];
+    for(var i=0; i<num; i++){
+        var pal = [];
+        for(var j=0; j<palette_num; j++){
+            pal.push('-');
+        }
+        for(j=0; j<seed_pastel_indices.length; j++){
+            pal[seed_pastel_indices[j]] = random_pastel_color();
+        }
+        
+        if(typeof window.generate_bootstrap != 'undefined'){
+            pal[1] = '#ffffff';
+        }
+        colors.push(pal);
+    }
+    
+    return colors;
+}
+
+function seed_vibrant(num){
+    var colors = [];
+    for(var i=0; i<num; i++){
+        var pal = [];
+        for(var j=0; j<palette_num; j++){
+            pal.push('-');
+        }
+        
+        for(j=0; j<seed_vibrant_indices.length; j++){
+            pal[seed_vibrant_indices[j]] = random_vibrant_color();
+        }
+        
+        if(typeof window.generate_bootstrap != 'undefined'){
+            pal[1] = '#ffffff';
+        }
+        
+        colors.push(pal);
+    }
+    return colors;
+}
+
+function seed_hyper_color(num){
+    var colors = [];
+    for(var i=0; i<num; i++){
+        var pal = [];
+        for(var j=0; j<palette_num; j++){
+            pal.push('-');
+        }
+        for(j=0; j<seed_hyper_color_indices.length; j++){
+            pal[seed_hyper_color_indices[j]] = random_vibrant_color();
+        }
+        
+        colors.push(pal);
+    }
+    return colors;
+}
+
+function seed_dark(num){
+    var colors = [];
+    for(var i=0; i<num; i++){
+        var pal = [];
+        for(var j=0; j<palette_num; j++){
+            pal.push('-');
+        }
+        for(j=0; j<seed_dark_indices.length; j++){
+            pal[seed_dark_indices[j]] = random_dark_color();
+        }
+        
+        if(typeof window.generate_bootstrap != 'undefined'){
+            pal[1] = '#ffffff';
+        }
+        
+        colors.push(pal);
+    }
+    return colors;
+}
+
+function seed_hue(hue, num){
+    var colors = [];
+    for(var i=0; i<num; i++){
+        var pal = [];
+        for(var j=0; j<palette_num-1; j++){
+            pal.push('-');
+        }
+        if(typeof window.seed_hue_indices == 'undefined'){
+            pal[0] = random_hue(hue);
+            shuffle_array(pal);
+            pal.unshift('-');
+        }
+        else{
+            pal.unshift('-');
+            for(var j=0; j<seed_hue_indices.length; j++){
+                pal[seed_hue_indices[j]] = random_hue(hue);
+            }
+        }
+        
+        if(typeof window.generate_bootstrap != 'undefined'){
+            pal[1] = '#ffffff';
+        }
+        
+        colors.push(pal);
+    }
+    return colors;
+}
+
+var image_widths = [5500, 5000, 4500, 4000, 3500, 3000, 2500, 2000, 1600, 1200, 1000, 900, 800, 700, 600, 500, 400];
+var webp_support = false;
+
+function init_images(){
+    $('#content svg image').each(function(){
+        
+        var svg_width = $(this).parent().get(0).clientWidth * device_ratio(); // real pixel width of svg
+        var transform_scale = 1;
+        if($(this).attr('transform')){
+            transform_scale = $(this).attr('transform').split(' ')[3]; // y axis scaling
+        }
+        var scale_factor = (transform_scale * $(this).attr('width'))/$(this).parent().attr('viewBox').split(' ')[2];
+        var width = svg_width*scale_factor; // real pixel width of image
+        var selected_width = 1600;
+        for(var i=0; i<image_widths.length-1; i++){
+            if(image_widths[i+1] < width){
+                selected_width = image_widths[i];
+                break;
+            }
+        }
+        
+        if(webp_support){
+            var url = '/assets/img/graphics/'+$(this).data('prefix')+'/webp/'+selected_width+'/'+$(this).data('filename')+'.webp';
+        }
+        else{
+            var url = '/assets/img/graphics/'+$(this).data('prefix')+'/png/'+selected_width+'/'+$(this).data('filename')+'.png';
+        }
+        
+        $(this).attr('xlink:href', url);
+    });
+}
+
+// for upload page
+var upload_image = false;
+var upload_num = 0;
+var upload_palette = false;
+var upload_matrix = false;
+var upload_quant = false;
+
+function handle_upload(){
+    if(upload_num < 2){
+        // first upload, heuristically determine number of colors
+        var quant = quantize(upload_image, 12);
+        
+        var ctx = quant.canvas.getContext('2d');
+        var imageData = ctx.getImageData(0, 0, quant.canvas.width, quant.canvas.height);
+        var pixels = imageData.data;
+        var pixelCount = pixels.length;
+
+        var pixels_out = ctx.getImageData(0,0,quant.canvas.width, quant.canvas.height).data;
+        
+        var sizes = []; // percent of image
+        for(var i=0; i<12; i++){
+            sizes.push(0);
+        }
+        
+        var pal = quant.palette;
+        
+        for (var i = 0, offset, r, g, b, a; i < pixelCount; i = i + 4) {
+            offset = i;
+            a = pixels[offset + 3];
+        
+            if (a >= 125) {
+                r = pixels[offset + 0];
+                g = pixels[offset + 1];
+                b = pixels[offset + 2];
+    
+                r_out = pixels_out[offset + 0];
+                g_out = pixels_out[offset + 1];
+                b_out = pixels_out[offset + 2];
+    
+                for(var j=0; j<pal.length; j++){
+                    if(r_out == pal[j][0] && g_out == pal[j][1] && b_out == pal[j][2]){
+                        sizes[j] += 1;
+                    }
+                }
+            }
+        }
+
+        for(var i=0; i<sizes.length; i++){
+            sizes[i] /= pixelCount;
+        }
+        
+        for(i=0; i<pal.length; i++){
+            if(sizes[i] > 0.0002){
+                upload_num = i+1;
+            }
+            else{
+                break;
+            }
+        }
+
+        quant = quantize(upload_image, upload_num);
+        upload_quant = quant;
+        
+        $('#upload_range_label').text(upload_num);
+        $('#upload_range').val(upload_num);
+        
+    }
+    else{
+        var quant = quantize(upload_image, upload_num);
+        upload_quant = quant;
+    }
+    
+    var can = $('#uploaded_image').get(0);
+    can.width = quant.canvas.width;
+    can.height = quant.canvas.height;
+    var ctx = can.getContext('2d');
+    var data = ctx.getImageData(0,0,can.width,can.height);
+    data.data.set(quant.data);
+    ctx.putImageData(data,0,0);
+    
+    palette_num = quant.palette.length;
+    
+    var conn = get_connectivity_matrix(quant.palette, quant.canvas, true);
+    for(var i=0; i<conn.length; i++){
+        for(var j=0; j<conn[i].length; j++){
+            if(i == j){
+                conn[i][j] = 0;
+            }
+            else if(conn[i][j] > 0.1){
+                conn[i][j] = Math.round(DeltaE.getDeltaE00(rgb2lab(quant.palette[i]),rgb2lab(quant.palette[j])));
+            }
+            else{
+                conn[i][j] = 0; // no connection
+            }
+        }
+    }
+    
+    upload_matrix = [];
+    for(i=0; i<conn.length; i++){
+        upload_matrix = upload_matrix.concat(conn[i]);
+    }
+    
+    var html = '';
+    for(var i=0; i<quant.palette.length; i++){
+        html += '<span class="btn btn-rounded-circle btn-light shadow mr-2" style="background-color: rgb('+quant.palette[i].join(',')+')">&nbsp;</span>';
+    }
+    
+    $('#upload_palette').html(html);
+    
+    html = '';
+    for(i=0; i<quant.palette.length; i++){
+        var foreground = 0;
+        if(i == 0){
+            foreground = 1;
+        }
+        html += '<li class="nav-item dropdown color-dropdown"><a class="nav-link p-l-10 p-r-10" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><button type="button" class="btn btn-rounded-circle btn-light border-0 bg-color-'+i+'" style="background-color: rgb('+quant.palette[i].join(',')+')"><i class="mdi mdi-lock text-color-'+foreground+' invisible"></i></button></a><div class="dropdown-menu dropdown-menu-right"><a class="dropdown-item btn-color-lock" href="#"><i class="mdi mdi-lock mr-2"></i> <span>Lock</span></a><div class="dropdown-divider"></div><a class="dropdown-item btn-color-copy" href="#"><i class="mdi mdi-content-copy mr-2"></i> Copy code</a><div class="dropdown-divider"></div><!--<a class="dropdown-item btn-color-edit" href="#"><label for="input-color-'+i+'"><i class="mdi mdi-pencil mr-2"></i> Edit</label></a><div class="dropdown-divider"></div>--><input type="color" id="input-color-'+i+'" name="input-color-'+i+'" value="'+rgb2hex(quant.palette[i])+'" class="color m-l-10 m-t-30" style="position: relative; top: -2em" /><input type="text" id="input-color-hex-'+i+'" name="input-color-hex-'+i+'" value="'+rgb2hex(quant.palette[i])+'" class="form-control hex" style="margin:-1.5em auto 0 auto; width: 88%;" /></div></li>'
+    }
+    
+    $('#top-nav .color-dropdown').remove();
+    $('#top-nav').prepend(html);
+    
+    reset_palette();
+}
+
+function rgb2hex(rgb) {
+  return "#" + ((1 << 24) + (rgb[0] << 16) + (rgb[1] << 8) + rgb[2]).toString(16).slice(1);
+}
+
+function hex2rgb(hex){
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? [
+    parseInt(result[1], 16),
+    parseInt(result[2], 16),
+    parseInt(result[3], 16)
+  ] : null;
+}
+
+function rgb2lab(rgb){
+  var r = rgb[0] / 255,
+      g = rgb[1] / 255,
+      b = rgb[2] / 255,
+      x, y, z;
+
+  r = (r > 0.04045) ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+  g = (g > 0.04045) ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+  b = (b > 0.04045) ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+
+  x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
+  y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.00000;
+  z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+
+  x = (x > 0.008856) ? Math.pow(x, 1/3) : (7.787 * x) + 16/116;
+  y = (y > 0.008856) ? Math.pow(y, 1/3) : (7.787 * y) + 16/116;
+  z = (z > 0.008856) ? Math.pow(z, 1/3) : (7.787 * z) + 16/116;
+  return {L: (116 * y) - 16, A: 500 * (x - y), B: 200 * (y - z)}
+}
+
+function pixel_at(pixels, width, x, y){
+    var index = 4*(y*width+x);
+    return [pixels[index],pixels[index+1],pixels[index+2]];
+}
+
+function pequal(p1, p2){
+    if(p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2]){
+        return true;
+    }
+
+    return false;
+}
+
+function pindex(palette, p){
+    for(var i=0; i<palette.length; i++){
+        if(palette[i][0] == p[0] && palette[i][1] == p[1] && palette[i][2] == p[2]){
+            return i;
+            break;
+        }
+    }
+    return 0;
+}
+
+function get_connectivity_matrix(palette, canvas, normalize){
+    var max_width = 800;
+    var max_height = 600;
+    
+    var ctx = canvas.getContext('2d');
+    var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    var pixels = imageData.data;
+    var pixelCount = pixels.length;
+
+    var conn = [];
+    for(var i=0; i<palette.length; i++){
+        var p = [];
+        for(var j=0; j<palette.length; j++){
+            p.push(0);
+        }
+        conn.push(p);
+    }
+
+    for (var x=0; x<canvas.width-1; x++){
+        for (var y=0; y<canvas.height-1; y++){
+            var p1 = pixel_at(pixels, canvas.width, x, y);
+            var p2 = pixel_at(pixels, canvas.width, x+1, y);
+            var p3 = pixel_at(pixels, canvas.width, x+1, y+1);
+            var p4 = pixel_at(pixels, canvas.width, x, y+1);
+
+            if(!pequal(p1, p2)){
+                conn[pindex(palette,p1)][pindex(palette,p2)] += 1;
+                conn[pindex(palette,p2)][pindex(palette,p1)] += 1;
+            }
+            if(!pequal(p1, p3)){
+                conn[pindex(palette,p1)][pindex(palette,p3)] += 1;
+                conn[pindex(palette,p3)][pindex(palette,p1)] += 1;
+            }
+            if(!pequal(p1, p4)){
+                conn[pindex(palette,p1)][pindex(palette,p4)] += 1;
+                conn[pindex(palette,p4)][pindex(palette,p1)] += 1;
+            }
+            if(!pequal(p2, p3)){
+                conn[pindex(palette,p2)][pindex(palette,p3)] += 1;
+                conn[pindex(palette,p3)][pindex(palette,p2)] += 1;
+            }
+            if(!pequal(p2, p4)){
+                conn[pindex(palette,p2)][pindex(palette,p4)] += 1;
+                conn[pindex(palette,p4)][pindex(palette,p2)] += 1;
+            }
+            if(!pequal(p3, p4)){
+                conn[pindex(palette,p3)][pindex(palette,p4)] += 1;
+                conn[pindex(palette,p4)][pindex(palette,p3)] += 1;
+            }
+        }
+    }
+    
+    // normalize adjacency to perimeter
+    if(normalize){
+        var scale = 1;
+        if(canvas.width > max_width && max_width/canvas.width < scale){
+            scale = max_width/canvas.width;
+        }
+        if(canvas.height > max_height && max_height/canvas.height < scale){
+            scale = max_height/canvas.height;
+        }
+
+        var width = Math.floor(canvas.width*scale);
+        var height = Math.floor(canvas.height*scale);
+        var scalingfactor = 2*(width+height);
+
+        for(var i=0; i<conn.length; i++){
+            var row = conn[i];
+            for(var j=0; j<row.length; j++){
+                row[j] /= scalingfactor;
+            }
+        }
+    }
+    
+    return conn;
+}
+
+function mode(arr) {
+    var numMapping = {};
+    var greatestFreq = 0;
+    var mode;
+    arr.forEach(function(p) {
+        var key = Math.round(p[0]+1000*p[1]+1000000*p[2]);
+        numMapping[key] = (numMapping[key] || 0) + 1;
+
+        if (greatestFreq < numMapping[key]) {
+            greatestFreq = numMapping[key];
+            mode = p;
+        }
+    });
+    return mode;
+}
+
+// without this filter, antialiased edges will add noise to the color graph
+function filter_mode(canvas){
+    var ctx = canvas.getContext('2d');
+    var imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    var pixels = imageData.data;
+    var pixelCount = pixels.length;
+    var x, y, m, n;
+
+    var newData = ctx.createImageData(canvas.width, canvas.height);
+    var newPixels = newData.data;
+    var ksize = 2;
+
+    for (x = 0; x < canvas.width; x++) {
+        for (y = 0; y < canvas.height; y++) {
+            var w = [];
+            // -1, 0, 1
+            for(m=-ksize; m<ksize; m++){
+                for(n=-ksize; n<ksize; n++){
+                    if(x+m < 0 || x+m >= canvas.width){
+                        continue;
+                    }
+                    if(y+n < 0 || y+n >= canvas.height){
+                        continue;
+                    }
+                    w.push(pixel_at(pixels,canvas.width,x+m,y+n));
+                }
+            }
+        
+            var mv = mode(w);
+            var i = y*canvas.width + x;
+            i *= 4;
+        
+            newPixels[i] = mv[0];
+            newPixels[i+1] = mv[1];
+            newPixels[i+2] = mv[2];
+            newPixels[i+3] = 255;
+        }
+    }
+    newData.data.set(newPixels);
+    ctx.putImageData(newData,0,0);
+}
+
+function quantize(img, numcolors){
+    if(numcolors < 2){
+        numcolors = 6;
+    }
+    var max_width = 800;
+    var max_height = 600;
+    
+    var can = document.createElement('canvas');
+    var scale = 1;
+    if(img.naturalWidth > max_width && max_width/img.naturalWidth < scale){
+        scale = max_width/img.naturalWidth;
+    }
+    if(img.naturalheight > max_height && max_height/img.naturalHeight < scale){
+        scale = max_height/img.naturalHeight;
+    }
+
+    var width = Math.floor(img.naturalWidth*scale);
+    var height = Math.floor(img.naturalHeight*scale);
+            
+    can.width = width;
+    can.height = height;
+
+    var ctx = can.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+
+    var opts = {
+        colors: numcolors,
+        method: 2,
+        boxSize: [64,64],
+        boxPxls: 2,
+        initColors: 4096,
+        minHueCols: 256,
+        dithKern: null,
+        dithDelta: 0,
+        dithSerp: false,
+        palette: [],
+        reIndex: false,
+        useCache: true,
+        cacheFreq: 10,
+        colorDist: "euclidean"
+    };
+
+    var q = new RgbQuant(opts);
+    q.sample(can);
+    var pal = q.palette(true, true);
+    var out = q.reduce(can);
+
+    var can_out = document.createElement('canvas');
+    can_out.width = width;
+    can_out.height = height;
+    var ctx_out = can_out.getContext('2d');
+    var out_data = ctx_out.getImageData(0,0,width,height);
+    out_data.data.set(out);
+    ctx_out.putImageData(out_data,0,0);
+
+    filter_mode(can_out);
+    out_data = ctx_out.getImageData(0,0,width,height);
+            
+    var imageData = ctx.getImageData(0, 0, width, height);
+    var pixels = imageData.data;
+    var pixelCount = pixels.length;
+
+    var pixels_out = out_data.data;
+
+    return {palette: pal, data: out_data.data, canvas: can_out};
+}
+
+function colorize_canvas(img, can_out, quant, newpalette){
+    var rgb_palette = [];
+    for(var i=0; i < newpalette.length; i++){
+        rgb_palette.push(hex2rgb(newpalette[i]));
+    }
+    newpalette = rgb_palette;
+    
+    var pal = quant.palette;
+    var max_width = 800;
+    var max_height = 600;
+    
+    var scale = 1;
+    if(img.naturalWidth > max_width && max_width/img.naturalWidth < scale){
+        scale = max_width/img.naturalWidth;
+    }
+    if(img.naturalheight > max_height && max_height/img.naturalHeight < scale){
+        scale = max_height/img.naturalHeight;
+    }
+            
+    var width = Math.floor(img.naturalWidth*scale);
+    var height = Math.floor(img.naturalHeight*scale);
+
+    can_out.width = width;
+    can_out.height = height;
+
+    var ctx_out = can_out.getContext('2d');
+    var out_data = ctx_out.getImageData(0,0,width,height);
+    out_data.data.set(quant.data);
+    ctx_out.putImageData(out_data,0,0);
+
+    var ctx = quant.canvas.getContext('2d');
+    var imageData = ctx.getImageData(0, 0, width, height);
+    var pixels = imageData.data;
+    var pixelCount = pixels.length;
+
+    var pixels_out = out_data.data;
+    
+    for (var i = 0, offset, r, g, b, a; i < pixelCount; i = i + 4) {
+        offset = i;
+        var r_out = pixels_out[offset + 0];
+        var g_out = pixels_out[offset + 1];
+        var b_out = pixels_out[offset + 2];
+
+        for(var j=0; j<pal.length; j++){
+            if(r_out == pal[j][0] && g_out == pal[j][1] && b_out == pal[j][2]){
+                pixels_out[offset + 0] = newpalette[j][0];
+                pixels_out[offset + 1] = newpalette[j][1];
+                pixels_out[offset + 2] = newpalette[j][2];
+                break;
+            }
+        }
+    }
+
+    ctx_out.putImageData(out_data,0,0);
+    return can_out;
+}
+
+apply_palette(palettes[0]);
+apply_palette_swatches(palettes[0]);
+    
+$(document).ready(function(){
+    // load images dynamically
+    check_webp_feature('alpha', function(feature, result){
+        webp_support = result;
+        init_images();
+    });
+    
+    var resize_timer;
+
+    $(window).on('resize',_throttle(init_images, 1000));
+    
+    $('#top-nav').on('click tap', '.color-dropdown .btn-color-edit', function(e){
+       $(this).parent().find('input.color').trigger('click');
+       return false;
+    });
+    
+    $('#top-nav').on('input', '.color-dropdown input.color', function(){
+        var index = $('#top-nav .color-dropdown input.color').index(this);
+        if(palettes.length > 0 && current_index >=0 && current_index < palettes.length){
+            var new_color = $(this).val().toLowerCase();
+            if(palettes[current_index][index].toLowerCase() != new_color){
+                palettes[current_index][index] = new_color;
+                apply_palette_throttle(palettes[current_index]);
+                if($('.color-dropdown a.nav-link i').eq(index).hasClass('visible')){
+                    reset_palette();
+                }
+                $('.color-dropdown input.hex').eq(index).val(new_color);
+            }
+        }
+    });
+    
+    $('#top-nav').on('input', '.color-dropdown input.hex', function(){
+        var index = $('#top-nav .color-dropdown input.hex').index(this);
+        if(palettes.length > 0 && current_index >=0 && current_index < palettes.length){
+            var new_color = $(this).val().toLowerCase();
+            if(new_color.substring(0,1) != '#'){
+                new_color = '#'+new_color;
+            }
+            if(is_hex_color(new_color.replace('#','')) && palettes[current_index][index].toLowerCase() != new_color){
+                palettes[current_index][index] = new_color;
+                apply_palette(palettes[current_index]);
+                if($('.color-dropdown a.nav-link i').eq(index).hasClass('visible')){
+                    reset_palette();
+                }
+                $('.color-dropdown input.color').eq(index).val(new_color);
+            }
+        }
+    });
+    
+    $('#top-nav').on('click', '.color-dropdown .btn-color-lock', function(e){
+        var icon = $(this).find('i');
+        var icon_swatch = $(this).parent().parent().find('.nav-link i');
+        var text = $(this).find('span');
+        if(icon_swatch.hasClass('invisible')){
+            icon_swatch.addClass('visible').removeClass('invisible');
+            icon.addClass('mdi-lock-open').removeClass('mdi-lock');
+            text.text('Unlock');
+        }
+        else{
+            icon_swatch.addClass('invisible').removeClass('visible');
+            icon.addClass('mdi-lock').removeClass('mdi-lock-open');
+            text.text('Lock');
+        }
+        
+        reset_palette();
+        
+        e.preventDefault();
+    });
+    
+    $('#top-nav').on('click', '.color-dropdown .btn-color-copy', function(e){
+        var input = $(this).parent().parent().find('input');
+        copy_to_clipboard(input.val());
+        return false;
+    });
+    
+    $('#share-copy').on('click', function(e){
+        copy_to_clipboard($('#share-input').val());
+        return false;
+    });
+    
+    $('#btn-generate').click(function(){
+        if($(this).hasClass('disabled')){
+            return false;
+        }
+        if(palettes.length > 0 && current_index < palettes.length-1){
+            current_index++;
+            apply_palette(palettes[current_index]);
+            apply_palette_swatches(palettes[current_index]);
+            $('#btn-generate-back').removeClass('disabled');
+            return false;
+        }
+        $(this).addClass('disabled').find('i').removeClass('mdi-arrow-right').addClass('mdi-spin mdi-loading');
+        var self = $(this);
+        
+        var json_data = {
+            'num_colors' : palette_num,
+            'temperature':$('#temperature-range').val(),
+            'num_results': 50,
+            'adjacency': input_to_matrix(),
+        }
+        
+        if(upload_matrix){
+            json_data.adjacency = upload_matrix;
+        }
+        
+        var pal = [];
+        for(var i=0; i<palette_num; i++){
+            pal.push('-');
+        }
+        
+        var palette_multi = false;
+        
+        // apply generation constraints based on selected preset
+        if(typeof window.generate_bootstrap != 'undefined'){
+            pal[1] = '#ffffff';
+        }
+        
+        if($('#radio-preset-high-contrast').prop('checked') && !$('.color-dropdown .nav-link i').eq(0).hasClass('visible') && typeof window.generate_bootstrap == 'undefined'){
+            pal[0] = '#ffffff';
+        }
+        else if($('#radio-preset-pastel').prop('checked') && !$('.color-dropdown .nav-link i').eq(0).hasClass('visible')){
+            palette_multi = seed_pastel(10);
+        }
+        else if($('#radio-preset-vibrant').prop('checked') && !$('.color-dropdown .nav-link i').eq(1).hasClass('visible')){
+            palette_multi = seed_vibrant(10);
+        }
+        else if($('#radio-preset-hyper-color').prop('checked') && !$('.color-dropdown .nav-link i').eq(0).hasClass('visible')){
+            palette_multi = seed_hyper_color(10);
+        }
+        else if($('#pillpresets-2 input:checked').length > 0 && ($('.color-dropdown .nav-link i.visible').length == 0 || ($('.color-dropdown .nav-link i.visible').length == 1 && $('.color-dropdown .nav-link i').eq(0).hasClass('visible')))){
+            var hue = $('#pillpresets-2 input:checked').data('hue');
+            palette_multi = seed_hue(hue, 10);
+        }
+        else if($('#radio-preset-bright-light').prop('checked') && !$('.color-dropdown .nav-link i').eq(0).hasClass('visible') && typeof window.generate_bootstrap == 'undefined'){
+            pal[0] = '#ffffff';
+        }
+        else if($('#radio-preset-dark').prop('checked') && !$('.color-dropdown .nav-link i').eq(0).hasClass('visible')){
+            palette_multi = seed_dark(10);
+        }
+        
+        if($('.color-dropdown .nav-link i.visible').length > 0){
+            $('.color-dropdown .nav-link i').each(function(index){
+                if($(this).hasClass('visible')){
+                    var v = $('.color-dropdown input.color').eq(index).val();
+                    pal[index] = v;
+                    if(palette_multi){
+                        for(var i=0; i<palette_multi.length; i++){
+                            palette_multi[i][index] = v;
+                        }
+                    }
+                }
+            });
+        }
+
+        json_data.palette = pal;
+        json_data.mode = 'transformer';
+        if($('#radio-preset-random').prop('checked')){
+            json_data.mode = 'random';
+        }
+        else if($('#radio-preset-diffusion').prop('checked')){
+            json_data.mode = 'diffusion';
+        }
+        
+        if(palette_multi){
+            json_data.palette_multi = palette_multi;
+        }
+        
+        json_data.page = 'about';
+        if(!$('.color-dropdown .nav-link i').hasClass('visible')){
+            json_data.preset = 'default';
+            if($('#radio-preset-high-contrast').prop('checked')){
+                json_data.preset = 'high-contrast';
+            }
+            else if($('#radio-preset-bright-light').prop('checked')){
+                json_data.preset = 'bright-light';
+            }
+            else if($('#radio-preset-pastel').prop('checked')){
+                json_data.preset = 'pastel';
+            }
+            else if($('#radio-preset-vibrant').prop('checked')){
+                json_data.preset = 'vibrant';
+            }
+            else if($('#radio-preset-dark').prop('checked')){
+                json_data.preset = 'dark';
+            }
+            else if($('#radio-preset-hyper-color').prop('checked')){
+                json_data.preset = 'hyper-color';
+            }
+            else if($('#radio-preset-red').prop('checked')){
+                json_data.preset = 'red';
+            }
+            else if($('#radio-preset-orange').prop('checked')){
+                json_data.preset = 'orange';
+            }
+            else if($('#radio-preset-yellow').prop('checked')){
+                json_data.preset = 'yellow';
+            }
+            else if($('#radio-preset-green').prop('checked')){
+                json_data.preset = 'green';
+            }
+            else if($('#radio-preset-cyan').prop('checked')){
+                json_data.preset = 'cyan';
+            }
+            else if($('#radio-preset-blue').prop('checked')){
+                json_data.preset = 'blue';
+            }
+            else if($('#radio-preset-violet').prop('checked')){
+                json_data.preset = 'violet';
+            }
+            else if($('#radio-preset-red').prop('checked')){
+                json_data.preset = 'pink';
+            }
+        }
+        
+        $.ajax({
+            type: "post",
+            url: "/api/",
+            data: JSON.stringify(json_data),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success:function(result){
+                // success
+                var results = result.results;
+                shuffle_array(results);
+                for(var i=0; i<results.length; i++){
+                    palettes.push(results[i].palette);
+                }
+                
+                if(result && result.results && result.results.length > 0){
+                    current_index++;
+                    $('#btn-generate-back').removeClass('disabled');
+                }
+                else{
+                    current_index = 0;
+                    $('#btn-generate-back').addClass('disabled');
+                }
+                apply_palette(palettes[current_index]);
+                apply_palette_swatches(palettes[current_index]);
+            },
+            error: function(result){
+                console.error(result);
+            },
+            complete: function(){
+                self.removeClass('disabled').find('i').removeClass('mdi-spin mdi-loading').addClass('mdi-arrow-right');
+            }
+        });
+        
+        return false;
+    });
+    
+    $('#btn-generate-back').click(function(){
+        if($(this).hasClass('disabled') || current_index < 1){
+            return false;
+        }
+        
+        current_index--;
+        apply_palette(palettes[current_index]);
+        apply_palette_swatches(palettes[current_index]);
+        
+        if(current_index < 1){
+            $(this).addClass('disabled');
+        }
+        
+        return false;
+    });
+    
+    $('#btn-config').click(function(e){
+        if($('#config-menu').hasClass('show')){
+            $('#config-menu').removeClass('show');
+        }
+        else{
+            $('.dropdown-menu').removeClass('show');
+            $('#config-menu').addClass('show');
+        }
+        return false;
+    });
+    
+    $('#btn-link').click(function(e){
+        if($('#link-menu').hasClass('show')){
+            $('#link-menu').removeClass('show');
+        }
+        else{
+            $('.dropdown-menu').removeClass('show');
+            $('#link-menu').addClass('show');
+        }
+        return false;
+    });
+    
+    $('#btn-model').click(function(e){
+        if($('#model-menu').hasClass('show')){
+            $('#model-menu').removeClass('show');
+        }
+        else{
+            $('.dropdown-menu').removeClass('show');
+            $('#model-menu').addClass('show');
+        }
+        return false;
+    });
+    
+    $('#content, .admin-sidebar, nav li a:not(.nav-config)').click(function(e){
+        $('#config-menu, #link-menu, #model-menu').removeClass('show');
+    });
+    
+    $('#temperature-range').on('input',function(){
+        $('#temperature-label').text($(this).val());
+        reset_palette();
+    });
+    
+    if(typeof matrix_default != 'undefined'){
+        matrix_to_input(matrix_default);
+    }
+    $('#model-menu input:radio').change(function(){
+        reset_palette();
+    });
+    
+    $('#config-menu input:radio').change(function(){
+        //release_lock(); // presets are incompatible with locked colors
+        reset_palette();
+        var id = $(this).prop('id');
+
+        if(id == 'radio-preset-default'){
+            matrix_to_input(matrix_default);
+        }
+        else if(id == 'radio-preset-high-contrast'){
+            matrix_to_input(matrix_high_contrast);
+        }
+        else if(id == 'radio-preset-bright-light'){
+            matrix_to_input(matrix_bright_light);
+        }
+        else if(id == 'radio-preset-pastel'){
+            matrix_to_input(matrix_pastel);
+        }
+        else if(id == 'radio-preset-vibrant'){
+            matrix_to_input(matrix_vibrant);
+        }
+        else if(id == 'radio-preset-dark'){
+            matrix_to_input(matrix_dark);
+        }
+        else if(id == 'radio-preset-hyper-color'){
+            matrix_to_input(matrix_hyper_color);
+        }
+        else{
+            // single color
+            matrix_to_input(matrix_hue);
+        }
+    });
+    
+    $('#contrast-matrix input').on('input', reset_palette);
+    
+    // upload page
+    var fileinput = $('#fileinput');
+    fileinput.on('change', function(){
+        if(fileinput.get(0).files.length > 0){
+            
+            var reader = new FileReader();
+            var self = this;
+            reader.onload = function (e){
+                upload_quant = false;
+                upload_num = 0;
+                upload_image = new Image();
+                var data = e.target.result;
+                upload_image.onload = handle_upload;
+                upload_image.src = data;
+                $('#upload_area').hide();
+                $('#image_area').show();
+                
+                $('#btn-generate').removeClass('disabled');
+            }
+            reader.readAsDataURL(fileinput.get(0).files[0]);
+        }
+    });
+    
+    $('#upload_range').change(function(){
+        upload_num = $(this).val();
+                
+        if(upload_image){
+            handle_upload();
+        }
+    });
+    
+    $('#upload_range').on('input', function(){
+        upload_num = $(this).val();
+        $('#upload_range_label').text(upload_num);
+    });
+});
+</script>
+
+</body>
+</html>

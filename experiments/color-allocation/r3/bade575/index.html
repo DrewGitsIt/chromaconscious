@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Home · Sunshare</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  /* Style: pastel-consumer (taste-skill app sheet), colours mapped from the ChromaConscious theme.
+     Phone grid: 390 = 16 + 358 + 16. Cards 358 wide, 20px padding, 12px gap between blocks. */
+  :root {
+    --ground: var(--card);
+    --surface: var(--background);
+    --edge: color-mix(in oklab, var(--border) 55%, var(--background));
+    --rule: color-mix(in oklab, var(--border) 38%, var(--background));
+    --text: var(--foreground);
+    --sub: var(--muted-foreground);
+    --sun: var(--accent-strong);          /* the one data hue: solar */
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --r-card: 20px; --r-inner: 10px; --r-chip: 8px;
+    --gap: 12px; --pad: 20px; --margin: 16px;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--ground); color: var(--text);
+    font: 400 15px/1.45 var(--font);
+    -webkit-font-smoothing: antialiased;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+  button { font: inherit; color: inherit; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+  /* ---------- top bar ---------- */
+  .bar {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; align-items: center; gap: 4px;
+    height: 56px; padding: 0 8px 0 var(--margin);
+    background: var(--ground);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; margin-right: auto; text-decoration: none; }
+  .brand svg { display: block; }
+  .brand b { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--primary); }
+  .icon-btn {
+    width: 44px; height: 44px; display: grid; place-items: center;
+    border: 0; background: none; border-radius: 999px; cursor: pointer; color: var(--text);
+    position: relative; transition: background-color .15s;
+  }
+  .icon-btn:hover { background: var(--muted); }
+  .icon-btn:active { transform: scale(.96); }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center;
+    background: var(--secondary); color: var(--primary); font-size: 13px; font-weight: 650; letter-spacing: .02em;
+  }
+
+  main { padding: 8px var(--margin) calc(96px + env(safe-area-inset-bottom)); max-width: 560px; margin: 0 auto; }
+
+  /* ---------- greeting ---------- */
+  .hello { padding: 8px 4px 18px; }
+  .hello h1 { margin: 0; font-size: 26px; line-height: 1.2; font-weight: 700; letter-spacing: -0.02em; }
+  .hello p { margin: 4px 0 0; color: var(--sub); font-size: 15px; }
+
+  .stack { display: grid; gap: var(--gap); }
+  .card {
+    background: var(--surface); border: 1px solid var(--edge); border-radius: var(--r-card);
+    padding: var(--pad);
+  }
+  .card h2 { margin: 0; font-size: 16px; line-height: 1.35; font-weight: 600; }
+  .label { margin: 0; font-size: 14px; color: var(--sub); }
+
+  /* ---------- solar credit: the screen's answer ---------- */
+  .credit {
+    background: var(--accent); color: var(--accent-foreground);
+    border-color: color-mix(in oklab, var(--accent-strong) 22%, var(--accent));
+    padding: 22px var(--pad) 20px;
+  }
+  .credit h2 { font-size: 15px; font-weight: 500; }
+  .credit .value {
+    margin: 6px 0 0; font-size: 40px; line-height: 1.05; font-weight: 700; letter-spacing: -0.02em;
+  }
+  .credit .value small { font-size: 24px; font-weight: 600; letter-spacing: 0; opacity: .78; }
+  .credit .note {
+    display: flex; align-items: center; gap: 8px; margin: 14px 0 0;
+    padding-top: 14px; border-top: 1px solid color-mix(in oklab, var(--accent-strong) 26%, var(--accent));
+    font-size: 14px;
+  }
+  .credit .note svg { flex: none; }
+
+  /* ---------- peak pricing ---------- */
+  .peak .head { display: flex; gap: 12px; align-items: flex-start; }
+  .peak .clock {
+    flex: none; width: 40px; height: 40px; border-radius: var(--r-inner);
+    display: grid; place-items: center; background: var(--warning-subtle); color: var(--warning-subtle-foreground);
+  }
+  .peak p { margin: 2px 0 0; color: var(--sub); font-size: 14px; }
+  .actions { display: flex; gap: 8px; margin-top: 16px; }
+  .btn {
+    height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid transparent;
+    font-size: 15px; font-weight: 600; cursor: pointer; white-space: nowrap;
+    transition: background-color .15s, transform .1s;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn-primary { flex: 1; background: var(--primary); color: var(--primary-foreground); }
+  .btn-primary:hover { background: color-mix(in oklab, var(--primary) 88%, var(--foreground)); }
+  .btn-ghost { background: var(--surface); border-color: var(--input); color: var(--text); }
+  .btn-ghost:hover { background: var(--muted); }
+  .peak.done .actions { display: none; }
+  .peak .status { display: none; margin: 14px 0 0; font-size: 14px; color: var(--success); font-weight: 500; }
+  .peak.done .status { display: block; }
+
+  /* ---------- usage and array ---------- */
+  .metric .top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .metric .fig { margin: 8px 0 0; font-size: 28px; line-height: 1.1; font-weight: 600; letter-spacing: -0.01em; }
+  .metric .fig .unit { font-size: 16px; font-weight: 500; color: var(--sub); letter-spacing: 0; }
+  .metric .meta { font-size: 14px; color: var(--sub); white-space: nowrap; }
+  .track { height: 10px; border-radius: 999px; background: var(--muted); margin-top: 14px; overflow: hidden; }
+  .track i { display: block; height: 100%; border-radius: 999px; background: var(--primary); }
+  .ends { display: flex; justify-content: space-between; margin-top: 8px; font-size: 13px; color: var(--sub); }
+
+  .compare { margin: 16px 0 0; display: grid; gap: 10px; }
+  .compare div { display: grid; grid-template-columns: 72px 1fr; align-items: center; gap: 10px; font-size: 13px; color: var(--sub); }
+  .compare span.bar-row { display: flex; align-items: center; gap: 8px; }
+  .compare i { display: block; height: 10px; border-radius: 999px; flex: none; }
+  .compare .today i { background: var(--sun); }
+  .compare .fc i { background: color-mix(in oklab, var(--border) 80%, var(--background)); }
+  .compare b { font-weight: 500; color: var(--text); }
+  .delta { color: var(--success); font-weight: 600; }
+
+  /* ---------- activity ---------- */
+  .list-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .list-head a {
+    font-size: 14px; font-weight: 600; color: var(--primary); text-decoration: none;
+    padding: 10px 2px; margin: -10px -2px;
+  }
+  .list-head a:hover { text-decoration: underline; }
+  ul.rows { list-style: none; margin: 0; padding: 0; }
+  .rows li {
+    display: grid; grid-template-columns: 1fr auto; column-gap: 12px; row-gap: 2px;
+    padding: 14px 0; border-top: 1px solid var(--rule);
+  }
+  .rows li:first-child { border-top: 0; }
+  .rows .what { font-size: 15px; font-weight: 500; }
+  .rows .amt { font-size: 15px; font-weight: 600; text-align: right; }
+  .rows .amt.credit-amt { color: var(--success); }
+  .rows .when { grid-column: 1 / -1; font-size: 13px; color: var(--sub); }
+  .pill {
+    flex: none; white-space: nowrap; align-self: center;
+    font-size: 12px; font-weight: 600; line-height: 22px; padding: 0 9px; border-radius: 999px;
+    background: var(--warning-subtle); color: var(--warning-subtle-foreground);
+    border: 1px solid color-mix(in oklab, var(--warning) 30%, var(--warning-subtle));
+  }
+
+  /* ---------- tab bar ---------- */
+  .tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    background: var(--surface); border-top: 1px solid var(--edge);
+  }
+  .tabs a {
+    display: grid; justify-items: center; gap: 3px; padding: 6px 0 4px;
+    text-decoration: none; color: var(--sub); font-size: 12px; font-weight: 500; border-radius: 12px;
+  }
+  .tabs a:hover { color: var(--text); }
+  .tabs a[aria-current="page"] { color: var(--primary); font-weight: 650; }
+  .tabs a[aria-current="page"] .ic { background: var(--secondary); }
+  .tabs .ic { width: 52px; height: 30px; border-radius: 999px; display: grid; place-items: center; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <a class="brand" href="#" aria-label="Sunshare home">
+    <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+      <rect width="30" height="30" rx="9" fill="var(--primary)"/>
+      <circle cx="15" cy="17" r="6" fill="var(--chart-1)"/>
+      <rect x="5" y="17" width="20" height="8" fill="var(--primary)"/>
+      <rect x="6" y="19.5" width="18" height="2" rx="1" fill="var(--chart-1)"/>
+      <g stroke="var(--chart-1)" stroke-width="1.8" stroke-linecap="round">
+        <path d="M15 6.5v2.2M8.6 9.4l1.5 1.5M21.4 9.4l-1.5 1.5"/>
+      </g>
+    </svg>
+    <b>Sunshare</b>
+  </a>
+  <button class="icon-btn" type="button" aria-label="Notifications">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M6 9a6 6 0 1 1 12 0c0 4.5 1.8 6.3 2.5 7H3.5C4.2 15.3 6 13.5 6 9Z"/><path d="M10 19.5a2.2 2.2 0 0 0 4 0"/>
+    </svg>
+  </button>
+  <button class="icon-btn" type="button" aria-label="Account: Maya">
+    <span class="avatar" aria-hidden="true">MA</span>
+  </button>
+</header>
+
+<main>
+  <section class="hello">
+    <h1>Good morning, Maya</h1>
+    <p>Friday, June 21</p>
+  </section>
+
+  <div class="stack">
+    <section class="card credit" aria-labelledby="credit-h">
+      <h2 id="credit-h">Solar credit earned this month</h2>
+      <p class="value num" id="credit-value">$48<small>.20</small></p>
+      <p class="note">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M7 3h10v18l-2.5-1.6L12 21l-2.5-1.6L7 21V3Z"/><path d="M10 8h4M10 12h4"/>
+        </svg>
+        Applied to your next power bill
+      </p>
+    </section>
+
+    <section class="card peak" id="peak" aria-labelledby="peak-h">
+      <div class="head">
+        <span class="clock" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>
+          </svg>
+        </span>
+        <div>
+          <h2 id="peak-h">Peak pricing today, 5–8 pm</h2>
+          <p>Rates are higher during these hours.</p>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" type="button" data-act="shift">Shift laundry to off-peak</button>
+        <button class="btn btn-ghost" type="button" data-act="later">Later</button>
+      </div>
+      <p class="status" role="status"></p>
+    </section>
+
+    <section class="card metric" aria-labelledby="use-h">
+      <div class="top">
+        <h2 id="use-h">Electricity use this month</h2>
+        <span class="meta">9 days left</span>
+      </div>
+      <p class="fig num">312 <span class="unit">of 400 kWh</span></p>
+      <div class="track" role="img" aria-label="312 of 400 kWh budget used"><i style="width:78%"></i></div>
+      <div class="ends num"><span>0 kWh</span><span>400 kWh budget</span></div>
+    </section>
+
+    <section class="card metric" aria-labelledby="arr-h">
+      <div class="top">
+        <h2 id="arr-h">Today’s array output</h2>
+      </div>
+      <p class="fig num">1,840 <span class="unit">kWh</span></p>
+      <p class="label" style="margin-top:4px"><span class="delta">12% above</span> the forecast of 1,643 kWh</p>
+      <div class="compare num" role="img" aria-label="Output 1,840 kWh against a forecast of 1,643 kWh">
+        <div class="today"><span>Output</span><span class="bar-row"><i style="width:calc((100% - 64px) * 1)"></i><b>1,840</b></span></div>
+        <div class="fc"><span>Forecast</span><span class="bar-row"><i style="width:calc((100% - 64px) * 0.893)"></i><b>1,643</b></span></div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="act-h">
+      <div class="list-head">
+        <h2 id="act-h">Recent activity</h2>
+        <a href="#activity">See all</a>
+      </div>
+      <ul class="rows">
+        <li>
+          <span class="what">May bill paid</span>
+          <span class="amt num">$64.18</span>
+          <span class="when">Jun 3 · Autopay</span>
+        </li>
+        <li>
+          <span class="what">Solar credit applied</span>
+          <span class="amt num credit-amt">−$42.52</span>
+          <span class="when">Jun 1</span>
+        </li>
+        <li>
+          <span class="what">You invited Jordan Lee</span>
+          <span class="pill">Pending</span>
+          <span class="when">May 29</span>
+        </li>
+      </ul>
+    </section>
+  </div>
+</main>
+
+<nav class="tabs" aria-label="Main">
+  <a href="#" aria-current="page">
+    <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20h-5.5v-5.5h-5V20H4v-9.5Z"/></svg></span>
+    Home
+  </a>
+  <a href="#usage">
+    <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 3 5.5 13.5H11L10 21l7.5-10.5H12L13 3Z"/></svg></span>
+    Usage
+  </a>
+  <a href="#array">
+    <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14l2 9H3l2-9Z"/><path d="M4 13.5h16M9.5 9 9 18M14.5 9l.5 9M12 18v3M8.5 21h7"/><path d="M12 2.5v2M7 4.2l1 1.2M17 4.2l-1 1.2"/></svg></span>
+    Array
+  </a>
+  <a href="#account">
+    <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.6 4-5.3 7.5-5.3s6.3 1.7 7.5 5.3"/></svg></span>
+    Account
+  </a>
+</nav>
+
+<script>
+  // The figures the screen shows, and the checks that they agree.
+  const data = { credit: 48.20, used: 312, budget: 400, output: 1840, forecast: 1643 };
+  console.assert(Math.round((data.output / data.forecast - 1) * 100) === 12, 'array delta is 12%');
+  console.assert(Math.round(data.used / data.budget * 100) === 78, 'usage bar is 78%');
+
+  const peak = document.getElementById('peak');
+  peak.addEventListener('click', (e) => {
+    const act = e.target.closest('[data-act]');
+    if (!act) return;
+    const status = peak.querySelector('.status');
+    status.textContent = act.dataset.act === 'shift'
+      ? 'Laundry moved to off-peak hours.'
+      : 'Okay, we’ll leave it for now.';
+    if (act.dataset.act === 'later') status.style.color = 'var(--muted-foreground)';
+    peak.classList.add('done');
+  });
+</script>
+</body>
+</html>

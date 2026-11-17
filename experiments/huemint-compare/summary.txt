@@ -1,0 +1,42 @@
+median over 8 brands (free = unseeded)
+metric               hm-transformer     hm-diffusion          cc-hop0          cc-riff hm-free-transfor
+bgL                           0.913            0.915            0.982            0.970            0.913
+bgC                           0.033            0.032            0.010            0.020            0.032
+textL                         0.163            0.187            0.229            0.193            0.148
+priC                          0.121            0.121            0.122            0.122            0.110
+secL                          0.496            0.517            0.647            0.636            0.583
+secC                          0.112            0.099            0.101            0.117            0.181
+thrL                          0.610            0.603            0.599            0.599            0.756
+thrC                          0.149            0.161            0.120            0.120            0.161
+nColorful                     3.000            3.000            3.000            3.000            3.000
+accentsAchromatic             0.000            0.000            0.000            0.000            0.000
+minDE                        17.984           21.633            8.353           15.977           21.281
+minDEdeutan                  12.432           12.848            6.010            6.122           17.594
+textBg                       14.646           14.611           16.085           16.974           14.443
+secCard                       6.349            5.894            3.007            3.011            4.518
+thrCard                       3.983            4.053            3.664            3.546            2.200
+Lspread                       0.092            0.089            0.044            0.040            0.141
+Cspread                       0.048            0.046            0.016            0.017            0.047
+fit                          22.427           22.952           13.306           19.412           23.876
+n                               400               40                8              400               50
+
+shares
+bg pure white/near (L>0.97,C<.01)           0.00      0.00      0.62      0.01      0.00
+bg tinted C>=0.02                           0.77      0.65      0.12      0.52      0.64
+bg dark L<0.4                               0.01      0.00      0.00      0.00      0.02
+text near-black L<0.3                       0.95      0.97      1.00      1.00      0.90
+>=1 achromatic accent                       0.23      0.25      0.00      0.00      0.08
+min deutan dE<10                            0.36      0.33      1.00      0.79      0.10
+text/bg <4.5                                0.05      0.00      0.00      0.00      0.04
+sec/card <3                                 0.04      0.10      0.00      0.00      0.02
+
+secondary hue offset from primary (deg), colorful pairs only
+hm-transformer         n=338 median|off|=  38.3  bins 0-15/15-45/45-75/75-135/135-180: 0.25 0.32 0.12 0.28 0.03
+hm-diffusion           n= 32 median|off|=  52.3  bins 0-15/15-45/45-75/75-135/135-180: 0.19 0.28 0.22 0.22 0.09
+cc-hop0                n=  8 median|off|=  60.1  bins 0-15/15-45/45-75/75-135/135-180: 0.00 0.00 1.00 0.00 0.00
+cc-riff                n=400 median|off|= 118.3  bins 0-15/15-45/45-75/75-135/135-180: 0.00 0.00 0.09 0.53 0.38
+hm-free-transformer    n= 42 median|off|=  52.3  bins 0-15/15-45/45-75/75-135/135-180: 0.24 0.24 0.17 0.31 0.05
+hm-transformer  pri-sec: dE  23.1 deu  20.7 |dL| 0.159 | pri-3rd: dE  31.6 deu  24.2 |dL| 0.128 | sec-3rd: dE  25.3 deu  20.8 |dL| 0.147
+hm-diffusion    pri-sec: dE  23.0 deu  20.9 |dL| 0.171 | pri-3rd: dE  31.3 deu  27.8 |dL| 0.119 | sec-3rd: dE  26.7 deu  21.3 |dL| 0.129
+cc-hop0         pri-sec: dE  18.8 deu  13.8 |dL| 0.107 | pri-3rd: dE  22.2 deu  13.1 |dL| 0.052 | sec-3rd: dE   8.4 deu   6.2 |dL| 0.048
+cc-riff         pri-sec: dE  26.9 deu  19.2 |dL| 0.097 | pri-3rd: dE  22.2 deu  13.1 |dL| 0.052 | sec-3rd: dE  21.5 deu   9.3 |dL| 0.036
