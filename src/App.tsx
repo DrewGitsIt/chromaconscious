@@ -1057,6 +1057,8 @@ export default function App() {
     if (!from || starting || !view) return
     flyFrom.current = null
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    // no Web Animations (jsdom, very old engines): the seat simply appears
+    if (typeof Element.prototype.animate !== 'function') return
     const raf = requestAnimationFrame(() => {
       const target = document.querySelector<HTMLElement>('.rb-slot[data-role="primary"] .rb-in')
       const shell = document.querySelector<HTMLElement>('.sidebar-shell')
