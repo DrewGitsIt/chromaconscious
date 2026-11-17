@@ -3,7 +3,7 @@
 ChromaConscious builds a complete UI color theme from any colors you give it:
 - six role seats: primary, accent, neutral, danger, success, warning
 - five chart colors
-- about 44 shadcn-style tokens for light mode and again for dark
+- 47 shadcn-style color tokens for light mode and again for dark, plus three elevation shadows and a scrim
 - a contrast check on every text pairing
 
 The API drives the same engine, with the same verbs, as the app at https://drewkidwell.com/chromaconscious/.
@@ -74,7 +74,7 @@ bench       —
 adjusted    primary   #1d3557 → #294266  too dark and too muted for primary (lightness 0.328, range 0.45–0.68; chroma 0.068, range 0.07–0.23) · taste=1 keeps it as typed
 adjusted    neutral   #a8dadc → #b1d8d9  too vivid for neutral (chroma 0.052, range 0–0.025) · taste=1 keeps it as typed
 
-contrast  light 20/20 · dark 20/20   (text ≥ Lc 62 · 4.5:1)
+contrast  light 26/26 · dark 26/26   (text ≥ Lc 62 · 4.5:1)
 spacing   ok
 judge     0.85
 
@@ -196,7 +196,7 @@ curl -s "https://drewkidwell.com/api/chromaconscious/v1/export?state=AgEDAR01VwD
 ```
 
 
-- Each file is one Figma mode and defines the same 117 colour variables: `color/<token>` for the 44 tokens below plus `color/scrim` (with alpha), and `ramp/<role>/<1–12>` for the six ramps. Every file has the same names and types, because Figma silently skips a token missing from any file.
+- Each file is one Figma mode and defines the same 120 colour variables: `color/<token>` for the 47 colour tokens below plus `color/scrim` (with alpha), and `ramp/<role>/<1–12>` for the six ramps. Every file has the same names and types, because Figma silently skips a token missing from any file.
 - Colours are `{colorSpace: "srgb", components: [r, g, b], alpha, hex}`, with sRGB-encoded components from 0 to 1. Values are plain colours, not aliases.
 - Shadows have no Figma variable type. The `elevation-1`…`3` shadows are DTCG shadow tokens under `$extensions.chromaconscious.shadows`, which Figma ignores on import.
 - On a paid Figma plan, drag all the files into one collection to get one mode each. The free Starter plan allows one mode per collection, so import each file as its own collection. The app's README says the same.
@@ -223,19 +223,19 @@ Exports made before the rename start with the legacy `/* themesmith t_… */` he
 
 ChromaConscious makes **colors only**. Radius, spacing and type are up to you, and there are no hover tokens: derive them, for example `color-mix(in oklab, var(--primary) 88%, var(--foreground))`.
 
-**Mapping to your own tokens.** A seat is a fill color, like a light-mode button. Roles have lightness ranges, and the engine derives dark mode itself. So seed each seat with the color you'd fill a light-mode button or badge with, not a finished dark-mode token or a text tint. Each seat does one job; translate your tokens by job, not by name:
+**Mapping to your own tokens.** A seat is a fill color, like a light-mode button. Roles have lightness ranges, and the engine derives dark mode itself. So seed each seat with the color you'd fill a light-mode button or badge with, not a finished dark-mode token or a text tint. Translate your colors by what they're for, not by name:
 
-| seat | its job | what it becomes |
+| seat | what it holds | what it becomes |
 |---|---|---|
-| `primary` | The brand color: what people click, and the loudest voice in the theme. | `--primary` and `--sidebar-primary` (buttons). |
-| `accent` | The quiet second voice: where you are, what's selected, what's linked. | `--accent` (hover and selected tint), `--accent-strong` (tab indicator), `--ring`, `--link`, `--chart-1`. |
-| `neutral` | Surfaces, lines and text. Most of the pixels on screen, so it decides how the theme feels. | `--background`, `--card`, `--muted`, `--border`, `--input`, `--foreground`, `--muted-foreground`. |
-| `danger` | Destructive actions and errors: the only color allowed to alarm. | `--destructive`, with `-subtle` and `-strong`. |
+| `primary` | The brand color. | `--primary` and `--sidebar-primary` (buttons). |
+| `accent` | A second brand color. | `--accent` (hover and selected tint), `--accent-strong` (the bold accent), `--ring`, `--link`, `--chart-1`. |
+| `neutral` | Surfaces, lines and text. | `--background`, `--card`, `--muted`, `--border`, `--input`, `--foreground`, `--muted-foreground`. |
+| `danger` | Destructive actions and errors. | `--destructive`, with `-subtle` and `-strong`. |
 | `success` | Confirmations and healthy states. | `--success`, with `-subtle` and `-strong`. |
-| `warning` | Cautions that aren't failures: expiring, degraded, needs a look. | `--warning`, with `-subtle` and `-strong`. |
-| `chart` | Data series, kept apart from each other and from the page. | `--chart-1` … `--chart-5`. |
+| `warning` | Cautions that aren't failures. | `--warning`, with `-subtle` and `-strong`. |
+| `chart` | Data series. | `--chart-1` … `--chart-5`. |
 
-When your system has a job no seat names, use the seat whose job is closest. An `info` color, for example, informs without alarming, which is accent's job.
+When your system has a color no seat names (an `info` blue, say), seed it in the closest seat.
 
 ### `GET /state`: a theme's inputs
 

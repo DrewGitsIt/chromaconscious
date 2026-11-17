@@ -34,14 +34,14 @@ If Starter refuses the import entirely, stop and note it: the README's free-plan
 
 Figma silently skips any token it doesn't like, so the count is the check.
 
-- Expect **117** variables:
-  - a `color` group of **45**: 44 theme tokens plus `scrim`
+- Expect **120** variables:
+  - a `color` group of **48**: 47 theme tokens plus `scrim`
   - a `ramp` group with six sub-groups (`primary`, `accent`, `neutral`, `danger`, `success`, `warning`), **12** each
 - Expect **no** `elevation-*` variables. Shadows aren't variables; they live in `$extensions`.
 
-Fewer than 117 means a token was dropped. Find which one is missing; that name or type is what Figma rejected.
+Fewer than 120 means a token was dropped. Find which one is missing; that name or type is what Figma rejected.
 
-Then repeat once with corners moved off 10px (e.g. 4px) before exporting. Expect **118**: one more, a `radius` **number** variable reading `4`. The face never becomes a variable; it rides in `$extensions.chromaconscious.font`. 117 here means Figma rejected the `number` type: note it, because the export's radius would then need another encoding.
+Then repeat once with corners moved off 10px (e.g. 4px) before exporting. Expect **121**: one more, a `radius` **number** variable reading `4`. The face never becomes a variable; it rides in `$extensions.chromaconscious.font`. 120 here means Figma rejected the `number` type: note it, because the export's radius would then need another encoding.
 
 ## 3. Spot-check three hexes and the scrim (2 min). Proves: correctness (the colour encoding)
 
@@ -62,7 +62,7 @@ The free plan allows one mode per collection, so each file gets its own collecti
 
 1. Create a collection named `CC dark`.
 2. Drag in `dark.json`.
-3. Expect **117** variables again.
+3. Expect **120** variables again.
 4. Do the `ramp/neutral/9` check from step 3.
 
 On a paid plan, also try the documented route: drag `light.json` and `dark.json` into one collection together. You should get two modes.
@@ -110,7 +110,7 @@ console.log(bad ? `${bad} problems` : `all ${Object.keys(ours).length} variables
 ' src/engine/__golden__/figma/light.json ~/Downloads/figma-light.json
 ```
 
-Pass: `all 117 variables match`.
+Pass: `all 120 variables match`.
 
 - `MISSING … in Figma` means Figma dropped a token.
 - `DIFF` means Figma stored a different colour. If every `DIFF` points the same way (Figma's values lighter, say), suspect the colour space.

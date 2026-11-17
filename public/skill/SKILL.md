@@ -5,7 +5,7 @@ description: Generate, riff, lock and export UI color themes (light + dark, cont
 
 # ChromaConscious
 
-ChromaConscious turns a few colors into a complete UI theme: six role seats (primary, accent, neutral, danger, success, warning), five chart colors, and ~47 tokens per mode, all checked for contrast in light and dark.
+ChromaConscious turns a few colors into a complete UI theme: six role seats (primary, accent, neutral, danger, success, warning), five chart colors, and a full set of shadcn-style tokens for light and dark, all checked for contrast.
 
 Base URL: `https://drewkidwell.com/api/chromaconscious/v1` (the legacy `/api/themesmith/v1` base still works too)
 
@@ -49,16 +49,16 @@ The variables follow shadcn/ui naming, with both modes in one file (`:root` is l
 
 ## Mapping to your own tokens
 
-A seat is a fill color, like a light-mode button. Roles have lightness ranges, and the engine derives dark mode itself. So seed each seat with the color you'd fill a light-mode button or badge with, not a finished dark-mode token or a text tint. Each seat does one job; translate a project's tokens by job, not by name:
+A seat is a fill color, like a light-mode button. Roles have lightness ranges, and the engine derives dark mode itself. So seed each seat with the color you'd fill a light-mode button or badge with, not a finished dark-mode token or a text tint. Translate a project's colors by what they're for, not by name:
 
-- **primary**: the brand color, what people click, the loudest voice. Becomes `--primary`.
-- **accent**: the quiet second voice: where you are, what's selected, what's linked. Becomes `--accent` (tint), `--accent-strong`, `--ring`, `--link`, `--chart-1`.
-- **neutral**: surfaces, lines and text; most of the pixels. Becomes the surfaces, `--border`, `--input` and the text colors.
-- **danger**: destructive actions and errors, the only color allowed to alarm.
+- **primary**: the brand color. Becomes `--primary`.
+- **accent**: a second brand color. Becomes `--accent` (tint), `--accent-strong`, `--ring`, `--link`, `--chart-1`.
+- **neutral**: surfaces, lines and text. Becomes the surfaces, `--border`, `--input` and the text colors.
+- **danger**: destructive actions and errors.
 - **success**: confirmations and healthy states.
-- **warning**: cautions that aren't failures: expiring, degraded, needs a look.
-- **chart**: data series, kept apart from each other and from the page.
+- **warning**: cautions that aren't failures.
+- **chart**: data series.
 
-When a project has a job no seat names, use the seat whose job is closest (an `info` color informs without alarming: accent), and tell the user which you chose.
+When a project has a color no seat names (an `info` blue, say), seed it in the closest seat and tell the user which you chose.
 
 Full parameters, responses and errors: https://drewkidwell.com/chromaconscious/docs.md
